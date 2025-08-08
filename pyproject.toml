@@ -1,7 +1,23 @@
 [project]
 name = "ww-quokka-sims"
 version = "0.1.0"
-description = "Add your description here"
+description = "python utility library for working with quokka simulations"
 readme = "README.md"
-requires-python = ">=3.13"
+authors = [
+  { name = "Neco Kriel", email = "necokriel@gmail.com" }
+]
+requires-python = ">=3.11"
 dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+sources = ["src"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ww_quokka_sims"]
+
+[tool.pyright]
+include = ["src"]
