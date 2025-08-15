@@ -7,7 +7,11 @@ authors = [
   { name = "Neco Kriel", email = "necokriel@gmail.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+  "imageio>=2.37.0",
+  "numpy>=2.3.2",
+  "yt>=4.4.1",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -20,4 +24,4 @@ sources = ["src"]
 packages = ["src/ww_quokka_sims"]
 
 [tool.pyright]
-include = ["src"]
+include = ["src", "scripts"]
