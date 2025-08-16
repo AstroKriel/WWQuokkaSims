@@ -1,104 +1,175 @@
+import os
 import sys
 import numpy
-import imageio.v3 as iio
-import matplotlib.pyplot as mpl_plot
 from pathlib import Path
+from typing import Tuple, List
+
+import imageio.v3 as iio
+import imageio as iio_v2
+
 from yt.loaders import load as yt_load
 from jormi.ww_io import io_manager
 from jormi.ww_plots import plot_manager, plot_data
+from jormi.parallelism import independent_tasks
 
 DEFAULT_DATA_DIR = Path(
-  # "/scratch/jh2/nk7952/quokka/sims/weak/new_scheme/OrszagTang/cfl=0.3_rk=2_ro=5_ld04/N=32_Nbo=32_Nbl=32_bopr=1_mpir=1"
-  # "/scratch/jh2/nk7952/quokka/sims/weak/new_scheme/OrszagTang/cfl=0.3_rk=2_ro=5_ld04/N=64_Nbo=32_Nbl=32_bopr=1_mpir=8"
-  # "/scratch/jh2/nk7952/quokka/sims/weak/new_scheme/OrszagTang/cfl=0.3_rk=2_ro=5_ld04/N=96_Nbo=32_Nbl=32_bopr=1_mpir=27"
-  # "/scratch/jh2/nk7952/quokka/sims/weak/new_scheme/OrszagTang/cfl=0.3_rk=2_ro=5_ld04/N=128_Nbo=32_Nbl=32_bopr=1_mpir=96"
   "/scratch/jh2/nk7952/quokka/sims/weak/new_scheme/OrszagTang/cfl=0.3_rk=2_ro=5_ld04/N=160_Nbo=32_Nbl=32_bopr=1_mpir=144"
 ).expanduser()
-FIELD_NAME = ("boxlib", "x-BField")
-SLICE_AXIS = 2 # 0:x, 1:y, 2:z
-ONLY_ANIMATE = False
 
-def find_data_paths(directory: Path):
+FIELD_NAME   = ("boxlib", "x-BField")
+SLICE_AXIS   = 2 # 0:x, 1:y, 2:z
+NUM_PROCS    = max(1, (os.cpu_count() or 1) - 1)
+ONLY_ANIMATE = False
+USE_TEX      = False
+
+def find_data_paths(directory: Path) -> List[Path]:
   data_paths = [
-    file_path
-    for file_path in directory.iterdir()
+    dir for dir in directory.iterdir()
     if all([
-      file_path.is_dir(),
-      "plt" in file_path.name,
-      "old" not in file_path.name,
+      dir.is_dir(),
+      "plt" in dir.name,
+      "old" not in dir.name
     ])
   ]
-  data_paths.sort(key=lambda p: int(p.name.split("plt")[1]))
+  data_paths.sort(key=lambda dir: int(dir.name.split("plt")[1]))
   return data_paths
 
-def get_slice(array, axis):
-  position = array.shape[axis] // 2
-  return numpy.take(array, position, axis=axis)
+def get_mid_slice(
+    arr  : numpy.ndarray,
+    axis : int
+  ) -> numpy.ndarray:
+  return numpy.take(arr, arr.shape[axis] // 2, axis=axis)
 
-def main():
-  if len(sys.argv) > 1:
-    data_dir = Path(sys.argv[1]).expanduser()
+def worker_extract_slice(
+    plotfile_path : str,
+    npy_out       : str
+  ) -> Tuple[float, float, float]:
+  ## force a headless backend per process
+  import matplotlib
+  matplotlib.use("Agg", force=True)
+  ds = yt_load(plotfile_path)
+  sim_time = float(ds.current_time)
+  cg = ds.covering_grid(level=0, left_edge=ds.domain_left_edge, dims=ds.domain_dimensions)
+  data3d = numpy.asarray(cg[FIELD_NAME], dtype=numpy.float32)
+  slice2d = get_mid_slice(data3d, SLICE_AXIS)
+  numpy.save(npy_out, slice2d)
+  try:
+    ds.close()
+  except Exception:
+    pass
+  return sim_time, float(slice2d.min()), float(slice2d.max())
+
+def worker_render_frame(
+    npy_path    : str,
+    frame_png   : str,
+    title       : str,
+    vmin        : float,
+    vmax        : float,
+    slice_plane : str,
+    use_tex     : bool = False,
+  ) -> str:
+  import matplotlib
+  matplotlib.use("Agg", force=True)
+  if use_tex:
+    ## isolate latex cache per process
+    import os, tempfile
+    os.environ["TEXMFOUTPUT"] = tempfile.mkdtemp(prefix="mpltex_")
+    matplotlib.rcParams["text.usetex"] = True
   else:
-    data_dir = DEFAULT_DATA_DIR
-  if not data_dir.exists():
-    print(f"Error: data directory does not exist: {data_dir}")
-    sys.exit(1)
+    matplotlib.rcParams["text.usetex"] = False
+  import matplotlib.pyplot as plt
+  field_slice = numpy.load(npy_path, mmap_mode="r")
+  fig, ax = plot_manager.create_figure(fig_scale=1.25)
+  ax = plot_manager.cast_to_axis(ax)
+  plot_data.plot_sfield_slice(
+    ax           = ax,
+    field_slice  = field_slice,
+    axis_bounds  = (-1, 1, -1, 1),
+    cbar_bounds  = (vmin, vmax),
+    cmap_name    = "cmr.iceburn",
+    add_colorbar = True,
+    cbar_label   = "",
+    cbar_side    = "right",
+  )
+  ax.set_title(title)
+  ticks = [-1.0, -0.5, 0.0, 0.5, 1.0]
+  ax.set_xticks(ticks); ax.set_yticks(ticks)
+  ax.set_xticklabels(str(v) for v in ticks)
+  ax.set_yticklabels(str(v) for v in ticks)
+  ax.set_xlabel(f"{slice_plane[0]} axis")
+  ax.set_ylabel(f"{slice_plane[1]} axis")
+  fig.savefig(frame_png, dpi=150)
+  plt.close(fig)
+  return frame_png
+
+def build_frames_with_parallel(data_dir: Path):
   print(f"Looking at: {data_dir}")
   output_dir = data_dir / "frames"
+  tmp_dir    = output_dir / "_tmp_slices"
   io_manager.init_directory(output_dir)
+  io_manager.init_directory(tmp_dir)
   data_paths = find_data_paths(data_dir)
   if not data_paths:
     raise SystemExit(f"No data_paths found in {data_dir}")
   slice_plane = ["yz", "xz", "xy"][SLICE_AXIS]
-  print(f"Plotting slice through the {slice_plane}-plane.")
-  data_slices = []
-  sim_times = []
-  if not ONLY_ANIMATE:
-    for data_path in data_paths:
-      ds = yt_load(str(data_path))
-      print(f"Read in: {data_path}")
-      sim_time = ds.current_time
-      grid = ds.covering_grid(0, ds.domain_left_edge, ds.domain_dimensions)
-      data = numpy.asarray(grid[FIELD_NAME])
-      data_slice = get_slice(data, SLICE_AXIS)
-      data_slices.append(data_slice)
-      sim_times.append(sim_time)
-    min_value = numpy.min(data_slices)
-    max_value = numpy.max(data_slices)
-  frame_paths = []
-  for plot_index, data_path in enumerate(data_paths):
-    frame_path = output_dir / f"frame_{plot_index:05d}_{slice_plane}_plane.png"
-    if not ONLY_ANIMATE:
-      fig, ax = plot_manager.create_figure(fig_scale=1.25)
-      ax = plot_manager.cast_to_axis(ax)
-      data_slice = data_slices[plot_index]
-      sim_time = sim_times[plot_index]
-      plot_data.plot_sfield_slice(
-        ax           = ax,
-        field_slice  = data_slice,
-        axis_bounds  = (-1, 1, -1, 1),
-        cbar_bounds  = (min_value, max_value),
-        cmap_name    = "cmr.iceburn",
-        add_colorbar = True,
-        cbar_label   = "",
-        cbar_side    = "right",
-      )
-      ax.set_title(f"{data_path.name}: t = {float(sim_time):.3f}")
-      tick_values = [-1.0, -0.5, 0.0, 0.5, 1.0]
-      ax.set_xticks(tick_values)
-      ax.set_yticks(tick_values)
-      ax.set_xticklabels(str(val) for val in tick_values)
-      ax.set_yticklabels(str(val) for val in tick_values)
-      ax.set_xlabel(f"{slice_plane[0]} axis")
-      ax.set_ylabel(f"{slice_plane[1]} axis")
-      fig.savefig(frame_path, dpi=150)
-      mpl_plot.close(fig)
-      print(f"Saved {frame_path}")
-    frame_paths.append(iio.imread(frame_path))
-  if not ONLY_ANIMATE: print("\nFrames saved under :", output_dir)
+  print(f"Slice plane: {slice_plane}")
+  frame_pngs = [output_dir / f"frame_{i:05d}_{slice_plane}_plane.png" for i in range(len(data_paths))]
+  have_all_frames = all(dir.exists() for dir in frame_pngs)
+  if not ONLY_ANIMATE or not have_all_frames:
+    slice_npys = [tmp_dir / f"slice_{i:05d}.npy" for i in range(len(data_paths))]
+    extract_args = tuple((str(dir), str(npy)) for dir, npy in zip(data_paths, slice_npys))
+    print(f"[Phase 1] Extracting slices with {NUM_PROCS} procs ...")
+    extract_results = independent_tasks.run_in_parallel(
+      func            = worker_extract_slice,
+      args_list       = extract_args,
+      num_procs       = NUM_PROCS,
+      timeout_seconds = 90,
+      show_progress   = True,
+    )
+    sim_times  = [t for (t, _, _) in extract_results]
+    local_mins = [mn for (_, mn, _) in extract_results]
+    local_maxs = [mx for (_, _, mx) in extract_results]
+    vmin, vmax = float(min(local_mins)), float(max(local_maxs))
+    print(f"Global color limits: vmin={vmin:.6g}, vmax={vmax:.6g}")
+    titles = [f"{dir.name}: t = {t:.3f}" for dir, t in zip(data_paths, sim_times)]
+    render_args = tuple(
+      (str(npy), str(png), title, vmin, vmax, slice_plane, USE_TEX)
+      for npy, png, title in zip(slice_npys, frame_pngs, titles)
+    )
+    print(f"[Phase 2] Rendering frames with {NUM_PROCS} procs ...")
+    _ = independent_tasks.run_in_parallel(
+      func            = worker_render_frame,
+      args_list       = render_args,
+      num_procs       = NUM_PROCS,
+      timeout_seconds = 90,
+      show_progress   = True,
+    )
+    print(f"Frames saved under: {output_dir}")
   gif_path = output_dir / f"animated_{slice_plane}_plane.gif"
-  iio.imwrite(gif_path, frame_paths, fps=30)
-  print(f"\nGIF saved to {gif_path}")
+  print(f"[Phase 3] Writing GIF → {gif_path}")
+  with iio_v2.get_writer(gif_path, mode="I", fps=30, loop=0) as writer:
+    for png in frame_pngs:
+      frame = iio.imread(png)
+      writer.append_data(frame)
+  print(f"GIF saved: {gif_path}")
+  try:
+    for npy in tmp_dir.iterdir():
+      npy.unlink()
+    tmp_dir.rmdir()
+  except Exception:
+    pass
+
+def main():
+  data_dir = Path(sys.argv[1]).expanduser() if len(sys.argv) > 1 else DEFAULT_DATA_DIR
+  if not data_dir.exists():
+    print(f"Error: data directory does not exist: {data_dir}")
+    sys.exit(1)
+  import multiprocessing as mp
+  try:
+    mp.set_start_method("spawn", force=True)
+  except RuntimeError:
+    pass
+  build_frames_with_parallel(data_dir)
 
 if __name__ == "__main__":
   main()
