@@ -80,7 +80,6 @@ def worker_render_frame(
   import matplotlib.pyplot as plt
   field_slice = numpy.load(npy_path, mmap_mode="r")
   fig, ax = plot_manager.create_figure(fig_scale=1.25)
-  ax = plot_manager.cast_to_axis(ax)
   plot_data.plot_sfield_slice(
     ax           = ax,
     field_slice  = field_slice,
@@ -113,16 +112,24 @@ def build_frames_with_parallel(data_dir: Path):
     raise SystemExit(f"No data_paths found in {data_dir}")
   slice_plane = ["yz", "xz", "xy"][SLICE_AXIS]
   print(f"Slice plane: {slice_plane}")
-  frame_pngs = [output_dir / f"frame_{i:05d}_{slice_plane}_plane.png" for i in range(len(data_paths))]
+  frame_pngs = [
+    output_dir / f"frame_{i:05d}_{slice_plane}_plane.png"
+    for i in range(len(data_paths))
+  ]
   have_all_frames = all(dir.exists() for dir in frame_pngs)
   if not ONLY_ANIMATE or not have_all_frames:
-    slice_npys = [tmp_dir / f"slice_{i:05d}.npy" for i in range(len(data_paths))]
-    extract_args = tuple((str(dir), str(npy)) for dir, npy in zip(data_paths, slice_npys))
-    print(f"[Phase 1] Extracting slices with {NUM_PROCS} procs ...")
+    slice_npys = [
+      tmp_dir / f"slice_{i:05d}.npy"
+      for i in range(len(data_paths))
+    ]
+    extract_args = [
+      (str(dir), str(npy))
+      for dir, npy in zip(data_paths, slice_npys)
+    ]
+    print(f"[Phase 1] Extracting slices...")
     extract_results = independent_tasks.run_in_parallel(
       func            = worker_extract_slice,
-      args_list       = extract_args,
-      num_procs       = NUM_PROCS,
+      grouped_args    = extract_args,
       timeout_seconds = 90,
       show_progress   = True,
     )
@@ -131,44 +138,37 @@ def build_frames_with_parallel(data_dir: Path):
     local_maxs = [mx for (_, _, mx) in extract_results]
     vmin, vmax = float(min(local_mins)), float(max(local_maxs))
     print(f"Global color limits: vmin={vmin:.6g}, vmax={vmax:.6g}")
-    titles = [f"{dir.name}: t = {t:.3f}" for dir, t in zip(data_paths, sim_times)]
-    render_args = tuple(
+    titles = [
+      f"{dir.name}: t = {t:.3f}"
+      for dir, t in zip(data_paths, sim_times)
+    ]
+    render_args = [
       (str(npy), str(png), title, vmin, vmax, slice_plane, USE_TEX)
       for npy, png, title in zip(slice_npys, frame_pngs, titles)
-    )
-    print(f"[Phase 2] Rendering frames with {NUM_PROCS} procs ...")
+    ]
+    print(f"[Phase 2] Rendering frames...")
     _ = independent_tasks.run_in_parallel(
       func            = worker_render_frame,
-      args_list       = render_args,
-      num_procs       = NUM_PROCS,
+      grouped_args    = render_args,
       timeout_seconds = 90,
       show_progress   = True,
+      enable_plotting = True,
     )
     print(f"Frames saved under: {output_dir}")
   gif_path = output_dir / f"animated_{slice_plane}_plane.gif"
-  print(f"[Phase 3] Writing GIF → {gif_path}")
-  with iio_v2.get_writer(gif_path, mode="I", fps=30, loop=0) as writer:
-    for png in frame_pngs:
-      frame = iio.imread(png)
-      writer.append_data(frame)
-  print(f"GIF saved: {gif_path}")
-  try:
-    for npy in tmp_dir.iterdir():
-      npy.unlink()
-    tmp_dir.rmdir()
-  except Exception:
-    pass
+  print(f"[Phase 3] Writing GIF...")
+  plot_manager.animate_png_to_mp4(
+    frames_dir = output_dir,
+    mp4_path   = gif_path,
+    pattern    = f"frame_%05d_{slice_plane}_plane.png",
+    fps        = 30,
+  )
 
 def main():
   data_dir = Path(sys.argv[1]).expanduser() if len(sys.argv) > 1 else DEFAULT_DATA_DIR
   if not data_dir.exists():
     print(f"Error: data directory does not exist: {data_dir}")
     sys.exit(1)
-  import multiprocessing as mp
-  try:
-    mp.set_start_method("spawn", force=True)
-  except RuntimeError:
-    pass
   build_frames_with_parallel(data_dir)
 
 if __name__ == "__main__":
