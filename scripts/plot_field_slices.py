@@ -18,8 +18,10 @@ DEFAULT_DATA_DIR = Path(
 
 FIELD_NAME   = ("boxlib", "x-BField")
 SLICE_AXIS   = 2 # 0:x, 1:y, 2:z
-NUM_PROCS    = max(1, (os.cpu_count() or 1) - 1)
-ONLY_ANIMATE = False
+available_procs = (os.cpu_count() or 1)
+capped_procs = min(available_procs, 20)
+NUM_PROCS    = max(1, capped_procs - 1)
+ONLY_ANIMATE = True
 USE_TEX      = False
 
 def find_data_paths(directory: Path) -> List[Path]:
@@ -155,11 +157,11 @@ def build_frames_with_parallel(data_dir: Path):
       enable_plotting = True,
     )
     print(f"Frames saved under: {output_dir}")
-  gif_path = output_dir / f"animated_{slice_plane}_plane.gif"
-  print(f"[Phase 3] Writing GIF...")
-  plot_manager.animate_png_to_mp4(
+  mp4_path = output_dir / f"animated_{slice_plane}_plane.mp4"
+  print(f"[Phase 3] Writing MP4...")
+  plot_manager.animate_pngs_to_mp4(
     frames_dir = output_dir,
-    mp4_path   = gif_path,
+    mp4_path   = mp4_path,
     pattern    = f"frame_%05d_{slice_plane}_plane.png",
     fps        = 30,
   )
