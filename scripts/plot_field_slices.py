@@ -2,10 +2,6 @@ import os
 import sys
 import numpy
 from pathlib import Path
-from typing import Tuple, List
-
-import imageio.v3 as iio
-import imageio as iio_v2
 
 from yt.loaders import load as yt_load
 from jormi.ww_io import io_manager
@@ -24,7 +20,7 @@ NUM_PROCS    = max(1, capped_procs - 1)
 ONLY_ANIMATE = True
 USE_TEX      = False
 
-def find_data_paths(directory: Path) -> List[Path]:
+def find_data_paths(directory: Path) -> list[Path]:
   data_paths = [
     dir for dir in directory.iterdir()
     if all([
@@ -45,7 +41,7 @@ def get_mid_slice(
 def worker_extract_slice(
     plotfile_path : str,
     npy_out       : str
-  ) -> Tuple[float, float, float]:
+  ) -> tuple[float, float, float]:
   ## force a headless backend per process
   import matplotlib
   matplotlib.use("Agg", force=True)

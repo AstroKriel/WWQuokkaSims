@@ -2,9 +2,8 @@ import yt
 import yt
 import numpy
 from pathlib import Path
-from typing import Tuple
 
-Field = Tuple[str, str]
+Field = tuple[str, str]
 
 def load_plt_file(file_path: Path, show_fields: bool = False) -> yt.Dataset:
   """
