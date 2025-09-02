@@ -23,8 +23,7 @@ USE_TEX = False
 
 def find_data_paths(directory: Path) -> list[Path]:
     data_paths = [
-        dir for dir in directory.iterdir()
-        if all([
+        dir for dir in directory.iterdir() if all([
             dir.is_dir(),
             "plt" in dir.name,
             "old" not in dir.name,
@@ -116,9 +115,7 @@ def build_frames_with_parallel(data_dir: Path):
         raise SystemExit(f"No data_paths found in {data_dir}")
     slice_plane = ["yz", "xz", "xy"][SLICE_AXIS]
     print(f"Slice plane: {slice_plane}")
-    frame_pngs = [
-        output_dir / f"frame_{i:05d}_{slice_plane}_plane.png" for i in range(len(data_paths))
-    ]
+    frame_pngs = [output_dir / f"frame_{i:05d}_{slice_plane}_plane.png" for i in range(len(data_paths))]
     have_all_frames = all(dir.exists() for dir in frame_pngs)
     if not ONLY_ANIMATE or not have_all_frames:
         slice_npys = [tmp_dir / f"slice_{i:05d}.npy" for i in range(len(data_paths))]
