@@ -194,7 +194,7 @@ class QuokkaDataset:
         return field_types.ScalarField(
             sim_time=self.sim_time,
             data=self._load_sfield(("boxlib", "gasDensity")),
-            label="rho",
+            label=r"$\rho$",
         )
 
     def load_total_energy_sfield(
@@ -203,7 +203,7 @@ class QuokkaDataset:
         return field_types.ScalarField(
             sim_time=self.sim_time,
             data=self._load_sfield(("boxlib", "gasEnergy")),
-            label="E_tot",
+            label=r"$E_\mathrm{tot}$",
         )
 
     def load_internal_energy_sfield(
@@ -212,7 +212,7 @@ class QuokkaDataset:
         return field_types.ScalarField(
             sim_time=self.sim_time,
             data=self._load_sfield(("boxlib", "gasInternalEnergy")),
-            label="E_int",
+            label=r"$E_\mathrm{int}$",
         )
 
     def load_momentum_vfield(
@@ -224,7 +224,7 @@ class QuokkaDataset:
                 "y": ("boxlib", "y-GasMomentum"),
                 "z": ("boxlib", "z-GasMomentum"),
             },
-            labels=("M_x", "M_y", "M_z"),
+            labels=(r"$m_x$", r"$m_y$", r"$m_z$"),
         )
 
     def load_magnetic_vfield(
@@ -236,14 +236,17 @@ class QuokkaDataset:
                 "y": ("boxlib", "y-BField"),
                 "z": ("boxlib", "z-BField"),
             },
-            labels=("B_x", "B_y", "B_z"),
+            labels=(r"$b_x$", r"$b_y$", r"$b_z$"),
         )
 
-    def load_magnetic_energy(self, coeff: float = 0.5) -> field_types.ScalarField:
+    def load_magnetic_energy_sfield(
+        self,
+        energy_prefactor: float = 0.5
+    ) -> field_types.ScalarField:
         return field_operators.compute_magnetic_energy(
             vfield_b=self.load_magnetic_vfield(),
-            coeff=coeff,
-            label="E_mag",
+            energy_prefactor=energy_prefactor,
+            label=r"$E_\mathrm{mag}$",
         )
 
     def load_velocity_vfield(
@@ -256,7 +259,7 @@ class QuokkaDataset:
         return field_types.VectorField(
             sim_time=self.sim_time,
             data=vfield_vel,
-            labels=("V_x", "V_y", "V_z"),
+            labels=(r"$v_x$", r"$v_y$", r"$v_z$"),
         )
 
     @property
