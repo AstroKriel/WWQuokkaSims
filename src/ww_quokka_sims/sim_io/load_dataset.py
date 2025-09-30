@@ -241,12 +241,27 @@ class QuokkaDataset:
 
     def load_magnetic_energy_sfield(
         self,
-        energy_prefactor: float = 0.5
+        energy_prefactor: float = 0.5,
     ) -> field_types.ScalarField:
         return field_operators.compute_magnetic_energy(
             vfield_b=self.load_magnetic_vfield(),
             energy_prefactor=energy_prefactor,
             label=r"$E_\mathrm{mag}$",
+        )
+    
+    def load_div_b_sfield(
+        self,
+    ) -> field_types.ScalarField:
+        vfield_b = self.load_magnetic_vfield()
+        domain = self.load_domain()
+        sfield_div_b = field_operators.compute_vfield_divergence(
+            vfield=vfield_b,
+            domain=domain,
+        )
+        return field_types.ScalarField(
+            sim_time=self.sim_time,
+            data=sfield_div_b.data,
+            label=r"$\nabla \cdot \vec{b}$",
         )
 
     def load_velocity_vfield(
@@ -263,11 +278,15 @@ class QuokkaDataset:
         )
 
     @property
-    def is_open(self) -> bool:
+    def is_open(
+        self,
+    ) -> bool:
         ## true iff the yt dataset handle is currently open
         return self.dataset is not None
 
-    def close(self) -> None:
+    def close(
+        self,
+    ) -> None:
         self._in_context = False
         self._close_dataset()
 
