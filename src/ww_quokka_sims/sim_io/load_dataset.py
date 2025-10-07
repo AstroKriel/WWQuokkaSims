@@ -155,7 +155,7 @@ class QuokkaDataset:
                 raise ValueError(f"Expected a 3D field for {field_key}, got {data_array.shape}")
             data_arrays[axis] = data_array
         self._close_dataset_if_needed()
-        vfield_arrays = numpy.stack(
+        stacked_data_arrays = numpy.stack(
             [
                 data_arrays["x"],
                 data_arrays["y"],
@@ -165,7 +165,7 @@ class QuokkaDataset:
         )
         return field_types.VectorField(
             sim_time=sim_time,
-            data=vfield_arrays,
+            data=stacked_data_arrays,
             labels=labels,
         )
 
@@ -244,7 +244,7 @@ class QuokkaDataset:
         energy_prefactor: float = 0.5,
     ) -> field_types.ScalarField:
         return field_operators.compute_magnetic_energy(
-            vfield_b=self.load_magnetic_vfield(),
+            vfield=self.load_magnetic_vfield(),
             energy_prefactor=energy_prefactor,
             label=r"$E_\mathrm{mag}$",
         )
@@ -252,25 +252,25 @@ class QuokkaDataset:
     def load_div_b_sfield(
         self,
     ) -> field_types.ScalarField:
-        vfield_b = self.load_magnetic_vfield()
+        mag_vfield = self.load_magnetic_vfield()
         domain = self.load_domain()
-        sfield_div_b = field_operators.compute_vfield_divergence(
-            vfield=vfield_b,
+        divb_sfield = field_operators.compute_vfield_divergence(
+            vfield=mag_vfield,
             domain=domain,
         )
         return field_types.ScalarField(
             sim_time=self.sim_time,
-            data=sfield_div_b.data,
+            data=divb_sfield.data,
             label=r"$\nabla \cdot \vec{b}$",
         )
 
     def load_velocity_vfield(
         self,
     ) -> field_types.VectorField:
-        vfield_mom = self.load_momentum_vfield()
-        sfield_rho = self.load_density_sfield()
+        mom_vfield = self.load_momentum_vfield()
+        rho_sfield = self.load_density_sfield()
         with numpy.errstate(divide="ignore", invalid="ignore"):
-            vfield_vel = vfield_mom.data / sfield_rho.data[numpy.newaxis, ...]
+            vfield_vel = mom_vfield.data / rho_sfield.data[numpy.newaxis, ...]
         return field_types.VectorField(
             sim_time=self.sim_time,
             data=vfield_vel,
@@ -281,10 +281,10 @@ class QuokkaDataset:
         self,
         gamma: float = 5.0 / 3.0,
     ) -> field_types.ScalarField:
-        Eint = self._load_sfield(("boxlib", "gasInternalEnergy"))
+        Eint_data = self._load_sfield(("boxlib", "gasInternalEnergy"))
         return field_types.ScalarField(
             sim_time=self.sim_time,
-            data=(gamma - 1.0) * Eint,
+            data=(gamma - 1.0) * Eint_data,
             label=r"$p$",
         )
 
