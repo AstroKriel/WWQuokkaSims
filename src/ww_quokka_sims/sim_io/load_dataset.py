@@ -248,7 +248,7 @@ class QuokkaDataset:
             energy_prefactor=energy_prefactor,
             label=r"$E_\mathrm{mag}$",
         )
-    
+
     def load_div_b_sfield(
         self,
     ) -> field_types.ScalarField:
@@ -276,6 +276,32 @@ class QuokkaDataset:
             data=vfield_vel,
             labels=(r"$v_x$", r"$v_y$", r"$v_z$"),
         )
+    
+    def load_pressure_sfield(
+        self,
+        gamma: float = 5.0 / 3.0,
+    ) -> field_types.ScalarField:
+        Eint = self._load_sfield(("boxlib", "gasInternalEnergy"))
+        return field_types.ScalarField(
+            sim_time=self.sim_time,
+            data=(gamma - 1.0) * Eint,
+            label=r"$p$",
+        )
+
+    def load_kinetic_energy_sfield(
+        self,
+    ) -> field_types.ScalarField:
+        mom_data = self.load_momentum_vfield().data
+        rho_data = self.load_density_sfield().data
+        with numpy.errstate(divide="ignore", invalid="ignore"):
+            Ekin_data = 0.5 * numpy.sum(mom_data * mom_data, axis=0) / rho_data
+        Ekin_data[~numpy.isfinite(Ekin_data)] = 0.0
+        return field_types.ScalarField(
+            sim_time=self.sim_time,
+            data=Ekin_data,
+            label=r"$E_\mathrm{kin}$",
+        )
+
 
     @property
     def is_open(
