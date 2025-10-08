@@ -239,11 +239,11 @@ class QuokkaDataset:
             labels=(r"$b_x$", r"$b_y$", r"$b_z$"),
         )
 
-    def load_magnetic_energy_sfield(
+    def load_magnetic_energy_density_sfield(
         self,
         energy_prefactor: float = 0.5,
     ) -> field_types.ScalarField:
-        return field_operators.compute_magnetic_energy(
+        return field_operators.compute_magnetic_energy_density(
             vfield=self.load_magnetic_vfield(),
             energy_prefactor=energy_prefactor,
             label=r"$E_\mathrm{mag}$",
@@ -276,7 +276,7 @@ class QuokkaDataset:
             data=vfield_vel,
             labels=(r"$v_x$", r"$v_y$", r"$v_z$"),
         )
-    
+
     def load_pressure_sfield(
         self,
         gamma: float = 5.0 / 3.0,
@@ -301,7 +301,6 @@ class QuokkaDataset:
             data=Ekin_data,
             label=r"$E_\mathrm{kin}$",
         )
-
 
     @property
     def is_open(
