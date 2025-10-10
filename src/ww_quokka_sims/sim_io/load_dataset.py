@@ -101,13 +101,19 @@ class QuokkaDataset:
             )
         return self.covering_grid
 
-    def list_available_fields(
+    def get_list_of_available_fields(
         self,
     ) -> list[tuple[str, str]]:
         self._open_dataset_if_needed()
         assert self.dataset is not None
         fields = sorted(set(self.dataset.field_list))
         self._close_dataset_if_needed()
+        return fields
+
+    def list_available_fields(
+        self,
+    ) -> list[tuple[str, str]]:
+        fields = self.get_list_of_available_fields()
         log_manager.log_items(
             title="Available Fields",
             items=fields,
@@ -127,7 +133,7 @@ class QuokkaDataset:
         if field_key not in self.dataset.field_list:
             self._close_dataset_if_needed()
             raise KeyError(f"Field {field_key} not found in {self.dataset_dir}")
-        data_array = numpy.asarray(covering_grid[field_key], dtype=numpy.float64)
+        data_array = numpy.asarray(covering_grid[field_key], dtype=field_types.DEFAULT_FLOAT_TYPE)
         if data_array.ndim != 3:
             self._close_dataset_if_needed()
             raise ValueError(f"Expected a 3D field for {field_key}, got {data_array.shape}")
@@ -149,7 +155,7 @@ class QuokkaDataset:
             if field_key not in self.dataset.field_list:
                 self._close_dataset_if_needed()
                 raise KeyError(f"Field {field_key} not found in {self.dataset_dir}")
-            data_array = numpy.asarray(covering_grid[field_key], dtype=numpy.float64)
+            data_array = numpy.asarray(covering_grid[field_key], dtype=field_types.DEFAULT_FLOAT_TYPE)
             if data_array.ndim != 3:
                 self._close_dataset_if_needed()
                 raise ValueError(f"Expected a 3D field for {field_key}, got {data_array.shape}")
@@ -197,22 +203,18 @@ class QuokkaDataset:
             label=r"$\rho$",
         )
 
-    def load_total_energy_sfield(
+    def load_velocity_vfield(
         self,
-    ) -> field_types.ScalarField:
-        return field_types.ScalarField(
+    ) -> field_types.VectorField:
+        mom_vfield = self.load_momentum_vfield()
+        rho_sfield = self.load_density_sfield()
+        with numpy.errstate(divide="ignore", invalid="ignore"):
+            vfield_vel = mom_vfield.data / rho_sfield.data[numpy.newaxis, ...]
+        vfield_vel = numpy.nan_to_num(vfield_vel, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        return field_types.VectorField(
             sim_time=self.sim_time,
-            data=self._load_sfield(("boxlib", "gasEnergy")),
-            label=r"$E_\mathrm{tot}$",
-        )
-
-    def load_internal_energy_sfield(
-        self,
-    ) -> field_types.ScalarField:
-        return field_types.ScalarField(
-            sim_time=self.sim_time,
-            data=self._load_sfield(("boxlib", "gasInternalEnergy")),
-            label=r"$E_\mathrm{int}$",
+            data=vfield_vel,
+            labels=(r"$v_x$", r"$v_y$", r"$v_z$"),
         )
 
     def load_momentum_vfield(
@@ -227,6 +229,20 @@ class QuokkaDataset:
             labels=(r"$m_x$", r"$m_y$", r"$m_z$"),
         )
 
+    def load_kinetic_energy_sfield(
+        self,
+    ) -> field_types.ScalarField:
+        mom_data = self.load_momentum_vfield().data
+        rho_data = self.load_density_sfield().data
+        with numpy.errstate(divide="ignore", invalid="ignore"):
+            Ekin_data = 0.5 * numpy.sum(mom_data * mom_data, axis=0) / rho_data
+        Ekin_data = numpy.nan_to_num(Ekin_data, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        return field_types.ScalarField(
+            sim_time=self.sim_time,
+            data=Ekin_data,
+            label=r"$E_\mathrm{kin}$",
+        )
+
     def load_magnetic_vfield(
         self,
     ) -> field_types.VectorField:
@@ -239,7 +255,7 @@ class QuokkaDataset:
             labels=(r"$b_x$", r"$b_y$", r"$b_z$"),
         )
 
-    def load_magnetic_energy_density_sfield(
+    def load_magnetic_energy_sfield(
         self,
         energy_prefactor: float = 0.5,
     ) -> field_types.ScalarField:
@@ -264,42 +280,42 @@ class QuokkaDataset:
             label=r"$\nabla \cdot \vec{b}$",
         )
 
-    def load_velocity_vfield(
+    def load_total_energy_sfield(
         self,
-    ) -> field_types.VectorField:
-        mom_vfield = self.load_momentum_vfield()
-        rho_sfield = self.load_density_sfield()
-        with numpy.errstate(divide="ignore", invalid="ignore"):
-            vfield_vel = mom_vfield.data / rho_sfield.data[numpy.newaxis, ...]
-        return field_types.VectorField(
+    ) -> field_types.ScalarField:
+        return field_types.ScalarField(
             sim_time=self.sim_time,
-            data=vfield_vel,
-            labels=(r"$v_x$", r"$v_y$", r"$v_z$"),
+            data=self._load_sfield(("boxlib", "gasEnergy")),
+            label=r"$E_\mathrm{tot}$",
+        )
+
+    def load_internal_energy_sfield(
+        self,
+    ) -> field_types.ScalarField:
+        Etot_data = self.load_total_energy_sfield().data
+        Ekin_data = self.load_kinetic_energy_sfield().data
+        b_fields = {("boxlib", f"{icomp}-BField") for icomp in ("x", "y", "z")}
+        available_fields = set(self.get_list_of_available_fields())
+        is_mhd_enabled = b_fields.issubset(available_fields)
+        Eint_data = Etot_data - Ekin_data
+        if is_mhd_enabled:
+            Emag_data = self.load_magnetic_energy_sfield().data
+            Eint_data -= Emag_data
+        return field_types.ScalarField(
+            sim_time=self.sim_time,
+            data=Eint_data,
+            label=r"$E_\mathrm{int}$",
         )
 
     def load_pressure_sfield(
         self,
         gamma: float = 5.0 / 3.0,
     ) -> field_types.ScalarField:
-        Eint_data = self._load_sfield(("boxlib", "gasInternalEnergy"))
+        Eint_data = self.load_internal_energy_sfield().data
         return field_types.ScalarField(
             sim_time=self.sim_time,
             data=(gamma - 1.0) * Eint_data,
             label=r"$p$",
-        )
-
-    def load_kinetic_energy_sfield(
-        self,
-    ) -> field_types.ScalarField:
-        mom_data = self.load_momentum_vfield().data
-        rho_data = self.load_density_sfield().data
-        with numpy.errstate(divide="ignore", invalid="ignore"):
-            Ekin_data = 0.5 * numpy.sum(mom_data * mom_data, axis=0) / rho_data
-        Ekin_data[~numpy.isfinite(Ekin_data)] = 0.0
-        return field_types.ScalarField(
-            sim_time=self.sim_time,
-            data=Ekin_data,
-            label=r"$E_\mathrm{kin}$",
         )
 
     @property
