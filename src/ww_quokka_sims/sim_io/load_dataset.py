@@ -21,6 +21,36 @@ class QuokkaDataset:
     Interface for loading Quokka datasets with yt.
     """
 
+    YT_VFIELD_KEYS: dict[str, dict] = {
+        "momentum": {
+            "keys": {
+                "x": ("boxlib", "x-GasMomentum"),
+                "y": ("boxlib", "y-GasMomentum"),
+                "z": ("boxlib", "z-GasMomentum"),
+            },
+            "description": "Momentum density components: rho v",
+        },
+        "magnetic": {
+            "keys": {
+                "x": ("boxlib", "x-BField"),
+                "y": ("boxlib", "y-BField"),
+                "z": ("boxlib", "z-BField"),
+            },
+            "description": "Magnetic field components (code units)",
+        },
+    }
+
+    YT_SFIELD_KEYS: dict[str, dict] = {
+        "density": {
+            "key": ("boxlib", "gasDensity"),
+            "description": "Gas density field",
+        },
+        "total_energy": {
+            "key": ("boxlib", "gasEnergy"),
+            "description": "Total energy density (internal + kinetic + magnetic)",
+        },
+    }
+
     def __init__(
         self,
         dataset_dir: str | Path,
@@ -101,27 +131,105 @@ class QuokkaDataset:
             )
         return self.covering_grid
 
-    def get_list_of_available_fields(
+    def get_available_yt_keys(
         self,
     ) -> list[tuple[str, str]]:
         self._open_dataset_if_needed()
         assert self.dataset is not None
-        fields = sorted(set(self.dataset.field_list))
+        field_keys = sorted(set(self.dataset.field_list))
         self._close_dataset_if_needed()
-        return fields
+        return field_keys
 
-    def list_available_fields(
+    def list_available_yt_keys(
         self,
     ) -> list[tuple[str, str]]:
-        fields = self.get_list_of_available_fields()
+        field_keys = self.get_available_yt_keys()
         log_manager.log_items(
-            title="Available Fields",
-            items=fields,
+            title="Available YT Fields",
+            items=field_keys,
             message=f"Stored under: {self.dataset_dir}",
             message_position="bottom",
             show_time=False,
         )
-        return fields
+        return field_keys
+
+    def is_field_key_present(
+        self,
+        field_key: tuple[str, str],
+    ) -> bool:
+        """True iff a particular yt field key exists in the dataset."""
+        available_keys = set(self.get_available_yt_keys())
+        return field_key in available_keys
+
+    def _get_sfield_key(
+        self,
+        field_name: str,
+    ) -> tuple[str, str]:
+        """Return the yt key for a named scalar field."""
+        if field_name not in self.YT_SFIELD_KEYS:
+            valid_str = ", ".join(self.YT_SFIELD_KEYS.keys())
+            msg = f"Unknown scalar field '{field_name}'. Valid options: {valid_str}"
+            log_manager.log_error(msg)
+            raise KeyError(msg)
+        return self.YT_SFIELD_KEYS[field_name]["key"]
+
+    def require_sfield_key(
+        self,
+        field_name: str,
+    ) -> tuple[str, str]:
+        field_key = self._get_sfield_key(field_name)
+        if not self.is_field_key_present(field_key):
+            msg = (
+                f"Scalar field '{field_name}' ({field_key[0]}:{field_key[1]}) is not present in "
+                f"{self.dataset_dir}."
+            )
+            log_manager.log_error(msg)
+            raise KeyError(msg)
+        return field_key
+
+    def _get_vfield_keys(
+        self,
+        field_name: str,
+    ) -> dict[str, tuple[str, str]]:
+        """Return the component yt keys for a named vector field."""
+        if field_name not in self.YT_VFIELD_KEYS:
+            valid_str = ", ".join(self.YT_VFIELD_KEYS.keys())
+            msg = f"Unknown vector field '{field_name}'. Valid options: {valid_str}"
+            log_manager.log_error(msg)
+            raise KeyError(msg)
+        return self.YT_VFIELD_KEYS[field_name]["keys"]
+
+    def _get_missing_vfield_keys(
+        self,
+        field_name: str,
+    ) -> list[tuple[str, str]]:
+        """Return a list of missing yt keys for the named vector field (no logging)."""
+        vcomp_keys = self._get_vfield_keys(field_name)
+        available_keys = set(self.get_available_yt_keys())
+        return [key for key in vcomp_keys.values() if key not in available_keys]
+
+    def require_vfield_keys(
+        self,
+        field_name: str,
+    ) -> dict[str, tuple[str, str]]:
+        vcomp_keys = self._get_vfield_keys(field_name)
+        missing_keys = self._get_missing_vfield_keys(field_name)
+        if missing_keys:
+            missing_str = ", ".join([f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys])
+            msg = (
+                f"Vector field '{field_name}' is incomplete in {self.dataset_dir}. "
+                f"Missing components: {missing_str}"
+            )
+            log_manager.log_error(msg)
+            raise KeyError(msg)
+        return vcomp_keys
+
+    def is_vfield_present(
+        self,
+        field_name: str,
+    ) -> bool:
+        """True iff *all components* for a named vector field exist."""
+        return len(self._get_missing_vfield_keys(field_name)) == 0
 
     def _load_sfield(
         self,
@@ -142,16 +250,24 @@ class QuokkaDataset:
 
     def _load_vfield(
         self,
-        component_keys: dict[str, tuple[str, str]],
+        vcomp_keys: dict[str, tuple[str, str]],
         labels: tuple[str, str, str],
     ) -> field_types.VectorField:
+        if set(vcomp_keys) != {"x", "y", "z"}:
+            msg = f"vcomp_keys must contain x,y,z. Got: {sorted(vcomp_keys.keys())}"
+            log_manager.log_error(msg)
+            raise KeyError(msg)
+        if len(labels) != 3:
+            msg = f"labels must be length-3, got {labels!r}"
+            log_manager.log_error(msg)
+            raise ValueError(msg)
         self._open_dataset_if_needed()
         sim_time = self.sim_time
         assert self.dataset is not None
         covering_grid = self._get_covering_grid()
         data_arrays: dict[str, numpy.ndarray] = {}
         for axis in ("x", "y", "z"):
-            field_key = component_keys[axis]
+            field_key = vcomp_keys[axis]
             if field_key not in self.dataset.field_list:
                 self._close_dataset_if_needed()
                 raise KeyError(f"Field {field_key} not found in {self.dataset_dir}")
@@ -197,9 +313,11 @@ class QuokkaDataset:
     def load_density_sfield(
         self,
     ) -> field_types.ScalarField:
+        density_key = self.require_sfield_key("density")
+        density_data = self._load_sfield(density_key)
         return field_types.ScalarField(
             sim_time=self.sim_time,
-            data=self._load_sfield(("boxlib", "gasDensity")),
+            data=density_data,
             label=r"$\rho$",
         )
 
@@ -209,23 +327,20 @@ class QuokkaDataset:
         mom_vfield = self.load_momentum_vfield()
         rho_sfield = self.load_density_sfield()
         with numpy.errstate(divide="ignore", invalid="ignore"):
-            vfield_vel = mom_vfield.data / rho_sfield.data[numpy.newaxis, ...]
-        vfield_vel = numpy.nan_to_num(vfield_vel, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            vel_vfield = mom_vfield.data / rho_sfield.data[numpy.newaxis, ...]
+        vel_vfield = numpy.nan_to_num(vel_vfield, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         return field_types.VectorField(
             sim_time=self.sim_time,
-            data=vfield_vel,
+            data=vel_vfield,
             labels=(r"$v_x$", r"$v_y$", r"$v_z$"),
         )
 
     def load_momentum_vfield(
         self,
     ) -> field_types.VectorField:
+        mom_keys = self.require_vfield_keys("momentum")
         return self._load_vfield(
-            component_keys={
-                "x": ("boxlib", "x-GasMomentum"),
-                "y": ("boxlib", "y-GasMomentum"),
-                "z": ("boxlib", "z-GasMomentum"),
-            },
+            vcomp_keys=mom_keys,
             labels=(r"$m_x$", r"$m_y$", r"$m_z$"),
         )
 
@@ -246,12 +361,9 @@ class QuokkaDataset:
     def load_magnetic_vfield(
         self,
     ) -> field_types.VectorField:
+        b_keys = self.require_vfield_keys("magnetic")
         return self._load_vfield(
-            component_keys={
-                "x": ("boxlib", "x-BField"),
-                "y": ("boxlib", "y-BField"),
-                "z": ("boxlib", "z-BField"),
-            },
+            vcomp_keys=b_keys,
             labels=(r"$b_x$", r"$b_y$", r"$b_z$"),
         )
 
@@ -283,9 +395,10 @@ class QuokkaDataset:
     def load_total_energy_sfield(
         self,
     ) -> field_types.ScalarField:
+        Etot_key = self.require_sfield_key("total_energy")
         return field_types.ScalarField(
             sim_time=self.sim_time,
-            data=self._load_sfield(("boxlib", "gasEnergy")),
+            data=self._load_sfield(Etot_key),
             label=r"$E_\mathrm{tot}$",
         )
 
@@ -294,11 +407,8 @@ class QuokkaDataset:
     ) -> field_types.ScalarField:
         Etot_data = self.load_total_energy_sfield().data
         Ekin_data = self.load_kinetic_energy_sfield().data
-        b_fields = {("boxlib", f"{icomp}-BField") for icomp in ("x", "y", "z")}
-        available_fields = set(self.get_list_of_available_fields())
-        is_mhd_enabled = b_fields.issubset(available_fields)
         Eint_data = Etot_data - Ekin_data
-        if is_mhd_enabled:
+        if self.is_vfield_present("magnetic"):
             Emag_data = self.load_magnetic_energy_sfield().data
             Eint_data -= Emag_data
         return field_types.ScalarField(
