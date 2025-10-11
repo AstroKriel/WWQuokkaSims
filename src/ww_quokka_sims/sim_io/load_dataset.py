@@ -295,7 +295,7 @@ class QuokkaDataset:
             labels=comp_labels,
         )
 
-    def load_domain(
+    def load_domain_details(
         self,
     ) -> field_types.UniformDomain:
         self._open_dataset_if_needed()
@@ -306,13 +306,12 @@ class QuokkaDataset:
         is_periodic_x, is_periodic_y, is_periodic_z = (
             bool(is_periodic) for is_periodic in self.dataset.periodicity
         )
-        domain = field_types.UniformDomain(
+        self._close_dataset_if_needed()
+        return field_types.UniformDomain(
             periodicity=(is_periodic_x, is_periodic_y, is_periodic_z),
             resolution=(n_cells_x, n_cells_y, n_cells_z),
             domain_bounds=((x_min, x_max), (y_min, y_max), (z_min, z_max)),
         )
-        self._close_dataset_if_needed()
-        return domain
 
     def load_density_sfield(
         self,
@@ -320,7 +319,7 @@ class QuokkaDataset:
         rho_key = self._get_sfield_key("density")
         return self.load_sfield(
             field_key=rho_key,
-            field_label=r"$\rho$"
+            field_label=r"$\rho$",
         )
 
     def load_velocity_vfield(
@@ -384,10 +383,10 @@ class QuokkaDataset:
         self,
     ) -> field_types.ScalarField:
         b_vfield = self.load_magnetic_vfield()
-        domain = self.load_domain()
+        domain_details = self.load_domain_details()
         divb_sfield = field_operators.compute_vfield_divergence(
             vfield=b_vfield,
-            domain=domain,
+            domain_details=domain_details,
         )
         return field_types.ScalarField(
             sim_time=self.sim_time,
@@ -401,7 +400,7 @@ class QuokkaDataset:
         Etot_key = self._get_sfield_key("total_energy")
         return self.load_sfield(
             field_key=Etot_key,
-            field_label=r"$E_\mathrm{tot}$"
+            field_label=r"$E_\mathrm{tot}$",
         )
 
     def load_internal_energy_sfield(
