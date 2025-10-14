@@ -22,6 +22,10 @@ class HelmholtzKineticEnergy:
     Ekin_div_sfield: field_types.ScalarField
     Ekin_sol_sfield: field_types.ScalarField
 
+    def __post_init__(self):
+        field_types.ensure_sfield(self.Ekin_div_sfield)
+        field_types.ensure_sfield(self.Ekin_sol_sfield)
+
 
 ##
 ## === OPERATOR CLASS
@@ -313,19 +317,20 @@ class QuokkaDataset:
 
     def load_domain_details(
         self,
+        force_periodicity: bool = True, # required because yt cannot read this yet
     ) -> field_types.UniformDomain:
         self._open_dataset_if_needed()
         assert self.dataset is not None
         x_min, y_min, z_min = (float(value) for value in self.dataset.domain_left_edge)
         x_max, y_max, z_max = (float(value) for value in self.dataset.domain_right_edge)
-        n_cells_x, n_cells_y, n_cells_z = (int(num_cells) for num_cells in self.dataset.domain_dimensions)
+        num_cells_x, num_cells_y, num_cells_z = (int(num_cells) for num_cells in self.dataset.domain_dimensions)
         is_periodic_x, is_periodic_y, is_periodic_z = (
-            bool(is_periodic) for is_periodic in self.dataset.periodicity
+            (bool(is_periodic) or force_periodicity) for is_periodic in self.dataset.periodicity
         )
         self._close_dataset_if_needed()
         return field_types.UniformDomain(
             periodicity=(is_periodic_x, is_periodic_y, is_periodic_z),
-            resolution=(n_cells_x, n_cells_y, n_cells_z),
+            resolution=(num_cells_x, num_cells_y, num_cells_z),
             domain_bounds=((x_min, x_max), (y_min, y_max), (z_min, z_max)),
         )
 
@@ -360,7 +365,7 @@ class QuokkaDataset:
         return field_operators.compute_vfield_divergence(
             vfield=u_vfield,
             uniform_domain=uniform_domain,
-            field_label=r"$\nabla\cdot\vec{u}$",
+            field_label=r"$\nabla\cdot\vec{v}$",
         )
 
     def load_momentum_vfield(
@@ -396,10 +401,10 @@ class QuokkaDataset:
             vfield=v_vfield,
             uniform_domain=uniform_domain,
         )
-        v_div_vfield = helmholtz_vfields.div_vfield.data
-        v_sol_vfield = helmholtz_vfields.sol_vfield.data
-        Ekin_div_sarray = 0.5 * rho_sarray * numpy.sum(v_div_vfield * v_div_vfield, axis=0)
-        Ekin_sol_sarray = 0.5 * rho_sarray * numpy.sum(v_sol_vfield * v_sol_vfield, axis=0)
+        v_div_varray = helmholtz_vfields.div_vfield.data
+        v_sol_varray = helmholtz_vfields.sol_vfield.data
+        Ekin_div_sarray = 0.5 * rho_sarray * numpy.sum(v_div_varray * v_div_varray, axis=0)
+        Ekin_sol_sarray = 0.5 * rho_sarray * numpy.sum(v_sol_varray * v_sol_varray, axis=0)
         numpy.nan_to_num(Ekin_div_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         numpy.nan_to_num(Ekin_sol_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         Ekin_div_sfield = field_types.ScalarField(
@@ -416,6 +421,18 @@ class QuokkaDataset:
             Ekin_div_sfield=Ekin_div_sfield,
             Ekin_sol_sfield=Ekin_sol_sfield,
         )
+
+    def load_div_kinetic_energy_sfield(
+        self,
+    ) -> field_types.ScalarField:
+        helmholtz_Ekin = self.load_helmholtz_kinetic_energy()
+        return helmholtz_Ekin.Ekin_div_sfield
+        
+    def load_sol_kinetic_energy_sfield(
+        self,
+    ) -> field_types.ScalarField:
+        helmholtz_Ekin = self.load_helmholtz_kinetic_energy()
+        return helmholtz_Ekin.Ekin_sol_sfield
 
     def load_magnetic_vfield(
         self,
