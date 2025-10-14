@@ -7,9 +7,21 @@
 import numpy
 from pathlib import Path
 from yt.loaders import load as yt_load
+from dataclasses import dataclass 
 from yt.utilities.logger import ytLogger as yt_logger
+from jormi.utils import type_utils
 from jormi.ww_io import log_manager
-from jormi.ww_fields import field_types, field_operators
+from jormi.ww_fields import field_types, field_operators, decompose_fields
+
+##
+## === DATA STRUCTURES
+##
+
+@dataclass(frozen=True)
+class HelmholtzKineticEnergy:
+    Ekin_div_sfield: field_types.ScalarField
+    Ekin_sol_sfield: field_types.ScalarField
+
 
 ##
 ## === OPERATOR CLASS
@@ -27,7 +39,7 @@ class QuokkaDataset:
                 comp_str: ("boxlib", f"{comp_str}-GasMomentum")
                 for comp_str in ("x", "y", "z")
             },
-            "description": "Momentum density components: rho v",
+            "description": "Momentum density components: vec(m) = rho * vec(v)",
         },
         "magnetic": {
             "keys": {
@@ -45,7 +57,7 @@ class QuokkaDataset:
         },
         "total_energy": {
             "key": ("boxlib", "gasEnergy"),
-            "description": "Total energy density (internal + kinetic + magnetic)",
+            "description": "Total energy density: E_tot = E_int + E_kin + E_mag",
         },
     }
 
@@ -232,67 +244,71 @@ class QuokkaDataset:
         if field_key not in self.dataset.field_list:
             self._close_dataset_if_needed()
             raise KeyError(f"Field {field_key} not found in {self.dataset_dir}")
-        field_data = numpy.asarray(covering_grid[field_key], dtype=field_types.DEFAULT_FLOAT_TYPE)
-        if field_data.ndim != 3:
+        field_sarray = numpy.asarray(covering_grid[field_key], dtype=numpy.float64)
+        if field_sarray.ndim != 3:
             self._close_dataset_if_needed()
-            raise ValueError(f"Expected a 3D field for {field_key}; received: {field_data.shape}")
+            raise ValueError(f"Expected a 3D field for {field_key}; received: {field_sarray.shape}")
         self._close_dataset_if_needed()
-        return numpy.ascontiguousarray(field_data)
+        return numpy.ascontiguousarray(field_sarray)
 
     def load_sfield(
         self,
         field_key: tuple[str, str],
         field_label: str,
     ) -> field_types.ScalarField:
-        field_data = self._load_sfield_data(field_key)
+        type_utils.assert_nonempty_str(
+            var_obj=field_label,
+            var_name="field_label",
+        )
+        field_sarray = self._load_sfield_data(field_key)
         return field_types.ScalarField(
             sim_time=self.sim_time,
-            data=field_data,
-            label=field_label,
+            data=field_sarray,
+            field_label=field_label,
         )
 
     def load_vfield(
         self,
         vfield_key_lookup: dict[str, tuple[str, str]],
-        comp_labels: tuple[str, str, str],
+        field_label: str,
     ) -> field_types.VectorField:
         req_comp_axes = ("x", "y", "z")
         if set(vfield_key_lookup) != set(req_comp_axes):
-            msg = f"vfield_key_lookup must contain all 3 components: x, y, z; received: {sorted(vfield_key_lookup.keys())}"
+            msg = f"`vfield_key_lookup` must contain all 3 components: x, y, z; only received: {sorted(vfield_key_lookup.keys())}"
             log_manager.log_error(msg)
             raise KeyError(msg)
-        if len(comp_labels) != 3:
-            msg = f"comp_labels must be length-3; received: {comp_labels!r}"
-            log_manager.log_error(msg)
-            raise ValueError(msg)
+        type_utils.assert_nonempty_str(
+            var_obj=field_label,
+            var_name="field_label",
+        )
         self._open_dataset_if_needed()
         sim_time = self.sim_time
         assert self.dataset is not None
         covering_grid = self._get_covering_grid()
-        data_arrays: dict[str, numpy.ndarray] = {}
+        data_sarray: dict[str, numpy.ndarray] = {}
         for comp_axis in req_comp_axes:
             comp_key = vfield_key_lookup[comp_axis]
             if comp_key not in self.dataset.field_list:
                 self._close_dataset_if_needed()
                 raise KeyError(f"Field {comp_key} not found in {self.dataset_dir}")
-            comp_data = numpy.asarray(covering_grid[comp_key], dtype=field_types.DEFAULT_FLOAT_TYPE)
-            if comp_data.ndim != 3:
+            comp_sarray = numpy.asarray(covering_grid[comp_key], dtype=numpy.float64)
+            if comp_sarray.ndim != 3:
                 self._close_dataset_if_needed()
-                raise ValueError(f"Expected a 3D field for {comp_key}; received: {comp_data.shape}")
-            data_arrays[comp_axis] = comp_data
+                raise ValueError(f"Expected a 3D field for {comp_key}; received: {comp_sarray.shape}")
+            data_sarray[comp_axis] = comp_sarray
         self._close_dataset_if_needed()
-        stacked_data_arrays = numpy.stack(
+        stacked_data_sarray = numpy.stack(
             [
-                data_arrays["x"],
-                data_arrays["y"],
-                data_arrays["z"],
+                data_sarray["x"],
+                data_sarray["y"],
+                data_sarray["z"],
             ],
             axis=0,
         )
         return field_types.VectorField(
             sim_time=sim_time,
-            data=stacked_data_arrays,
-            labels=comp_labels,
+            data=stacked_data_sarray,
+            field_label=field_label,
         )
 
     def load_domain_details(
@@ -325,15 +341,26 @@ class QuokkaDataset:
     def load_velocity_vfield(
         self,
     ) -> field_types.VectorField:
-        mom_data = self.load_momentum_vfield().data
-        rho_data = self.load_density_sfield().data
+        mom_varray = self.load_momentum_vfield().data
+        rho_sarray = self.load_density_sfield().data
         with numpy.errstate(divide="ignore", invalid="ignore"):
-            vel_data = mom_data / rho_data[numpy.newaxis, ...]
-        vel_data = numpy.nan_to_num(vel_data, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            v_varray = mom_varray / rho_sarray[numpy.newaxis, ...]
+        v_varray = numpy.nan_to_num(v_varray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         return field_types.VectorField(
             sim_time=self.sim_time,
-            data=vel_data,
-            labels=(r"$v_x$", r"$v_y$", r"$v_z$"),
+            data=v_varray,
+            field_label=r"$\vec{v}$",
+        )
+
+    def load_divu_sfield(
+        self,
+    ) -> field_types.ScalarField:
+        u_vfield = self.load_velocity_vfield()
+        uniform_domain = self.load_domain_details()
+        return field_operators.compute_vfield_divergence(
+            vfield=u_vfield,
+            uniform_domain=uniform_domain,
+            field_label=r"$\nabla\cdot\vec{u}$",
         )
 
     def load_momentum_vfield(
@@ -342,21 +369,52 @@ class QuokkaDataset:
         mom_key_lookup = self._get_vfield_key_lookup("momentum")
         return self.load_vfield(
             vfield_key_lookup=mom_key_lookup,
-            comp_labels=(r"$m_x$", r"$m_y$", r"$m_z$"),
+            field_label=r"$\vec{m}$",
         )
 
     def load_kinetic_energy_sfield(
         self,
     ) -> field_types.ScalarField:
-        mom_data = self.load_momentum_vfield().data
-        rho_data = self.load_density_sfield().data
+        mom_varray = self.load_momentum_vfield().data
+        rho_sarray = self.load_density_sfield().data
         with numpy.errstate(divide="ignore", invalid="ignore"):
-            Ekin_data = 0.5 * numpy.sum(mom_data * mom_data, axis=0) / rho_data
-        Ekin_data = numpy.nan_to_num(Ekin_data, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            Ekin_sarray = 0.5 * numpy.sum(mom_varray * mom_varray, axis=0) / rho_sarray
+        Ekin_sarray = numpy.nan_to_num(Ekin_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         return field_types.ScalarField(
             sim_time=self.sim_time,
-            data=Ekin_data,
-            label=r"$E_\mathrm{kin}$",
+            data=Ekin_sarray,
+            field_label=r"$E_\mathrm{kin}$",
+        )
+    
+    def load_helmholtz_kinetic_energy(
+        self
+    ) -> HelmholtzKineticEnergy:
+        uniform_domain = self.load_domain_details()
+        rho_sarray = self.load_density_sfield().data
+        v_vfield = self.load_velocity_vfield()
+        helmholtz_vfields = decompose_fields.compute_helmholtz_decomposition(
+            vfield=v_vfield,
+            uniform_domain=uniform_domain,
+        )
+        v_div_vfield = helmholtz_vfields.div_vfield.data
+        v_sol_vfield = helmholtz_vfields.sol_vfield.data
+        Ekin_div_sarray = 0.5 * rho_sarray * numpy.sum(v_div_vfield * v_div_vfield, axis=0)
+        Ekin_sol_sarray = 0.5 * rho_sarray * numpy.sum(v_sol_vfield * v_sol_vfield, axis=0)
+        numpy.nan_to_num(Ekin_div_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        numpy.nan_to_num(Ekin_sol_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        Ekin_div_sfield = field_types.ScalarField(
+            sim_time=self.sim_time,
+            data=Ekin_div_sarray,
+            field_label=r"$E_{\mathrm{kin}, \parallel}$"
+        )
+        Ekin_sol_sfield = field_types.ScalarField(
+            sim_time=self.sim_time,
+            data=Ekin_sol_sarray,
+            field_label=r"$E_{\mathrm{kin}, \perp}$"
+        )
+        return HelmholtzKineticEnergy(
+            Ekin_div_sfield=Ekin_div_sfield,
+            Ekin_sol_sfield=Ekin_sol_sfield,
         )
 
     def load_magnetic_vfield(
@@ -365,7 +423,7 @@ class QuokkaDataset:
         b_key_lookup = self._get_vfield_key_lookup("magnetic")
         return self.load_vfield(
             vfield_key_lookup=b_key_lookup,
-            comp_labels=(r"$b_x$", r"$b_y$", r"$b_z$"),
+            field_label=r"$\vec{b}$",
         )
 
     def load_magnetic_energy_sfield(
@@ -376,22 +434,18 @@ class QuokkaDataset:
         return field_operators.compute_magnetic_energy_density(
             vfield=b_vfield,
             energy_prefactor=energy_prefactor,
-            label=r"$E_\mathrm{mag}$",
+            field_label=r"$E_\mathrm{mag}$",
         )
 
-    def load_div_b_sfield(
+    def load_divb_sfield(
         self,
     ) -> field_types.ScalarField:
         b_vfield = self.load_magnetic_vfield()
-        domain_details = self.load_domain_details()
-        divb_sfield = field_operators.compute_vfield_divergence(
+        uniform_domain = self.load_domain_details()
+        return field_operators.compute_vfield_divergence(
             vfield=b_vfield,
-            domain_details=domain_details,
-        )
-        return field_types.ScalarField(
-            sim_time=self.sim_time,
-            data=divb_sfield.data,
-            label=r"$\nabla \cdot \vec{b}$",
+            uniform_domain=uniform_domain,
+            field_label=r"$\nabla\cdot\vec{b}$",
         )
 
     def load_total_energy_sfield(
@@ -406,27 +460,27 @@ class QuokkaDataset:
     def load_internal_energy_sfield(
         self,
     ) -> field_types.ScalarField:
-        Etot_data = self.load_total_energy_sfield().data
-        Ekin_data = self.load_kinetic_energy_sfield().data
-        Eint_data = Etot_data - Ekin_data
+        Etot_sarray = self.load_total_energy_sfield().data
+        Ekin_sarray = self.load_kinetic_energy_sfield().data
+        Eint_sarray = Etot_sarray - Ekin_sarray
         if self._is_vfield_keys_available("magnetic"):
-            Emag_data = self.load_magnetic_energy_sfield().data
-            Eint_data -= Emag_data
+            Emag_sarray = self.load_magnetic_energy_sfield().data
+            Eint_sarray -= Emag_sarray
         return field_types.ScalarField(
             sim_time=self.sim_time,
-            data=Eint_data,
-            label=r"$E_\mathrm{int}$",
+            data=Eint_sarray,
+            field_label=r"$E_\mathrm{int}$",
         )
 
     def load_pressure_sfield(
         self,
         gamma: float = 5.0 / 3.0,
     ) -> field_types.ScalarField:
-        Eint_data = self.load_internal_energy_sfield().data
+        Eint_sarray = self.load_internal_energy_sfield().data
         return field_types.ScalarField(
             sim_time=self.sim_time,
-            data=(gamma - 1.0) * Eint_data,
-            label=r"$p$",
+            data=(gamma - 1.0) * Eint_sarray,
+            field_label=r"$p$",
         )
 
     @property
