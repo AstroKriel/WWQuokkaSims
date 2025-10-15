@@ -54,7 +54,7 @@ class LRUCache:
         field_name,
         field_data,
     ):
-        """Store `field_data` under `field_name` and evict least-recently-used if full."""
+        """Store `field_data` under `field_name` and evict teh least-recently-used item if the cache is full."""
         self._cache_lookup[field_name] = field_data
         self._cache_lookup.move_to_end(field_name)
         while len(self._cache_lookup) > self._max_size:
