@@ -68,7 +68,7 @@ class LRUCache:
 
 
 ##
-## --- YT KEYS FOR PRIMITIVE FIELD
+## === YT KEYS FOR PRIMITIVE FIELD
 ##
 
 YT_VFIELD_KEYS: dict[str, dict] = {
@@ -732,7 +732,7 @@ class QuokkaDataset:
         self,
         grad_order: int = 2,
     ) -> field_types.ScalarField:
-        """Compute magnetic divergence: `div(vec(b))`."""
+        """Compute magnetic divergence: `div[vec(b)]`."""
         b_vfield = self.load_magnetic_vfield()
         uniform_domain = self.load_uniform_domain()
         return field_operators.compute_vfield_divergence(
@@ -746,7 +746,7 @@ class QuokkaDataset:
         self,
         grad_order: int = 2,
     ) -> field_types.VectorField:
-        """Compute current density: `curl(vec(b))`."""
+        """Compute current density: `curl[vec(b)]`."""
         b_vfield = self.load_magnetic_vfield()
         uniform_domain = self.load_uniform_domain()
         return field_operators.compute_vfield_curl(
@@ -760,7 +760,7 @@ class QuokkaDataset:
         self,
         grad_order: int = 2,
     ) -> field_types.ScalarField:
-        """Compute current magnitude: `|curl(vec(b))|`."""
+        """Compute current magnitude: `|curl[vec(b)]|`."""
         j_vfield = self.load_current_density_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
             vfield=j_vfield,
@@ -771,7 +771,7 @@ class QuokkaDataset:
         self,
         grad_order: int = 2,
     ) -> field_types.ScalarField:
-        """Compute current helicity density: `(curl(vec(b)) cdot vec(b))`."""
+        """Compute current helicity density: `curl[vec(b)] cdot vec(b)`."""
         j_vfield = self.load_current_density_vfield(grad_order=grad_order)
         b_vfield = self.load_magnetic_vfield()
         return field_operators.compute_vfield_dot_product(
@@ -787,7 +787,7 @@ class QuokkaDataset:
     def load_cross_helicity_sfield(
         self,
     ) -> field_types.ScalarField:
-        """Compute cross helicity density: `(vec(v) cdot vec(b))`."""
+        """Compute cross helicity density: `vec(v) cdot vec(b)`."""
         v_vfield = self.load_velocity_vfield()
         b_vfield = self.load_magnetic_vfield()
         return field_operators.compute_vfield_dot_product(
@@ -800,7 +800,7 @@ class QuokkaDataset:
         self,
         grad_order: int = 2,
     ) -> field_types.VectorField:
-        """Compute Lorentz force: `curl(vec(b)) x vec(b)`."""
+        """Compute Lorentz force: `curl[vec(b)] x vec(b)`."""
         j_vfield = self.load_current_density_vfield(grad_order=grad_order)
         b_vfield = self.load_magnetic_vfield()
         return field_operators.compute_vfield_cross_product(
@@ -813,7 +813,7 @@ class QuokkaDataset:
         self,
         grad_order: int = 2,
     ) -> field_types.ScalarField:
-        """Compute Lorentz force magnitude: `| curl(vec(b)) x vec(b) |`."""
+        """Compute Lorentz force magnitude: `| curl[vec(b)] x vec(b) |`."""
         lf_vfield = self.load_lorentz_force_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
             vfield=lf_vfield,
@@ -823,7 +823,7 @@ class QuokkaDataset:
     def load_poynting_flux_vfield(
         self,
     ) -> field_types.VectorField:
-        """Compute Poynting-flux-like vector: `vec(b) x (vec(v) x vec(b))`."""
+        """Compute Poynting-flux-like vector: `vec(b) x [vec(v) x vec(b)]`."""
         v_vfield = self.load_velocity_vfield()
         b_vfield = self.load_magnetic_vfield()
         vxb_vfield = field_operators.compute_vfield_cross_product(
