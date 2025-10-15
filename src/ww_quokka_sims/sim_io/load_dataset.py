@@ -366,6 +366,7 @@ class QuokkaDataset:
             vfield=u_vfield,
             uniform_domain=uniform_domain,
             field_label=r"$\nabla\cdot\vec{v}$",
+            grad_order=2,
         )
 
     def load_momentum_vfield(
@@ -374,7 +375,7 @@ class QuokkaDataset:
         mom_key_lookup = self._get_vfield_key_lookup("momentum")
         return self.load_vfield(
             vfield_key_lookup=mom_key_lookup,
-            field_label=r"$\vec{m}$",
+            field_label=r"$\rho \,\vec{v}$",
         )
 
     def load_kinetic_energy_sfield(
@@ -388,7 +389,7 @@ class QuokkaDataset:
         return field_types.ScalarField(
             sim_time=self.sim_time,
             data=Ekin_sarray,
-            field_label=r"$E_\mathrm{kin}$",
+            field_label=r"$E_\mathrm{kin} \equiv (1/2) \rho v^2$",
         )
     
     def load_helmholtz_kinetic_energy(
@@ -410,12 +411,12 @@ class QuokkaDataset:
         Ekin_div_sfield = field_types.ScalarField(
             sim_time=self.sim_time,
             data=Ekin_div_sarray,
-            field_label=r"$E_{\mathrm{kin}, \parallel}$"
+            field_label=r"$E_{\mathrm{kin}, \parallel} \equiv (1/2) \rho |\vec{v}_\parallel|^2$"
         )
         Ekin_sol_sfield = field_types.ScalarField(
             sim_time=self.sim_time,
             data=Ekin_sol_sarray,
-            field_label=r"$E_{\mathrm{kin}, \perp}$"
+            field_label=r"$E_{\mathrm{kin}, \perp} \equiv (1/2) \rho |\vec{v}_\perp|^2$"
         )
         return HelmholtzKineticEnergy(
             Ekin_div_sfield=Ekin_div_sfield,
@@ -446,12 +447,13 @@ class QuokkaDataset:
     def load_magnetic_energy_sfield(
         self,
         energy_prefactor: float = 0.5,
+        field_label=r"$E_\mathrm{mag} = (1/2) b^2$"
     ) -> field_types.ScalarField:
         b_vfield = self.load_magnetic_vfield()
         return field_operators.compute_magnetic_energy_density(
             vfield=b_vfield,
             energy_prefactor=energy_prefactor,
-            field_label=r"$E_\mathrm{mag}$",
+            field_label=field_label,
         )
 
     def load_divb_sfield(
@@ -463,6 +465,19 @@ class QuokkaDataset:
             vfield=b_vfield,
             uniform_domain=uniform_domain,
             field_label=r"$\nabla\cdot\vec{b}$",
+            grad_order=2,
+        )
+
+    def load_current_density_vfield(
+        self,
+    ) -> field_types.VectorField:
+        b_vfield = self.load_magnetic_vfield()
+        uniform_domain = self.load_domain_details()
+        return field_operators.compute_vfield_curl(
+            vfield=b_vfield,
+            uniform_domain=uniform_domain,
+            field_label=r"$\nabla\times\vec{b}$",
+            grad_order=2,
         )
 
     def load_total_energy_sfield(
@@ -497,7 +512,7 @@ class QuokkaDataset:
         return field_types.ScalarField(
             sim_time=self.sim_time,
             data=(gamma - 1.0) * Eint_sarray,
-            field_label=r"$p$",
+            field_label=r"$p \equiv (\gamma - 1) \,E_\mathrm{int}$",
         )
 
     @property
