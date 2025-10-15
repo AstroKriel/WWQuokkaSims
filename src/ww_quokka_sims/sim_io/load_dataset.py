@@ -34,14 +34,14 @@ class LRUCache:
 
     def __init__(
         self,
-        max_size: int = 16,
+        max_size: int = 3,
     ):
         self._cache_lookup = OrderedDict()
         self._max_size = int(max_size)
 
     def get_cached_field(
         self,
-        field_name,
+        field_name: str,
     ):
         """Return cached value for `field_name`, or None if not found."""
         cached_field = self._cache_lookup.get(field_name)
@@ -51,10 +51,10 @@ class LRUCache:
 
     def cache_field(
         self,
-        field_name,
-        field_data,
+        field_name: str,
+        field_data: field_types.ScalarField | field_types.VectorField,
     ):
-        """Store `field_data` under `field_name` and evict teh least-recently-used item if the cache is full."""
+        """Store `field_data` under `field_name` and evict the least-recently-used item if the cache is full."""
         self._cache_lookup[field_name] = field_data
         self._cache_lookup.move_to_end(field_name)
         while len(self._cache_lookup) > self._max_size:
@@ -68,6 +68,38 @@ class LRUCache:
 
 
 ##
+## --- YT KEYS FOR PRIMITIVE FIELD
+##
+
+YT_VFIELD_KEYS: dict[str, dict] = {
+    "momentum": {
+        "keys": {
+            comp_str: ("boxlib", f"{comp_str}-GasMomentum")
+            for comp_str in ("x", "y", "z")
+        },
+        "description": "Momentum density components: vec(m) = rho * vec(v)",
+    },
+    "magnetic": {
+        "keys": {
+            comp_str: ("boxlib", f"{comp_str}-BField")
+            for comp_str in ("x", "y", "z")
+        },
+        "description": "Magnetic field components (code units)",
+    },
+}
+
+YT_SFIELD_KEYS: dict[str, dict] = {
+    "density": {
+        "key": ("boxlib", "gasDensity"),
+        "description": "Gas density field",
+    },
+    "total_energy": {
+        "key": ("boxlib", "gasEnergy"),
+        "description": "Total energy density: E_tot = E_int + E_kin + E_mag",
+    },
+}
+
+##
 ## === OPERATOR CLASS
 ##
 
@@ -75,33 +107,9 @@ class LRUCache:
 class QuokkaDataset:
     """Interface for loading Quokka datasets with yt."""
 
-    YT_VFIELD_KEYS: dict[str, dict] = {
-        "momentum": {
-            "keys": {
-                comp_str: ("boxlib", f"{comp_str}-GasMomentum")
-                for comp_str in ("x", "y", "z")
-            },
-            "description": "Momentum density components: vec(m) = rho * vec(v)",
-        },
-        "magnetic": {
-            "keys": {
-                comp_str: ("boxlib", f"{comp_str}-BField")
-                for comp_str in ("x", "y", "z")
-            },
-            "description": "Magnetic field components (code units)",
-        },
-    }
-
-    YT_SFIELD_KEYS: dict[str, dict] = {
-        "density": {
-            "key": ("boxlib", "gasDensity"),
-            "description": "Gas density field",
-        },
-        "total_energy": {
-            "key": ("boxlib", "gasEnergy"),
-            "description": "Total energy density: E_tot = E_int + E_kin + E_mag",
-        },
-    }
+    ##
+    ## --- DATASET LIFECYCLE
+    ##
 
     def __init__(
         self,
@@ -112,11 +120,12 @@ class QuokkaDataset:
         self.dataset_dir = Path(dataset_dir)
         self.verbose = bool(verbose)
         self.dataset = None
-        self._in_context: bool = False
-        self._sim_time: float | None = None  # remains cached even after the dataset is closed
+        self._in_context = False
+        self._sim_time = None
         self._covering_grid = None
         self._uniform_domain = None
-        self._field_cache = LRUCache(max_size=5)
+        ## cache: density, momentum, velocity, and magnetic fields
+        self._field_cache = LRUCache(max_size=4)
 
     def __enter__(
         self,
@@ -165,6 +174,23 @@ class QuokkaDataset:
             self._covering_grid = None
             self._uniform_domain = None
             self._field_cache.clear_cache()
+
+    @property
+    def is_open(
+        self,
+    ) -> bool:
+        """`True` iff the yt dataset handle is currently open."""
+        return self.dataset is not None
+
+    def close(
+        self,
+    ) -> None:
+        self._in_context = False
+        self._close_dataset()
+
+##
+## --- PROBE DATASET
+##
 
     @property
     def sim_time(
@@ -226,17 +252,21 @@ class QuokkaDataset:
         available_keys = set(self._get_available_field_keys())
         return field_key in available_keys
 
+##
+## --- RESOLVE FIELD
+##
+
     def _resolve_sfield_key(
         self,
         field_name: str,
     ) -> tuple[str, str]:
         """Resolve the yt key for a named scalar field."""
-        if field_name not in self.YT_SFIELD_KEYS:
-            valid_str = ", ".join(self.YT_SFIELD_KEYS.keys())
+        if field_name not in YT_SFIELD_KEYS:
+            valid_str = ", ".join(YT_SFIELD_KEYS.keys())
             msg = f"Unknown scalar field '{field_name}'. Valid options: {valid_str}"
             log_manager.log_error(msg)
             raise KeyError(msg)
-        return self.YT_SFIELD_KEYS[field_name]["key"]
+        return YT_SFIELD_KEYS[field_name]["key"]
 
     def _get_sfield_key(
         self,
@@ -255,12 +285,12 @@ class QuokkaDataset:
         field_name: str,
     ) -> dict[str, tuple[str, str]]:
         """Return the component yt keys for a named vector field."""
-        if field_name not in self.YT_VFIELD_KEYS:
-            valid_str = ", ".join(self.YT_VFIELD_KEYS.keys())
+        if field_name not in YT_VFIELD_KEYS:
+            valid_str = ", ".join(YT_VFIELD_KEYS.keys())
             msg = f"Unknown vector field '{field_name}'. Valid options: {valid_str}"
             log_manager.log_error(msg)
             raise KeyError(msg)
-        return self.YT_VFIELD_KEYS[field_name]["keys"]
+        return YT_VFIELD_KEYS[field_name]["keys"]
 
     def _get_missing_vfield_keys(
         self,
@@ -381,9 +411,11 @@ class QuokkaDataset:
 
     def load_uniform_domain(
         self,
-        force_periodicity: bool = True,  # required because yt cannot read this yet
+        force_periodicity: bool = True,
     ) -> field_types.UniformDomain:
         """Return uniform domain metadata (bounds, resolution, periodicity)."""
+        ## Note: force_periodicity only affects the first call; subsequent calls return the cached domain.
+        ## This is required because yt cannot read this property reliably yet
         if self._uniform_domain is not None:
             return self._uniform_domain
         self._open_dataset_if_needed()
@@ -406,7 +438,7 @@ class QuokkaDataset:
         return uniform_domain
 
 ##
-## --- BASIC QUANTITIES
+## --- BASIC FIELDS
 ##
 
     def load_density_sfield(
@@ -549,7 +581,7 @@ class QuokkaDataset:
         )
 
 ##
-## --- VELOCITY FIELD RELATED FIELDS
+## --- VELOCITY FIELDS
 ##
 
     def load_divu_sfield(
@@ -651,7 +683,7 @@ class QuokkaDataset:
         return helmholtz_Ekin.Ekin_sol_sfield
 
 ##
-## --- MAGNETIC FIELD RELATED FIELDS
+## --- MAGNETIC FIELDS
 ##
 
     def load_plasma_beta_sfield(
@@ -749,7 +781,7 @@ class QuokkaDataset:
         )
 
 ##
-## --- OTHER MHD FIELDS
+## --- MHD COMPOSITE FIELDS
 ##
 
     def load_cross_helicity_sfield(
@@ -804,19 +836,6 @@ class QuokkaDataset:
             vfield_b=vxb_vfield,
             field_label=r"$\vec{b}\times(\vec{v}\times\vec{b})$",
         )
-
-    @property
-    def is_open(
-        self,
-    ) -> bool:
-        """`True` iff the yt dataset handle is currently open."""
-        return self.dataset is not None
-
-    def close(
-        self,
-    ) -> None:
-        self._in_context = False
-        self._close_dataset()
 
 
 ## } MODULE
