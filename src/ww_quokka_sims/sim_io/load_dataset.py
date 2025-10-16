@@ -68,7 +68,7 @@ class LRUCache:
 
 
 ##
-## === YT KEYS FOR PRIMITIVE FIELD
+## === YT FIELD MAPPINGS
 ##
 
 YT_VFIELD_KEYS: dict[str, dict] = {
