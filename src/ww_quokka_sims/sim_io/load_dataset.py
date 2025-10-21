@@ -23,10 +23,12 @@ from jormi.ww_fields import farray_operators, field_types, field_operators, deco
 class HelmholtzKineticEnergy:
     Ekin_div_sfield: field_types.ScalarField
     Ekin_sol_sfield: field_types.ScalarField
+    Ekin_bulk_sfield: field_types.ScalarField
 
     def __post_init__(self):
         field_types.ensure_sfield(self.Ekin_div_sfield)
         field_types.ensure_sfield(self.Ekin_sol_sfield)
+        field_types.ensure_sfield(self.Ekin_bulk_sfield)
 
 
 class LRUCache:
@@ -349,7 +351,7 @@ class QuokkaDataset:
         field_label: str,
     ) -> field_types.ScalarField:
         """Wrap a scalar array as `ScalarField` with a `field_label` and `sim_time`."""
-        type_utils.assert_nonempty_str(
+        type_utils.ensure_nonempty_str(
             var_obj=field_label,
             var_name="field_label",
         )
@@ -371,7 +373,7 @@ class QuokkaDataset:
             msg = f"`vfield_key_lookup` must contain all 3 components: x, y, z; only received: {sorted(vfield_key_lookup.keys())}"
             log_manager.log_error(msg)
             raise KeyError(msg)
-        type_utils.assert_nonempty_str(
+        type_utils.ensure_nonempty_str(
             var_obj=field_label,
             var_name="field_label",
         )
@@ -379,7 +381,7 @@ class QuokkaDataset:
         sim_time = self.sim_time
         assert self.dataset is not None
         covering_grid = self._get_covering_grid()
-        data_sarray: dict[str, numpy.ndarray] = {}
+        grouped_data_sarrays: dict[str, numpy.ndarray] = {}
         for comp_axis in req_comp_axes:
             comp_key = vfield_key_lookup[comp_axis]
             if comp_key not in self.dataset.field_list:
@@ -389,19 +391,19 @@ class QuokkaDataset:
             if comp_sarray.ndim != 3:
                 self._close_dataset_if_needed()
                 raise ValueError(f"Expected a 3D field for {comp_key}; received: {comp_sarray.shape}")
-            data_sarray[comp_axis] = comp_sarray
+            grouped_data_sarrays[comp_axis] = comp_sarray
         self._close_dataset_if_needed()
-        stacked_data_sarray = numpy.stack(
+        data_varray = numpy.stack(
             [
-                data_sarray["x"],
-                data_sarray["y"],
-                data_sarray["z"],
+                grouped_data_sarrays["x"],
+                grouped_data_sarrays["y"],
+                grouped_data_sarrays["z"],
             ],
             axis=0,
         )
         return field_types.VectorField(
             sim_time=sim_time,
-            data=stacked_data_sarray,
+            data=data_varray,
             field_label=field_label,
         )
 
@@ -446,7 +448,8 @@ class QuokkaDataset:
     ) -> field_types.ScalarField:
         """Load gas density: `rho`."""
         cached_field = self._field_cache.get_cached_field("density")
-        if cached_field is not None: return cached_field
+        if cached_field is not None:
+            return cached_field
         rho_key = self._get_sfield_key("density")
         rho_sfield = self.load_sfield(
             field_key=rho_key,
@@ -463,7 +466,8 @@ class QuokkaDataset:
     ) -> field_types.VectorField:
         """Load momentum field: `vec(m) = rho vec(v)`."""
         cached_field = self._field_cache.get_cached_field("momentum")
-        if cached_field is not None: return cached_field
+        if cached_field is not None:
+            return cached_field
         mom_key_lookup = self._get_vfield_key_lookup("momentum")
         mom_vfield = self.load_vfield(
             vfield_key_lookup=mom_key_lookup,
@@ -480,7 +484,8 @@ class QuokkaDataset:
     ) -> field_types.VectorField:
         """Load velocity field: `vec(v) = vec(m) / rho`."""
         cached_field = self._field_cache.get_cached_field("velocity")
-        if cached_field is not None: return cached_field
+        if cached_field is not None:
+            return cached_field
         rho_sarray = self.load_density_sfield().data
         mom_varray = self.load_momentum_vfield().data
         with numpy.errstate(divide="ignore", invalid="ignore"):
@@ -502,7 +507,8 @@ class QuokkaDataset:
     ) -> field_types.VectorField:
         """Load magnetic field: `vec(b)`."""
         cached_field = self._field_cache.get_cached_field("magnetic")
-        if cached_field is not None: return cached_field
+        if cached_field is not None:
+            return cached_field
         b_key_lookup = self._get_vfield_key_lookup("magnetic")
         b_vfield = self.load_vfield(
             vfield_key_lookup=b_key_lookup,
@@ -589,10 +595,10 @@ class QuokkaDataset:
         grad_order: int = 2,
     ) -> field_types.ScalarField:
         """Compute divergence of velocity: `nabla cdot vec(v)` using a `grad_order` accurate stencil."""
-        u_vfield = self.load_velocity_vfield()
+        v_vfield = self.load_velocity_vfield()
         uniform_domain = self.load_uniform_domain()
         return field_operators.compute_vfield_divergence(
-            vfield=u_vfield,
+            vfield=v_vfield,
             uniform_domain=uniform_domain,
             field_label=r"$\nabla\cdot\vec{v}$",
             grad_order=grad_order,
@@ -639,7 +645,7 @@ class QuokkaDataset:
     def load_helmholtz_kinetic_energy(
         self,
     ) -> HelmholtzKineticEnergy:
-        """Compute Helmholtz-decomposed kinetic energies from `vec(v) = vec(v)_div + vec(v)_sol`."""
+        """Compute Helmholtz-decomposed kinetic energies from `vec(v) = vec(v)_div + vec(v)_sol + vec(v)_bulk`."""
         uniform_domain = self.load_uniform_domain()
         rho_sarray = self.load_density_sfield().data
         v_vfield = self.load_velocity_vfield()
@@ -649,10 +655,13 @@ class QuokkaDataset:
         )
         v_div_varray = helmholtz_vfields.div_vfield.data
         v_sol_varray = helmholtz_vfields.sol_vfield.data
+        v_bulk_varray = helmholtz_vfields.bulk_vfield.data
         Ekin_div_sarray = 0.5 * rho_sarray * farray_operators.sum_of_squared_components(v_div_varray)
         Ekin_sol_sarray = 0.5 * rho_sarray * farray_operators.sum_of_squared_components(v_sol_varray)
+        Ekin_bulk_sarray = 0.5 * rho_sarray * farray_operators.sum_of_squared_components(v_bulk_varray)
         numpy.nan_to_num(Ekin_div_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         numpy.nan_to_num(Ekin_sol_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        numpy.nan_to_num(Ekin_bulk_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         Ekin_div_sfield = field_types.ScalarField(
             sim_time=self.sim_time,
             data=Ekin_div_sarray,
@@ -663,9 +672,15 @@ class QuokkaDataset:
             data=Ekin_sol_sarray,
             field_label=r"$E_{\mathrm{kin}, \perp}$",
         )
+        Ekin_bulk_sfield = field_types.ScalarField(
+            sim_time=self.sim_time,
+            data=Ekin_bulk_sarray,
+            field_label=r"$E_{\mathrm{kin}, \mathrm{bulk}}$",
+        )
         return HelmholtzKineticEnergy(
             Ekin_div_sfield=Ekin_div_sfield,
             Ekin_sol_sfield=Ekin_sol_sfield,
+            Ekin_bulk_sfield=Ekin_bulk_sfield,
         )
 
     def load_div_kinetic_energy_sfield(
@@ -681,6 +696,13 @@ class QuokkaDataset:
         """Compute kinetic energy in solenoidal (divergence-free) velocity modes: `E_kin,sol = 0.5 rho (v_sol)^2`."""
         helmholtz_Ekin = self.load_helmholtz_kinetic_energy()
         return helmholtz_Ekin.Ekin_sol_sfield
+
+    def load_bulk_kinetic_energy_sfield(
+        self,
+    ) -> field_types.ScalarField:
+        """Compute kinetic energy in bulk velocity: `E_kin,bulk = 0.5 rho (v_bulk)^2`."""
+        helmholtz_Ekin = self.load_helmholtz_kinetic_energy()
+        return helmholtz_Ekin.Ekin_bulk_sfield
 
 ##
 ## --- MAGNETIC FIELDS
@@ -707,14 +729,14 @@ class QuokkaDataset:
         self,
     ) -> field_types.VectorField:
         """Compute Alfven speed: `vec(v_A) = vec(b) / sqrt(rho)`."""
-        b_vfield = self.load_magnetic_vfield()
-        rho = self.load_density_sfield().data
+        b_varray = self.load_magnetic_vfield().data
+        rho_sarray = self.load_density_sfield().data
         with numpy.errstate(divide="ignore", invalid="ignore"):
-            va = b_vfield.data / numpy.sqrt(rho)[numpy.newaxis, ...]
-        va = numpy.nan_to_num(va, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            va_varray = b_varray / numpy.sqrt(rho_sarray)[numpy.newaxis, ...]
+        va_varray = numpy.nan_to_num(va_varray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         return field_types.VectorField(
             sim_time=self.sim_time,
-            data=va,
+            data=va_varray,
             field_label=r"$\vec{v}_A$",
         )
 
