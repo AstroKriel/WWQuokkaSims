@@ -15,6 +15,19 @@ from jormi.ww_io import log_manager
 from jormi.ww_fields import farray_operators, field_types, field_operators, decompose_fields
 
 ##
+## === HELPER FUNCTIONS
+##
+
+def create_boxlib_vkeys(
+    field_name: str
+) -> dict[field_types.CompAxis, tuple[str, str]]:
+    return {
+        comp_axis: ("boxlib", f"{comp_axis}-{field_name}")
+        for comp_axis in field_types.DEFAULT_COMP_AXES_ORDER
+    }
+
+
+##
 ## === DATA STRUCTURES
 ##
 
@@ -25,7 +38,9 @@ class HelmholtzKineticEnergy:
     Ekin_sol_sfield: field_types.ScalarField
     Ekin_bulk_sfield: field_types.ScalarField
 
-    def __post_init__(self):
+    def __post_init__(
+        self,
+    ) -> None:
         field_types.ensure_sfield(self.Ekin_div_sfield)
         field_types.ensure_sfield(self.Ekin_sol_sfield)
         field_types.ensure_sfield(self.Ekin_bulk_sfield)
@@ -37,7 +52,7 @@ class LRUCache:
     def __init__(
         self,
         max_size: int = 3,
-    ):
+    ) -> None:
         self._cache_lookup = OrderedDict()
         self._max_size = int(max_size)
 
@@ -55,7 +70,7 @@ class LRUCache:
         self,
         field_name: str,
         field_data: field_types.ScalarField | field_types.VectorField,
-    ):
+    ) -> None:
         """Store `field_data` under `field_name` and evict the least-recently-used item if the cache is full."""
         self._cache_lookup[field_name] = field_data
         self._cache_lookup.move_to_end(field_name)
@@ -64,7 +79,7 @@ class LRUCache:
 
     def clear_cache(
         self,
-    ):
+    ) -> None:
         """Clear all cached fields."""
         self._cache_lookup.clear()
 
@@ -75,17 +90,11 @@ class LRUCache:
 
 YT_VFIELD_KEYS: dict[str, dict] = {
     "momentum": {
-        "keys": {
-            comp_str: ("boxlib", f"{comp_str}-GasMomentum")
-            for comp_str in ("x", "y", "z")
-        },
+        "keys": create_boxlib_vkeys("GasMomentum"),
         "description": "Momentum density components: vec(m) = rho * vec(v)",
     },
     "magnetic": {
-        "keys": {
-            comp_str: ("boxlib", f"{comp_str}-BField")
-            for comp_str in ("x", "y", "z")
-        },
+        "keys": create_boxlib_vkeys("BField"),
         "description": "Magnetic field components (code units)",
     },
 }
@@ -285,7 +294,7 @@ class QuokkaDataset:
     def _resolve_vfield_key_lookup(
         self,
         field_name: str,
-    ) -> dict[str, tuple[str, str]]:
+    ) -> dict[field_types.CompAxis, tuple[str, str]]:
         """Return the component yt keys for a named vector field."""
         if field_name not in YT_VFIELD_KEYS:
             valid_str = ", ".join(YT_VFIELD_KEYS.keys())
@@ -306,7 +315,7 @@ class QuokkaDataset:
     def _get_vfield_key_lookup(
         self,
         field_name: str,
-    ) -> dict[str, tuple[str, str]]:
+    ) -> dict[field_types.CompAxis, tuple[str, str]]:
         """Resolve and validate component keys for a named vector field."""
         missing_keys = self._get_missing_vfield_keys(field_name)
         if missing_keys:
@@ -364,12 +373,11 @@ class QuokkaDataset:
 
     def load_vfield(
         self,
-        vfield_key_lookup: dict[str, tuple[str, str]],
+        vfield_key_lookup: dict[field_types.CompAxis, tuple[str, str]],
         field_label: str,
     ) -> field_types.VectorField:
         """Load and stack 3 components into a `VectorField` with a `field_label` and `sim_time`."""
-        req_comp_axes = ("x", "y", "z")
-        if set(vfield_key_lookup) != set(req_comp_axes):
+        if set(vfield_key_lookup) != set(field_types.DEFAULT_COMP_AXES_ORDER):
             msg = f"`vfield_key_lookup` must contain all 3 components: x, y, z; only received: {sorted(vfield_key_lookup.keys())}"
             log_manager.log_error(msg)
             raise KeyError(msg)
@@ -381,12 +389,12 @@ class QuokkaDataset:
         sim_time = self.sim_time
         assert self.dataset is not None
         covering_grid = self._get_covering_grid()
-        grouped_data_sarrays: dict[str, numpy.ndarray] = {}
-        for comp_axis in req_comp_axes:
+        grouped_data_sarrays: dict[field_types.CompAxis, numpy.ndarray] = {}
+        for comp_axis in field_types.DEFAULT_COMP_AXES_ORDER:
             comp_key = vfield_key_lookup[comp_axis]
             if comp_key not in self.dataset.field_list:
                 self._close_dataset_if_needed()
-                raise KeyError(f"Field {comp_key} not found in {self.dataset_dir}")
+                raise KeyError(f"Field {comp_key} was not found in {self.dataset_dir}")
             comp_sarray = numpy.asarray(covering_grid[comp_key], dtype=numpy.float64)
             if comp_sarray.ndim != 3:
                 self._close_dataset_if_needed()
@@ -395,9 +403,8 @@ class QuokkaDataset:
         self._close_dataset_if_needed()
         data_varray = numpy.stack(
             [
-                grouped_data_sarrays["x"],
-                grouped_data_sarrays["y"],
-                grouped_data_sarrays["z"],
+                grouped_data_sarrays[comp_axis]
+                for comp_axis in field_types.DEFAULT_COMP_AXES_ORDER
             ],
             axis=0,
         )
@@ -416,7 +423,7 @@ class QuokkaDataset:
         force_periodicity: bool = True,
     ) -> field_types.UniformDomain:
         """Return uniform domain metadata (bounds, resolution, periodicity)."""
-        ## Note: force_periodicity only affects the first call; subsequent calls return the cached domain.
+        ## Note: force_periodicity only affects the first call; subsequent calls returns the cached domain.
         ## This is required because yt cannot read this property reliably yet
         if self._uniform_domain is not None:
             return self._uniform_domain
