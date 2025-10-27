@@ -15,21 +15,10 @@ from jormi.ww_io import log_manager
 from jormi.ww_fields import farray_operators, field_types, field_operators, decompose_fields
 
 ##
-## === HELPER FUNCTIONS
-##
-
-def create_boxlib_vkeys(
-    field_name: str
-) -> dict[field_types.CompAxis, tuple[str, str]]:
-    return {
-        comp_axis: ("boxlib", f"{comp_axis}-{field_name}")
-        for comp_axis in field_types.DEFAULT_COMP_AXES_ORDER
-    }
-
-
-##
 ## === DATA STRUCTURES
 ##
+
+FieldKey = tuple[str, str]
 
 
 @dataclass(frozen=True)
@@ -44,6 +33,47 @@ class HelmholtzKineticEnergy:
         field_types.ensure_sfield(self.Ekin_div_sfield)
         field_types.ensure_sfield(self.Ekin_sol_sfield)
         field_types.ensure_sfield(self.Ekin_bulk_sfield)
+
+
+##
+## === YT FIELD MAPPINGS
+##
+
+
+def create_boxlib_vkeys(
+    field_name: str,
+) -> dict[field_types.CompAxis, FieldKey]:
+    return {
+        comp_axis: ("boxlib", f"{comp_axis}-{field_name}")
+        for comp_axis in field_types.DEFAULT_COMP_AXES_ORDER
+    }
+
+
+YT_VFIELD_KEYS: dict[str, dict] = {
+    "momentum": {
+        "keys": create_boxlib_vkeys("GasMomentum"),
+        "description": "Momentum density components: vec(m) = rho * vec(v)",
+    },
+    "magnetic": {
+        "keys": create_boxlib_vkeys("BField"),
+        "description": "Magnetic field components (code units)",
+    },
+}
+
+YT_SFIELD_KEYS: dict[str, dict] = {
+    "density": {
+        "key": ("boxlib", "gasDensity"),
+        "description": "Gas density field",
+    },
+    "total_energy": {
+        "key": ("boxlib", "gasEnergy"),
+        "description": "Total energy density: E_tot = E_int + E_kin + E_mag",
+    },
+}
+
+##
+## === CACHE OPERATOR CLASS
+##
 
 
 class LRUCache:
@@ -85,33 +115,7 @@ class LRUCache:
 
 
 ##
-## === YT FIELD MAPPINGS
-##
-
-YT_VFIELD_KEYS: dict[str, dict] = {
-    "momentum": {
-        "keys": create_boxlib_vkeys("GasMomentum"),
-        "description": "Momentum density components: vec(m) = rho * vec(v)",
-    },
-    "magnetic": {
-        "keys": create_boxlib_vkeys("BField"),
-        "description": "Magnetic field components (code units)",
-    },
-}
-
-YT_SFIELD_KEYS: dict[str, dict] = {
-    "density": {
-        "key": ("boxlib", "gasDensity"),
-        "description": "Gas density field",
-    },
-    "total_energy": {
-        "key": ("boxlib", "gasEnergy"),
-        "description": "Total energy density: E_tot = E_int + E_kin + E_mag",
-    },
-}
-
-##
-## === OPERATOR CLASS
+## === DATASET OPERATOR CLASS
 ##
 
 
@@ -233,7 +237,7 @@ class QuokkaDataset:
 
     def _get_available_field_keys(
         self,
-    ) -> list[tuple[str, str]]:
+    ) -> list[FieldKey]:
         """Return all (field-group, field-name) yt keys available in the dataset."""
         self._open_dataset_if_needed()
         assert self.dataset is not None
@@ -243,7 +247,7 @@ class QuokkaDataset:
 
     def list_available_field_keys(
         self,
-    ) -> list[tuple[str, str]]:
+    ) -> list[FieldKey]:
         """List all available yt field keys in this dataset."""
         field_keys = self._get_available_field_keys()
         log_manager.log_items(
@@ -257,7 +261,7 @@ class QuokkaDataset:
 
     def is_field_key_available(
         self,
-        field_key: tuple[str, str],
+        field_key: FieldKey,
     ) -> bool:
         """Return `True` iff a particular yt field key exists in the dataset."""
         available_keys = set(self._get_available_field_keys())
@@ -270,11 +274,11 @@ class QuokkaDataset:
     def _resolve_sfield_key(
         self,
         field_name: str,
-    ) -> tuple[str, str]:
+    ) -> FieldKey:
         """Resolve the yt key for a named scalar field."""
         if field_name not in YT_SFIELD_KEYS:
             valid_str = ", ".join(YT_SFIELD_KEYS.keys())
-            msg = f"Unknown scalar field '{field_name}'. Valid options: {valid_str}"
+            msg = f"Unknown scalar field `{field_name}`. Valid options: {valid_str}"
             log_manager.log_error(msg)
             raise KeyError(msg)
         return YT_SFIELD_KEYS[field_name]["key"]
@@ -282,11 +286,11 @@ class QuokkaDataset:
     def _get_sfield_key(
         self,
         field_name: str,
-    ) -> tuple[str, str]:
+    ) -> FieldKey:
         """Resolve and validate the yt key for a scalar field."""
         field_key = self._resolve_sfield_key(field_name)
         if not self.is_field_key_available(field_key):
-            msg = f"Scalar field '{field_name}' ({field_key[0]}:{field_key[1]}) is not available in: {self.dataset_dir}."
+            msg = f"Scalar field `{field_name}` ({field_key[0]}:{field_key[1]}) is not available in: {self.dataset_dir}."
             log_manager.log_error(msg)
             raise KeyError(msg)
         return field_key
@@ -294,11 +298,11 @@ class QuokkaDataset:
     def _resolve_vfield_key_lookup(
         self,
         field_name: str,
-    ) -> dict[field_types.CompAxis, tuple[str, str]]:
+    ) -> dict[field_types.CompAxis, FieldKey]:
         """Return the component yt keys for a named vector field."""
         if field_name not in YT_VFIELD_KEYS:
             valid_str = ", ".join(YT_VFIELD_KEYS.keys())
-            msg = f"Unknown vector field '{field_name}'. Valid options: {valid_str}"
+            msg = f"Unknown vector field `{field_name}`. Valid options: {valid_str}"
             log_manager.log_error(msg)
             raise KeyError(msg)
         return YT_VFIELD_KEYS[field_name]["keys"]
@@ -306,7 +310,7 @@ class QuokkaDataset:
     def _get_missing_vfield_keys(
         self,
         field_name: str,
-    ) -> list[tuple[str, str]]:
+    ) -> list[FieldKey]:
         """Return the list of missing component keys for a named vector field."""
         vfield_key_lookup = self._resolve_vfield_key_lookup(field_name)
         available_keys = set(self._get_available_field_keys())
@@ -315,12 +319,12 @@ class QuokkaDataset:
     def _get_vfield_key_lookup(
         self,
         field_name: str,
-    ) -> dict[field_types.CompAxis, tuple[str, str]]:
+    ) -> dict[field_types.CompAxis, FieldKey]:
         """Resolve and validate component keys for a named vector field."""
         missing_keys = self._get_missing_vfield_keys(field_name)
         if missing_keys:
             missing_str = ", ".join([f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys])
-            msg = f"Vector field '{field_name}' is incomplete in {self.dataset_dir}. Missing components: {missing_str}"
+            msg = f"Vector field `{field_name}` is incomplete in {self.dataset_dir}. Missing components: {missing_str}"
             log_manager.log_error(msg)
             raise KeyError(msg)
         return self._resolve_vfield_key_lookup(field_name)
@@ -334,7 +338,7 @@ class QuokkaDataset:
 
     def _load_sfield_data(
         self,
-        field_key: tuple[str, str],
+        field_key: FieldKey,
     ) -> numpy.ndarray:
         """Load a scalar field from the covering grid as a 3D `ndarray`."""
         self._open_dataset_if_needed()
@@ -356,7 +360,7 @@ class QuokkaDataset:
 
     def load_sfield(
         self,
-        field_key: tuple[str, str],
+        field_key: FieldKey,
         field_label: str,
     ) -> field_types.ScalarField:
         """Wrap a scalar array as `ScalarField` with a `field_label` and `sim_time`."""
@@ -373,7 +377,7 @@ class QuokkaDataset:
 
     def load_vfield(
         self,
-        vfield_key_lookup: dict[field_types.CompAxis, tuple[str, str]],
+        vfield_key_lookup: dict[field_types.CompAxis, FieldKey],
         field_label: str,
     ) -> field_types.VectorField:
         """Load and stack 3 components into a `VectorField` with a `field_label` and `sim_time`."""
@@ -402,10 +406,7 @@ class QuokkaDataset:
             grouped_data_sarrays[comp_axis] = comp_sarray
         self._close_dataset_if_needed()
         data_varray = numpy.stack(
-            [
-                grouped_data_sarrays[comp_axis]
-                for comp_axis in field_types.DEFAULT_COMP_AXES_ORDER
-            ],
+            [grouped_data_sarrays[comp_axis] for comp_axis in field_types.DEFAULT_COMP_AXES_ORDER],
             axis=0,
         )
         return field_types.VectorField(
