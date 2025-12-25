@@ -694,7 +694,6 @@ class QuokkaDataset:
     ) -> field_type.ScalarField_3D:
         """Compute divergence of velocity: `nabla cdot vec(v)` using a `grad_order` accurate stencil."""
         v_vfield_3d = self.load_3d_velocity_vfield()
-        udomain_3d = self.load_3d_uniform_domain()
         return field_operators.compute_vfield_divergence(
             vfield_3d=v_vfield_3d,
             field_label=r"$\nabla\cdot\vec{v}$",
@@ -707,7 +706,6 @@ class QuokkaDataset:
     ) -> field_type.VectorField_3D:
         """Compute vorticity vector: `curl(vec(v))` using a `grad_order` accurate stencil."""
         v_vfield_3d = self.load_3d_velocity_vfield()
-        udomain_3d = self.load_3d_uniform_domain()
         return field_operators.compute_vfield_curl(
             vfield_3d=v_vfield_3d,
             grad_order=grad_order,
@@ -719,9 +717,9 @@ class QuokkaDataset:
         grad_order: int = 2,
     ) -> field_type.ScalarField_3D:
         """Compute vorticity magnitude: `|curl(vec(v))|`."""
-        omega_vfield = self.load_3d_vorticity_vfield(grad_order=grad_order)
+        omega_vfield_3d = self.load_3d_vorticity_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
-            vfield_3d=omega_vfield,
+            vfield_3d=omega_vfield_3d,
             field_label=r"$|\nabla\times\vec{v}|$",
         )
 
@@ -730,10 +728,10 @@ class QuokkaDataset:
         grad_order: int = 2,
     ) -> field_type.ScalarField_3D:
         """Compute kinetic helicity density: `curl(vec(v)) dot vec(v)`."""
-        omega_vfield = self.load_3d_vorticity_vfield(grad_order=grad_order)
+        omega_vfield_3d = self.load_3d_vorticity_vfield(grad_order=grad_order)
         v_vfield_3d = self.load_3d_velocity_vfield()
         return field_operators.compute_vfield_dot_product(
-            vfield_3d_a=omega_vfield,
+            vfield_3d_a=omega_vfield_3d,
             vfield_3d_b=v_vfield_3d,
             field_label=r"$(\nabla\times\vec{v})\cdot\vec{v}$",
         )
