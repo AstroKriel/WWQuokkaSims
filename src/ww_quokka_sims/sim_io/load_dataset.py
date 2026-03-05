@@ -368,9 +368,7 @@ class QuokkaDataset:
         """Resolve and validate component keys for a named vector field."""
         missing_keys = self._get_missing_vfield_keys(field_name)
         if missing_keys:
-            missing_string = ", ".join(
-                [f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys]
-            )
+            missing_string = ", ".join(f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys)
             msg = (
                 f"Vector field `{field_name}` is incomplete in {self.dataset_dir}. "
                 f"Missing components: {missing_string}"
