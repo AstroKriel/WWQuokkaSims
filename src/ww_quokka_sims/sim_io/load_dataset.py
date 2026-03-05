@@ -547,7 +547,7 @@ class QuokkaDataset:
         rho_key = self._get_sfield_key("density")
         rho_sfield_3d = self.load_3d_sfield(
             field_key=rho_key,
-            field_label=r"$\rho$",
+            field_label=r"\rho",
         )
         self._field_cache.cache_field(
             field_name="density",
@@ -565,7 +565,7 @@ class QuokkaDataset:
         mom_key_lookup = self._get_vfield_key_lookup("momentum")
         mom_vfield_3d = self.load_3d_vfield(
             vfield_key_lookup=mom_key_lookup,
-            field_label=r"$\rho \,\vec{v}$",
+            field_label=r"\rho \,\vec{v}",
         )
         self._field_cache.cache_field(
             field_name="momentum",
@@ -601,7 +601,7 @@ class QuokkaDataset:
         v_vfield_3d = field_type.VectorField_3D.from_3d_varray(
             varray_3d=v_varray,
             udomain_3d=udomain_3d,
-            field_label=r"$\vec{v}$",
+            field_label=r"\vec{v}",
             sim_time=self.sim_time,
         )
         self._field_cache.cache_field(
@@ -620,7 +620,7 @@ class QuokkaDataset:
         b_key_lookup = self._get_vfield_key_lookup("magnetic")
         b_vfield_3d = self.load_3d_vfield(
             vfield_key_lookup=b_key_lookup,
-            field_label=r"$\vec{b}$",
+            field_label=r"\vec{b}",
         )
         self._field_cache.cache_field(
             field_name="magnetic",
@@ -635,7 +635,7 @@ class QuokkaDataset:
         Etot_key = self._get_sfield_key("total_energy")
         return self.load_3d_sfield(
             field_key=Etot_key,
-            field_label=r"$E_\mathrm{tot}$",
+            field_label=r"E_\mathrm{tot}",
         )
 
     def load_3d_kinetic_energy_sfield(
@@ -665,14 +665,14 @@ class QuokkaDataset:
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_sarray_3d,
             udomain_3d=udomain_3d,
-            field_label=r"$E_\mathrm{kin}$",
+            field_label=r"E_\mathrm{kin}",
             sim_time=self.sim_time,
         )
 
     def load_3d_magnetic_energy_sfield(
         self,
         energy_prefactor: float = 0.5,
-        field_label=r"$E_\mathrm{mag}$",
+        field_label=r"E_\mathrm{mag}",
     ) -> field_type.ScalarField_3D:
         """Compute magnetic energy density: `E_mag = alpha * |b|^2` with `alpha=0.5` by default."""
         type_checks.ensure_finite_float(
@@ -716,7 +716,7 @@ class QuokkaDataset:
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Eint_sarray,
             udomain_3d=self.load_3d_uniform_domain(),
-            field_label=r"$E_\mathrm{int}$",
+            field_label=r"E_\mathrm{int}",
             sim_time=self.sim_time,
         )
 
@@ -740,7 +740,7 @@ class QuokkaDataset:
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=p_sarray,
             udomain_3d=self.load_3d_uniform_domain(),
-            field_label=r"$p$",
+            field_label=r"p",
             sim_time=self.sim_time,
         )
 
@@ -756,7 +756,7 @@ class QuokkaDataset:
         v_vfield_3d = self.load_3d_velocity_vfield()
         return field_operators.compute_vfield_divergence(
             vfield_3d=v_vfield_3d,
-            field_label=r"$\nabla\cdot\vec{v}$",
+            field_label=r"\nabla\cdot\vec{v}",
             grad_order=grad_order,
         )
 
@@ -769,7 +769,7 @@ class QuokkaDataset:
         return field_operators.compute_vfield_curl(
             vfield_3d=v_vfield_3d,
             grad_order=grad_order,
-            field_label=r"$\nabla\times\vec{v}$",
+            field_label=r"\nabla\times\vec{v}",
         )
 
     def load_3d_vorticity_sfield(
@@ -780,7 +780,7 @@ class QuokkaDataset:
         omega_vfield_3d = self.load_3d_vorticity_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=omega_vfield_3d,
-            field_label=r"$|\nabla\times\vec{v}|$",
+            field_label=r"|\nabla\times\vec{v}|",
         )
 
     def load_3d_kinetic_helicity_sfield(
@@ -793,7 +793,7 @@ class QuokkaDataset:
         return field_operators.compute_vfield_dot_product(
             vfield_3d_a=omega_vfield_3d,
             vfield_3d_b=v_vfield_3d,
-            field_label=r"$(\nabla\times\vec{v})\cdot\vec{v}$",
+            field_label=r"(\nabla\times\vec{v})\cdot\vec{v}",
         )
 
     def load_3d_helmholtz_kinetic_energy(
@@ -846,19 +846,19 @@ class QuokkaDataset:
         Ekin_div_sfield_3d = field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_div_sarray,
             udomain_3d=udomain_3d,
-            field_label=r"$E_{\mathrm{kin}, \parallel}$",
+            field_label=r"E_{\mathrm{kin}, \parallel}",
             sim_time=self.sim_time,
         )
         Ekin_sol_sfield_3d = field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_sol_sarray,
             udomain_3d=udomain_3d,
-            field_label=r"$E_{\mathrm{kin}, \perp}$",
+            field_label=r"E_{\mathrm{kin}, \perp}",
             sim_time=self.sim_time,
         )
         Ekin_bulk_sfield_3d = field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_bulk_sarray,
             udomain_3d=udomain_3d,
-            field_label=r"$E_{\mathrm{kin}, \mathrm{bulk}}$",
+            field_label=r"E_{\mathrm{kin}, \mathrm{bulk}}",
             sim_time=self.sim_time,
         )
         return HelmholtzKineticEnergy(
@@ -925,7 +925,7 @@ class QuokkaDataset:
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=beta_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
-            field_label=r"$\beta$",
+            field_label=r"\beta",
             sim_time=self.sim_time,
         )
 
@@ -953,7 +953,7 @@ class QuokkaDataset:
         return field_type.VectorField_3D.from_3d_varray(
             varray_3d=va_varray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
-            field_label=r"$\vec{v}_A$",
+            field_label=r"\vec{v}_A",
             sim_time=self.sim_time,
         )
 
@@ -964,7 +964,7 @@ class QuokkaDataset:
         va_vfield_3d = self.load_3d_alfven_speed_vfield()
         return field_operators.compute_vfield_magnitude(
             vfield_3d=va_vfield_3d,
-            field_label=r"$|\vec{v}_A|$",
+            field_label=r"|\vec{v}_A|",
         )
 
     def load_3d_divb_sfield(
@@ -975,7 +975,7 @@ class QuokkaDataset:
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_divergence(
             vfield_3d=b_vfield_3d,
-            field_label=r"$\nabla\cdot\vec{b}$",
+            field_label=r"\nabla\cdot\vec{b}",
             grad_order=grad_order,
         )
 
@@ -987,7 +987,7 @@ class QuokkaDataset:
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_curl(
             vfield_3d=b_vfield_3d,
-            field_label=r"$\nabla\times\vec{b}$",
+            field_label=r"\nabla\times\vec{b}",
             grad_order=grad_order,
         )
 
@@ -999,7 +999,7 @@ class QuokkaDataset:
         j_vfield_3d = self.load_3d_current_density_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=j_vfield_3d,
-            field_label=r"$|\nabla\times\vec{b}|$",
+            field_label=r"|\nabla\times\vec{b}|",
         )
 
     def load_3d_current_helicity_sfield(
@@ -1012,7 +1012,7 @@ class QuokkaDataset:
         return field_operators.compute_vfield_dot_product(
             vfield_3d_a=j_vfield_3d,
             vfield_3d_b=b_vfield_3d,
-            field_label=r"$(\nabla\times\vec{b})\cdot\vec{b}$",
+            field_label=r"(\nabla\times\vec{b})\cdot\vec{b}",
         )
 
 ##
@@ -1028,7 +1028,7 @@ class QuokkaDataset:
         return field_operators.compute_vfield_dot_product(
             vfield_3d_a=v_vfield_3d,
             vfield_3d_b=b_vfield_3d,
-            field_label=r"$\vec{v}\cdot\vec{b}$",
+            field_label=r"\vec{v}\cdot\vec{b}",
         )
 
     def load_3d_lorentz_force_vfield(
@@ -1041,7 +1041,7 @@ class QuokkaDataset:
         return field_operators.compute_vfield_cross_product(
             vfield_3d_a=j_vfield_3d,
             vfield_3d_b=b_vfield_3d,
-            field_label=r"$(\nabla\times\vec{b})\times\vec{b}$",
+            field_label=r"(\nabla\times\vec{b})\times\vec{b}",
         )
 
     def load_3d_lorentz_force_sfield(
@@ -1052,7 +1052,7 @@ class QuokkaDataset:
         lf_vfield_3d = self.load_3d_lorentz_force_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=lf_vfield_3d,
-            field_label=r"$|(\nabla\times\vec{b})\times\vec{b}|$",
+            field_label=r"|(\nabla\times\vec{b})\times\vec{b}|",
         )
 
     def load_3d_poynting_flux_vfield(
@@ -1064,12 +1064,12 @@ class QuokkaDataset:
         vxb_vfield_3d = field_operators.compute_vfield_cross_product(
             vfield_3d_a=v_vfield_3d,
             vfield_3d_b=b_vfield_3d,
-            field_label=r"$\vec{v}\times\vec{b}$",
+            field_label=r"\vec{v}\times\vec{b}",
         )
         return field_operators.compute_vfield_cross_product(
             vfield_3d_a=b_vfield_3d,
             vfield_3d_b=vxb_vfield_3d,
-            field_label=r"$\vec{b}\times(\vec{v}\times\vec{b})$",
+            field_label=r"\vec{b}\times(\vec{v}\times\vec{b})",
         )
 
 
