@@ -16,12 +16,12 @@ from jormi.ww_io import log_manager
 from jormi.ww_types import type_checks
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import (
-  _farray_operators,
-  domain_type,
-  field_type,
-  field_operators,
-  compute_fields,
-  decompose_fields,
+    _farray_operators,
+    domain_type,
+    field_type,
+    field_operators,
+    compute_fields,
+    decompose_fields,
 )
 
 ##
@@ -45,10 +45,18 @@ class HelmholtzKineticEnergy:
     Ekin_bulk_sfield_3d: field_type.ScalarField_3D
 
     def __post_init__(self) -> None:
-        field_type.ensure_3d_sfield(sfield_3d=self.Ekin_div_sfield_3d, param_name="<Ekin_div_sfield_3d>")
-        field_type.ensure_3d_sfield(sfield_3d=self.Ekin_sol_sfield_3d, param_name="<Ekin_sol_sfield_3d>")
-        field_type.ensure_3d_sfield(sfield_3d=self.Ekin_bulk_sfield_3d, param_name="<Ekin_bulk_sfield_3d>")
-
+        field_type.ensure_3d_sfield(
+            sfield_3d=self.Ekin_div_sfield_3d,
+            param_name="<Ekin_div_sfield_3d>",
+        )
+        field_type.ensure_3d_sfield(
+            sfield_3d=self.Ekin_sol_sfield_3d,
+            param_name="<Ekin_sol_sfield_3d>",
+        )
+        field_type.ensure_3d_sfield(
+            sfield_3d=self.Ekin_bulk_sfield_3d,
+            param_name="<Ekin_bulk_sfield_3d>",
+        )
 
 
 ##
@@ -109,6 +117,13 @@ class LRUCache:
         self,
         max_size: int = 3,
     ) -> None:
+        type_checks.ensure_finite_int(
+            param=max_size,
+            param_name="max_size",
+            allow_none=False,
+            require_positive=True,
+            allow_zero=False,
+        )
         self._cache_lookup = OrderedDict()
         self._max_size = int(max_size)
 
@@ -158,8 +173,12 @@ class QuokkaDataset:
         verbose: bool = True,
     ):
         """Initialise a dataset handle without opening the underlying yt dataset."""
+        type_checks.ensure_bool(
+            param=verbose,
+            param_name="verbose",
+        )
         self.dataset_dir = Path(dataset_dir)
-        self.verbose = bool(verbose)
+        self.verbose = verbose
         self.dataset = None
         self._in_context = False
         self._sim_time = None
@@ -491,6 +510,10 @@ class QuokkaDataset:
         Note: force_periodicity only affects the first call; subsequent calls returns the cached domain.
         This is required because yt cannot read this property reliably yet
         """
+        type_checks.ensure_bool(
+            param=force_periodicity,
+            param_name="force_periodicity",
+        )
         if self._udomain_3d is not None:
             return self._udomain_3d
         self._open_dataset_if_needed()
@@ -569,7 +592,13 @@ class QuokkaDataset:
         )
         with numpy.errstate(divide="ignore", invalid="ignore"):
             v_varray = mom_varray_3d / rho_sarray_3d[numpy.newaxis, ...]
-        numpy.nan_to_num(v_varray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        numpy.nan_to_num(
+            x=v_varray,
+            copy=False,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
         udomain_3d = self.load_3d_uniform_domain()
         v_vfield_3d = field_type.VectorField_3D.from_3d_varray(
             varray_3d=v_varray,
@@ -624,8 +653,16 @@ class QuokkaDataset:
             param_name="<mom_vfield_3d>",
         )
         with numpy.errstate(divide="ignore", invalid="ignore"):
-            Ekin_sarray_3d = 0.5 * _farray_operators.sum_of_varray_comps_squared(mom_varray_3d) / rho_sarray_3d
-        numpy.nan_to_num(Ekin_sarray_3d, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+            Ekin_sarray_3d = 0.5 * _farray_operators.sum_of_varray_comps_squared(
+                mom_varray_3d
+            ) / rho_sarray_3d
+        numpy.nan_to_num(
+            x=Ekin_sarray_3d,
+            copy=False,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
         udomain_3d = self.load_3d_uniform_domain()
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_sarray_3d,
@@ -640,6 +677,11 @@ class QuokkaDataset:
         field_label=r"$E_\mathrm{mag}$",
     ) -> field_type.ScalarField_3D:
         """Compute magnetic energy density: `E_mag = alpha * |b|^2` with `alpha=0.5` by default."""
+        type_checks.ensure_finite_float(
+            param=energy_prefactor,
+            param_name="energy_prefactor",
+            allow_none=False,
+        )
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return compute_fields.compute_magnetic_energy_density_sfield(
             vfield_3d_b=b_vfield_3d,
@@ -666,7 +708,13 @@ class QuokkaDataset:
                 param_name="<Emag_sfield_3d>",
             )
             Eint_sarray -= Emag_sarray
-        numpy.nan_to_num(Eint_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        numpy.nan_to_num(
+            x=Eint_sarray,
+            copy=False,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Eint_sarray,
             udomain_3d=self.load_3d_uniform_domain(),
@@ -679,6 +727,13 @@ class QuokkaDataset:
         gamma: float = 5.0 / 3.0,
     ) -> field_type.ScalarField_3D:
         """Compute thermal pressure: `p = (gamma - 1) * E_int`."""
+        type_checks.ensure_finite_float(
+            param=gamma,
+            param_name="gamma",
+            allow_none=False,
+            require_positive=True,
+            allow_zero=False,
+        )
         Eint_sarray = self._extract_3d_sarray(
             sfield_3d=self.load_3d_internal_energy_sfield(),
             param_name="<Eint_sfield_3d>",
@@ -769,9 +824,27 @@ class QuokkaDataset:
         Ekin_div_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_div_varray)
         Ekin_sol_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_sol_varray)
         Ekin_bulk_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_bulk_varray)
-        numpy.nan_to_num(Ekin_div_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-        numpy.nan_to_num(Ekin_sol_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-        numpy.nan_to_num(Ekin_bulk_sarray, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        numpy.nan_to_num(
+            x=Ekin_div_sarray,
+            copy=False,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
+        numpy.nan_to_num(
+            x=Ekin_sol_sarray,
+            copy=False,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
+        numpy.nan_to_num(
+            x=Ekin_bulk_sarray,
+            copy=False,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
         Ekin_div_sfield_3d = field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_div_sarray,
             udomain_3d=udomain_3d,
@@ -826,6 +899,13 @@ class QuokkaDataset:
         gamma: float = 5.0 / 3.0,
     ) -> field_type.ScalarField_3D:
         """Compute plasma beta: `beta = 2 p / |vec(b)|^2`."""
+        type_checks.ensure_finite_float(
+            param=gamma,
+            param_name="gamma",
+            allow_none=False,
+            require_positive=True,
+            allow_zero=False,
+        )
         p_sarray_3d = self._extract_3d_sarray(
             sfield_3d=self.load_3d_pressure_sfield(gamma=gamma),
             param_name="<p_sfield_3d>",
@@ -837,7 +917,13 @@ class QuokkaDataset:
         b_sq_sarray_3d = _farray_operators.sum_of_varray_comps_squared(b_varray_3d)
         with numpy.errstate(divide="ignore", invalid="ignore"):
             beta_sarray_3d = 2.0 * p_sarray_3d / b_sq_sarray_3d
-        numpy.nan_to_num(beta_sarray_3d, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        numpy.nan_to_num(
+            x=beta_sarray_3d,
+            copy=False,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=beta_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
@@ -859,7 +945,13 @@ class QuokkaDataset:
         )
         with numpy.errstate(divide="ignore", invalid="ignore"):
             va_varray_3d = b_varray_3d / numpy.sqrt(rho_sarray_3d)[numpy.newaxis, ...]
-        numpy.nan_to_num(va_varray_3d, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+        numpy.nan_to_num(
+            x=va_varray_3d,
+            copy=False,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
         return field_type.VectorField_3D.from_3d_varray(
             varray_3d=va_varray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
