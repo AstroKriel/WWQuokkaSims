@@ -14,7 +14,7 @@ from yt.utilities.logger import ytLogger as yt_logger
 
 from jormi.ww_io import log_manager
 from jormi.ww_types import type_checks
-from jormi.ww_fields import _cartesian_coordinates
+from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import (
   _farray_operators,
   domain_type,
@@ -29,6 +29,13 @@ from jormi.ww_fields.fields_3d import (
 ##
 
 FieldKey = tuple[str, str]
+
+## boxlib uses "x-", "y-", "z-" prefixes for vector component field names
+_BOXLIB_XYZ_LABELS: dict[cartesian_axes.CartesianAxis_3D, str] = {
+    cartesian_axes.CartesianAxis_3D.X0: "x",
+    cartesian_axes.CartesianAxis_3D.X1: "y",
+    cartesian_axes.CartesianAxis_3D.X2: "z",
+}
 
 
 @dataclass(frozen=True)
@@ -51,20 +58,20 @@ class HelmholtzKineticEnergy:
 
 def create_boxlib_vkeys(
     field_name: str,
-) -> dict[_cartesian_coordinates.CartesianAxis, FieldKey]:
+) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
     """
-    Create a mapping from CartesianAxis -> yt field key for a given base field name.
+    Create a mapping from CartesianAxis_3D -> yt field key for a given base field name.
 
     For example, for field_name="GasMomentum", this yields:
     {
-      X: ("boxlib", "x-GasMomentum"),
-      Y: ("boxlib", "y-GasMomentum"),
-      Z: ("boxlib", "z-GasMomentum"),
+      X0: ("boxlib", "x-GasMomentum"),
+      X1: ("boxlib", "y-GasMomentum"),
+      X2: ("boxlib", "z-GasMomentum"),
     }
     """
     return {
-        cartesian_axis: ("boxlib", f"{cartesian_axis.value}-{field_name}")
-        for cartesian_axis in _cartesian_coordinates.DEFAULT_AXES_ORDER
+        axis: ("boxlib", f"{_BOXLIB_XYZ_LABELS[axis]}-{field_name}")
+        for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER
     }
 
 
@@ -317,7 +324,7 @@ class QuokkaDataset:
     def _resolve_vfield_key_lookup(
         self,
         field_name: str,
-    ) -> dict[_cartesian_coordinates.CartesianAxis, FieldKey]:
+    ) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
         """Return the component yt keys for a named vector field."""
         if field_name not in YT_VFIELD_KEYS:
             valid_string = ", ".join(YT_VFIELD_KEYS.keys())
@@ -338,7 +345,7 @@ class QuokkaDataset:
     def _get_vfield_key_lookup(
         self,
         field_name: str,
-    ) -> dict[_cartesian_coordinates.CartesianAxis, FieldKey]:
+    ) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
         """Resolve and validate component keys for a named vector field."""
         missing_keys = self._get_missing_vfield_keys(field_name)
         if missing_keys:
@@ -425,13 +432,13 @@ class QuokkaDataset:
 
     def load_3d_vfield(
         self,
-        vfield_key_lookup: dict[_cartesian_coordinates.CartesianAxis, FieldKey],
+        vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, FieldKey],
         field_label: str,
     ) -> field_type.VectorField_3D:
         """Load and stack 3 components into a `VectorField_3D` with a `field_label` and `sim_time`."""
-        if set(vfield_key_lookup) != set(_cartesian_coordinates.DEFAULT_AXES_ORDER):
+        if set(vfield_key_lookup) != set(cartesian_axes.DEFAULT_3D_AXES_ORDER):
             received_axes = [axis.value for axis in sorted(vfield_key_lookup.keys(), key=lambda a: a.value)]
-            expected_axes = [axis.value for axis in _cartesian_coordinates.DEFAULT_AXES_ORDER]
+            expected_axes = [axis.value for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER]
             msg = (
                 "`vfield_key_lookup` must contain all 3 components "
                 f"{expected_axes}; only received: {received_axes}"
@@ -445,8 +452,8 @@ class QuokkaDataset:
         self._open_dataset_if_needed()
         assert self.dataset is not None
         covering_grid = self._get_covering_grid()
-        grouped_sarrays: dict[_cartesian_coordinates.CartesianAxis, numpy.ndarray] = {}
-        for comp_axis in _cartesian_coordinates.DEFAULT_AXES_ORDER:
+        grouped_sarrays: dict[cartesian_axes.CartesianAxis_3D, numpy.ndarray] = {}
+        for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER:
             comp_key = vfield_key_lookup[comp_axis]
             if comp_key not in self.dataset.field_list:
                 self._close_dataset_if_needed()
@@ -459,7 +466,7 @@ class QuokkaDataset:
         self._close_dataset_if_needed()
         sim_time = self.sim_time
         varray_3d = numpy.stack(
-            [grouped_sarrays[comp_axis] for comp_axis in _cartesian_coordinates.DEFAULT_AXES_ORDER],
+            [grouped_sarrays[comp_axis] for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER],
             axis=0,
         )
         udomain_3d = self.load_3d_uniform_domain()
