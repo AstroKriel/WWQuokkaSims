@@ -610,6 +610,16 @@ class QuokkaDataset:
         )
         return v_vfield_3d
 
+    def load_3d_velocity_magnitude_sfield(
+        self,
+    ) -> field_type.ScalarField_3D:
+        """Compute velocity magnitude: `|vec(v)|`."""
+        v_vfield_3d = self.load_3d_velocity_vfield()
+        return field_operators.compute_vfield_magnitude(
+            vfield_3d=v_vfield_3d,
+            field_label=r"|\vec{v}|",
+        )
+
     def load_3d_magnetic_vfield(
         self,
     ) -> field_type.VectorField_3D:
