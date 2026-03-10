@@ -589,25 +589,20 @@ class QuokkaDataset:
             vfield_3d=self.load_3d_momentum_vfield(),
             param_name="<mom_vfield_3d>",
         )
-        compute_array_stats.check_zero_values(
+        rho_has_zeros = compute_array_stats.check_zero_values(
             array=rho_sarray_3d,
             param_name="<rho_sfield_3d>",
             raise_error=False,
         )
-        with numpy.errstate(divide="ignore", invalid="ignore"):
+        with compute_array_stats.suppress_divide_warnings():
             v_varray = mom_varray_3d / rho_sarray_3d[numpy.newaxis, ...]
-        compute_array_stats.check_nonfinite_values(
-            array=v_varray,
-            param_name="<v_vfield_3d>",
-            raise_error=False,
-        )
-        numpy.nan_to_num(
-            x=v_varray,
-            copy=False,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
-        )
+        if not rho_has_zeros:
+            compute_array_stats.check_nonfinite_values(
+                array=v_varray,
+                param_name="<v_vfield_3d>",
+                raise_error=False,
+            )
+        compute_array_stats.make_nonfinites_zero(array=v_varray)
         udomain_3d = self.load_3d_uniform_domain()
         v_vfield_3d = field_type.VectorField_3D.from_3d_varray(
             varray_3d=v_varray,
@@ -671,27 +666,22 @@ class QuokkaDataset:
             vfield_3d=self.load_3d_momentum_vfield(),
             param_name="<mom_vfield_3d>",
         )
-        compute_array_stats.check_zero_values(
+        rho_has_zeros = compute_array_stats.check_zero_values(
             array=rho_sarray_3d,
             param_name="<rho_sfield_3d>",
             raise_error=False,
         )
-        with numpy.errstate(divide="ignore", invalid="ignore"):
+        with compute_array_stats.suppress_divide_warnings():
             Ekin_sarray_3d = 0.5 * _farray_operators.sum_of_varray_comps_squared(
                 mom_varray_3d
             ) / rho_sarray_3d
-        compute_array_stats.check_nonfinite_values(
-            array=Ekin_sarray_3d,
-            param_name="<Ekin_sfield_3d>",
-            raise_error=False,
-        )
-        numpy.nan_to_num(
-            x=Ekin_sarray_3d,
-            copy=False,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
-        )
+        if not rho_has_zeros:
+            compute_array_stats.check_nonfinite_values(
+                array=Ekin_sarray_3d,
+                param_name="<Ekin_sfield_3d>",
+                raise_error=False,
+            )
+        compute_array_stats.make_nonfinites_zero(array=Ekin_sarray_3d)
         udomain_3d = self.load_3d_uniform_domain()
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_sarray_3d,
@@ -742,13 +732,7 @@ class QuokkaDataset:
             param_name="<Eint_sfield_3d>",
             raise_error=False,
         )
-        numpy.nan_to_num(
-            x=Eint_sarray,
-            copy=False,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
-        )
+        compute_array_stats.make_nonfinites_zero(array=Eint_sarray)
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Eint_sarray,
             udomain_3d=self.load_3d_uniform_domain(),
@@ -863,37 +847,19 @@ class QuokkaDataset:
             param_name="<Ekin_div_sfield_3d>",
             raise_error=False,
         )
-        numpy.nan_to_num(
-            x=Ekin_div_sarray,
-            copy=False,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
-        )
+        compute_array_stats.make_nonfinites_zero(array=Ekin_div_sarray)
         compute_array_stats.check_nonfinite_values(
             array=Ekin_sol_sarray,
             param_name="<Ekin_sol_sfield_3d>",
             raise_error=False,
         )
-        numpy.nan_to_num(
-            x=Ekin_sol_sarray,
-            copy=False,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
-        )
+        compute_array_stats.make_nonfinites_zero(array=Ekin_sol_sarray)
         compute_array_stats.check_nonfinite_values(
             array=Ekin_bulk_sarray,
             param_name="<Ekin_bulk_sfield_3d>",
             raise_error=False,
         )
-        numpy.nan_to_num(
-            x=Ekin_bulk_sarray,
-            copy=False,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
-        )
+        compute_array_stats.make_nonfinites_zero(array=Ekin_bulk_sarray)
         Ekin_div_sfield_3d = field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_div_sarray,
             udomain_3d=udomain_3d,
@@ -964,25 +930,20 @@ class QuokkaDataset:
             param_name="<b_vfield_3d>",
         )
         b_sq_sarray_3d = _farray_operators.sum_of_varray_comps_squared(b_varray_3d)
-        compute_array_stats.check_zero_values(
+        b_sq_has_zeros = compute_array_stats.check_zero_values(
             array=b_sq_sarray_3d,
             param_name="<|b|^2>",
             raise_error=False,
         )
-        with numpy.errstate(divide="ignore", invalid="ignore"):
+        with compute_array_stats.suppress_divide_warnings():
             beta_sarray_3d = 2.0 * p_sarray_3d / b_sq_sarray_3d
-        compute_array_stats.check_nonfinite_values(
-            array=beta_sarray_3d,
-            param_name="<beta_sfield_3d>",
-            raise_error=False,
-        )
-        numpy.nan_to_num(
-            x=beta_sarray_3d,
-            copy=False,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
-        )
+        if not b_sq_has_zeros:
+            compute_array_stats.check_nonfinite_values(
+                array=beta_sarray_3d,
+                param_name="<beta_sfield_3d>",
+                raise_error=False,
+            )
+        compute_array_stats.make_nonfinites_zero(array=beta_sarray_3d)
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=beta_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
@@ -1002,25 +963,20 @@ class QuokkaDataset:
             sfield_3d=self.load_3d_density_sfield(),
             param_name="<rho_sfield_3d>",
         )
-        compute_array_stats.check_zero_values(
+        rho_has_zeros = compute_array_stats.check_zero_values(
             array=rho_sarray_3d,
             param_name="<rho_sfield_3d>",
             raise_error=False,
         )
-        with numpy.errstate(divide="ignore", invalid="ignore"):
+        with compute_array_stats.suppress_divide_warnings():
             va_varray_3d = b_varray_3d / numpy.sqrt(rho_sarray_3d)[numpy.newaxis, ...]
-        compute_array_stats.check_nonfinite_values(
-            array=va_varray_3d,
-            param_name="<va_vfield_3d>",
-            raise_error=False,
-        )
-        numpy.nan_to_num(
-            x=va_varray_3d,
-            copy=False,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
-        )
+        if not rho_has_zeros:
+            compute_array_stats.check_nonfinite_values(
+                array=va_varray_3d,
+                param_name="<va_vfield_3d>",
+                raise_error=False,
+            )
+        compute_array_stats.make_nonfinites_zero(array=va_varray_3d)
         return field_type.VectorField_3D.from_3d_varray(
             varray_3d=va_varray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
@@ -1139,25 +1095,20 @@ class QuokkaDataset:
             sfield_3d=self.load_3d_kinetic_energy_sfield(),
             param_name="<Ekin_sfield_3d>",
         )
-        compute_array_stats.check_zero_values(
+        Ekin_has_zeros = compute_array_stats.check_zero_values(
             array=Ekin_sarray_3d,
             param_name="<Ekin_sfield_3d>",
             raise_error=False,
         )
-        with numpy.errstate(divide="ignore", invalid="ignore"):
+        with compute_array_stats.suppress_divide_warnings():
             Eratio_sarray_3d = Emag_sarray_3d / Ekin_sarray_3d
-        compute_array_stats.check_nonfinite_values(
-            array=Eratio_sarray_3d,
-            param_name="<Eratio_sfield_3d>",
-            raise_error=False,
-        )
-        numpy.nan_to_num(
-            x=Eratio_sarray_3d,
-            copy=False,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0,
-        )
+        if not Ekin_has_zeros:
+            compute_array_stats.check_nonfinite_values(
+                array=Eratio_sarray_3d,
+                param_name="<Eratio_sfield_3d>",
+                raise_error=False,
+            )
+        compute_array_stats.make_nonfinites_zero(array=Eratio_sarray_3d)
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Eratio_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
