@@ -602,7 +602,12 @@ class QuokkaDataset:
                 param_name="<v_vfield_3d>",
                 raise_error=False,
             )
-        compute_array_stats.make_nonfinites_zero(array=v_varray)
+        compute_array_stats.make_nonfinites_zero(
+            array=v_varray,
+            zero_nan=True,
+            zero_posinf=True,
+            zero_neginf=True,
+        )
         udomain_3d = self.load_3d_uniform_domain()
         v_vfield_3d = field_type.VectorField_3D.from_3d_varray(
             varray_3d=v_varray,
@@ -681,7 +686,12 @@ class QuokkaDataset:
                 param_name="<Ekin_sfield_3d>",
                 raise_error=False,
             )
-        compute_array_stats.make_nonfinites_zero(array=Ekin_sarray_3d)
+        compute_array_stats.make_nonfinites_zero(
+            array=Ekin_sarray_3d,
+            zero_nan=True,
+            zero_posinf=True,
+            zero_neginf=True,
+        )
         udomain_3d = self.load_3d_uniform_domain()
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_sarray_3d,
@@ -732,7 +742,12 @@ class QuokkaDataset:
             param_name="<Eint_sfield_3d>",
             raise_error=False,
         )
-        compute_array_stats.make_nonfinites_zero(array=Eint_sarray)
+        compute_array_stats.make_nonfinites_zero(
+            array=Eint_sarray,
+            zero_nan=True,
+            zero_posinf=True,
+            zero_neginf=True,
+        )
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Eint_sarray,
             udomain_3d=self.load_3d_uniform_domain(),
@@ -847,19 +862,34 @@ class QuokkaDataset:
             param_name="<Ekin_div_sfield_3d>",
             raise_error=False,
         )
-        compute_array_stats.make_nonfinites_zero(array=Ekin_div_sarray)
+        compute_array_stats.make_nonfinites_zero(
+            array=Ekin_div_sarray,
+            zero_nan=True,
+            zero_posinf=True,
+            zero_neginf=True,
+        )
         compute_array_stats.check_nonfinite_values(
             array=Ekin_sol_sarray,
             param_name="<Ekin_sol_sfield_3d>",
             raise_error=False,
         )
-        compute_array_stats.make_nonfinites_zero(array=Ekin_sol_sarray)
+        compute_array_stats.make_nonfinites_zero(
+            array=Ekin_sol_sarray,
+            zero_nan=True,
+            zero_posinf=True,
+            zero_neginf=True,
+        )
         compute_array_stats.check_nonfinite_values(
             array=Ekin_bulk_sarray,
             param_name="<Ekin_bulk_sfield_3d>",
             raise_error=False,
         )
-        compute_array_stats.make_nonfinites_zero(array=Ekin_bulk_sarray)
+        compute_array_stats.make_nonfinites_zero(
+            array=Ekin_bulk_sarray,
+            zero_nan=True,
+            zero_posinf=True,
+            zero_neginf=True,
+        )
         Ekin_div_sfield_3d = field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_div_sarray,
             udomain_3d=udomain_3d,
@@ -943,7 +973,12 @@ class QuokkaDataset:
                 param_name="<beta_sfield_3d>",
                 raise_error=False,
             )
-        compute_array_stats.make_nonfinites_zero(array=beta_sarray_3d)
+        compute_array_stats.make_nonfinites_zero(
+            array=beta_sarray_3d,
+            zero_nan=True,
+            zero_posinf=True,
+            zero_neginf=True,
+        )
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=beta_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
@@ -976,7 +1011,12 @@ class QuokkaDataset:
                 param_name="<va_vfield_3d>",
                 raise_error=False,
             )
-        compute_array_stats.make_nonfinites_zero(array=va_varray_3d)
+        compute_array_stats.make_nonfinites_zero(
+            array=va_varray_3d,
+            zero_nan=True,
+            zero_posinf=True,
+            zero_neginf=True,
+        )
         return field_type.VectorField_3D.from_3d_varray(
             varray_3d=va_varray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
@@ -1108,7 +1148,12 @@ class QuokkaDataset:
                 param_name="<Eratio_sfield_3d>",
                 raise_error=False,
             )
-        compute_array_stats.make_nonfinites_zero(array=Eratio_sarray_3d)
+        compute_array_stats.make_nonfinites_zero(
+            array=Eratio_sarray_3d,
+            zero_nan=True,
+            zero_posinf=True,
+            zero_neginf=True,
+        )
         return field_type.ScalarField_3D.from_3d_sarray(
             sarray_3d=Eratio_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
