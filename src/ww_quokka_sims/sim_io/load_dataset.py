@@ -14,6 +14,7 @@ from yt.utilities.logger import ytLogger as yt_logger
 
 from jormi.ww_io import log_manager
 from jormi.ww_types import type_checks
+from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import (
     _farray_operators,
@@ -588,8 +589,18 @@ class QuokkaDataset:
             vfield_3d=self.load_3d_momentum_vfield(),
             param_name="<mom_vfield_3d>",
         )
+        compute_array_stats.check_zero_values(
+            array=rho_sarray_3d,
+            param_name="<rho_sfield_3d>",
+            raise_error=False,
+        )
         with numpy.errstate(divide="ignore", invalid="ignore"):
             v_varray = mom_varray_3d / rho_sarray_3d[numpy.newaxis, ...]
+        compute_array_stats.check_nonfinite_values(
+            array=v_varray,
+            param_name="<v_vfield_3d>",
+            raise_error=False,
+        )
         numpy.nan_to_num(
             x=v_varray,
             copy=False,
@@ -660,10 +671,20 @@ class QuokkaDataset:
             vfield_3d=self.load_3d_momentum_vfield(),
             param_name="<mom_vfield_3d>",
         )
+        compute_array_stats.check_zero_values(
+            array=rho_sarray_3d,
+            param_name="<rho_sfield_3d>",
+            raise_error=False,
+        )
         with numpy.errstate(divide="ignore", invalid="ignore"):
             Ekin_sarray_3d = 0.5 * _farray_operators.sum_of_varray_comps_squared(
                 mom_varray_3d
             ) / rho_sarray_3d
+        compute_array_stats.check_nonfinite_values(
+            array=Ekin_sarray_3d,
+            param_name="<Ekin_sfield_3d>",
+            raise_error=False,
+        )
         numpy.nan_to_num(
             x=Ekin_sarray_3d,
             copy=False,
@@ -716,6 +737,11 @@ class QuokkaDataset:
                 param_name="<Emag_sfield_3d>",
             )
             Eint_sarray -= Emag_sarray
+        compute_array_stats.check_nonfinite_values(
+            array=Eint_sarray,
+            param_name="<Eint_sfield_3d>",
+            raise_error=False,
+        )
         numpy.nan_to_num(
             x=Eint_sarray,
             copy=False,
@@ -832,6 +858,11 @@ class QuokkaDataset:
         Ekin_div_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_div_varray)
         Ekin_sol_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_sol_varray)
         Ekin_bulk_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_bulk_varray)
+        compute_array_stats.check_nonfinite_values(
+            array=Ekin_div_sarray,
+            param_name="<Ekin_div_sfield_3d>",
+            raise_error=False,
+        )
         numpy.nan_to_num(
             x=Ekin_div_sarray,
             copy=False,
@@ -839,12 +870,22 @@ class QuokkaDataset:
             posinf=0.0,
             neginf=0.0,
         )
+        compute_array_stats.check_nonfinite_values(
+            array=Ekin_sol_sarray,
+            param_name="<Ekin_sol_sfield_3d>",
+            raise_error=False,
+        )
         numpy.nan_to_num(
             x=Ekin_sol_sarray,
             copy=False,
             nan=0.0,
             posinf=0.0,
             neginf=0.0,
+        )
+        compute_array_stats.check_nonfinite_values(
+            array=Ekin_bulk_sarray,
+            param_name="<Ekin_bulk_sfield_3d>",
+            raise_error=False,
         )
         numpy.nan_to_num(
             x=Ekin_bulk_sarray,
@@ -923,8 +964,18 @@ class QuokkaDataset:
             param_name="<b_vfield_3d>",
         )
         b_sq_sarray_3d = _farray_operators.sum_of_varray_comps_squared(b_varray_3d)
+        compute_array_stats.check_zero_values(
+            array=b_sq_sarray_3d,
+            param_name="<|b|^2>",
+            raise_error=False,
+        )
         with numpy.errstate(divide="ignore", invalid="ignore"):
             beta_sarray_3d = 2.0 * p_sarray_3d / b_sq_sarray_3d
+        compute_array_stats.check_nonfinite_values(
+            array=beta_sarray_3d,
+            param_name="<beta_sfield_3d>",
+            raise_error=False,
+        )
         numpy.nan_to_num(
             x=beta_sarray_3d,
             copy=False,
@@ -951,8 +1002,18 @@ class QuokkaDataset:
             sfield_3d=self.load_3d_density_sfield(),
             param_name="<rho_sfield_3d>",
         )
+        compute_array_stats.check_zero_values(
+            array=rho_sarray_3d,
+            param_name="<rho_sfield_3d>",
+            raise_error=False,
+        )
         with numpy.errstate(divide="ignore", invalid="ignore"):
             va_varray_3d = b_varray_3d / numpy.sqrt(rho_sarray_3d)[numpy.newaxis, ...]
+        compute_array_stats.check_nonfinite_values(
+            array=va_varray_3d,
+            param_name="<va_vfield_3d>",
+            raise_error=False,
+        )
         numpy.nan_to_num(
             x=va_varray_3d,
             copy=False,
@@ -1063,6 +1124,45 @@ class QuokkaDataset:
         return field_operators.compute_vfield_magnitude(
             vfield_3d=lf_vfield_3d,
             field_label=r"|(\nabla\times\vec{b})\times\vec{b}|",
+        )
+
+    def load_3d_energy_ratio_sfield(
+        self,
+        energy_prefactor: float = 0.5,
+    ) -> field_type.ScalarField_3D:
+        """Compute magnetic-to-kinetic energy ratio: `E_mag / E_kin`."""
+        Emag_sarray_3d = self._extract_3d_sarray(
+            sfield_3d=self.load_3d_magnetic_energy_sfield(energy_prefactor=energy_prefactor),
+            param_name="<Emag_sfield_3d>",
+        )
+        Ekin_sarray_3d = self._extract_3d_sarray(
+            sfield_3d=self.load_3d_kinetic_energy_sfield(),
+            param_name="<Ekin_sfield_3d>",
+        )
+        compute_array_stats.check_zero_values(
+            array=Ekin_sarray_3d,
+            param_name="<Ekin_sfield_3d>",
+            raise_error=False,
+        )
+        with numpy.errstate(divide="ignore", invalid="ignore"):
+            Eratio_sarray_3d = Emag_sarray_3d / Ekin_sarray_3d
+        compute_array_stats.check_nonfinite_values(
+            array=Eratio_sarray_3d,
+            param_name="<Eratio_sfield_3d>",
+            raise_error=False,
+        )
+        numpy.nan_to_num(
+            x=Eratio_sarray_3d,
+            copy=False,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0,
+        )
+        return field_type.ScalarField_3D.from_3d_sarray(
+            sarray_3d=Eratio_sarray_3d,
+            udomain_3d=self.load_3d_uniform_domain(),
+            field_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
+            sim_time=self.sim_time,
         )
 
     def load_3d_poynting_flux_vfield(
