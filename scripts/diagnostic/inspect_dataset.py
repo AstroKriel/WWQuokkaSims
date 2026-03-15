@@ -13,8 +13,10 @@ import quokka_fields
 
 
 ##
-## === OPERATOR CLASS
+## === SCRIPT INTERFACE
 ##
+
+
 class ScriptInterface:
 
     def __init__(
@@ -42,6 +44,8 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
+
+
 def main():
     user_args = argparse.ArgumentParser(
         description="Inspect a Quokka dataset and list available field keys.",

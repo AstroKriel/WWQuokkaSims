@@ -22,6 +22,8 @@ import quokka_fields  # local utils
 ##
 ## === DATA CLASSES
 ##
+
+
 @dataclass(frozen=True)
 class SpectraData:
     sim_time: float
@@ -43,8 +45,10 @@ class SpectraData:
 
 
 ##
-## === OPERATOR CLASSES
+## === COMPUTE
 ##
+
+
 class ComputeSpectra:
 
     def __init__(
@@ -89,6 +93,11 @@ class ComputeSpectra:
             )
         field_spectra.sort(key=lambda s: s.sim_time)
         return field_spectra
+
+
+##
+## === RENDER
+##
 
 
 class RenderSpectra:
@@ -209,6 +218,11 @@ class RenderSpectra:
         )
 
 
+##
+## === SCRIPT INTERFACE
+##
+
+
 class ScriptInterface:
 
     def __init__(
@@ -253,6 +267,8 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
+
+
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot power spectra of Quokka scalar fields.",

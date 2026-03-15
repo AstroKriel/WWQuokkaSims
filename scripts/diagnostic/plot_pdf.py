@@ -24,6 +24,8 @@ import quokka_fields  # local utils
 ##
 ## === DATA CLASSES
 ##
+
+
 @dataclass(frozen=True)
 class PDFData:
     sim_time: float
@@ -80,8 +82,10 @@ class PDFData:
 
 
 ##
-## === OPERATOR CLASSES
+## === COMPUTE
 ##
+
+
 class ComputePDFs:
 
     def __init__(
@@ -184,6 +188,11 @@ class ComputePDFs:
             field_pdfs.append(pdf)
         field_pdfs.sort(key=lambda pdf: pdf.sim_time)
         return field_pdfs
+
+
+##
+## === RENDER
+##
 
 
 class RenderPDFs:
@@ -312,6 +321,11 @@ class RenderPDFs:
         )
 
 
+##
+## === SCRIPT INTERFACE
+##
+
+
 class ScriptInterface:
 
     def __init__(
@@ -365,6 +379,8 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
+
+
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot PDFs of Quokka field components.",

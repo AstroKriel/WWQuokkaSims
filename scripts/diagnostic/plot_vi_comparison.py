@@ -19,7 +19,7 @@ import quokka_fields  # local utils
 from plot_vi_evolution import DataSeries, LoadDataSeries
 
 ##
-## === OPERATOR CLASSES
+## === RENDER
 ##
 
 
@@ -136,6 +136,11 @@ class RenderComparisonPlot:
             fig_path=fig_path,
             verbose=True,
         )
+
+
+##
+## === SCRIPT INTERFACE
+##
 
 
 class ScriptInterface:

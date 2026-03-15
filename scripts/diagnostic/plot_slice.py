@@ -26,6 +26,8 @@ import quokka_fields  # local utils
 ##
 ## === DATA CLASSES
 ##
+
+
 @dataclass(frozen=True)
 class FieldArgs:
     field_name: str
@@ -81,6 +83,8 @@ class SlicedField:
 ##
 ## === HELPER FUNCTIONS
 ##
+
+
 def _parse_axes(
     *,
     axes: tuple[str, ...] | list[str] | None,
@@ -158,8 +162,10 @@ def slice_field(
 
 
 ##
-## === OPERATOR CLASSES
+## === RENDER
 ##
+
+
 @dataclass(frozen=True)
 class FieldPlotter:
     dataset_tag: str
@@ -436,6 +442,11 @@ def render_fields_in_parallel(
     )
 
 
+##
+## === SCRIPT INTERFACE
+##
+
+
 class ScriptInterface:
 
     def __init__(
@@ -536,6 +547,8 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Plot midplane slices of Quokka field components.",
