@@ -10,6 +10,7 @@ import argparse
 from typing import NamedTuple
 from pathlib import Path
 from dataclasses import dataclass
+from collections.abc import Callable
 
 from jormi.ww_types import check_types
 from jormi.ww_io import manage_io, manage_log
@@ -30,7 +31,7 @@ import utils
 @dataclass(frozen=True)
 class FieldArgs:
     field_name: str
-    field_loader: str
+    field_loader: Callable
     cmap_name: str
 
 
@@ -38,7 +39,7 @@ class WorkerArgs(NamedTuple):
     dataset_dir: str
     dataset_tag: str
     field_name: str
-    field_loader: str
+    field_loader: Callable
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
     cmap_name: str
@@ -116,7 +117,9 @@ def get_slice_bounds(
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X1:
         return ((x0_min, x0_max), (x2_min, x2_max))
     return (
-        (x1_min, x1_max), (x2_min, x2_max))
+        (x1_min, x1_max),
+        (x2_min, x2_max),
+    )
 
 
 def get_slice_labels(
@@ -124,7 +127,9 @@ def get_slice_labels(
 ) -> tuple[str, str]:
     axes_plane = [ax for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER if ax != axis_to_slice]
     return (
-        utils.as_latex_label(axes_plane[0].axis_label), utils.as_latex_label(axes_plane[1].axis_label))
+        utils.as_latex_label(axes_plane[0].axis_label),
+        utils.as_latex_label(axes_plane[1].axis_label),
+    )
 
 
 def slice_field(
@@ -229,8 +234,7 @@ class FieldPlotter:
     ) -> Dataset:
         with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
             uniform_domain = ds.load_3d_uniform_domain()
-            loader_fn = getattr(ds, self.field_args.field_loader)
-            field = loader_fn()  # ScalarField_3D or VectorField_3D
+            field = self.field_args.field_loader(ds)  # ScalarField_3D or VectorField_3D
         return Dataset(
             uniform_domain=uniform_domain,
             field=field,

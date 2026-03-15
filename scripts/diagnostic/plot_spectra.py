@@ -9,6 +9,7 @@ import argparse
 
 from pathlib import Path
 from dataclasses import dataclass
+from collections.abc import Callable
 
 from jormi.ww_types import check_types, check_arrays
 from jormi.ww_plots import manage_plots, add_color
@@ -55,7 +56,7 @@ class ComputeSpectra:
         *,
         dataset_dirs: list[Path],
         field_name: str,
-        field_loader: str,
+        field_loader: Callable,
     ):
         self.dataset_dirs = dataset_dirs
         self.field_name = field_name
@@ -67,8 +68,7 @@ class ComputeSpectra:
         field_spectra: list[SpectraData] = []
         for dataset_dir in self.dataset_dirs:
             with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
-                loader_fn = getattr(ds, self.field_loader)
-                field = loader_fn()
+                field = self.field_loader(ds)
             if not isinstance(field, field_types.ScalarField_3D):
                 raise TypeError(
                     f"`{self.field_name}` is not a scalar field; "
@@ -103,7 +103,7 @@ class RenderSpectra:
         dataset_tag: str,
         fig_dir: Path,
         field_name: str,
-        field_loader: str,
+        field_loader: Callable,
         cmap_name: str,
     ):
         self.dataset_dirs = dataset_dirs
@@ -149,7 +149,8 @@ class RenderSpectra:
                 palette_name=cmap_name,
                 palette_range=(0.25, 1.0),
             ),
-            value_range=(0, max(0, len(field_spectra) - 1)),
+            value_range=(0, max(0,
+                                len(field_spectra) - 1)),
         )
         for series_index, spectra_data in enumerate(field_spectra):
             color = palette.mpl_cmap(palette.mpl_norm(series_index))
@@ -255,7 +256,7 @@ class ScriptInterface:
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot power spectra of Quokka scalar fields.",
-        parents=[utils.base_parser()],
+        parents=[utils.base_parser(add_comps_axes=False)],
     ).parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.dir,

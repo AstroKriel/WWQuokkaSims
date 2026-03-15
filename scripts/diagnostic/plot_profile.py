@@ -11,6 +11,7 @@ import argparse
 
 from pathlib import Path
 from dataclasses import dataclass
+from collections.abc import Callable
 
 from jormi.ww_types import check_types
 from jormi.ww_plots import manage_plots, add_color
@@ -63,7 +64,7 @@ class ComputeCompProfiles:
         *,
         dataset_dirs: list[Path],
         field_name: str,
-        field_loader: str,
+        field_loader: Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
     ):
@@ -186,8 +187,7 @@ class ComputeCompProfiles:
         for dataset_dir in self.dataset_dirs:
             with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
                 udomain_3d = ds.load_3d_uniform_domain()
-                loader_fn = getattr(ds, self.field_loader)
-                field = loader_fn()  # ScalarField or VectorField
+                field = self.field_loader(ds)  # ScalarField or VectorField
             if isinstance(field, field_types.ScalarField_3D):
                 comp_profiles = self._compute_scalar_profiles(
                     field=field,
@@ -220,7 +220,7 @@ class RenderCompProfiles:
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
-        field_loader: str,
+        field_loader: Callable,
         cmap_name: str,
         fig_dir: Path,
         save_profiles: bool,
@@ -303,7 +303,8 @@ class RenderCompProfiles:
                 palette_name=self.cmap_name,
                 palette_range=(0.25, 1.0),
             ),
-            value_range=(0, max(0, len(comp_profiles) - 1)),
+            value_range=(0, max(0,
+                                len(comp_profiles) - 1)),
         )
         for time_index, comp_profile in enumerate(comp_profiles):
             color = palette.mpl_cmap(palette.mpl_norm(time_index))

@@ -678,7 +678,7 @@ class QuokkaDataset:
         )
         with compute_array_stats.suppress_divide_warnings():
             Ekin_sarray_3d = 0.5 * _farray_operators.sum_of_varray_comps_squared(
-                mom_varray_3d
+                mom_varray_3d,
             ) / rho_sarray_3d
         if not rho_has_zeros:
             compute_array_stats.check_nonfinite_values(

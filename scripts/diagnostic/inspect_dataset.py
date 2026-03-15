@@ -49,7 +49,7 @@ class ScriptInterface:
 def main():
     user_args = argparse.ArgumentParser(
         description="Inspect a Quokka dataset and list available field keys.",
-        parents=[utils.base_parser()],
+        parents=[utils.base_parser(add_comps_axes=False)],
     ).parse_args()
     script_interface = ScriptInterface(
         dataset_dir=user_args.dir,

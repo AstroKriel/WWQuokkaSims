@@ -10,7 +10,6 @@ import argparse
 from pathlib import Path
 
 from jormi.ww_types import check_types
-from jormi import ww_lists
 from jormi.ww_io import manage_io
 from jormi.ww_data import series_types, interpolate_series
 from jormi.ww_plots import manage_plots
@@ -238,57 +237,16 @@ class ScriptInterface:
 ##
 
 
-def get_user_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--dir-1",
-        "-d1",
-        type=lambda path: Path(path).expanduser().resolve(),
-        required=True,
-        help="First directory to compare.",
-    )
-    parser.add_argument(
-        "--dir-2",
-        "-d2",
-        type=lambda path: Path(path).expanduser().resolve(),
-        required=True,
-        help="Second directory to compare.",
-    )
-    parser.add_argument(
-        "--tag",
-        "-t",
-        default="plt",
-        help=
-        "Dataset tag used to identify output directories (e.g., `plt` -> plt00010, plt00020). Default: `plt`.",
-    )
-    field_list = ww_lists.as_string(
-        elems=sorted(
-            utils.QUOKKA_FIELD_LOOKUP.keys(),
-        ),
-    )
-    parser.add_argument(
-        "--fields",
-        "-f",
-        nargs="+",
-        default=None,
-        help=f"List of (vector and/or scalar) fields to plot. Options: {field_list}",
-    )
-    parser.add_argument(
-        "--out",
-        type=lambda path: Path(path).expanduser().resolve(),
-        required=True,
-        help="Output directory for figures.",
-    )
-    return parser.parse_args()
-
-
 ##
 ## === PROGRAM MAIN
 ##
 
 
 def main():
-    user_args = get_user_args()
+    user_args = argparse.ArgumentParser(
+        description="Compare volume-integrated field evolution between two Quokka simulations.",
+        parents=[utils.base_parser(num_dirs=2, add_comps_axes=False)],
+    ).parse_args()
     script_interface = ScriptInterface(
         dir_1=user_args.dir_1,
         dir_2=user_args.dir_2,

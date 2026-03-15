@@ -9,6 +9,7 @@ import argparse
 
 from pathlib import Path
 from dataclasses import dataclass
+from collections.abc import Callable
 
 from jormi.ww_types import check_types, check_arrays
 from jormi.ww_plots import manage_plots, add_color
@@ -92,7 +93,7 @@ class ComputePDFs:
         *,
         dataset_dirs: list[Path],
         field_name: str,
-        field_loader: str,
+        field_loader: Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         num_bins: int,
     ):
@@ -175,8 +176,7 @@ class ComputePDFs:
         field_pdfs: list[PDFData] = []
         for dataset_dir in self.dataset_dirs:
             with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
-                loader_fn = getattr(ds, self.field_loader)
-                field = loader_fn()
+                field = self.field_loader(ds)
             if isinstance(field, field_types.ScalarField_3D):
                 pdf = self._compute_sfield_pdf(field=field)
             elif isinstance(field, field_types.VectorField_3D):
@@ -198,7 +198,7 @@ class RenderPDFs:
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         cmap_name: str,
-        field_loader: str,
+        field_loader: Callable,
         num_bins: int,
     ):
         self.dataset_dirs = dataset_dirs
@@ -245,7 +245,8 @@ class RenderPDFs:
                 palette_name=cmap_name,
                 palette_range=(0.25, 1.0),
             ),
-            value_range=(0, max(0, len(field_pdfs) - 1)),
+            value_range=(0, max(0,
+                                len(field_pdfs) - 1)),
         )
         for series_index, pdf_data in enumerate(field_pdfs):
             color = palette.mpl_cmap(palette.mpl_norm(series_index))

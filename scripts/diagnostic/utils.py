@@ -8,6 +8,7 @@ import numpy
 import argparse
 
 from pathlib import Path
+from collections.abc import Callable
 from matplotlib.figure import Figure as mpl_Figure
 
 from jormi.ww_types import check_types
@@ -16,71 +17,87 @@ from jormi.ww_plots import manage_plots
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_types
 
+from ww_quokka_sims.sim_io import load_dataset
+
 ##
 ## === QUOKKA FIELDS
 ##
 
+SEQUENTIAL_CMAP = "cmr.lavender"
+DIVERGING_CMAP = "cmr.iceburn"
+
+
+def _field_entry(
+    loader: Callable,
+    cmap: str,
+) -> dict:
+    return {
+        "loader": loader,
+        "cmap": cmap,
+    }
+
+
 QUOKKA_FIELD_LOOKUP = {
-    "rho": {
-        "loader": "load_3d_density_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "vel": {
-        "loader": "load_3d_velocity_vfield",
-        "cmap": "cmr.lavender",
-    },
-    "vel_magn": {
-        "loader": "load_3d_velocity_magnitude_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "mag": {
-        "loader": "load_3d_magnetic_vfield",
-        "cmap": "cmr.lavender",
-    },
-    "Etot": {
-        "loader": "load_3d_total_energy_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "Eint": {
-        "loader": "load_3d_internal_energy_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "Ekin": {
-        "loader": "load_3d_kinetic_energy_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "Ekin_div": {
-        "loader": "load_3d_div_kinetic_energy_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "Ekin_sol": {
-        "loader": "load_3d_sol_kinetic_energy_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "Ekin_bulk": {
-        "loader": "load_3d_bulk_kinetic_energy_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "Emag": {
-        "loader": "load_3d_magnetic_energy_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "Eratio": {
-        "loader": "load_3d_energy_ratio_sfield",
-        "cmap": "cmr.iceburn",
-    },
-    "pressure": {
-        "loader": "load_3d_pressure_sfield",
-        "cmap": "cmr.lavender",
-    },
-    "divb": {
-        "loader": "load_3d_divb_sfield",
-        "cmap": "cmr.fusion",
-    },
-    "cur": {
-        "loader": "load_current_density_sfield",
-        "cmap": "cmr.lavender",
-    },
+    "rho": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_density_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "vel": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_velocity_vfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "vel_magn": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_velocity_magnitude_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "mag": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_magnetic_vfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "Etot": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_total_energy_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "Eint": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_internal_energy_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "Ekin": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_kinetic_energy_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "Ekin_div": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_div_kinetic_energy_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "Ekin_sol": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_sol_kinetic_energy_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "Ekin_bulk": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_bulk_kinetic_energy_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "Emag": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_magnetic_energy_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "Eratio": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_energy_ratio_sfield,
+        cmap=DIVERGING_CMAP,
+    ),
+    "pressure": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_pressure_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
+    "divb": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_divb_sfield,
+        cmap=DIVERGING_CMAP,
+    ),
+    "cur": _field_entry(
+        loader=load_dataset.QuokkaDataset.load_3d_current_density_sfield,
+        cmap=SEQUENTIAL_CMAP,
+    ),
 }
 
 ##
@@ -117,23 +134,53 @@ def validate_fields(
         raise ValueError(f"Provide fields via -f from: {sorted(valid_fields)}")
 
 
-def base_parser() -> argparse.ArgumentParser:
+def base_parser(
+    num_dirs: int = 1,
+    add_comps_axes: bool = True,
+) -> argparse.ArgumentParser:
     """
     Shared parser arguments for diagnostic scripts.
-    
+
+    Parameters
+    ---
+    - `num_dirs`:
+        Number of input directory arguments to add.
+
+    - `add_comps_axes`:
+        If True, adds --comps/-c and --axes/-a arguments for vector field components and slice axes.
+
     Use as a parent:
         parser = argparse.ArgumentParser(parents=[utils.base_parser()], description="...")
     """
     field_list = ww_lists.as_string(elems=sorted(QUOKKA_FIELD_LOOKUP.keys()))
     axis_list = ww_lists.as_string(elems=list(cartesian_axes.VALID_3D_AXIS_LABELS))
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument(
-        "--dir",
-        "-d",
-        type=lambda path: Path(path).expanduser().resolve(),
-        default=None,
-        help="Path to a Quokka simulation or dataset directory.",
-    )
+    ## --- directory arguments (shape depends on num_dirs)
+    if num_dirs == 1:
+        parser.add_argument(
+            "--dir",
+            "-d",
+            type=lambda path: Path(path).expanduser().resolve(),
+            default=None,
+            help="Path to a Quokka simulation or dataset directory.",
+        )
+    else:
+        for dir_index in range(1, num_dirs + 1):
+            parser.add_argument(
+                f"--dir-{dir_index}",
+                f"-d{dir_index}",
+                type=lambda path: Path(path).expanduser().resolve(),
+                required=True,
+                help=f"Input directory {dir_index} of {num_dirs}.",
+            )
+        parser.add_argument(
+            "--out",
+            "-o",
+            type=lambda path: Path(path).expanduser().resolve(),
+            required=True,
+            help="Output directory for figures.",
+        )
+    ## always required
     parser.add_argument(
         "--tag",
         "-t",
@@ -147,20 +194,22 @@ def base_parser() -> argparse.ArgumentParser:
         default=None,
         help=f"Fields to plot. Options: {field_list}",
     )
-    parser.add_argument(
-        "--comps",
-        "-c",
-        nargs="+",
-        default=None,
-        help=f"Vector field components to show. Options: {axis_list}",
-    )
-    parser.add_argument(
-        "--axes",
-        "-a",
-        nargs="+",
-        default=None,
-        help=f"Axes to slice along. Options: {axis_list}",
-    )
+    ## optional vector field arguments (skip for purely scalar-based scripts)
+    if add_comps_axes:
+        parser.add_argument(
+            "--comps",
+            "-c",
+            nargs="+",
+            default=None,
+            help=f"Vector field components to show. Options: {axis_list}",
+        )
+        parser.add_argument(
+            "--axes",
+            "-a",
+            nargs="+",
+            default=None,
+            help=f"Axes to slice along. Options: {axis_list}",
+        )
     return parser
 
 

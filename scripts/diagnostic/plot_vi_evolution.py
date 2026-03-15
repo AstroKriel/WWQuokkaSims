@@ -9,6 +9,7 @@ import numpy
 
 from pathlib import Path
 from dataclasses import dataclass
+from collections.abc import Callable
 
 from jormi.ww_fns import parallel_dispatch
 from jormi.ww_types import check_types, check_arrays
@@ -29,7 +30,7 @@ import utils
 class FieldArgs:
     dataset_dir: Path
     field_name: str
-    field_loader: str
+    field_loader: Callable
 
 
 @dataclass(frozen=True)
@@ -77,7 +78,7 @@ class LoadDataSeries:
         *,
         dataset_dirs: list[Path],
         field_name: str,
-        field_loader: str,
+        field_loader: Callable,
         use_parallel: bool = True,
     ):
         self.dataset_dirs = list(sorted(dataset_dirs))
@@ -90,11 +91,10 @@ class LoadDataSeries:
         field_args: FieldArgs,
     ) -> DataPoint:
         with load_dataset.QuokkaDataset(dataset_dir=field_args.dataset_dir, verbose=False) as ds:
-            loader_fn = getattr(ds, field_args.field_loader)
-            sfield_3d = loader_fn()
+            sfield_3d = field_args.field_loader(ds)
         if not isinstance(sfield_3d, field_types.ScalarField_3D):
             raise TypeError(
-                f"Expected ScalarField_3D from `{field_args.field_loader}`, got {type(sfield_3d).__name__}.",
+                f"Expected ScalarField_3D from `{field_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
             )
         sim_time = sfield_3d.sim_time
         if (sim_time is None) or (not numpy.isfinite(sim_time)):
@@ -269,7 +269,7 @@ class ScriptInterface:
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot volume-integrated field evolution from Quokka simulations.",
-        parents=[utils.base_parser()],
+        parents=[utils.base_parser(add_comps_axes=False)],
     ).parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.dir,
