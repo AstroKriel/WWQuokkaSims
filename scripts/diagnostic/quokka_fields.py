@@ -137,18 +137,28 @@ def base_parser(
     allow_vfields: bool = True,
 ) -> argparse.ArgumentParser:
     """
-    Shared parser arguments for diagnostic scripts.
+    Shared argument parser for diagnostic scripts.
+
+    Returns a base parser intended to be used as a parent via `parents=[base_parser()]`.
+    The child parser inherits all arguments defined here, which can then be accessed
+    as usual on the parsed namespace (e.g. `args.fields`, `args.tag`, `args.dir`).
 
     Parameters
     ---
     - `num_dirs`:
-        Number of input directory arguments to add.
+        Number of input directory arguments to add. If 1, adds a single optional `--dir/-d`.
+        If >1, adds `--dir-1/-d1`, `--dir-2/-d2`, ... (all required), plus `--out/-o`.
 
     - `allow_vfields`:
-        If True, adds --comps/-c and --axes/-a arguments for vector field components and slice axes.
+        If True, adds `--comps/-c` and `--axes/-a` for vector field components and slice axes.
 
-    Use as a parent:
-        parser = argparse.ArgumentParser(parents=[quokka_fields.base_parser()], description="...")
+    Example
+    ---
+    parser = argparse.ArgumentParser(
+        parents=[quokka_fields.base_parser()],
+        description="...",
+    )
+    args = parser.parse_args() # args.dir, args.tag, args.fields, args.comps, args.axes
     """
     field_list = ww_lists.as_string(elems=sorted(QUOKKA_FIELD_LOOKUP.keys()))
     axis_list = ww_lists.as_string(elems=list(cartesian_axes.VALID_3D_AXIS_LABELS))
