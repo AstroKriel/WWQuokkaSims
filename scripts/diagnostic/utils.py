@@ -10,16 +10,8 @@ import argparse
 from pathlib import Path
 from matplotlib.figure import Figure as mpl_Figure
 
-from jormi import ww_lists
 from jormi.ww_types import check_types
-
-from ww_quokka_sims.sim_io.find_datasets import (
-    looks_like_boxlib_dir,
-    get_dataset_index_string,
-    get_latest_dataset_dirs,
-    resolve_dataset_dirs,
-    get_max_index_width,
-)
+from jormi import ww_lists
 from jormi.ww_plots import manage_plots
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_types

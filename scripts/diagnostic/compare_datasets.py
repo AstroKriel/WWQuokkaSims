@@ -8,12 +8,10 @@ import argparse
 from pathlib import Path
 from dataclasses import dataclass, field
 
-from jormi.ww_types import check_types
 from jormi.ww_io import manage_log
+from jormi.ww_types import check_types
 
-from ww_quokka_sims.sim_io import load_dataset
-
-import utils
+from ww_quokka_sims.sim_io import find_datasets, load_dataset
 
 ##
 ## === HELPER FUNCTION
@@ -329,9 +327,9 @@ class ScriptInterface:
     ) -> None:
         check_types.ensure_finite_int(param=self.preview_limit)
         assert self.preview_limit > 0
-        if not utils.looks_like_boxlib_dir(self.dataset_dir_in):
+        if not find_datasets.looks_like_boxlib_dir(self.dataset_dir_in):
             raise ValueError(f"dir-IN does not look like a BoxLib directory: {self.dataset_dir_in}")
-        if not utils.looks_like_boxlib_dir(self.dataset_dir_ref):
+        if not find_datasets.looks_like_boxlib_dir(self.dataset_dir_ref):
             raise ValueError(f"dir-REF does not look like a BoxLib directory: {self.dataset_dir_ref}")
 
     def run(

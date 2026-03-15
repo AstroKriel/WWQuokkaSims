@@ -6,8 +6,8 @@
 
 import re
 import csv
-import argparse
 import numpy
+import argparse
 
 from pathlib import Path
 from dataclasses import dataclass
@@ -17,7 +17,7 @@ from jormi.ww_plots import manage_plots, add_color
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_types, domain_types
 
-from ww_quokka_sims.sim_io import load_dataset
+from ww_quokka_sims.sim_io import find_datasets, load_dataset
 
 import utils
 
@@ -298,29 +298,24 @@ class RenderCompProfiles:
         axs_row,
         comp_profiles: list[CompProfile],
     ) -> None:
-        cmap, norm = add_color.create_cmap(
-            cmap_name=self.cmap_name,
-            min_cmap_value=0.25,
-            vmin=0.0,
-            vmax=max(
-                0,
-                len(comp_profiles) - 1,
+        palette = add_color.make_palette(
+            config=add_color.SequentialConfig(
+                palette_name=self.cmap_name,
+                palette_range=(0.25, 1.0),
             ),
+            value_range=(0, max(0, len(comp_profiles) - 1)),
         )
         for time_index, comp_profile in enumerate(comp_profiles):
-            color = cmap(norm(time_index))
+            color = palette.mpl_cmap(palette.mpl_norm(time_index))
             RenderCompProfiles._plot_comp_profile(
                 axs_row=axs_row,
                 comp_profile=comp_profile,
                 color=color,
             )
-        add_color.add_cbar_from_cmap(
+        add_color.add_colorbar(
             ax=axs_row[-1],
+            palette=palette,
             label=r"snapshot index",
-            cmap=cmap,
-            norm=norm,
-            anchor_side="right",
-            ax_percentage=0.05,
         )
 
     def run(
@@ -369,7 +364,7 @@ class RenderCompProfiles:
         )
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         if num_snapshots == 1:
-            snapshot_index = utils.get_dataset_index_string(self.dataset_dirs[0], self.dataset_tag)
+            snapshot_index = find_datasets.get_dataset_index_string(self.dataset_dirs[0], self.dataset_tag)
             fig_path = self.fig_dir / f"{self.field_name}_profile_{snapshot_index}.png"
         else:
             fig_path = self.fig_dir / f"{self.field_name}_profiles.png"
@@ -415,7 +410,7 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
-        dataset_dirs = utils.resolve_dataset_dirs(
+        dataset_dirs = find_datasets.resolve_dataset_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )

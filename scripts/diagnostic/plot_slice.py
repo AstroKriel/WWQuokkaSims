@@ -11,14 +11,14 @@ from typing import NamedTuple
 from pathlib import Path
 from dataclasses import dataclass
 
-from jormi.ww_fns import parallel_dispatch
 from jormi.ww_types import check_types
 from jormi.ww_io import manage_io, manage_log
-from jormi.ww_plots import manage_plots, plot_data, annotate_axis
+from jormi.ww_fns import parallel_dispatch
+from jormi.ww_plots import manage_plots, plot_data, annotate_axis, add_color
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import domain_types, field_types
 
-from ww_quokka_sims.sim_io import load_dataset
+from ww_quokka_sims.sim_io import find_datasets, load_dataset
 
 import utils
 
@@ -186,7 +186,7 @@ class FieldPlotter:
             axis_aspect_ratio="equal",
             axis_bounds=field_slice.axis_bounds,
             cbar_bounds=(min_value, max_value),
-            cmap_name=cmap_name,
+            palette_config=add_color.SequentialConfig(palette_name=cmap_name),
             add_cbar=True,
             cbar_label=label,
             cbar_side="right",
@@ -198,9 +198,8 @@ class FieldPlotter:
             x_alignment="center",
             y_alignment="top",
             label=f"min-value = {min_value:.2e}\nmax-value = {max_value:.2e}",
-            fontsize=16,
+            text_size=16,
             box_alpha=0.5,
-            add_box=True,
         )
         annotate_axis.add_text(
             ax=ax,
@@ -209,9 +208,8 @@ class FieldPlotter:
             x_alignment="center",
             y_alignment="center",
             label=rf"$t = {sim_time:.2f}$",
-            fontsize=16,
+            text_size=16,
             box_alpha=0.5,
-            add_box=True,
         )
         annotate_axis.add_text(
             ax=ax,
@@ -220,9 +218,8 @@ class FieldPlotter:
             x_alignment="center",
             y_alignment="bottom",
             label=field_slice.label,
-            fontsize=16,
+            text_size=16,
             box_alpha=0.5,
-            add_box=True,
         )
 
     def _load_dataset(
@@ -321,7 +318,7 @@ class FieldPlotter:
     ) -> None:
         dataset = self._load_dataset(dataset_dir=dataset_dir)
         dataset_index = int(
-            utils.get_dataset_index_string(
+            find_datasets.get_dataset_index_string(
                 dataset_dir=dataset_dir,
                 dataset_tag=self.dataset_tag,
             ),
@@ -500,7 +497,7 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
-        dataset_dirs = utils.resolve_dataset_dirs(
+        dataset_dirs = find_datasets.resolve_dataset_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
             max_elems=100,
@@ -508,7 +505,7 @@ class ScriptInterface:
         if not dataset_dirs:
             return
         fig_dir = dataset_dirs[0].parent
-        index_width = utils.get_max_index_width(
+        index_width = find_datasets.get_max_index_width(
             dataset_dirs=dataset_dirs,
             dataset_tag=self.dataset_tag,
         )

@@ -16,6 +16,7 @@ from jormi.ww_plots import manage_plots, annotate_axis
 from jormi.ww_fields.fields_3d import field_types, field_operators
 
 from ww_quokka_sims.sim_io import load_dataset
+from ww_quokka_sims.sim_io import find_datasets
 
 import utils
 
@@ -172,12 +173,10 @@ class RenderDataSeries:
             label=label,
             x_alignment=x_alignment,
             y_alignment=y_alignment,
-            fontsize=fontsize,
-            font_color=color,
-            add_box=with_box,
-            box_alpha=0.85,
-            face_color="white",
-            edge_color=color,
+            text_size=fontsize,
+            text_color=color,
+            box_alpha=0.85 if with_box else 0.0,
+            box_color="white",
         )
 
     def run(
@@ -239,7 +238,7 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
-        dataset_dirs = utils.resolve_dataset_dirs(
+        dataset_dirs = find_datasets.resolve_dataset_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )

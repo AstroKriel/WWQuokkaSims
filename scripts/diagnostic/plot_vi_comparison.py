@@ -12,10 +12,12 @@ from pathlib import Path
 from jormi.ww_types import check_types
 from jormi import ww_lists
 from jormi.ww_io import manage_io
-from jormi.ww_data import interpolate_series
+from jormi.ww_data import series_types, interpolate_series
 from jormi.ww_plots import manage_plots
 
 from plot_vi_evolution import DataSeries, LoadDataSeries
+
+from ww_quokka_sims.sim_io import find_datasets
 
 import utils
 
@@ -82,12 +84,16 @@ class RenderComparisonPlot:
                 f"dir_1 ({self.label_dir_1}): x in [{x1_min}, {x1_max}]\n"
                 f"dir_2 ({self.label_dir_2}): x in [{x2_min}, {x2_max}]",
             )
-        x_array_common, y_array_2_interp = interpolate_series.interpolate_1d(
-            x_values=x_array_2,
-            y_values=y_array_2,
+        interp_result = interpolate_series.interpolate_1d(
+            data_series=series_types.DataSeries(
+                x_values=x_array_2,
+                y_values=y_array_2,
+            ),
             x_interp=x_array_1[in_bounds_mask_1],
-            kind="cubic",
+            spline_order=3,
         )
+        x_array_common = interp_result.x_values
+        y_array_2_interp = interp_result.y_values
         if x_array_common.size == 0:
             raise RuntimeError(
                 "No overlapping times remain after interpolation bounds handling.\n"
@@ -176,12 +182,12 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
-        dataset_dirs_1 = utils.resolve_dataset_dirs(
+        dataset_dirs_1 = find_datasets.resolve_dataset_dirs(
             input_dir=self.dir_1,
             dataset_tag=self.dataset_tag,
             max_elems=100,
         )
-        dataset_dirs_2 = utils.resolve_dataset_dirs(
+        dataset_dirs_2 = find_datasets.resolve_dataset_dirs(
             input_dir=self.dir_2,
             dataset_tag=self.dataset_tag,
             max_elems=100,

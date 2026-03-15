@@ -4,19 +4,19 @@
 ## === DEPENDENCIES
 ##
 
-import argparse
 import numpy
+import argparse
 
 from pathlib import Path
 from dataclasses import dataclass
 
+from jormi.ww_types import check_types, check_arrays
 from jormi.ww_plots import manage_plots, add_color
+from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_types
-from jormi.ww_arrays import compute_array_stats
-from jormi.ww_types import check_types, check_arrays
 
-from ww_quokka_sims.sim_io import load_dataset
+from ww_quokka_sims.sim_io import find_datasets, load_dataset
 
 import utils
 
@@ -240,29 +240,24 @@ class RenderPDFs:
         field_pdfs: list[PDFData],
         cmap_name: str,
     ) -> None:
-        cmap, norm = add_color.create_cmap(
-            cmap_name=cmap_name,
-            min_cmap_value=0.25,
-            vmin=0,
-            vmax=max(
-                0,
-                len(field_pdfs) - 1,
+        palette = add_color.make_palette(
+            config=add_color.SequentialConfig(
+                palette_name=cmap_name,
+                palette_range=(0.25, 1.0),
             ),
+            value_range=(0, max(0, len(field_pdfs) - 1)),
         )
         for series_index, pdf_data in enumerate(field_pdfs):
-            color = cmap(norm(series_index))
+            color = palette.mpl_cmap(palette.mpl_norm(series_index))
             RenderPDFs._plot_snapshot(
                 axs_grid=axs_grid,
                 pdf_data=pdf_data,
                 color=color,
             )
-        add_color.add_cbar_from_cmap(
+        add_color.add_colorbar(
             ax=axs_grid[-1][-1],
+            palette=palette,
             label=r"snapshot index",
-            cmap=cmap,
-            norm=norm,
-            anchor_side="right",
-            ax_percentage=0.05,
         )
 
     def run(
@@ -338,7 +333,7 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
-        dataset_dirs = utils.resolve_dataset_dirs(
+        dataset_dirs = find_datasets.resolve_dataset_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )
