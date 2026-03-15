@@ -368,7 +368,12 @@ class ScriptInterface:
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot PDFs of Quokka field components.",
-        parents=[quokka_fields.base_parser()],
+        parents=[
+            quokka_fields.base_parser(
+                num_dirs=1,
+                allow_vfields=True,
+            ),
+        ],
     ).parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.dir,

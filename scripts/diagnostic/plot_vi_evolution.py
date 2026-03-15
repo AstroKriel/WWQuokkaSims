@@ -263,7 +263,12 @@ class ScriptInterface:
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot volume-integrated field evolution from Quokka simulations.",
-        parents=[quokka_fields.base_parser(allow_vfields=False)],
+        parents=[
+            quokka_fields.base_parser(
+                num_dirs=1,
+                allow_vfields=False,
+            ),
+        ],
     ).parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.dir,

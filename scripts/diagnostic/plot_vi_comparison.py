@@ -235,7 +235,12 @@ class ScriptInterface:
 def main():
     user_args = argparse.ArgumentParser(
         description="Compare volume-integrated field evolution between two Quokka simulations.",
-        parents=[quokka_fields.base_parser(num_dirs=2, allow_vfields=False)],
+        parents=[
+            quokka_fields.base_parser(
+                num_dirs=2,
+                allow_vfields=False,
+            ),
+        ],
     ).parse_args()
     script_interface = ScriptInterface(
         dir_1=user_args.dir_1,

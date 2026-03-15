@@ -155,7 +155,10 @@ def base_parser(
     Example
     ---
     parser = argparse.ArgumentParser(
-        parents=[quokka_fields.base_parser()],
+        parents=[quokka_fields.base_parser(
+            num_dirs=1,
+            allow_vfields=True,
+        )],
         description="...",
     )
     args = parser.parse_args() # args.dir, args.tag, args.fields, args.comps, args.axes

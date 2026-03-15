@@ -539,7 +539,12 @@ class ScriptInterface:
 def main():
     parser = argparse.ArgumentParser(
         description="Plot midplane slices of Quokka field components.",
-        parents=[quokka_fields.base_parser()],
+        parents=[
+            quokka_fields.base_parser(
+                num_dirs=1,
+                allow_vfields=True,
+            ),
+        ],
     )
     parser.add_argument(
         "--animate-only",

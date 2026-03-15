@@ -52,7 +52,7 @@ class CompProfile:
 
 
 ##
-## === OPERATOR CLASSES
+## === COMPUTE
 ##
 
 
@@ -209,6 +209,11 @@ class ComputeCompProfiles:
         for comp_label in comp_profiles_lookup:
             comp_profiles_lookup[comp_label].sort(key=lambda item: item.sim_time)
         return comp_profiles_lookup
+
+
+##
+## === RENDER
+##
 
 
 class RenderCompProfiles:
@@ -385,6 +390,11 @@ class RenderCompProfiles:
         )
 
 
+##
+## === SCRIPT INTERFACE
+##
+
+
 class ScriptInterface:
 
     def __init__(
@@ -449,7 +459,12 @@ class ScriptInterface:
 def main():
     parser = argparse.ArgumentParser(
         description="Plot midplane profiles of Quokka field components.",
-        parents=[quokka_fields.base_parser()],
+        parents=[
+            quokka_fields.base_parser(
+                num_dirs=1,
+                allow_vfields=True,
+            ),
+        ],
     )
     parser.add_argument(
         "--save",
