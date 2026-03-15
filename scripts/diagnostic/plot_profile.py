@@ -19,8 +19,7 @@ from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_types, domain_types
 
 from ww_quokka_sims.sim_io import find_datasets, load_dataset
-
-import utils
+import quokka_fields  # local utils
 
 ##
 ## === DATA CLASSES
@@ -112,7 +111,8 @@ class ComputeCompProfiles:
         udomain_3d: domain_types.UniformDomain_3D,
     ) -> list[CompProfile]:
         field_types.ensure_3d_sfield(field)
-        sim_time = utils.get_sim_time(field=field)
+        sim_time = field.sim_time
+        assert sim_time is not None
         axis_labels = list(self.axes_to_slice)
         x_array_by_axis: list[numpy.ndarray] = []
         y_array_by_axis: list[numpy.ndarray] = []
@@ -148,7 +148,8 @@ class ComputeCompProfiles:
                 f"Vector field `{self.field_name}` requires at least one component to plot; none provided.",
             )
         field_types.ensure_3d_vfield(field)
-        sim_time = utils.get_sim_time(field=field)
+        sim_time = field.sim_time
+        assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
         axis_labels = list(self.axes_to_slice)
         comp_profiles: list[CompProfile] = []
@@ -278,7 +279,8 @@ class RenderCompProfiles:
                 ax = axs_grid[row_index][col_index]
                 if col_index == 0:
                     ax.set_ylabel(comp_label)
-                ax.set_xlabel(utils.as_latex_label(str(axis_label)))
+                axis_label_str = str(axis_label)
+                ax.set_xlabel(axis_label_str if "$" in axis_label_str else f"${axis_label_str}$")
 
     @staticmethod
     def _plot_comp_profile(
@@ -303,8 +305,13 @@ class RenderCompProfiles:
                 palette_name=self.cmap_name,
                 palette_range=(0.25, 1.0),
             ),
-            value_range=(0, max(0,
-                                len(comp_profiles) - 1)),
+            value_range=(
+                0,
+                max(
+                    0,
+                    len(comp_profiles) - 1,
+                ),
+            ),
         )
         for time_index, comp_profile in enumerate(comp_profiles):
             color = palette.mpl_cmap(palette.mpl_norm(time_index))
@@ -336,9 +343,11 @@ class RenderCompProfiles:
         axis_labels = comp_profiles_lookup[comp_labels[0]][0].axis_labels
         num_rows = len(comp_labels)
         num_cols = len(axis_labels)
-        fig, axs_grid = utils.create_figure(
+        fig, axs_grid = manage_plots.create_figure_grid(
             num_rows=num_rows,
             num_cols=num_cols,
+            x_spacing=0.25,
+            y_spacing=0.25,
         )
         for row_index, comp_label in enumerate(comp_labels):
             comp_profiles = comp_profiles_lookup[comp_label]
@@ -392,7 +401,7 @@ class ScriptInterface:
             param=dataset_tag,
             param_name="dataset_tag",
         )
-        utils.validate_fields(fields_to_plot)
+        quokka_fields.validate_fields(field_names=fields_to_plot)
         if comps_to_plot is None:
             comps_to_plot = cartesian_axes.DEFAULT_3D_AXES_ORDER
         elif not set(comps_to_plot).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):
@@ -419,7 +428,7 @@ class ScriptInterface:
             return
         fig_dir = dataset_dirs[0].parent
         for field_name in self.fields_to_plot:
-            field_meta = utils.QUOKKA_FIELD_LOOKUP[field_name]
+            field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             render_comp_profiles = RenderCompProfiles(
                 dataset_dirs=dataset_dirs,
                 dataset_tag=self.dataset_tag,
@@ -437,12 +446,10 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Plot midplane profiles of Quokka field components.",
-        parents=[utils.base_parser()],
+        parents=[quokka_fields.base_parser()],
     )
     parser.add_argument(
         "--save",

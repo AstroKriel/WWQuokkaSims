@@ -18,14 +18,12 @@ from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_types
 
 from ww_quokka_sims.sim_io import find_datasets, load_dataset
+import quokka_fields  # local utils
 
-import utils
 
 ##
 ## === DATA CLASSES
 ##
-
-
 @dataclass(frozen=True)
 class PDFData:
     sim_time: float
@@ -84,8 +82,6 @@ class PDFData:
 ##
 ## === OPERATOR CLASSES
 ##
-
-
 class ComputePDFs:
 
     def __init__(
@@ -133,7 +129,8 @@ class ComputePDFs:
                 f"Vector field `{self.field_name}` requires at least one component to plot; none provided.",
             )
         field_types.ensure_3d_vfield(field)
-        sim_time = utils.get_sim_time(field=field)
+        sim_time = field.sim_time
+        assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
         comp_labels = [field_types.get_vcomp_label(field, comp_name) for comp_name in comp_names]
         grouped_bin_centers: list[numpy.ndarray] = []
@@ -158,7 +155,8 @@ class ComputePDFs:
         field: field_types.ScalarField_3D,
     ) -> PDFData:
         field_types.ensure_3d_sfield(field)
-        sim_time = utils.get_sim_time(field=field)
+        sim_time = field.sim_time
+        assert sim_time is not None
         bin_centers, densities = self._estimate_pdf(
             field_data=field.fdata.farray,
             num_bins=self.num_bins,
@@ -245,8 +243,13 @@ class RenderPDFs:
                 palette_name=cmap_name,
                 palette_range=(0.25, 1.0),
             ),
-            value_range=(0, max(0,
-                                len(field_pdfs) - 1)),
+            value_range=(
+                0,
+                max(
+                    0,
+                    len(field_pdfs) - 1,
+                ),
+            ),
         )
         for series_index, pdf_data in enumerate(field_pdfs):
             color = palette.mpl_cmap(palette.mpl_norm(series_index))
@@ -275,11 +278,15 @@ class RenderPDFs:
         if not field_pdfs:
             return
         num_cols = field_pdfs[0].num_comps
-        fig, axs_grid = utils.create_figure(
+        add_cbar_space = len(field_pdfs) > 1
+        fig, axs_grid = manage_plots.create_figure_grid(
             num_rows=1,
             num_cols=num_cols,
-            add_cbar_space=len(field_pdfs) > 1,
+            x_spacing=0.75 if add_cbar_space else 0.25,
+            y_spacing=0.25,
         )
+        if add_cbar_space:
+            fig.subplots_adjust(right=0.82)
         if len(field_pdfs) == 1:
             self._plot_snapshot(
                 axs_grid=axs_grid,
@@ -320,7 +327,7 @@ class ScriptInterface:
             param=dataset_tag,
             param_name="dataset_tag",
         )
-        utils.validate_fields(fields_to_plot)
+        quokka_fields.validate_fields(field_names=fields_to_plot)
         if comps_to_plot is None:
             comps_to_plot = cartesian_axes.DEFAULT_3D_AXES_ORDER
         elif not set(comps_to_plot).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):
@@ -342,7 +349,7 @@ class ScriptInterface:
             return
         fig_dir = dataset_dirs[0].parent
         for field_name in self.fields_to_plot:
-            field_meta = utils.QUOKKA_FIELD_LOOKUP[field_name]
+            field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderPDFs(
                 dataset_dirs=dataset_dirs,
                 fig_dir=fig_dir,
@@ -358,12 +365,10 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
-
-
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot PDFs of Quokka field components.",
-        parents=[utils.base_parser()],
+        parents=[quokka_fields.base_parser()],
     ).parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.dir,

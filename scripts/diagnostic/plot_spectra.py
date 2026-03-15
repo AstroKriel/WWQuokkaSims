@@ -16,14 +16,12 @@ from jormi.ww_plots import manage_plots, add_color
 from jormi.ww_fields.fields_3d import field_types, compute_spectra
 
 from ww_quokka_sims.sim_io import find_datasets, load_dataset
+import quokka_fields  # local utils
 
-import utils
 
 ##
 ## === DATA CLASSES
 ##
-
-
 @dataclass(frozen=True)
 class SpectraData:
     sim_time: float
@@ -47,8 +45,6 @@ class SpectraData:
 ##
 ## === OPERATOR CLASSES
 ##
-
-
 class ComputeSpectra:
 
     def __init__(
@@ -74,7 +70,8 @@ class ComputeSpectra:
                     f"`{self.field_name}` is not a scalar field; "
                     "power spectra are only supported for scalar fields.",
                 )
-            sim_time = utils.get_sim_time(field=field)
+            sim_time = field.sim_time
+            assert sim_time is not None
             spectrum = compute_spectra.compute_isotropic_power_spectrum_sfield(field)
             log10_spectrum = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
@@ -149,8 +146,13 @@ class RenderSpectra:
                 palette_name=cmap_name,
                 palette_range=(0.25, 1.0),
             ),
-            value_range=(0, max(0,
-                                len(field_spectra) - 1)),
+            value_range=(
+                0,
+                max(
+                    0,
+                    len(field_spectra) - 1,
+                ),
+            ),
         )
         for series_index, spectra_data in enumerate(field_spectra):
             color = palette.mpl_cmap(palette.mpl_norm(series_index))
@@ -220,7 +222,7 @@ class ScriptInterface:
             param=dataset_tag,
             param_name="dataset_tag",
         )
-        utils.validate_fields(fields_to_plot)
+        quokka_fields.validate_fields(field_names=fields_to_plot)
         self.input_dir = Path(input_dir)
         self.dataset_tag = dataset_tag
         self.fields_to_plot = check_types.as_tuple(param=fields_to_plot)
@@ -236,7 +238,7 @@ class ScriptInterface:
             return
         fig_dir = dataset_dirs[0].parent
         for field_name in self.fields_to_plot:
-            field_meta = utils.QUOKKA_FIELD_LOOKUP[field_name]
+            field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderSpectra(
                 dataset_dirs=dataset_dirs,
                 dataset_tag=self.dataset_tag,
@@ -251,12 +253,10 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
-
-
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot power spectra of Quokka scalar fields.",
-        parents=[utils.base_parser(add_comps_axes=False)],
+        parents=[quokka_fields.base_parser(allow_vfields=False)],
     ).parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.dir,

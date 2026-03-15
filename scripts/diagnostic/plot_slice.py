@@ -20,14 +20,12 @@ from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import domain_types, field_types
 
 from ww_quokka_sims.sim_io import find_datasets, load_dataset
+import quokka_fields  # local utils
 
-import utils
 
 ##
 ## === DATA CLASSES
 ##
-
-
 @dataclass(frozen=True)
 class FieldArgs:
     field_name: str
@@ -83,8 +81,6 @@ class SlicedField:
 ##
 ## === HELPER FUNCTIONS
 ##
-
-
 def _parse_axes(
     *,
     axes: tuple[str, ...] | list[str] | None,
@@ -127,8 +123,8 @@ def get_slice_labels(
 ) -> tuple[str, str]:
     axes_plane = [ax for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER if ax != axis_to_slice]
     return (
-        utils.as_latex_label(axes_plane[0].axis_label),
-        utils.as_latex_label(axes_plane[1].axis_label),
+        axes_plane[0].axis_label if "$" in axes_plane[0].axis_label else f"${axes_plane[0].axis_label}$",
+        axes_plane[1].axis_label if "$" in axes_plane[1].axis_label else f"${axes_plane[1].axis_label}$",
     )
 
 
@@ -164,8 +160,6 @@ def slice_field(
 ##
 ## === OPERATOR CLASSES
 ##
-
-
 @dataclass(frozen=True)
 class FieldPlotter:
     dataset_tag: str
@@ -328,11 +322,13 @@ class FieldPlotter:
             ),
         )
         field_comps = self._get_field_comps(field=dataset.field)
-        fig, axs_grid = utils.create_figure(
+        fig, axs_grid = manage_plots.create_figure_grid(
             num_rows=len(field_comps),
             num_cols=len(self.axes_to_slice),
-            add_cbar_space=True,
+            x_spacing=0.75,
+            y_spacing=0.25,
         )
+        fig.subplots_adjust(right=0.82)
         self._plot_field_comps(
             axs_grid=axs_grid,
             field_comps=field_comps,
@@ -360,7 +356,7 @@ def render_fields_in_serial(
     index_width: int,
 ) -> None:
     for field_name in fields_to_plot:
-        field_meta = utils.QUOKKA_FIELD_LOOKUP[field_name]
+        field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
         field_args = FieldArgs(
             field_name=field_name,
             field_loader=field_meta["loader"],
@@ -416,7 +412,7 @@ def render_fields_in_parallel(
 ) -> None:
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_plot:
-        field_meta = utils.QUOKKA_FIELD_LOOKUP[field_name]
+        field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
         for dataset_dir in dataset_dirs:
             grouped_args.append(
                 WorkerArgs(
@@ -457,7 +453,7 @@ class ScriptInterface:
             param=dataset_tag,
             param_name="dataset_tag",
         )
-        valid_fields = set(utils.QUOKKA_FIELD_LOOKUP.keys())
+        valid_fields = set(quokka_fields.QUOKKA_FIELD_LOOKUP.keys())
         if not fields_to_plot or not set(fields_to_plot).issubset(valid_fields):
             raise ValueError(f"Provide one or more field to plot (via -f) from: {sorted(valid_fields)}")
         self.input_dir = Path(input_dir)
@@ -540,12 +536,10 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Plot midplane slices of Quokka field components.",
-        parents=[utils.base_parser()],
+        parents=[quokka_fields.base_parser()],
     )
     parser.add_argument(
         "--animate-only",

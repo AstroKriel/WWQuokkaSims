@@ -9,14 +9,12 @@ import argparse
 from pathlib import Path
 
 from ww_quokka_sims.sim_io import load_dataset
+import quokka_fields
 
-import utils
 
 ##
 ## === OPERATOR CLASS
 ##
-
-
 class ScriptInterface:
 
     def __init__(
@@ -44,12 +42,10 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
-
-
 def main():
     user_args = argparse.ArgumentParser(
         description="Inspect a Quokka dataset and list available field keys.",
-        parents=[utils.base_parser(add_comps_axes=False)],
+        parents=[quokka_fields.base_parser(allow_vfields=False)],
     ).parse_args()
     script_interface = ScriptInterface(
         dataset_dir=user_args.dir,

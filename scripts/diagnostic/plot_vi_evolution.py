@@ -17,15 +17,13 @@ from jormi.ww_plots import manage_plots, annotate_axis
 from jormi.ww_fields.fields_3d import field_types, field_operators
 
 from ww_quokka_sims.sim_io import load_dataset
+import quokka_fields  # local utils
 from ww_quokka_sims.sim_io import find_datasets
 
-import utils
 
 ##
 ## === DATA CLASSES
 ##
-
-
 @dataclass(frozen=True)
 class FieldArgs:
     dataset_dir: Path
@@ -69,8 +67,6 @@ class DataSeries:
 ##
 ## === OPERATOR CLASSES
 ##
-
-
 class LoadDataSeries:
 
     def __init__(
@@ -229,7 +225,7 @@ class ScriptInterface:
             param=dataset_tag,
             param_name="dataset_tag",
         )
-        utils.validate_fields(fields_to_plot)
+        quokka_fields.validate_fields(field_names=fields_to_plot)
         self.input_dir = Path(input_dir)
         self.dataset_tag = dataset_tag
         self.fields_to_plot = list(fields_to_plot)
@@ -246,7 +242,7 @@ class ScriptInterface:
             return
         fig_dir = Path(dataset_dirs[0]).parent
         for field_name in self.fields_to_plot:
-            field_meta = utils.QUOKKA_FIELD_LOOKUP[field_name]
+            field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             load_data_series = LoadDataSeries(
                 dataset_dirs=dataset_dirs,
                 field_name=field_name,
@@ -264,12 +260,10 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
-
-
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot volume-integrated field evolution from Quokka simulations.",
-        parents=[utils.base_parser(add_comps_axes=False)],
+        parents=[quokka_fields.base_parser(allow_vfields=False)],
     ).parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.dir,

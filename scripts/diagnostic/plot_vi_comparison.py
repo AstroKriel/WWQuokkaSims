@@ -14,11 +14,9 @@ from jormi.ww_io import manage_io
 from jormi.ww_data import series_types, interpolate_series
 from jormi.ww_plots import manage_plots
 
-from plot_vi_evolution import DataSeries, LoadDataSeries
-
 from ww_quokka_sims.sim_io import find_datasets
-
-import utils
+import quokka_fields  # local utils
+from plot_vi_evolution import DataSeries, LoadDataSeries
 
 ##
 ## === OPERATOR CLASSES
@@ -32,7 +30,6 @@ class RenderComparisonPlot:
         *,
         fig_dir: Path,
         field_name: str,
-        color: str,
         label_dir_1: str,
         label_dir_2: str,
         marker_dir_1: str = "o",
@@ -40,7 +37,6 @@ class RenderComparisonPlot:
     ):
         self.fig_dir = Path(fig_dir)
         self.field_name = field_name
-        self.color = color
         self.label_dir_1 = str(label_dir_1)
         self.label_dir_2 = str(label_dir_2)
         self.marker_dir_1 = str(marker_dir_1)
@@ -125,7 +121,7 @@ class RenderComparisonPlot:
         ax.plot(
             x_array_common,
             y_array_frac_diff,
-            color=self.color,
+            color="black",
             marker=self.marker_dir_2,
             ms=6,
             ls="-",
@@ -172,7 +168,7 @@ class ScriptInterface:
         self.dir_1 = Path(dir_1)
         self.dir_2 = Path(dir_2)
         self.fig_dir = Path(out_dir)
-        valid_fields = set(utils.QUOKKA_FIELD_LOOKUP.keys())
+        valid_fields = set(quokka_fields.QUOKKA_FIELD_LOOKUP.keys())
         if (not fields_to_plot) or (not set(fields_to_plot).issubset(valid_fields)):
             raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}")
         self.dataset_tag = dataset_tag
@@ -202,7 +198,7 @@ class ScriptInterface:
         label_dir_1 = self.dir_1.name
         label_dir_2 = self.dir_2.name
         for field_name in self.fields_to_plot:
-            field_meta = utils.QUOKKA_FIELD_LOOKUP[field_name]
+            field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             load_data_series_1 = LoadDataSeries(
                 dataset_dirs=dataset_dirs_1,
                 field_name=field_name,
@@ -220,7 +216,6 @@ class ScriptInterface:
             render_comparison_plot = RenderComparisonPlot(
                 fig_dir=self.fig_dir,
                 field_name=field_name,
-                color=field_meta["color"],
                 label_dir_1=label_dir_1,
                 label_dir_2=label_dir_2,
                 marker_dir_1="o",
@@ -233,11 +228,6 @@ class ScriptInterface:
 
 
 ##
-## === ARGPARSE
-##
-
-
-##
 ## === PROGRAM MAIN
 ##
 
@@ -245,7 +235,7 @@ class ScriptInterface:
 def main():
     user_args = argparse.ArgumentParser(
         description="Compare volume-integrated field evolution between two Quokka simulations.",
-        parents=[utils.base_parser(num_dirs=2, add_comps_axes=False)],
+        parents=[quokka_fields.base_parser(num_dirs=2, allow_vfields=False)],
     ).parse_args()
     script_interface = ScriptInterface(
         dir_1=user_args.dir_1,
