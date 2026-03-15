@@ -24,6 +24,8 @@ from ww_quokka_sims.sim_io import find_datasets
 ##
 ## === DATA CLASSES
 ##
+
+
 @dataclass(frozen=True)
 class FieldArgs:
     dataset_dir: Path
@@ -65,8 +67,10 @@ class DataSeries:
 
 
 ##
-## === OPERATOR CLASSES
+## === COMPUTE
 ##
+
+
 class LoadDataSeries:
 
     def __init__(
@@ -126,6 +130,11 @@ class LoadDataSeries:
                 LoadDataSeries._load_snapshot(field_args=field_args) for field_args in grouped_field_args
             ]
         return DataSeries(points=data_points)
+
+
+##
+## === RENDER
+##
 
 
 class RenderDataSeries:
@@ -211,6 +220,11 @@ class RenderDataSeries:
         )
 
 
+##
+## === SCRIPT INTERFACE
+##
+
+
 class ScriptInterface:
 
     def __init__(
@@ -260,6 +274,8 @@ class ScriptInterface:
 ##
 ## === PROGRAM MAIN
 ##
+
+
 def main():
     user_args = argparse.ArgumentParser(
         description="Plot volume-integrated field evolution from Quokka simulations.",
