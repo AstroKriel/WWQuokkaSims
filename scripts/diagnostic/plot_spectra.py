@@ -11,6 +11,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from collections.abc import Callable
 
+from jormi.ww_io import json_io
 from jormi.ww_types import check_types, check_arrays
 from jormi.ww_plots import manage_plots, add_color
 from jormi.ww_fields.fields_3d import field_types, compute_spectra
@@ -107,17 +108,19 @@ class RenderSpectra:
         *,
         dataset_dirs: list[Path],
         dataset_tag: str,
-        fig_dir: Path,
+        out_dir: Path,
         field_name: str,
         field_loader: Callable,
         cmap_name: str,
+        extract_data: bool,
     ):
         self.dataset_dirs = dataset_dirs
         self.dataset_tag = dataset_tag
-        self.fig_dir = Path(fig_dir)
+        self.out_dir = out_dir
         self.field_name = field_name
         self.field_loader = field_loader
         self.cmap_name = cmap_name
+        self.extract_data = extract_data
 
     @staticmethod
     def _style_ax(
@@ -176,9 +179,31 @@ class RenderSpectra:
             label=r"snapshot index",
         )
 
+    def _save_spectra(
+        self,
+        *,
+        field_spectra: list[SpectraData],
+        out_dir: Path,
+    ) -> None:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        output_dict = {}
+        for snapshot_index, spectra_data in enumerate(field_spectra):
+            output_dict[str(snapshot_index)] = {
+                "sim_time": spectra_data.sim_time,
+                "k_bin_centers": spectra_data.k_bin_centers,
+                "log10_spectrum": spectra_data.log10_spectrum,
+            }
+        json_io.save_dict_to_json_file(
+            file_path=out_dir / f"{self.field_name}_spectra.json",
+            input_dict=output_dict,
+            overwrite=True,
+            verbose=False,
+        )
+
     def run(
         self,
     ) -> None:
+        ## compute the isotropic power spectrum for each snapshot
         compute = ComputeSpectra(
             dataset_dirs=self.dataset_dirs,
             field_name=self.field_name,
@@ -187,6 +212,13 @@ class RenderSpectra:
         field_spectra = compute.run()
         if not field_spectra:
             return
+        ## optionally write extracted spectrum data to JSON
+        if self.extract_data:
+            self._save_spectra(
+                field_spectra=field_spectra,
+                out_dir=self.out_dir,
+            )
+        ## plot single snapshot in black, or a sequential color series across all snapshots
         fig, ax = manage_plots.create_figure()
         if len(field_spectra) > 1:
             fig.subplots_adjust(right=0.82)
@@ -206,11 +238,12 @@ class RenderSpectra:
             ax=ax,
             field_label=field_spectra[0].field_label,
         )
+        ## include snapshot index in the filename if there is only one snapshot
         if len(field_spectra) == 1:
             snapshot_index = find_datasets.get_dataset_index_string(self.dataset_dirs[0], self.dataset_tag)
-            fig_path = self.fig_dir / f"{self.field_name}_spectrum_{snapshot_index}.png"
+            fig_path = self.out_dir / f"{self.field_name}_spectrum_{snapshot_index}.png"
         else:
-            fig_path = self.fig_dir / f"{self.field_name}_spectra.png"
+            fig_path = self.out_dir / f"{self.field_name}_spectra.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -231,6 +264,7 @@ class ScriptInterface:
         input_dir: Path,
         dataset_tag: str,
         fields_to_plot: tuple[str, ...] | list[str] | None,
+        extract_data: bool,
     ):
         check_types.ensure_nonempty_string(
             param=dataset_tag,
@@ -240,26 +274,31 @@ class ScriptInterface:
         self.input_dir = Path(input_dir)
         self.dataset_tag = dataset_tag
         self.fields_to_plot = check_types.as_tuple(param=fields_to_plot)
+        self.extract_data = extract_data
 
     def run(
         self,
     ) -> None:
+        ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
         dataset_dirs = find_datasets.resolve_dataset_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )
         if not dataset_dirs:
             return
-        fig_dir = dataset_dirs[0].parent
+        ## output goes to the sim root (the shared parent of all dataset dirs)
+        out_dir = dataset_dirs[0].parent
+        ## compute and render power spectra for each requested field
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderSpectra(
                 dataset_dirs=dataset_dirs,
                 dataset_tag=self.dataset_tag,
-                fig_dir=fig_dir,
+                out_dir=out_dir,
                 field_name=field_name,
                 field_loader=field_meta["loader"],
                 cmap_name=field_meta["cmap"],
+                extract_data=self.extract_data,
             )
             renderer.run()
 
@@ -276,6 +315,7 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=1,
                 allow_vfields=False,
+                allow_extract=True,
             ),
         ],
     ).parse_args()
@@ -283,6 +323,7 @@ def main():
         input_dir=user_args.dir,
         dataset_tag=user_args.tag,
         fields_to_plot=user_args.fields,
+        extract_data=user_args.extract,
     )
     script_interface.run()
 

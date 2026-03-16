@@ -10,7 +10,7 @@ import argparse
 from pathlib import Path
 
 from jormi.ww_types import check_types
-from jormi.ww_io import manage_io
+from jormi.ww_io import manage_io, json_io
 from jormi.ww_data import series_types, interpolate_series
 from jormi.ww_plots import manage_plots
 
@@ -28,19 +28,38 @@ class RenderComparisonPlot:
     def __init__(
         self,
         *,
-        fig_dir: Path,
+        out_dir: Path,
         field_name: str,
         label_dir_1: str,
         label_dir_2: str,
+        extract_data: bool,
         marker_dir_1: str = "o",
         marker_dir_2: str = "s",
     ):
-        self.fig_dir = Path(fig_dir)
+        self.out_dir = out_dir
         self.field_name = field_name
         self.label_dir_1 = str(label_dir_1)
         self.label_dir_2 = str(label_dir_2)
+        self.extract_data = extract_data
         self.marker_dir_1 = str(marker_dir_1)
         self.marker_dir_2 = str(marker_dir_2)
+
+    def _save_comparison(
+        self,
+        *,
+        x_array: numpy.ndarray,
+        y_array: numpy.ndarray,
+    ) -> None:
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        json_io.save_dict_to_json_file(
+            file_path=self.out_dir / f"{self.field_name}_time_comparison.json",
+            input_dict={
+                "time": x_array,
+                "frac_diff": y_array,
+            },
+            overwrite=True,
+            verbose=False,
+        )
 
     def run(
         self,
@@ -48,6 +67,7 @@ class RenderComparisonPlot:
         data_series_1: DataSeries,
         data_series_2: DataSeries,
     ) -> None:
+        ## sort both series by time and check that neither is empty
         x_array_1, y_array_1 = data_series_1.get_sorted_arrays()
         x_array_2, y_array_2 = data_series_2.get_sorted_arrays()
         if (x_array_1.size == 0) and (x_array_2.size == 0):
@@ -79,6 +99,7 @@ class RenderComparisonPlot:
                 f"dir_1 ({self.label_dir_1}): x in [{x1_min}, {x1_max}]\n"
                 f"dir_2 ({self.label_dir_2}): x in [{x2_min}, {x2_max}]",
             )
+        ## interpolate series_2 onto the overlapping subset of series_1's time grid
         interp_result = interpolate_series.interpolate_1d(
             data_series=series_types.DataSeries(
                 x_values=x_array_2,
@@ -116,7 +137,14 @@ class RenderComparisonPlot:
                 "Cannot compute fractional difference because dir_1 contains zeros on the comparison grid.\n"
                 f"dir_1 ({self.label_dir_1}): {int(numpy.sum(zero_mask))} zero values in y_array",
             )
+        ## fractional difference: (series_2 / series_1) - 1, with series_1 as the reference
         y_array_frac_diff = y_array_2_interp / y_array_1_common - 1.0
+        ## optionally write the comparison data to JSON
+        if self.extract_data:
+            self._save_comparison(
+                x_array=x_array_common,
+                y_array=y_array_frac_diff,
+            )
         fig, ax = manage_plots.create_figure()
         ax.plot(
             x_array_common,
@@ -130,7 +158,7 @@ class RenderComparisonPlot:
         )
         ax.set_xlabel("time")
         ax.set_ylabel(self.field_name + " (frac. diff.)")
-        fig_path = self.fig_dir / f"{self.field_name}_time_comparison.png"
+        fig_path = self.out_dir / f"{self.field_name}_time_comparison.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -153,6 +181,7 @@ class ScriptInterface:
         dataset_tag: str,
         fields_to_plot: list[str],
         out_dir: Path,
+        extract_data: bool,
     ):
         check_types.ensure_nonempty_string(
             param=dataset_tag,
@@ -172,16 +201,18 @@ class ScriptInterface:
         )
         self.dir_1 = Path(dir_1)
         self.dir_2 = Path(dir_2)
-        self.fig_dir = Path(out_dir)
+        self.out_dir = Path(out_dir)
         valid_fields = set(quokka_fields.QUOKKA_FIELD_LOOKUP.keys())
         if (not fields_to_plot) or (not set(fields_to_plot).issubset(valid_fields)):
             raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}")
         self.dataset_tag = dataset_tag
         self.fields_to_plot = list(fields_to_plot)
+        self.extract_data = extract_data
 
     def run(
         self,
     ) -> None:
+        ## find dataset dirs for each of the two sim roots, matched by dataset_tag
         dataset_dirs_1 = find_datasets.resolve_dataset_dirs(
             input_dir=self.dir_1,
             dataset_tag=self.dataset_tag,
@@ -200,8 +231,10 @@ class ScriptInterface:
             raise RuntimeError(
                 f"No dataset directories resolved for dir_2: {self.dir_2} (tag={self.dataset_tag!r})",
             )
+        ## use the sim root directory names as labels in the plot legend
         label_dir_1 = self.dir_1.name
         label_dir_2 = self.dir_2.name
+        ## note: out_dir is explicitly provided by the user (not inferred from datasets, since there are two source dirs)
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             load_data_series_1 = LoadDataSeries(
@@ -219,10 +252,11 @@ class ScriptInterface:
             data_series_1 = load_data_series_1.run()
             data_series_2 = load_data_series_2.run()
             render_comparison_plot = RenderComparisonPlot(
-                fig_dir=self.fig_dir,
+                out_dir=self.out_dir,
                 field_name=field_name,
                 label_dir_1=label_dir_1,
                 label_dir_2=label_dir_2,
+                extract_data=self.extract_data,
                 marker_dir_1="o",
                 marker_dir_2="s",
             )
@@ -244,6 +278,7 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=2,
                 allow_vfields=False,
+                allow_extract=True,
             ),
         ],
     ).parse_args()
@@ -253,6 +288,7 @@ def main():
         dataset_tag=user_args.tag,
         fields_to_plot=user_args.fields,
         out_dir=user_args.out,
+        extract_data=user_args.extract,
     )
     script_interface.run()
 

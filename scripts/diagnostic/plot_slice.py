@@ -43,8 +43,9 @@ class WorkerArgs(NamedTuple):
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
     cmap_name: str
-    fig_dir: str
+    out_dir: str
     index_width: int
+    extract_data: bool
 
 
 @dataclass(frozen=True)
@@ -172,6 +173,7 @@ class FieldPlotter:
     field_args: FieldArgs
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
+    extract_data: bool
 
     @staticmethod
     def plot_slice(
@@ -312,11 +314,35 @@ class FieldPlotter:
                     ax.set_xlabel(x_label_string)
                 ax.set_ylabel(y_label_string)
 
+    def _save_slices(
+        self,
+        *,
+        field_comps: list[FieldComp],
+        uniform_domain: domain_types.UniformDomain_3D,
+        dataset_index: int,
+        index_width: int,
+        out_dir: Path,
+    ) -> None:
+        is_vfield = len(field_comps) > 1
+        field_name = self.field_args.field_name
+        padded_index = f"{dataset_index:0{index_width}d}"
+        for comp_index, field_comp in enumerate(field_comps):
+            for axis_to_slice in self.axes_to_slice:
+                field_slice = slice_field(
+                    data_3d=field_comp.data_3d,
+                    axis_to_slice=axis_to_slice,
+                    uniform_domain=uniform_domain,
+                )
+                axis_name = axis_to_slice.name.lower()
+                comp_part = f"_comp{comp_index}" if is_vfield else ""
+                file_name = f"{field_name}{comp_part}_slice={axis_name}_{padded_index}.npy"
+                numpy.save(out_dir / file_name, field_slice.data_2d)
+
     def plot_dataset(
         self,
         *,
-        fig_dir: Path,
         dataset_dir: Path,
+        out_dir: Path,
         index_width: int,
         verbose: bool,
     ) -> None:
@@ -328,6 +354,14 @@ class FieldPlotter:
             ),
         )
         field_comps = self._get_field_comps(field=dataset.field)
+        if self.extract_data:
+            self._save_slices(
+                field_comps=field_comps,
+                uniform_domain=dataset.uniform_domain,
+                dataset_index=dataset_index,
+                index_width=index_width,
+                out_dir=out_dir,
+            )
         fig, axs_grid = manage_plots.create_figure_grid(
             num_rows=len(field_comps),
             num_cols=len(self.axes_to_slice),
@@ -342,11 +376,13 @@ class FieldPlotter:
             sim_time=dataset.sim_time,
         )
         self._label_axes(axs_grid=axs_grid)
-        figure_name = f"{self.field_args.field_name}_slice_{dataset_index:0{index_width}d}.png"
-        figure_path = fig_dir / figure_name
+        field_name = self.field_args.field_name
+        padded_index = f"{dataset_index:0{index_width}d}"
+        fig_name = f"{field_name}_slice_{padded_index}.png"
+        fig_path = out_dir / fig_name
         manage_plots.save_figure(
             fig=fig,
-            fig_path=figure_path,
+            fig_path=fig_path,
             verbose=verbose,
         )
 
@@ -358,8 +394,9 @@ def render_fields_in_serial(
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...],
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...],
     dataset_dirs: list[Path],
-    fig_dir: Path,
+    out_dir: Path,
     index_width: int,
+    extract_data: bool,
 ) -> None:
     for field_name in fields_to_plot:
         field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
@@ -373,11 +410,12 @@ def render_fields_in_serial(
             field_args=field_args,
             comps_to_plot=comps_to_plot,
             axes_to_slice=axes_to_slice,
+            extract_data=extract_data,
         )
         for dataset_dir in dataset_dirs:
             field_plotter.plot_dataset(
-                fig_dir=fig_dir,
                 dataset_dir=dataset_dir,
+                out_dir=out_dir,
                 index_width=index_width,
                 verbose=False,
             )
@@ -397,10 +435,11 @@ def _plot_dataset_worker(
         field_args=field_args,
         comps_to_plot=worker_args.comps_to_plot,
         axes_to_slice=worker_args.axes_to_slice,
+        extract_data=worker_args.extract_data,
     )
     field_plotter.plot_dataset(
-        fig_dir=Path(worker_args.fig_dir),
         dataset_dir=Path(worker_args.dataset_dir),
+        out_dir=Path(worker_args.out_dir),
         index_width=int(worker_args.index_width),
         verbose=False,
     )
@@ -413,8 +452,9 @@ def render_fields_in_parallel(
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...],
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...],
     dataset_dirs: list[Path],
-    fig_dir: Path,
+    out_dir: Path,
     index_width: int,
+    extract_data: bool,
 ) -> None:
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_plot:
@@ -429,8 +469,9 @@ def render_fields_in_parallel(
                     comps_to_plot=comps_to_plot,
                     axes_to_slice=axes_to_slice,
                     cmap_name=field_meta["cmap"],
-                    fig_dir=str(fig_dir),
+                    out_dir=str(out_dir),
                     index_width=index_width,
+                    extract_data=extract_data,
                 ),
             )
     parallel_dispatch.run_in_parallel(
@@ -457,6 +498,7 @@ class ScriptInterface:
         fields_to_plot: tuple[str, ...] | list[str] | None,
         comps_to_plot: tuple[str, ...] | list[str] | None,
         axes_to_slice: tuple[str, ...] | list[str] | None,
+        extract_data: bool,
         use_parallel: bool = True,
         animate_only: bool = False,
     ):
@@ -473,13 +515,14 @@ class ScriptInterface:
         ## axis selection now uses CartesianAxis enums internally
         self.comps_to_plot = _parse_axes(axes=comps_to_plot)
         self.axes_to_slice = _parse_axes(axes=axes_to_slice)
+        self.extract_data = extract_data
         self.use_parallel = bool(use_parallel)
         self.animate_only = bool(animate_only)
 
     def _animate_fields(
         self,
         *,
-        fig_dir: Path,
+        out_dir: Path,
     ) -> None:
         for field_name in self.fields_to_plot:
             fig_paths = manage_io.ItemFilter(
@@ -487,7 +530,7 @@ class ScriptInterface:
                 suffix=".png",
                 include_folders=False,
                 include_files=True,
-            ).filter(directory=fig_dir)
+            ).filter(directory=out_dir)
             if len(fig_paths) < 3:
                 manage_log.log_hint(
                     text=(
@@ -496,9 +539,9 @@ class ScriptInterface:
                     ),
                 )
                 continue
-            mp4_path = Path(fig_dir) / f"{field_name}_slices.mp4"
+            mp4_path = out_dir / f"{field_name}_slices.mp4"
             manage_plots.animate_pngs_to_mp4(
-                frames_dir=fig_dir,
+                frames_dir=out_dir,
                 mp4_path=mp4_path,
                 pattern=f"{field_name}_slice_*.png",
                 fps=60,
@@ -508,6 +551,7 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
+        ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
         dataset_dirs = find_datasets.resolve_dataset_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
@@ -515,11 +559,14 @@ class ScriptInterface:
         )
         if not dataset_dirs:
             return
-        fig_dir = dataset_dirs[0].parent
+        ## output goes to the sim root (the shared parent of all dataset dirs)
+        out_dir = dataset_dirs[0].parent
+        ## index_width is the zero-pad width derived from the total number of datasets found
         index_width = find_datasets.get_max_index_width(
             dataset_dirs=dataset_dirs,
             dataset_tag=self.dataset_tag,
         )
+        ## render slice images; use parallel workers if the dataset count warrants it
         if not self.animate_only:
             if self.use_parallel and (len(dataset_dirs) > 5):
                 render_fields_in_parallel(
@@ -528,8 +575,9 @@ class ScriptInterface:
                     comps_to_plot=self.comps_to_plot,
                     axes_to_slice=self.axes_to_slice,
                     dataset_dirs=dataset_dirs,
-                    fig_dir=fig_dir,
+                    out_dir=out_dir,
                     index_width=index_width,
+                    extract_data=self.extract_data,
                 )
             else:
                 render_fields_in_serial(
@@ -538,10 +586,12 @@ class ScriptInterface:
                     comps_to_plot=self.comps_to_plot,
                     axes_to_slice=self.axes_to_slice,
                     dataset_dirs=dataset_dirs,
-                    fig_dir=fig_dir,
+                    out_dir=out_dir,
                     index_width=index_width,
+                    extract_data=self.extract_data,
                 )
-        self._animate_fields(fig_dir=fig_dir)
+        ## stitch rendered PNGs into an MP4 animation (no-op if animate flag is not set)
+        self._animate_fields(out_dir=out_dir)
 
 
 ##
@@ -556,6 +606,7 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
+                allow_extract=True,
             ),
         ],
     )
@@ -572,6 +623,7 @@ def main():
         fields_to_plot=user_args.fields,
         comps_to_plot=user_args.comps,
         axes_to_slice=user_args.axes,
+        extract_data=user_args.extract,
         animate_only=user_args.animate_only,
         use_parallel=True,
     )

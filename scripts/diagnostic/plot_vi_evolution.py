@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from collections.abc import Callable
 
 from jormi.ww_fns import parallel_dispatch
+from jormi.ww_io import json_io
 from jormi.ww_types import check_types, check_arrays
 from jormi.ww_plots import manage_plots, annotate_axis
 from jormi.ww_fields.fields_3d import field_types, field_operators
@@ -58,11 +59,11 @@ class DataSeries:
                 numpy.asarray([], dtype=float),
             )
         sorted_points = sorted(self.points, key=lambda point: point.sim_time)
-        x_array = check_arrays.as_1d([point.sim_time for point in sorted_points])
-        y_array = check_arrays.as_1d([point.vi_value for point in sorted_points])
+        time_array = check_arrays.as_1d([point.sim_time for point in sorted_points])
+        values_array = check_arrays.as_1d([point.vi_value for point in sorted_points])
         return (
-            x_array,
-            y_array,
+            time_array,
+            values_array,
         )
 
 
@@ -117,6 +118,7 @@ class LoadDataSeries:
         ]
         if not grouped_field_args:
             return DataSeries(points=[])
+        ## load each snapshot in parallel if the series is large enough to justify it, else serial
         if self.use_parallel and (len(grouped_field_args) > 5):
             data_points: list[DataPoint] = parallel_dispatch.run_in_parallel(
                 worker_fn=LoadDataSeries._load_snapshot,
@@ -142,11 +144,13 @@ class RenderDataSeries:
     def __init__(
         self,
         *,
-        fig_dir: Path,
+        out_dir: Path,
         field_name: str,
+        extract_data: bool,
     ):
-        self.fig_dir = Path(fig_dir)
+        self.out_dir = out_dir
         self.field_name = field_name
+        self.extract_data = extract_data
 
     @staticmethod
     def _annotate_fit(
@@ -184,14 +188,38 @@ class RenderDataSeries:
             box_color="white",
         )
 
+    def _save_series(
+        self,
+        *,
+        data_series: DataSeries,
+        out_dir: Path,
+    ) -> None:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        time_array, values_array = data_series.get_sorted_arrays()
+        json_io.save_dict_to_json_file(
+            file_path=out_dir / f"{self.field_name}_vi_evolution.json",
+            input_dict={
+                "sim_times": time_array,
+                "vi_values": values_array,
+            },
+            overwrite=True,
+            verbose=False,
+        )
+
     def run(
         self,
         *,
         data_series: DataSeries,
     ) -> None:
+        ## optionally write the time series data to JSON
+        if self.extract_data:
+            self._save_series(
+                data_series=data_series,
+                out_dir=self.out_dir,
+            )
         fig, ax = manage_plots.create_figure()
-        x_array, y_array = data_series.get_sorted_arrays()
-        if x_array.size == 0:
+        time_array, values_array = data_series.get_sorted_arrays()
+        if time_array.size == 0:
             annotate_axis.add_text(
                 ax=ax,
                 x_pos=0.5,
@@ -202,8 +230,8 @@ class RenderDataSeries:
             )
             return
         ax.plot(
-            x_array,
-            y_array,
+            time_array,
+            values_array,
             color="black",
             marker="o",
             ms=6,
@@ -212,7 +240,7 @@ class RenderDataSeries:
         )
         ax.set_xlabel("time")
         ax.set_ylabel(self.field_name)
-        fig_path = self.fig_dir / f"{self.field_name}_time_evolution.png"
+        fig_path = self.out_dir / f"{self.field_name}_time_evolution.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -233,6 +261,7 @@ class ScriptInterface:
         input_dir: Path,
         dataset_tag: str,
         fields_to_plot: list[str],
+        extract_data: bool,
         use_parallel: bool = True,
     ):
         check_types.ensure_nonempty_string(
@@ -243,18 +272,22 @@ class ScriptInterface:
         self.input_dir = Path(input_dir)
         self.dataset_tag = dataset_tag
         self.fields_to_plot = list(fields_to_plot)
+        self.extract_data = extract_data
         self.use_parallel = bool(use_parallel)
 
     def run(
         self,
     ) -> None:
+        ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
         dataset_dirs = find_datasets.resolve_dataset_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )
         if not dataset_dirs:
             return
-        fig_dir = Path(dataset_dirs[0]).parent
+        ## output goes to the sim root (the shared parent of all dataset dirs)
+        out_dir = dataset_dirs[0].parent
+        ## load the volume-integral time series and render the evolution plot for each requested field
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             load_data_series = LoadDataSeries(
@@ -265,8 +298,9 @@ class ScriptInterface:
             )
             data_series = load_data_series.run()
             render_data_series = RenderDataSeries(
-                fig_dir=fig_dir,
+                out_dir=out_dir,
                 field_name=field_name,
+                extract_data=self.extract_data,
             )
             render_data_series.run(data_series=data_series)
 
@@ -283,6 +317,7 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=1,
                 allow_vfields=False,
+                allow_extract=True,
             ),
         ],
     ).parse_args()
@@ -290,6 +325,7 @@ def main():
         input_dir=user_args.dir,
         dataset_tag=user_args.tag,
         fields_to_plot=user_args.fields,
+        extract_data=user_args.extract,
         use_parallel=True,
     )
     script_interface.run()

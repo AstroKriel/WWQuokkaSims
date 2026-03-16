@@ -4,8 +4,6 @@
 ## === DEPENDENCIES
 ##
 
-import re
-import csv
 import numpy
 import argparse
 
@@ -13,6 +11,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from collections.abc import Callable
 
+from jormi.ww_io import json_io
 from jormi.ww_types import check_types
 from jormi.ww_plots import manage_plots, add_color
 from jormi.ww_fields import cartesian_axes
@@ -40,15 +39,19 @@ class CompProfile:
     ) -> int:
         return len(self.axis_labels)
 
-    def get(
+    def get_domain(
         self,
         *,
         axis_index: int,
-    ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        return (
-            self.x_array_by_axis[axis_index],
-            self.y_array_by_axis[axis_index],
-        )
+    ) -> numpy.ndarray:
+        return self.x_array_by_axis[axis_index]
+
+    def get_values(
+        self,
+        *,
+        axis_index: int,
+    ) -> numpy.ndarray:
+        return self.y_array_by_axis[axis_index]
 
 
 ##
@@ -228,27 +231,18 @@ class RenderCompProfiles:
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
         field_loader: Callable,
         cmap_name: str,
-        fig_dir: Path,
-        save_profiles: bool,
+        out_dir: Path,
+        extract_data: bool,
     ):
         self.dataset_dirs = dataset_dirs
         self.dataset_tag = dataset_tag
-        self.fig_dir = Path(fig_dir)
+        self.out_dir = out_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
         self.axes_to_slice = axes_to_slice
         self.field_loader = field_loader
         self.cmap_name = cmap_name
-        self.save_profiles = save_profiles
-
-    @staticmethod
-    def _safe_slug(
-        text: str,
-    ) -> str:
-        text = text.strip()
-        text = re.sub(r"\s+", "_", text)
-        text = re.sub(r"[^A-Za-z0-9_\-\.]+", "", text)
-        return text if text else "profile"
+        self.extract_data = extract_data
 
     def _save_comp_profiles(
         self,
@@ -256,21 +250,31 @@ class RenderCompProfiles:
         comp_profiles_lookup: dict[str, list[CompProfile]],
         out_dir: Path,
     ) -> None:
-        out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
-        for comp_label, comp_profiles in comp_profiles_lookup.items():
-            comp_slug = self._safe_slug(comp_label)
-            for comp_profile in comp_profiles:
-                t_str = f"{comp_profile.sim_time:.3f}"
-                for axis_index, axis_label in enumerate(comp_profile.axis_labels):
-                    domain, values = comp_profile.get(axis_index=axis_index)
-                    file_name = f"{self.field_name}_comp={comp_slug}_along={axis_label}_t={t_str}.csv"
-                    file_path = out_dir / file_name
-                    with file_path.open("w", newline="") as fp:
-                        writer = csv.writer(fp)
-                        writer.writerow(["domain", "values"])
-                        for position, value in zip(domain, values, strict=False):
-                            writer.writerow([float(position), float(value)])
+        comp_labels = list(comp_profiles_lookup.keys())
+        num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
+        output_dict = {}
+        for snapshot_index in range(num_snapshots):
+            first_comp_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
+            snapshot_dict: dict = {"time": first_comp_profile.sim_time}
+            for comp_label in comp_labels:
+                comp_profile = comp_profiles_lookup[comp_label][snapshot_index]
+                axis_dict = {}
+                for axis_index, axis in enumerate(comp_profile.axis_labels):
+                    domain = comp_profile.get_domain(axis_index=axis_index)
+                    values = comp_profile.get_values(axis_index=axis_index)
+                    axis_dict[str(axis)] = {
+                        "domain": domain,
+                        "values": values,
+                    }
+                snapshot_dict[comp_label] = axis_dict
+            output_dict[str(snapshot_index)] = snapshot_dict
+        json_io.save_dict_to_json_file(
+            file_path=out_dir / f"{self.field_name}_profiles.json",
+            input_dict=output_dict,
+            overwrite=True,
+            verbose=False,
+        )
 
     @staticmethod
     def _style_axs(
@@ -296,7 +300,8 @@ class RenderCompProfiles:
     ) -> None:
         for axis_index in range(comp_profile.num_axes):
             ax = axs_row[axis_index]
-            x, y = comp_profile.get(axis_index=axis_index)
+            x = comp_profile.get_domain(axis_index=axis_index)
+            y = comp_profile.get_values(axis_index=axis_index)
             ax.plot(x, y, lw=2.0, color=color)
 
     def _plot_series_row(
@@ -334,6 +339,7 @@ class RenderCompProfiles:
     def run(
         self,
     ) -> None:
+        ## compute midplane profiles for each snapshot and component
         compute_comp_profiles = ComputeCompProfiles(
             dataset_dirs=self.dataset_dirs,
             field_name=self.field_name,
@@ -348,12 +354,14 @@ class RenderCompProfiles:
         axis_labels = comp_profiles_lookup[comp_labels[0]][0].axis_labels
         num_rows = len(comp_labels)
         num_cols = len(axis_labels)
+        ## figure layout: one row per field component, one col per slice axis
         fig, axs_grid = manage_plots.create_figure_grid(
             num_rows=num_rows,
             num_cols=num_cols,
             x_spacing=0.25,
             y_spacing=0.25,
         )
+        ## plot each component row; use a sequential color series if there are multiple snapshots
         for row_index, comp_label in enumerate(comp_labels):
             comp_profiles = comp_profiles_lookup[comp_label]
             if len(comp_profiles) == 1:
@@ -367,11 +375,13 @@ class RenderCompProfiles:
                     axs_row=axs_grid[row_index],
                     comp_profiles=comp_profiles,
                 )
-        if self.save_profiles:
+        ## optionally write extracted profile data to JSON
+        if self.extract_data:
             self._save_comp_profiles(
                 comp_profiles_lookup=comp_profiles_lookup,
-                out_dir=self.fig_dir,
+                out_dir=self.out_dir,
             )
+        ## label axes and save; include snapshot index in filename if there is only one snapshot
         RenderCompProfiles._style_axs(
             axs_grid=axs_grid,
             comp_labels=comp_labels,
@@ -380,9 +390,9 @@ class RenderCompProfiles:
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         if num_snapshots == 1:
             snapshot_index = find_datasets.get_dataset_index_string(self.dataset_dirs[0], self.dataset_tag)
-            fig_path = self.fig_dir / f"{self.field_name}_profile_{snapshot_index}.png"
+            fig_path = self.out_dir / f"{self.field_name}_profile_{snapshot_index}.png"
         else:
-            fig_path = self.fig_dir / f"{self.field_name}_profiles.png"
+            fig_path = self.out_dir / f"{self.field_name}_profiles.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -405,7 +415,7 @@ class ScriptInterface:
         fields_to_plot: list[str],
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
-        save_profiles: bool,
+        extract_data: bool,
     ):
         check_types.ensure_nonempty_string(
             param=dataset_tag,
@@ -425,30 +435,33 @@ class ScriptInterface:
         self.fields_to_plot = check_types.as_tuple(param=fields_to_plot)
         self.comps_to_plot = check_types.as_tuple(param=comps_to_plot)
         self.axes_to_slice = check_types.as_tuple(param=axes_to_slice)
-        self.save_profiles = save_profiles
+        self.extract_data = extract_data
 
     def run(
         self,
     ) -> None:
+        ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
         dataset_dirs = find_datasets.resolve_dataset_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )
         if not dataset_dirs:
             return
-        fig_dir = dataset_dirs[0].parent
+        ## output goes to the sim root (the shared parent of all dataset dirs)
+        out_dir = dataset_dirs[0].parent
+        ## compute and render profiles for each requested field
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             render_comp_profiles = RenderCompProfiles(
                 dataset_dirs=dataset_dirs,
                 dataset_tag=self.dataset_tag,
-                fig_dir=fig_dir,
+                out_dir=out_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
                 field_loader=field_meta["loader"],
                 cmap_name=field_meta["cmap"],
-                save_profiles=self.save_profiles,
+                extract_data=self.extract_data,
             )
             render_comp_profiles.run()
 
@@ -457,30 +470,23 @@ class ScriptInterface:
 ## === PROGRAM MAIN
 ##
 def main():
-    parser = argparse.ArgumentParser(
+    user_args = argparse.ArgumentParser(
         description="Plot midplane profiles of Quokka field components.",
         parents=[
             quokka_fields.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
+                allow_extract=True,
             ),
         ],
-    )
-    parser.add_argument(
-        "--save",
-        "-s",
-        action="store_true",
-        default=False,
-        help="Save profiles as CSVs (default: False).",
-    )
-    user_args = parser.parse_args()
+    ).parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.dir,
         dataset_tag=user_args.tag,
         fields_to_plot=user_args.fields,
         comps_to_plot=user_args.comps,
         axes_to_slice=user_args.axes,
-        save_profiles=user_args.save,
+        extract_data=user_args.extract,
     )
     script_interface.run()
 

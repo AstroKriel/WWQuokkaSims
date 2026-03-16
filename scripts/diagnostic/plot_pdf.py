@@ -11,6 +11,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from collections.abc import Callable
 
+from jormi.ww_io import json_io
 from jormi.ww_types import check_types, check_arrays
 from jormi.ww_plots import manage_plots, add_color
 from jormi.ww_arrays import compute_array_stats
@@ -201,20 +202,22 @@ class RenderPDFs:
         self,
         *,
         dataset_dirs: list[Path],
-        fig_dir: Path,
+        out_dir: Path,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         cmap_name: str,
         field_loader: Callable,
         num_bins: int,
+        extract_data: bool,
     ):
         self.dataset_dirs = dataset_dirs
-        self.fig_dir = Path(fig_dir)
+        self.out_dir = out_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
         self.cmap_name = cmap_name
         self.field_loader = field_loader
         self.num_bins = int(num_bins)
+        self.extract_data = extract_data
 
     @staticmethod
     def _style_axs(
@@ -273,9 +276,34 @@ class RenderPDFs:
             label=r"snapshot index",
         )
 
+    def _save_pdfs(
+        self,
+        *,
+        field_pdfs: list[PDFData],
+        out_dir: Path,
+    ) -> None:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        output_dict = {}
+        for snapshot_index, pdf_data in enumerate(field_pdfs):
+            snapshot_dict: dict = {"time": pdf_data.sim_time}
+            for comp_index, comp_label in enumerate(pdf_data.comp_labels):
+                bin_centers, densities = pdf_data.get_pdf(comp_index)
+                snapshot_dict[comp_label] = {
+                    "bin_centers": bin_centers,
+                    "log10_density": densities,
+                }
+            output_dict[str(snapshot_index)] = snapshot_dict
+        json_io.save_dict_to_json_file(
+            file_path=out_dir / f"{self.field_name}_pdfs.json",
+            input_dict=output_dict,
+            overwrite=True,
+            verbose=False,
+        )
+
     def run(
         self,
     ) -> None:
+        ## compute PDFs for each snapshot and component
         compute_pdfs = ComputePDFs(
             dataset_dirs=self.dataset_dirs,
             field_name=self.field_name,
@@ -286,6 +314,13 @@ class RenderPDFs:
         field_pdfs = compute_pdfs.run()
         if not field_pdfs:
             return
+        ## optionally write extracted PDF data to JSON
+        if self.extract_data:
+            self._save_pdfs(
+                field_pdfs=field_pdfs,
+                out_dir=self.out_dir,
+            )
+        ## figure layout: one col per field component; extra right margin for the colorbar if series
         num_cols = field_pdfs[0].num_comps
         add_cbar_space = len(field_pdfs) > 1
         fig, axs_grid = manage_plots.create_figure_grid(
@@ -296,6 +331,7 @@ class RenderPDFs:
         )
         if add_cbar_space:
             fig.subplots_adjust(right=0.82)
+        ## plot single snapshot in black, or a sequential color series across all snapshots
         if len(field_pdfs) == 1:
             self._plot_snapshot(
                 axs_grid=axs_grid,
@@ -313,7 +349,7 @@ class RenderPDFs:
             comp_labels=field_pdfs[0].comp_labels,
         )
         suffix = "pdf" if len(field_pdfs) == 1 else "pdfs"
-        fig_path = self.fig_dir / f"{self.field_name}_{suffix}.png"
+        fig_path = self.out_dir / f"{self.field_name}_{suffix}.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -335,6 +371,7 @@ class ScriptInterface:
         dataset_tag: str,
         fields_to_plot: tuple[str, ...] | list[str] | None,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
+        extract_data: bool,
         num_bins: int = 15,
     ):
         check_types.ensure_nonempty_string(
@@ -350,28 +387,33 @@ class ScriptInterface:
         self.dataset_tag = dataset_tag
         self.fields_to_plot = check_types.as_tuple(param=fields_to_plot)
         self.comps_to_plot = check_types.as_tuple(param=comps_to_plot)
+        self.extract_data = extract_data
         self.num_bins = int(num_bins)
 
     def run(
         self,
     ) -> None:
+        ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
         dataset_dirs = find_datasets.resolve_dataset_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )
         if not dataset_dirs:
             return
-        fig_dir = dataset_dirs[0].parent
+        ## output goes to the sim root (the shared parent of all dataset dirs)
+        out_dir = dataset_dirs[0].parent
+        ## compute and render PDFs for each requested field
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderPDFs(
                 dataset_dirs=dataset_dirs,
-                fig_dir=fig_dir,
+                out_dir=out_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 cmap_name=field_meta["cmap"],
                 field_loader=field_meta["loader"],
                 num_bins=self.num_bins,
+                extract_data=self.extract_data,
             )
             renderer.run()
 
@@ -388,6 +430,7 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
+                allow_extract=True,
             ),
         ],
     ).parse_args()
@@ -396,6 +439,7 @@ def main():
         dataset_tag=user_args.tag,
         fields_to_plot=user_args.fields,
         comps_to_plot=user_args.comps,
+        extract_data=user_args.extract,
         num_bins=15,
     )
     script_interface.run()

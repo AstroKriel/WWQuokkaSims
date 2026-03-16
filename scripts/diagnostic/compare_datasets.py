@@ -180,27 +180,27 @@ class CompareDatasets:
         shared_keys = sorted(field_keys_in & field_keys_ref)
         if len(keys_missing_from_in) > 0:
             manage_log.log_items(
-                title="Fields from dir-REF missing from dir-IN",
+                title="Fields from dir-2 missing from dir-1",
                 items=[str(field_key) for field_key in keys_missing_from_in],
-                message=f"There are {len(keys_missing_from_in)} fields not found in dir-IN.",
+                message=f"There are {len(keys_missing_from_in)} fields not found in dir-1.",
                 message_position="bottom",
             )
         if len(keys_missing_from_ref) > 0:
             manage_log.log_items(
-                title="Fields from dir-IN missing from dir-REF",
+                title="Fields from dir-1 missing from dir-2",
                 items=[str(field_key) for field_key in keys_missing_from_ref],
-                message=f"There are {len(keys_missing_from_ref)} fields not found in dir-REF.",
+                message=f"There are {len(keys_missing_from_ref)} fields not found in dir-2.",
                 message_position="bottom",
             )
         if len(shared_keys) == 0:
             manage_log.log_items(
-                title="Available fields in dir-IN",
+                title="Available fields in dir-1",
                 items=[str(field_key) for field_key in sorted(field_keys_in)],
                 message=f"There are {len(field_keys_in)} available fields.",
                 message_position="bottom",
             )
             manage_log.log_items(
-                title="Available fields in dir-REF",
+                title="Available fields in dir-2",
                 items=[str(field_key) for field_key in sorted(field_keys_ref)],
                 message=f"There are {len(field_keys_ref)} available fields.",
                 message_position="bottom",
@@ -208,17 +208,17 @@ class CompareDatasets:
             manage_log.log_error(
                 text="There are no shared fields to compare.",
                 notes={
-                    "dir-IN": str(self.dataset_view_in.dataset_dir),
-                    "dir-REF": str(self.dataset_view_ref.dataset_dir),
+                    "dir-1": str(self.dataset_view_in.dataset_dir),
+                    "dir-2": str(self.dataset_view_ref.dataset_dir),
                 },
             )
             raise SystemExit(4)
         manage_log.log_summary(
-            title="Fields in dir-IN and dir-REF",
+            title="Fields in dir-1 and dir-2",
             notes={
                 "Shared": len(shared_keys),
-                "Missing from dir-IN": len(keys_missing_from_in),
-                "Missing from dir-REF": len(keys_missing_from_ref),
+                "Missing from dir-1": len(keys_missing_from_in),
+                "Missing from dir-2": len(keys_missing_from_ref),
             },
         )
         return shared_keys
@@ -237,17 +237,17 @@ class CompareDatasets:
         field_comparison = compare_fields.run()
         if not field_comparison.same_shape:
             manage_log.log_error(
-                text=f"[{field_key}] Shape mismatch (IN vs REF).",
+                text=f"[{field_key}] Shape mismatch (dir-1 vs dir-2).",
                 notes={
-                    "IN-shape": field_comparison.shape_in,
-                    "REF-shape": field_comparison.shape_ref,
+                    "dir-1-shape": field_comparison.shape_in,
+                    "dir-2-shape": field_comparison.shape_ref,
                 },
                 message_position="bottom",
             )
             return
         if field_comparison.num_diffs == 0:
             manage_log.log_note(
-                f"[{field_key}] IN == REF (no value differences over shape: {field_comparison.shape_in}).",
+                f"[{field_key}] dir-1 == dir-2 (no value differences over shape: {field_comparison.shape_in}).",
             )
             return
         num_cells = int(numpy.prod(field_comparison.shape_in))
@@ -258,8 +258,8 @@ class CompareDatasets:
             text=warning_message,
             notes={
                 "diff-indices": field_comparison.preview_diff_indices,
-                "values-IN": field_comparison.preview_values_in,
-                "values-REF": field_comparison.preview_values_ref,
+                "values dir-1": field_comparison.preview_values_in,
+                "values dir-2": field_comparison.preview_values_ref,
                 "abs-diff-values": field_comparison.preview_abs_diff_values,
                 "shape": field_comparison.shape_in,
             },
@@ -299,9 +299,9 @@ class ScriptInterface:
         check_types.ensure_finite_int(param=self.preview_limit)
         assert self.preview_limit > 0
         if not find_datasets.looks_like_boxlib_dir(self.dataset_dir_in):
-            raise ValueError(f"dir-IN does not look like a BoxLib directory: {self.dataset_dir_in}")
+            raise ValueError(f"dir-1 does not look like a BoxLib directory: {self.dataset_dir_in}")
         if not find_datasets.looks_like_boxlib_dir(self.dataset_dir_ref):
-            raise ValueError(f"dir-REF does not look like a BoxLib directory: {self.dataset_dir_ref}")
+            raise ValueError(f"dir-2 does not look like a BoxLib directory: {self.dataset_dir_ref}")
 
     def run(
         self,
@@ -328,6 +328,7 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=2,
                 allow_vfields=False,
+                allow_extract=False,
             ),
         ],
     )

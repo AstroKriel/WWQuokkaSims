@@ -135,6 +135,7 @@ def validate_fields(
 def base_parser(
     num_dirs: int = 1,
     allow_vfields: bool = True,
+    allow_extract: bool = True,
 ) -> argparse.ArgumentParser:
     """
     Shared argument parser for diagnostic scripts.
@@ -152,16 +153,21 @@ def base_parser(
     - `allow_vfields`:
         If True, adds `--comps/-c` and `--axes/-a` for vector field components and slice axes.
 
+    - `allow_extract`:
+        If True, adds `--extract/-e` to save plotted data to disk. Default: True.
+        Set to False for scripts that do not produce plots (e.g. inspection or comparison scripts).
+
     Example
     ---
     parser = argparse.ArgumentParser(
         parents=[quokka_fields.base_parser(
             num_dirs=1,
             allow_vfields=True,
+            allow_extract=True,
         )],
         description="...",
     )
-    args = parser.parse_args() # args.dir, args.tag, args.fields, args.comps, args.axes
+    args = parser.parse_args() # args.dir, args.tag, args.fields, args.comps, args.axes, args.extract
     """
     field_list = ww_lists.as_string(elems=sorted(QUOKKA_FIELD_LOOKUP.keys()))
     axis_list = ww_lists.as_string(elems=list(cartesian_axes.VALID_3D_AXIS_LABELS))
@@ -189,7 +195,7 @@ def base_parser(
             "-o",
             type=lambda path: Path(path).expanduser().resolve(),
             required=True,
-            help="Output directory for figures.",
+            help="Output directory for figures and extracted datasets.",
         )
     ## always-present arguments
     parser.add_argument(
@@ -220,6 +226,15 @@ def base_parser(
             nargs="+",
             default=None,
             help=f"Axes to slice along. Options: {axis_list}",
+        )
+    ## optional extract argument (skip for non-plot scripts)
+    if allow_extract:
+        parser.add_argument(
+            "--extract",
+            "-e",
+            action="store_true",
+            default=False,
+            help="Save plotted data to disk (default: False).",
         )
     return parser
 
