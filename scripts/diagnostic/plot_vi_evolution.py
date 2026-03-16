@@ -21,7 +21,6 @@ from ww_quokka_sims.sim_io import load_dataset
 import quokka_fields  # local utils
 from ww_quokka_sims.sim_io import find_datasets
 
-
 ##
 ## === DATA CLASSES
 ##
@@ -68,7 +67,7 @@ class DataSeries:
 
 
 ##
-## === COMPUTE
+## === FIELD PROCESSING
 ##
 
 
@@ -135,7 +134,7 @@ class LoadDataSeries:
 
 
 ##
-## === RENDER
+## === FIGURE RENDERING
 ##
 
 

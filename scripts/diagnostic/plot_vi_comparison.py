@@ -19,7 +19,7 @@ import quokka_fields  # local utils
 from plot_vi_evolution import DataSeries, LoadDataSeries
 
 ##
-## === RENDER
+## === FIGURE RENDERING
 ##
 
 

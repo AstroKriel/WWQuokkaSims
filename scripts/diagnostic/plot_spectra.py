@@ -19,7 +19,6 @@ from jormi.ww_fields.fields_3d import field_types, compute_spectra
 from ww_quokka_sims.sim_io import find_datasets, load_dataset
 import quokka_fields  # local utils
 
-
 ##
 ## === DATA CLASSES
 ##
@@ -46,7 +45,7 @@ class SpectraData:
 
 
 ##
-## === COMPUTE
+## === FIELD PROCESSING
 ##
 
 
@@ -97,7 +96,7 @@ class ComputeSpectra:
 
 
 ##
-## === RENDER
+## === FIGURE RENDERING
 ##
 
 

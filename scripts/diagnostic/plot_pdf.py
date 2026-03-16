@@ -21,7 +21,6 @@ from jormi.ww_fields.fields_3d import field_types
 from ww_quokka_sims.sim_io import find_datasets, load_dataset
 import quokka_fields  # local utils
 
-
 ##
 ## === DATA CLASSES
 ##
@@ -83,7 +82,7 @@ class PDFData:
 
 
 ##
-## === COMPUTE
+## === FIELD PROCESSING
 ##
 
 
@@ -192,7 +191,7 @@ class ComputePDFs:
 
 
 ##
-## === RENDER
+## === FIGURE RENDERING
 ##
 
 

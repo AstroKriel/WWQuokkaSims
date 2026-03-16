@@ -11,7 +11,6 @@ from pathlib import Path
 from ww_quokka_sims.sim_io import load_dataset
 import quokka_fields
 
-
 ##
 ## === SCRIPT INTERFACE
 ##

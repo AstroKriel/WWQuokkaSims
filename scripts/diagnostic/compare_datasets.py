@@ -16,9 +16,8 @@ from jormi.ww_types import check_types
 from ww_quokka_sims.sim_io import find_datasets, load_dataset
 import quokka_fields  # local utils
 
-
 ##
-## === DATA ACCESS LAYER
+## === DATA ACCESS
 ##
 
 
@@ -48,7 +47,7 @@ class DatasetView:
 
 
 ##
-## === FIELD COMPARISON LAYER
+## === FIELD COMPARISON
 ##
 
 
@@ -153,7 +152,7 @@ class CompareFields:
 
 
 ##
-## === DATASET COMPARISON LAYER
+## === DATASET COMPARISON
 ##
 
 
@@ -275,7 +274,7 @@ class CompareDatasets:
 
 
 ##
-## === SCRIPT INTERFACE LAYER
+## === SCRIPT INTERFACE
 ##
 
 

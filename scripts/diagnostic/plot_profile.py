@@ -55,7 +55,7 @@ class CompProfile:
 
 
 ##
-## === COMPUTE
+## === FIELD PROCESSING
 ##
 
 
@@ -215,7 +215,7 @@ class ComputeCompProfiles:
 
 
 ##
-## === RENDER
+## === FIGURE RENDERING
 ##
 
 
