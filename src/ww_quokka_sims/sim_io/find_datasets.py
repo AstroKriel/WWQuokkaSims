@@ -4,8 +4,10 @@
 ## === DEPENDENCIES
 ##
 
+## stdlib
 from pathlib import Path
 
+## personal
 from jormi import ww_lists
 from jormi.ww_types import check_types
 

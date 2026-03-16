@@ -4,26 +4,30 @@
 ## === DEPENDENCIES
 ##
 
+## stdlib
+from collections import OrderedDict
+from dataclasses import dataclass
+from pathlib import Path
+
+## third-party
 import numpy
 
-from pathlib import Path
 from yt.loaders import load as yt_load
-from dataclasses import dataclass
-from collections import OrderedDict
 from yt.utilities.logger import ytLogger as yt_logger
 
-from jormi.ww_io import manage_log
-from jormi.ww_types import check_types
+## personal
 from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import (
     _farray_operators,
-    domain_types,
-    field_types,
-    field_operators,
     compute_fields,
     decompose_fields,
+    domain_types,
+    field_operators,
+    field_types,
 )
+from jormi.ww_io import manage_log
+from jormi.ww_types import check_types
 
 ##
 ## === DATA STRUCTURES
