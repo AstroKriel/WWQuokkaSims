@@ -248,7 +248,6 @@ class ScriptInterface:
         ## use the sim root directory names as labels in the plot legend
         label_dir_1 = self.dir_1.name
         label_dir_2 = self.dir_2.name
-        ## note: out_dir is explicitly provided by the user (not inferred from datasets, since there are two source dirs)
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             load_data_series_1 = LoadDataSeries(

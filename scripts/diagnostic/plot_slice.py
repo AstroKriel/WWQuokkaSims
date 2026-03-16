@@ -530,7 +530,6 @@ class ScriptInterface:
         self.input_dir = Path(input_dir)
         self.dataset_tag = dataset_tag
         self.fields_to_plot = check_types.as_tuple(param=fields_to_plot)
-        ## axis selection now uses CartesianAxis enums internally
         self.comps_to_plot = _parse_axes(axes=comps_to_plot)
         self.axes_to_slice = _parse_axes(axes=axes_to_slice)
         self.extract_data = extract_data
