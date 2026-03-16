@@ -4,19 +4,33 @@
 ## === DEPENDENCIES
 ##
 
-import numpy
+## stdlib
 import argparse
 
 from pathlib import Path
 
-from jormi.ww_types import check_types
-from jormi.ww_io import manage_io, json_io
-from jormi.ww_data import series_types, interpolate_series
-from jormi.ww_plots import manage_plots
+## third-party
+import numpy
 
+## personal
+from jormi.ww_data import (
+    interpolate_series,
+    series_types,
+)
+from jormi.ww_io import (
+    json_io,
+    manage_io,
+)
+from jormi.ww_plots import manage_plots
+from jormi.ww_types import check_types
+
+## local
 from ww_quokka_sims.sim_io import find_datasets
-import quokka_fields  # local utils
-from plot_vi_evolution import DataSeries, LoadDataSeries
+import quokka_fields
+from plot_vi_evolution import (
+    DataSeries,
+    LoadDataSeries,
+)
 
 ##
 ## === FIGURE RENDERING

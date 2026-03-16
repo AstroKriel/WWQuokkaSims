@@ -4,17 +4,28 @@
 ## === DEPENDENCIES
 ##
 
-import numpy
+## stdlib
 import argparse
 
+from dataclasses import (
+    dataclass,
+    field,
+)
 from pathlib import Path
-from dataclasses import dataclass, field
 
+## third-party
+import numpy
+
+## personal
 from jormi.ww_io import manage_log
 from jormi.ww_types import check_types
 
-from ww_quokka_sims.sim_io import find_datasets, load_dataset
-import quokka_fields  # local utils
+## local
+from ww_quokka_sims.sim_io import (
+    find_datasets,
+    load_dataset,
+)
+import quokka_fields
 
 ##
 ## === DATA ACCESS

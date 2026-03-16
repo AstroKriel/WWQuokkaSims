@@ -4,21 +4,35 @@
 ## === DEPENDENCIES
 ##
 
-import numpy
+## stdlib
 import argparse
 
-from pathlib import Path
-from dataclasses import dataclass
 from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
 
-from jormi.ww_io import json_io
-from jormi.ww_types import check_types
-from jormi.ww_plots import manage_plots, add_color
+## third-party
+import numpy
+
+## personal
 from jormi.ww_fields import cartesian_axes
-from jormi.ww_fields.fields_3d import field_types, domain_types
+from jormi.ww_fields.fields_3d import (
+    domain_types,
+    field_types,
+)
+from jormi.ww_io import json_io
+from jormi.ww_plots import (
+    add_color,
+    manage_plots,
+)
+from jormi.ww_types import check_types
 
-from ww_quokka_sims.sim_io import find_datasets, load_dataset
-import quokka_fields  # local utils
+## local
+from ww_quokka_sims.sim_io import (
+    find_datasets,
+    load_dataset,
+)
+import quokka_fields
 
 ##
 ## === DATA CLASSES
