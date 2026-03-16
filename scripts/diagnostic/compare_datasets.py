@@ -1,3 +1,5 @@
+## { SCRIPT
+
 ##
 ## === DEPENDENCIES
 ##
@@ -12,38 +14,7 @@ from jormi.ww_io import manage_log
 from jormi.ww_types import check_types
 
 from ww_quokka_sims.sim_io import find_datasets, load_dataset
-
-##
-## === HELPER FUNCTION
-##
-
-
-def get_user_args():
-    parser = argparse.ArgumentParser(
-        description="Compare two Quokka (BoxLib) data-directories (IN vs REF).",
-    )
-    parser.add_argument(
-        "--dir-in",
-        "-d1",
-        type=Path,
-        required=True,
-        help="Path to the first data-directory.",
-    )
-    parser.add_argument(
-        "--dir-ref",
-        "-d2",
-        type=Path,
-        required=True,
-        help="Path to the second (reference) data-directory.",
-    )
-    parser.add_argument(
-        "--preview-limit",
-        "-N",
-        type=int,
-        default=100,
-        help="Maximum number of index locations to preview.",
-    )
-    return parser.parse_args()
+import quokka_fields  # local utils
 
 
 ##
@@ -351,11 +322,27 @@ class ScriptInterface:
 
 
 def main():
-    args = get_user_args()
+    parser = argparse.ArgumentParser(
+        description="Compare two Quokka (BoxLib) data-directories.",
+        parents=[
+            quokka_fields.base_parser(
+                num_dirs=2,
+                allow_vfields=False,
+            ),
+        ],
+    )
+    parser.add_argument(
+        "--preview-limit",
+        "-N",
+        type=int,
+        default=100,
+        help="Maximum number of index locations to preview.",
+    )
+    user_args = parser.parse_args()
     script_interface = ScriptInterface(
-        dataset_dir_in=args.dir_in,
-        dataset_dir_ref=args.dir_ref,
-        preview_limit=args.preview_limit,
+        dataset_dir_in=user_args.dir_1,
+        dataset_dir_ref=user_args.dir_2,
+        preview_limit=user_args.preview_limit,
     )
     script_interface.run()
 
@@ -366,3 +353,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+## } SCRIPT
