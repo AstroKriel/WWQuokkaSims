@@ -542,12 +542,12 @@ class ScriptInterface:
         out_dir: Path,
     ) -> None:
         for field_name in self.fields_to_plot:
-            fig_paths = manage_io.ItemFilter(
+            fig_paths = manage_io.filter_directory(
+                out_dir,
                 prefix=f"{field_name}_slice_",
                 suffix=".png",
                 include_folders=False,
-                include_files=True,
-            ).filter(directory=out_dir)
+            )
             if len(fig_paths) < 3:
                 manage_log.log_hint(
                     text=(
