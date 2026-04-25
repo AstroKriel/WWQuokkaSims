@@ -593,7 +593,7 @@ class QuokkaDataset:
             vfield_3d=self.load_3d_momentum_vfield(),
             param_name="<mom_vfield_3d>",
         )
-        rho_has_zeros = compute_array_stats.validate_zero_values(
+        rho_has_zeros = compute_array_stats.validate_no_zero_values(
             array=rho_sarray_3d,
             param_name="<rho_sfield_3d>",
             raise_error=False,
@@ -601,7 +601,7 @@ class QuokkaDataset:
         with compute_array_stats.suppress_divide_warnings():
             v_varray = mom_varray_3d / rho_sarray_3d[numpy.newaxis, ...]
         if not rho_has_zeros:
-            compute_array_stats.validate_nonfinite_values(
+            compute_array_stats.validate_no_nonfinite_values(
                 array=v_varray,
                 param_name="<v_vfield_3d>",
                 raise_error=False,
@@ -675,7 +675,7 @@ class QuokkaDataset:
             vfield_3d=self.load_3d_momentum_vfield(),
             param_name="<mom_vfield_3d>",
         )
-        rho_has_zeros = compute_array_stats.validate_zero_values(
+        rho_has_zeros = compute_array_stats.validate_no_zero_values(
             array=rho_sarray_3d,
             param_name="<rho_sfield_3d>",
             raise_error=False,
@@ -685,7 +685,7 @@ class QuokkaDataset:
                 mom_varray_3d,
             ) / rho_sarray_3d
         if not rho_has_zeros:
-            compute_array_stats.validate_nonfinite_values(
+            compute_array_stats.validate_no_nonfinite_values(
                 array=Ekin_sarray_3d,
                 param_name="<Ekin_sfield_3d>",
                 raise_error=False,
@@ -741,7 +741,7 @@ class QuokkaDataset:
                 param_name="<Emag_sfield_3d>",
             )
             Eint_sarray -= Emag_sarray
-        compute_array_stats.validate_nonfinite_values(
+        compute_array_stats.validate_no_nonfinite_values(
             array=Eint_sarray,
             param_name="<Eint_sfield_3d>",
             raise_error=False,
@@ -861,7 +861,7 @@ class QuokkaDataset:
         Ekin_div_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_div_varray)
         Ekin_sol_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_sol_varray)
         Ekin_bulk_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_bulk_varray)
-        compute_array_stats.validate_nonfinite_values(
+        compute_array_stats.validate_no_nonfinite_values(
             array=Ekin_div_sarray,
             param_name="<Ekin_div_sfield_3d>",
             raise_error=False,
@@ -872,7 +872,7 @@ class QuokkaDataset:
             zero_posinf=True,
             zero_neginf=True,
         )
-        compute_array_stats.validate_nonfinite_values(
+        compute_array_stats.validate_no_nonfinite_values(
             array=Ekin_sol_sarray,
             param_name="<Ekin_sol_sfield_3d>",
             raise_error=False,
@@ -883,7 +883,7 @@ class QuokkaDataset:
             zero_posinf=True,
             zero_neginf=True,
         )
-        compute_array_stats.validate_nonfinite_values(
+        compute_array_stats.validate_no_nonfinite_values(
             array=Ekin_bulk_sarray,
             param_name="<Ekin_bulk_sfield_3d>",
             raise_error=False,
@@ -964,7 +964,7 @@ class QuokkaDataset:
             param_name="<b_vfield_3d>",
         )
         b_sq_sarray_3d = _farray_operators.sum_of_varray_comps_squared(b_varray_3d)
-        b_sq_has_zeros = compute_array_stats.validate_zero_values(
+        b_sq_has_zeros = compute_array_stats.validate_no_zero_values(
             array=b_sq_sarray_3d,
             param_name="<|b|^2>",
             raise_error=False,
@@ -972,7 +972,7 @@ class QuokkaDataset:
         with compute_array_stats.suppress_divide_warnings():
             beta_sarray_3d = 2.0 * p_sarray_3d / b_sq_sarray_3d
         if not b_sq_has_zeros:
-            compute_array_stats.validate_nonfinite_values(
+            compute_array_stats.validate_no_nonfinite_values(
                 array=beta_sarray_3d,
                 param_name="<beta_sfield_3d>",
                 raise_error=False,
@@ -1002,7 +1002,7 @@ class QuokkaDataset:
             sfield_3d=self.load_3d_density_sfield(),
             param_name="<rho_sfield_3d>",
         )
-        rho_has_zeros = compute_array_stats.validate_zero_values(
+        rho_has_zeros = compute_array_stats.validate_no_zero_values(
             array=rho_sarray_3d,
             param_name="<rho_sfield_3d>",
             raise_error=False,
@@ -1010,7 +1010,7 @@ class QuokkaDataset:
         with compute_array_stats.suppress_divide_warnings():
             va_varray_3d = b_varray_3d / numpy.sqrt(rho_sarray_3d)[numpy.newaxis, ...]
         if not rho_has_zeros:
-            compute_array_stats.validate_nonfinite_values(
+            compute_array_stats.validate_no_nonfinite_values(
                 array=va_varray_3d,
                 param_name="<va_vfield_3d>",
                 raise_error=False,
@@ -1139,7 +1139,7 @@ class QuokkaDataset:
             sfield_3d=self.load_3d_kinetic_energy_sfield(),
             param_name="<Ekin_sfield_3d>",
         )
-        Ekin_has_zeros = compute_array_stats.validate_zero_values(
+        Ekin_has_zeros = compute_array_stats.validate_no_zero_values(
             array=Ekin_sarray_3d,
             param_name="<Ekin_sfield_3d>",
             raise_error=False,
@@ -1147,7 +1147,7 @@ class QuokkaDataset:
         with compute_array_stats.suppress_divide_warnings():
             Eratio_sarray_3d = Emag_sarray_3d / Ekin_sarray_3d
         if not Ekin_has_zeros:
-            compute_array_stats.validate_nonfinite_values(
+            compute_array_stats.validate_no_nonfinite_values(
                 array=Eratio_sarray_3d,
                 param_name="<Eratio_sfield_3d>",
                 raise_error=False,
