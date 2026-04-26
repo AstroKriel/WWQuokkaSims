@@ -15,9 +15,13 @@ requires-python = ">=3.11"
 ## runtime dependencies (installed automatically with the package)
 dependencies = [
   "imageio>=2.37.0",
+  "jormi",
   "numpy>=2.3.2",
   "yt>=4.4.1",
 ]
+
+[tool.uv.sources]
+jormi = { path = "../jormi", editable = true }
 
 ##
 ## === BUILD SYSTEM
