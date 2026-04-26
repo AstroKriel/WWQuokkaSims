@@ -17,15 +17,15 @@ import numpy
 ## personal
 from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
-from jormi.ww_fields.fields_3d import field_types
+from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_io import json_io
 from jormi.ww_plots import (
     add_color,
     manage_plots,
 )
-from jormi.ww_types import (
-    check_arrays,
-    check_types,
+from jormi.ww_validation import (
+    validate_arrays,
+    validate_types,
 )
 
 ## local
@@ -51,13 +51,13 @@ class PDFData:
         self,
     ) -> None:
         ## container validation
-        check_types.ensure_sequence(
+        validate_types.ensure_sequence(
             param=self.grouped_bin_centers,
             valid_seq_types=(list, tuple),
             param_name="grouped_bin_centers",
             seq_length=len(self.comp_labels),
         )
-        check_types.ensure_sequence(
+        validate_types.ensure_sequence(
             param=self.grouped_densities,
             valid_seq_types=(list, tuple),
             param_name="grouped_densities",
@@ -65,11 +65,11 @@ class PDFData:
         )
         ## validate each comp-array
         for (bin_centers, densities) in zip(self.grouped_bin_centers, self.grouped_densities):
-            check_arrays.ensure_array(array=bin_centers)
-            check_arrays.ensure_array(array=densities)
-            check_arrays.ensure_1d(array=bin_centers)
-            check_arrays.ensure_1d(array=densities)
-            check_arrays.ensure_same_shape(
+            validate_arrays.ensure_array(array=bin_centers)
+            validate_arrays.ensure_array(array=densities)
+            validate_arrays.ensure_1d(array=bin_centers)
+            validate_arrays.ensure_1d(array=densities)
+            validate_arrays.ensure_same_shape(
                 array_a=bin_centers,
                 array_b=densities,
             )
@@ -140,17 +140,17 @@ class ComputePDFs:
 
     def _compute_vfield_pdf(
         self,
-        field: field_types.VectorField_3D,
+        field: field_models.VectorField_3D,
     ) -> PDFData:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
                 f"Vector field `{self.field_name}` requires at least one component to plot; none provided.",
             )
-        field_types.ensure_3d_vfield(field)
+        field_models.ensure_3d_vfield(field)
         sim_time = field.sim_time
         assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
-        comp_labels = [field_types.get_vcomp_label(field, comp_name) for comp_name in comp_names]
+        comp_labels = [field_models.get_vcomp_label(field, comp_name) for comp_name in comp_names]
         grouped_bin_centers: list[numpy.ndarray] = []
         grouped_densities: list[numpy.ndarray] = []
         for comp_name in comp_names:
@@ -170,9 +170,9 @@ class ComputePDFs:
 
     def _compute_sfield_pdf(
         self,
-        field: field_types.ScalarField_3D,
+        field: field_models.ScalarField_3D,
     ) -> PDFData:
-        field_types.ensure_3d_sfield(field)
+        field_models.ensure_3d_sfield(field)
         sim_time = field.sim_time
         assert sim_time is not None
         bin_centers, densities = self._estimate_pdf(
@@ -183,7 +183,7 @@ class ComputePDFs:
             sim_time=sim_time,
             grouped_bin_centers=[bin_centers],
             grouped_densities=[densities],
-            comp_labels=[field_types.get_label(field)],
+            comp_labels=[field_models.get_label(field)],
         )
 
     def run(
@@ -193,9 +193,9 @@ class ComputePDFs:
         for dataset_dir in self.dataset_dirs:
             with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
                 field = self.field_loader(ds)
-            if isinstance(field, field_types.ScalarField_3D):
+            if isinstance(field, field_models.ScalarField_3D):
                 pdf = self._compute_sfield_pdf(field=field)
-            elif isinstance(field, field_types.VectorField_3D):
+            elif isinstance(field, field_models.VectorField_3D):
                 pdf = self._compute_vfield_pdf(field=field)
             else:
                 raise ValueError(f"{self.field_name} is an unrecognised field type.")
@@ -387,7 +387,7 @@ class ScriptInterface:
         extract_data: bool,
         num_bins: int = 15,
     ):
-        check_types.ensure_nonempty_string(
+        validate_types.ensure_nonempty_string(
             param=dataset_tag,
             param_name="dataset_tag",
         )
@@ -398,8 +398,8 @@ class ScriptInterface:
             raise ValueError("Provide one or more components (via -c) from: x_0, x_1, x_2")
         self.input_dir = Path(input_dir)
         self.dataset_tag = dataset_tag
-        self.fields_to_plot = check_types.as_tuple(param=fields_to_plot)
-        self.comps_to_plot = check_types.as_tuple(param=comps_to_plot)
+        self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
+        self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
         self.extract_data = extract_data
         self.num_bins = int(num_bins)
 

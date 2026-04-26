@@ -18,8 +18,8 @@ import numpy
 ## personal
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import (
-    domain_types,
-    field_types,
+    domain_models,
+    field_models,
 )
 from jormi.ww_fns import parallel_dispatch
 from jormi.ww_io import (
@@ -32,7 +32,7 @@ from jormi.ww_plots import (
     manage_plots,
     plot_data,
 )
-from jormi.ww_types import check_types
+from jormi.ww_validation import validate_types
 
 ## local
 from ww_quokka_sims.sim_io import (
@@ -68,8 +68,8 @@ class WorkerArgs(NamedTuple):
 
 @dataclass(frozen=True)
 class Dataset:
-    uniform_domain: domain_types.UniformDomain_3D
-    field: field_types.ScalarField_3D | field_types.VectorField_3D
+    uniform_domain: domain_models.UniformDomain_3D
+    field: field_models.ScalarField_3D | field_models.VectorField_3D
 
     @property
     def sim_time(
@@ -111,7 +111,7 @@ def _parse_axes(
     if axes is None:
         return tuple(cartesian_axes.DEFAULT_3D_AXES_ORDER)
     parsed_axes: list[cartesian_axes.CartesianAxis_3D] = []
-    for axis_name in check_types.as_tuple(param=axes):
+    for axis_name in validate_types.as_tuple(param=axes):
         try:
             parsed_axes.append(cartesian_axes.as_axis(axis=axis_name))
         except (TypeError, ValueError):
@@ -127,7 +127,7 @@ def _axis_to_index(
 
 def get_slice_bounds(
     *,
-    uniform_domain: domain_types.UniformDomain_3D,
+    uniform_domain: domain_models.UniformDomain_3D,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
 ) -> AxisBounds:
     (x0_min, x0_max), (x1_min, x1_max), (x2_min, x2_max) = uniform_domain.domain_bounds
@@ -155,7 +155,7 @@ def slice_field(
     *,
     data_3d: numpy.ndarray,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
-    uniform_domain: domain_types.UniformDomain_3D,
+    uniform_domain: domain_models.UniformDomain_3D,
 ) -> SlicedField:
     num_cells_x0, num_cells_x1, num_cells_x2 = data_3d.shape
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X2:
@@ -263,33 +263,33 @@ class FieldPlotter:
     def _get_field_comps(
         self,
         *,
-        field: field_types.ScalarField_3D | field_types.VectorField_3D,
+        field: field_models.ScalarField_3D | field_models.VectorField_3D,
     ) -> list[FieldComp]:
         field_name = self.field_args.field_name
-        if isinstance(field, field_types.ScalarField_3D):
-            sarray_3d = field_types.extract_3d_sarray(
+        if isinstance(field, field_models.ScalarField_3D):
+            sarray_3d = field_models.extract_3d_sarray(
                 sfield_3d=field,
                 param_name=f"<{field_name}_sfield_3d>",
             )
             return [
                 FieldComp(
                     data_3d=sarray_3d,
-                    label=field_types.get_label(field),
+                    label=field_models.get_label(field),
                 ),
             ]
-        if isinstance(field, field_types.VectorField_3D):
+        if isinstance(field, field_models.VectorField_3D):
             if not self.comps_to_plot:
                 raise ValueError(
                     f"Vector field `{field_name}` requires at least one component to plot; none provided.",
                 )
-            varray_3d = field_types.extract_3d_varray(
+            varray_3d = field_models.extract_3d_varray(
                 vfield_3d=field,
                 param_name=f"<{field_name}_vfield_3d>",
             )
             return [
                 FieldComp(
                     data_3d=varray_3d[_axis_to_index(comp_axis)],
-                    label=field_types.get_vcomp_label(field, comp_axis),
+                    label=field_models.get_vcomp_label(field, comp_axis),
                 ) for comp_axis in self.comps_to_plot
             ]
         raise ValueError(f"{field_name} is an unrecognised field type.")
@@ -299,7 +299,7 @@ class FieldPlotter:
         *,
         axs_grid,
         field_comps: list[FieldComp],
-        uniform_domain: domain_types.UniformDomain_3D,
+        uniform_domain: domain_models.UniformDomain_3D,
         sim_time: float,
     ) -> None:
         for row_index, field_comp in enumerate(field_comps):
@@ -336,7 +336,7 @@ class FieldPlotter:
         self,
         *,
         field_comps: list[FieldComp],
-        uniform_domain: domain_types.UniformDomain_3D,
+        uniform_domain: domain_models.UniformDomain_3D,
         dataset_index: int,
         index_width: int,
         out_dir: Path,
@@ -520,7 +520,7 @@ class ScriptInterface:
         use_parallel: bool = True,
         animate_only: bool = False,
     ):
-        check_types.ensure_nonempty_string(
+        validate_types.ensure_nonempty_string(
             param=dataset_tag,
             param_name="dataset_tag",
         )
@@ -529,7 +529,7 @@ class ScriptInterface:
             raise ValueError(f"Provide one or more field to plot (via -f) from: {sorted(valid_fields)}")
         self.input_dir = Path(input_dir)
         self.dataset_tag = dataset_tag
-        self.fields_to_plot = check_types.as_tuple(param=fields_to_plot)
+        self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.comps_to_plot = _parse_axes(axes=comps_to_plot)
         self.axes_to_slice = _parse_axes(axes=axes_to_slice)
         self.extract_data = extract_data

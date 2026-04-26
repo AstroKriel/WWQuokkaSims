@@ -17,8 +17,8 @@ import numpy
 ## personal
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import (
-    domain_types,
-    field_types,
+    domain_models,
+    field_models,
 )
 from jormi.ww_io import json_io
 from jormi.ww_plots import (
@@ -93,7 +93,7 @@ class ComputeCompProfiles:
     @staticmethod
     def _compute_cell_centers(
         *,
-        udomain_3d: domain_types.UniformDomain_3D,
+        udomain_3d: domain_models.UniformDomain_3D,
         axis_to_slice: cartesian_axes.AxisLike_3D,
     ) -> numpy.ndarray:
         (x_min, _), (y_min, _), (z_min, _) = udomain_3d.domain_bounds
@@ -124,10 +124,10 @@ class ComputeCompProfiles:
     def _compute_scalar_profiles(
         self,
         *,
-        field: field_types.ScalarField_3D,
-        udomain_3d: domain_types.UniformDomain_3D,
+        field: field_models.ScalarField_3D,
+        udomain_3d: domain_models.UniformDomain_3D,
     ) -> list[CompProfile]:
-        field_types.ensure_3d_sfield(field)
+        field_models.ensure_3d_sfield(field)
         sim_time = field.sim_time
         assert sim_time is not None
         axis_labels = list(self.axes_to_slice)
@@ -148,7 +148,7 @@ class ComputeCompProfiles:
             CompProfile(
                 sim_time=sim_time,
                 axis_labels=axis_labels,
-                comp_label=field_types.get_label(field),
+                comp_label=field_models.get_label(field),
                 x_array_by_axis=x_array_by_axis,
                 y_array_by_axis=y_array_by_axis,
             ),
@@ -157,21 +157,21 @@ class ComputeCompProfiles:
     def _compute_vector_profiles(
         self,
         *,
-        field: field_types.VectorField_3D,
-        udomain_3d: domain_types.UniformDomain_3D,
+        field: field_models.VectorField_3D,
+        udomain_3d: domain_models.UniformDomain_3D,
     ) -> list[CompProfile]:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
                 f"Vector field `{self.field_name}` requires at least one component to plot; none provided.",
             )
-        field_types.ensure_3d_vfield(field)
+        field_models.ensure_3d_vfield(field)
         sim_time = field.sim_time
         assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
         axis_labels = list(self.axes_to_slice)
         comp_profiles: list[CompProfile] = []
         for comp_name in comp_names:
-            comp_label = field_types.get_vcomp_label(field, comp_name)
+            comp_label = field_models.get_vcomp_label(field, comp_name)
             x_array_by_axis: list[numpy.ndarray] = []
             y_array_by_axis: list[numpy.ndarray] = []
             for axis_to_slice in axis_labels:
@@ -206,12 +206,12 @@ class ComputeCompProfiles:
             with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
                 udomain_3d = ds.load_3d_uniform_domain()
                 field = self.field_loader(ds)  # ScalarField or VectorField
-            if isinstance(field, field_types.ScalarField_3D):
+            if isinstance(field, field_models.ScalarField_3D):
                 comp_profiles = self._compute_scalar_profiles(
                     field=field,
                     udomain_3d=udomain_3d,
                 )
-            elif isinstance(field, field_types.VectorField_3D):
+            elif isinstance(field, field_models.VectorField_3D):
                 comp_profiles = self._compute_vector_profiles(
                     field=field,
                     udomain_3d=udomain_3d,

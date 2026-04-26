@@ -17,7 +17,7 @@ import numpy
 ## personal
 from jormi.ww_fields.fields_3d import (
     field_operators,
-    field_types,
+    field_models,
 )
 from jormi.ww_fns import parallel_dispatch
 from jormi.ww_io import json_io
@@ -25,9 +25,9 @@ from jormi.ww_plots import (
     annotate_axis,
     manage_plots,
 )
-from jormi.ww_types import (
-    check_arrays,
-    check_types,
+from jormi.ww_validation import (
+    validate_arrays,
+    validate_types,
 )
 
 ## local
@@ -74,8 +74,8 @@ class DataSeries:
                 numpy.asarray([], dtype=float),
             )
         sorted_points = sorted(self.points, key=lambda point: point.sim_time)
-        time_array = check_arrays.as_1d([point.sim_time for point in sorted_points])
-        values_array = check_arrays.as_1d([point.vi_value for point in sorted_points])
+        time_array = validate_arrays.as_1d([point.sim_time for point in sorted_points])
+        values_array = validate_arrays.as_1d([point.vi_value for point in sorted_points])
         return (
             time_array,
             values_array,
@@ -108,7 +108,7 @@ class LoadDataSeries:
     ) -> DataPoint:
         with load_dataset.QuokkaDataset(dataset_dir=field_args.dataset_dir, verbose=False) as ds:
             sfield_3d = field_args.field_loader(ds)
-        if not isinstance(sfield_3d, field_types.ScalarField_3D):
+        if not isinstance(sfield_3d, field_models.ScalarField_3D):
             raise TypeError(
                 f"Expected ScalarField_3D from `{field_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
             )
@@ -279,7 +279,7 @@ class ScriptInterface:
         extract_data: bool,
         use_parallel: bool = True,
     ):
-        check_types.ensure_nonempty_string(
+        validate_types.ensure_nonempty_string(
             param=dataset_tag,
             param_name="dataset_tag",
         )

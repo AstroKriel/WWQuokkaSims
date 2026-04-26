@@ -17,7 +17,7 @@ import numpy
 ## personal
 from jormi.ww_fields.fields_3d import (
     compute_spectra,
-    field_types,
+    field_models,
 )
 from jormi.ww_io import json_io
 from jormi.ww_plots import (
@@ -86,7 +86,7 @@ class ComputeSpectra:
         for dataset_dir in self.dataset_dirs:
             with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
                 field = self.field_loader(ds)
-            if not isinstance(field, field_types.ScalarField_3D):
+            if not isinstance(field, field_models.ScalarField_3D):
                 raise TypeError(
                     f"`{self.field_name}` is not a scalar field; "
                     "power spectra are only supported for scalar fields.",
@@ -103,7 +103,7 @@ class ComputeSpectra:
             field_spectra.append(
                 SpectraData(
                     sim_time=sim_time,
-                    field_label=field_types.get_label(field),
+                    field_label=field_models.get_label(field),
                     k_bin_centers=spectrum.k_bin_centers_1d,
                     log10_spectrum=log10_spectrum,
                 ),

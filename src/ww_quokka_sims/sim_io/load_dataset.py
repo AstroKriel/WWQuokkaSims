@@ -18,16 +18,16 @@ from yt.utilities.logger import ytLogger as yt_logger
 ## personal
 from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
+from jormi.ww_arrays.farrays_3d import farray_operators
 from jormi.ww_fields.fields_3d import (
-    _farray_operators,
     compute_fields,
     decompose_fields,
-    domain_types,
+    domain_models,
     field_operators,
-    field_types,
+    field_models,
 )
 from jormi.ww_io import manage_log
-from jormi.ww_types import check_types
+from jormi.ww_validation import validate_types
 
 ##
 ## === DATA STRUCTURES
@@ -45,20 +45,20 @@ _BOXLIB_XYZ_LABELS: dict[cartesian_axes.CartesianAxis_3D, str] = {
 
 @dataclass(frozen=True)
 class HelmholtzKineticEnergy:
-    Ekin_div_sfield_3d: field_types.ScalarField_3D
-    Ekin_sol_sfield_3d: field_types.ScalarField_3D
-    Ekin_bulk_sfield_3d: field_types.ScalarField_3D
+    Ekin_div_sfield_3d: field_models.ScalarField_3D
+    Ekin_sol_sfield_3d: field_models.ScalarField_3D
+    Ekin_bulk_sfield_3d: field_models.ScalarField_3D
 
     def __post_init__(self) -> None:
-        field_types.ensure_3d_sfield(
+        field_models.ensure_3d_sfield(
             sfield_3d=self.Ekin_div_sfield_3d,
             param_name="<Ekin_div_sfield_3d>",
         )
-        field_types.ensure_3d_sfield(
+        field_models.ensure_3d_sfield(
             sfield_3d=self.Ekin_sol_sfield_3d,
             param_name="<Ekin_sol_sfield_3d>",
         )
-        field_types.ensure_3d_sfield(
+        field_models.ensure_3d_sfield(
             sfield_3d=self.Ekin_bulk_sfield_3d,
             param_name="<Ekin_bulk_sfield_3d>",
         )
@@ -122,7 +122,7 @@ class LRUCache:
         self,
         max_size: int = 3,
     ) -> None:
-        check_types.ensure_finite_int(
+        validate_types.ensure_finite_int(
             param=max_size,
             param_name="max_size",
             allow_none=False,
@@ -145,7 +145,7 @@ class LRUCache:
     def cache_field(
         self,
         field_name: str,
-        field_data: field_types.ScalarField_3D | field_types.VectorField_3D,
+        field_data: field_models.ScalarField_3D | field_models.VectorField_3D,
     ) -> None:
         """Store `field_data` under `field_name` and evict the least-recently-used item if the cache is full."""
         self._cache_lookup[field_name] = field_data
@@ -178,7 +178,7 @@ class QuokkaDataset:
         verbose: bool = True,
     ):
         """Initialise a dataset handle without opening the underlying yt dataset."""
-        check_types.ensure_bool(
+        validate_types.ensure_bool(
             param=verbose,
             param_name="verbose",
         )
@@ -413,22 +413,22 @@ class QuokkaDataset:
 
     def _extract_3d_sarray(
         self,
-        sfield_3d: field_types.ScalarField_3D,
+        sfield_3d: field_models.ScalarField_3D,
         *,
         param_name: str,
     ) -> numpy.ndarray:
-        return field_types.extract_3d_sarray(
+        return field_models.extract_3d_sarray(
             sfield_3d=sfield_3d,
             param_name=param_name,
         )
 
     def _extract_3d_varray(
         self,
-        vfield_3d: field_types.VectorField_3D,
+        vfield_3d: field_models.VectorField_3D,
         *,
         param_name: str,
     ) -> numpy.ndarray:
-        return field_types.extract_3d_varray(
+        return field_models.extract_3d_varray(
             vfield_3d=vfield_3d,
             param_name=param_name,
         )
@@ -437,15 +437,15 @@ class QuokkaDataset:
         self,
         field_key: FieldKey,
         field_label: str,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Wrap a scalar array as `ScalarField` with a `field_label` and `sim_time`."""
-        check_types.ensure_nonempty_string(
+        validate_types.ensure_nonempty_string(
             param=field_label,
             param_name="field_label",
         )
         sarray_3d = self._load_3d_sarray(field_key)
         udomain_3d = self.load_3d_uniform_domain()
-        return field_types.ScalarField_3D.from_3d_sarray(
+        return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=sarray_3d,
             udomain_3d=udomain_3d,
             field_label=field_label,
@@ -456,7 +456,7 @@ class QuokkaDataset:
         self,
         vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, FieldKey],
         field_label: str,
-    ) -> field_types.VectorField_3D:
+    ) -> field_models.VectorField_3D:
         """Load and stack 3 components into a `VectorField_3D` with a `field_label` and `sim_time`."""
         if set(vfield_key_lookup) != set(cartesian_axes.DEFAULT_3D_AXES_ORDER):
             received_axes = [axis.value for axis in sorted(vfield_key_lookup.keys(), key=lambda a: a.value)]
@@ -467,7 +467,7 @@ class QuokkaDataset:
             )
             manage_log.log_error(msg)
             raise KeyError(msg)
-        check_types.ensure_nonempty_string(
+        validate_types.ensure_nonempty_string(
             param=field_label,
             param_name="field_label",
         )
@@ -492,7 +492,7 @@ class QuokkaDataset:
             axis=0,
         )
         udomain_3d = self.load_3d_uniform_domain()
-        return field_types.VectorField_3D.from_3d_varray(
+        return field_models.VectorField_3D.from_3d_varray(
             varray_3d=varray_3d,
             udomain_3d=udomain_3d,
             sim_time=sim_time,
@@ -506,14 +506,14 @@ class QuokkaDataset:
     def load_3d_uniform_domain(
         self,
         force_periodicity: bool = True,
-    ) -> domain_types.UniformDomain_3D:
+    ) -> domain_models.UniformDomain_3D:
         """
         Return uniform domain metadata (bounds, resolution, periodicity).
 
         Note: force_periodicity only affects the first call; subsequent calls returns the cached domain.
         This is required because yt cannot read this property reliably yet
         """
-        check_types.ensure_bool(
+        validate_types.ensure_bool(
             param=force_periodicity,
             param_name="force_periodicity",
         )
@@ -530,7 +530,7 @@ class QuokkaDataset:
             (bool(is_periodic) or force_periodicity) for is_periodic in self.dataset.periodicity
         )
         self._close_dataset_if_needed()
-        udomain_3d = domain_types.UniformDomain_3D(
+        udomain_3d = domain_models.UniformDomain_3D(
             periodicity=(is_periodic_x, is_periodic_y, is_periodic_z),
             resolution=(num_cells_x, num_cells_y, num_cells_z),
             domain_bounds=((x_min, x_max), (y_min, y_max), (z_min, z_max)),
@@ -544,7 +544,7 @@ class QuokkaDataset:
 
     def load_3d_density_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Load gas density: `rho`."""
         cached_field = self._field_cache.get_cached_field("density")
         if cached_field is not None:
@@ -562,7 +562,7 @@ class QuokkaDataset:
 
     def load_3d_momentum_vfield(
         self,
-    ) -> field_types.VectorField_3D:
+    ) -> field_models.VectorField_3D:
         """Load momentum field: `vec(m) = rho vec(v)`."""
         cached_field = self._field_cache.get_cached_field("momentum")
         if cached_field is not None:
@@ -580,7 +580,7 @@ class QuokkaDataset:
 
     def load_3d_velocity_vfield(
         self,
-    ) -> field_types.VectorField_3D:
+    ) -> field_models.VectorField_3D:
         """Load velocity field: `vec(v) = vec(m) / rho`."""
         cached_field = self._field_cache.get_cached_field("velocity")
         if cached_field is not None:
@@ -613,7 +613,7 @@ class QuokkaDataset:
             zero_neginf=True,
         )
         udomain_3d = self.load_3d_uniform_domain()
-        v_vfield_3d = field_types.VectorField_3D.from_3d_varray(
+        v_vfield_3d = field_models.VectorField_3D.from_3d_varray(
             varray_3d=v_varray,
             udomain_3d=udomain_3d,
             field_label=r"\vec{v}",
@@ -627,7 +627,7 @@ class QuokkaDataset:
 
     def load_3d_velocity_magnitude_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute velocity magnitude: `|vec(v)|`."""
         v_vfield_3d = self.load_3d_velocity_vfield()
         return field_operators.compute_vfield_magnitude(
@@ -637,7 +637,7 @@ class QuokkaDataset:
 
     def load_3d_magnetic_vfield(
         self,
-    ) -> field_types.VectorField_3D:
+    ) -> field_models.VectorField_3D:
         """Load magnetic field: `vec(b)`."""
         cached_field = self._field_cache.get_cached_field("magnetic")
         if cached_field is not None:
@@ -655,7 +655,7 @@ class QuokkaDataset:
 
     def load_3d_total_energy_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Load total energy: `E_tot = E_int + E_kin + E_mag` (code units)."""
         Etot_key = self._get_sfield_key("total_energy")
         return self.load_3d_sfield(
@@ -665,7 +665,7 @@ class QuokkaDataset:
 
     def load_3d_kinetic_energy_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute kinetic energy density: `E_kin = 0.5 * rho * |v|^2`."""
         rho_sarray_3d = self._extract_3d_sarray(
             sfield_3d=self.load_3d_density_sfield(),
@@ -681,7 +681,7 @@ class QuokkaDataset:
             raise_error=False,
         )
         with compute_array_stats.suppress_divide_warnings():
-            Ekin_sarray_3d = 0.5 * _farray_operators.sum_of_varray_comps_squared(
+            Ekin_sarray_3d = 0.5 * farray_operators.sum_of_varray_comps_squared(
                 mom_varray_3d,
             ) / rho_sarray_3d
         if not rho_has_zeros:
@@ -697,7 +697,7 @@ class QuokkaDataset:
             zero_neginf=True,
         )
         udomain_3d = self.load_3d_uniform_domain()
-        return field_types.ScalarField_3D.from_3d_sarray(
+        return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_sarray_3d,
             udomain_3d=udomain_3d,
             field_label=r"E_\mathrm{kin}",
@@ -708,9 +708,9 @@ class QuokkaDataset:
         self,
         energy_prefactor: float = 0.5,
         field_label=r"E_\mathrm{mag}",
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute magnetic energy density: `E_mag = alpha * |b|^2` with `alpha=0.5` by default."""
-        check_types.ensure_finite_float(
+        validate_types.ensure_finite_float(
             param=energy_prefactor,
             param_name="energy_prefactor",
             allow_none=False,
@@ -724,7 +724,7 @@ class QuokkaDataset:
 
     def load_3d_internal_energy_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute internal energy: `E_int = E_tot - E_kin - E_mag` (`E_mag = 0` if `vec(b)` is not available)."""
         Etot_sarray = self._extract_3d_sarray(
             sfield_3d=self.load_3d_total_energy_sfield(),
@@ -752,7 +752,7 @@ class QuokkaDataset:
             zero_posinf=True,
             zero_neginf=True,
         )
-        return field_types.ScalarField_3D.from_3d_sarray(
+        return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=Eint_sarray,
             udomain_3d=self.load_3d_uniform_domain(),
             field_label=r"E_\mathrm{int}",
@@ -762,9 +762,9 @@ class QuokkaDataset:
     def load_3d_pressure_sfield(
         self,
         gamma: float = 5.0 / 3.0,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute thermal pressure: `p = (gamma - 1) * E_int`."""
-        check_types.ensure_finite_float(
+        validate_types.ensure_finite_float(
             param=gamma,
             param_name="gamma",
             allow_none=False,
@@ -776,7 +776,7 @@ class QuokkaDataset:
             param_name="<Eint_sfield_3d>",
         )
         p_sarray = (gamma - 1.0) * Eint_sarray
-        return field_types.ScalarField_3D.from_3d_sarray(
+        return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=p_sarray,
             udomain_3d=self.load_3d_uniform_domain(),
             field_label=r"p",
@@ -790,7 +790,7 @@ class QuokkaDataset:
     def load_3d_divu_sfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute divergence of velocity: `nabla cdot vec(v)` using a `grad_order` accurate stencil."""
         v_vfield_3d = self.load_3d_velocity_vfield()
         return field_operators.compute_vfield_divergence(
@@ -802,7 +802,7 @@ class QuokkaDataset:
     def load_3d_vorticity_vfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.VectorField_3D:
+    ) -> field_models.VectorField_3D:
         """Compute vorticity vector: `curl(vec(v))` using a `grad_order` accurate stencil."""
         v_vfield_3d = self.load_3d_velocity_vfield()
         return field_operators.compute_vfield_curl(
@@ -814,7 +814,7 @@ class QuokkaDataset:
     def load_3d_vorticity_sfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute vorticity magnitude: `|curl(vec(v))|`."""
         omega_vfield_3d = self.load_3d_vorticity_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
@@ -825,7 +825,7 @@ class QuokkaDataset:
     def load_3d_kinetic_helicity_sfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute kinetic helicity density: `curl(vec(v)) dot vec(v)`."""
         omega_vfield_3d = self.load_3d_vorticity_vfield(grad_order=grad_order)
         v_vfield_3d = self.load_3d_velocity_vfield()
@@ -858,9 +858,9 @@ class QuokkaDataset:
             vfield_3d=helmholtz_vfields.vfield_3d_bulk,
             param_name="<vfield_3d_bulk>",
         )
-        Ekin_div_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_div_varray)
-        Ekin_sol_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_sol_varray)
-        Ekin_bulk_sarray = 0.5 * rho_sarray_3d * _farray_operators.sum_of_varray_comps_squared(v_bulk_varray)
+        Ekin_div_sarray = 0.5 * rho_sarray_3d * farray_operators.sum_of_varray_comps_squared(v_div_varray)
+        Ekin_sol_sarray = 0.5 * rho_sarray_3d * farray_operators.sum_of_varray_comps_squared(v_sol_varray)
+        Ekin_bulk_sarray = 0.5 * rho_sarray_3d * farray_operators.sum_of_varray_comps_squared(v_bulk_varray)
         compute_array_stats.check_no_nonfinite_values(
             array=Ekin_div_sarray,
             param_name="<Ekin_div_sfield_3d>",
@@ -894,19 +894,19 @@ class QuokkaDataset:
             zero_posinf=True,
             zero_neginf=True,
         )
-        Ekin_div_sfield_3d = field_types.ScalarField_3D.from_3d_sarray(
+        Ekin_div_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_div_sarray,
             udomain_3d=udomain_3d,
             field_label=r"E_{\mathrm{kin}, \parallel}",
             sim_time=self.sim_time,
         )
-        Ekin_sol_sfield_3d = field_types.ScalarField_3D.from_3d_sarray(
+        Ekin_sol_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_sol_sarray,
             udomain_3d=udomain_3d,
             field_label=r"E_{\mathrm{kin}, \perp}",
             sim_time=self.sim_time,
         )
-        Ekin_bulk_sfield_3d = field_types.ScalarField_3D.from_3d_sarray(
+        Ekin_bulk_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=Ekin_bulk_sarray,
             udomain_3d=udomain_3d,
             field_label=r"E_{\mathrm{kin}, \mathrm{bulk}}",
@@ -920,21 +920,21 @@ class QuokkaDataset:
 
     def load_3d_div_kinetic_energy_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute kinetic energy in irrotational (curl-free) velocity modes: `E_kin,div = 0.5 rho (v_div)^2`."""
         helmholtz_Ekin = self.load_3d_helmholtz_kinetic_energy()
         return helmholtz_Ekin.Ekin_div_sfield_3d
 
     def load_3d_sol_kinetic_energy_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute kinetic energy in solenoidal (divergence-free) velocity modes: `E_kin,sol = 0.5 rho (v_sol)^2`."""
         helmholtz_Ekin = self.load_3d_helmholtz_kinetic_energy()
         return helmholtz_Ekin.Ekin_sol_sfield_3d
 
     def load_3d_bulk_kinetic_energy_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute kinetic energy in bulk velocity: `E_kin,bulk = 0.5 rho (v_bulk)^2`."""
         helmholtz_Ekin = self.load_3d_helmholtz_kinetic_energy()
         return helmholtz_Ekin.Ekin_bulk_sfield_3d
@@ -946,9 +946,9 @@ class QuokkaDataset:
     def load_3d_plasma_beta_sfield(
         self,
         gamma: float = 5.0 / 3.0,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute plasma beta: `beta = 2 p / |vec(b)|^2`."""
-        check_types.ensure_finite_float(
+        validate_types.ensure_finite_float(
             param=gamma,
             param_name="gamma",
             allow_none=False,
@@ -963,7 +963,7 @@ class QuokkaDataset:
             vfield_3d=self.load_3d_magnetic_vfield(),
             param_name="<b_vfield_3d>",
         )
-        b_sq_sarray_3d = _farray_operators.sum_of_varray_comps_squared(b_varray_3d)
+        b_sq_sarray_3d = farray_operators.sum_of_varray_comps_squared(b_varray_3d)
         b_sq_has_zeros = compute_array_stats.check_no_zero_values(
             array=b_sq_sarray_3d,
             param_name="<|b|^2>",
@@ -983,7 +983,7 @@ class QuokkaDataset:
             zero_posinf=True,
             zero_neginf=True,
         )
-        return field_types.ScalarField_3D.from_3d_sarray(
+        return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=beta_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
             field_label=r"\beta",
@@ -992,7 +992,7 @@ class QuokkaDataset:
 
     def load_3d_alfven_speed_vfield(
         self,
-    ) -> field_types.VectorField_3D:
+    ) -> field_models.VectorField_3D:
         """Compute Alfven speed: `vec(v_A) = vec(b) / sqrt(rho)`."""
         b_varray_3d = self._extract_3d_varray(
             vfield_3d=self.load_3d_magnetic_vfield(),
@@ -1021,7 +1021,7 @@ class QuokkaDataset:
             zero_posinf=True,
             zero_neginf=True,
         )
-        return field_types.VectorField_3D.from_3d_varray(
+        return field_models.VectorField_3D.from_3d_varray(
             varray_3d=va_varray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
             field_label=r"\vec{v}_A",
@@ -1030,7 +1030,7 @@ class QuokkaDataset:
 
     def load_3d_alfven_speed_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute Alfven speed magnitude: `|vec(v_A)|`."""
         va_vfield_3d = self.load_3d_alfven_speed_vfield()
         return field_operators.compute_vfield_magnitude(
@@ -1041,7 +1041,7 @@ class QuokkaDataset:
     def load_3d_divb_sfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute magnetic divergence: `div[vec(b)]`."""
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_divergence(
@@ -1053,7 +1053,7 @@ class QuokkaDataset:
     def load_3d_current_density_vfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.VectorField_3D:
+    ) -> field_models.VectorField_3D:
         """Compute current density: `curl[vec(b)]`."""
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_curl(
@@ -1065,7 +1065,7 @@ class QuokkaDataset:
     def load_3d_current_density_sfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute current magnitude: `|curl[vec(b)]|`."""
         j_vfield_3d = self.load_3d_current_density_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
@@ -1076,7 +1076,7 @@ class QuokkaDataset:
     def load_3d_current_helicity_sfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute current helicity density: `curl[vec(b)] cdot vec(b)`."""
         j_vfield_3d = self.load_3d_current_density_vfield(grad_order=grad_order)
         b_vfield_3d = self.load_3d_magnetic_vfield()
@@ -1092,7 +1092,7 @@ class QuokkaDataset:
 
     def load_3d_cross_helicity_sfield(
         self,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute cross helicity density: `vec(v) cdot vec(b)`."""
         v_vfield_3d = self.load_3d_velocity_vfield()
         b_vfield_3d = self.load_3d_magnetic_vfield()
@@ -1105,7 +1105,7 @@ class QuokkaDataset:
     def load_3d_lorentz_force_vfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.VectorField_3D:
+    ) -> field_models.VectorField_3D:
         """Compute Lorentz force: `curl[vec(b)] x vec(b)`."""
         j_vfield_3d = self.load_3d_current_density_vfield(grad_order=grad_order)
         b_vfield_3d = self.load_3d_magnetic_vfield()
@@ -1118,7 +1118,7 @@ class QuokkaDataset:
     def load_3d_lorentz_force_sfield(
         self,
         grad_order: int = 2,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute Lorentz force magnitude: `| curl[vec(b)] x vec(b) |`."""
         lf_vfield_3d = self.load_3d_lorentz_force_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
@@ -1129,7 +1129,7 @@ class QuokkaDataset:
     def load_3d_energy_ratio_sfield(
         self,
         energy_prefactor: float = 0.5,
-    ) -> field_types.ScalarField_3D:
+    ) -> field_models.ScalarField_3D:
         """Compute magnetic-to-kinetic energy ratio: `E_mag / E_kin`."""
         Emag_sarray_3d = self._extract_3d_sarray(
             sfield_3d=self.load_3d_magnetic_energy_sfield(energy_prefactor=energy_prefactor),
@@ -1158,7 +1158,7 @@ class QuokkaDataset:
             zero_posinf=True,
             zero_neginf=True,
         )
-        return field_types.ScalarField_3D.from_3d_sarray(
+        return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=Eratio_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
             field_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
@@ -1167,7 +1167,7 @@ class QuokkaDataset:
 
     def load_3d_poynting_flux_vfield(
         self,
-    ) -> field_types.VectorField_3D:
+    ) -> field_models.VectorField_3D:
         """Compute Poynting-flux-like vector: `vec(b) x [vec(v) x vec(b)]`."""
         v_vfield_3d = self.load_3d_velocity_vfield()
         b_vfield_3d = self.load_3d_magnetic_vfield()
