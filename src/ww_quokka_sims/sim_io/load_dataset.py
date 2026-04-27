@@ -845,7 +845,7 @@ class QuokkaDataset:
             sfield_3d=self.load_3d_density_sfield(),
             param_name="<rho_sfield_3d>",
         )
-        helmholtz_vfields = decompose_fields.compute_helmholtz_decomposed_fields(vfield_3d_q=v_vfield_3d)
+        helmholtz_vfields = decompose_fields.compute_helmholtz_decomposed_fields(vfield_3d=v_vfield_3d)
         v_div_varray = self._extract_3d_varray(
             vfield_3d=helmholtz_vfields.vfield_3d_div,
             param_name="<vfield_3d_div>",
