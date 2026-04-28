@@ -64,7 +64,10 @@ class RenderComparisonPlot:
         x_array: numpy.ndarray,
         y_array: numpy.ndarray,
     ) -> None:
-        self.out_dir.mkdir(parents=True, exist_ok=True)
+        self.out_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
         json_io.save_dict_to_json_file(
             file_path=self.out_dir / f"{self.field_name}_time_comparison.json",
             input_dict={
@@ -216,7 +219,9 @@ class ScriptInterface:
         self.dir_1 = Path(dir_1)
         self.dir_2 = Path(dir_2)
         self.out_dir = Path(out_dir)
-        valid_fields = set(quokka_fields.QUOKKA_FIELD_LOOKUP.keys())
+        valid_fields = set(
+            quokka_fields.QUOKKA_FIELD_LOOKUP.keys(),
+        )
         if (not fields_to_plot) or (not set(fields_to_plot).issubset(valid_fields)):
             raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}")
         self.dataset_tag = dataset_tag

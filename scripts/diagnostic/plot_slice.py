@@ -113,7 +113,11 @@ def _parse_axes(
     parsed_axes: list[cartesian_axes.CartesianAxis_3D] = []
     for axis_name in validate_types.as_tuple(param=axes):
         try:
-            parsed_axes.append(cartesian_axes.as_axis(axis=axis_name))
+            parsed_axes.append(
+                cartesian_axes.as_axis(
+                    axis=axis_name,
+                ),
+            )
         except (TypeError, ValueError):
             raise ValueError("Provide one or more axes (via -a/-c) from: x_0, x_1, x_2")
     return tuple(parsed_axes)
@@ -202,8 +206,16 @@ class FieldPlotter:
         label: str,
         cmap_name: str,
     ) -> None:
-        min_value = float(numpy.nanmin(field_slice.data_2d))
-        max_value = float(numpy.nanmax(field_slice.data_2d))
+        min_value = float(
+            numpy.nanmin(
+                field_slice.data_2d,
+            ),
+        )
+        max_value = float(
+            numpy.nanmax(
+                field_slice.data_2d,
+            ),
+        )
         plot_data.plot_2d_array(
             ax=ax,
             array_2d=field_slice.data_2d,
@@ -252,7 +264,10 @@ class FieldPlotter:
         *,
         dataset_dir: Path,
     ) -> Dataset:
-        with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
+        with load_dataset.QuokkaDataset(
+                dataset_dir=dataset_dir,
+                verbose=False,
+        ) as ds:
             uniform_domain = ds.load_3d_uniform_domain()
             field = self.field_args.field_loader(ds)  # ScalarField_3D or VectorField_3D
         return Dataset(
@@ -524,7 +539,9 @@ class ScriptInterface:
             param=dataset_tag,
             param_name="dataset_tag",
         )
-        valid_fields = set(quokka_fields.QUOKKA_FIELD_LOOKUP.keys())
+        valid_fields = set(
+            quokka_fields.QUOKKA_FIELD_LOOKUP.keys(),
+        )
         if not fields_to_plot or not set(fields_to_plot).issubset(valid_fields):
             raise ValueError(f"Provide one or more field to plot (via -f) from: {sorted(valid_fields)}")
         self.input_dir = Path(input_dir)

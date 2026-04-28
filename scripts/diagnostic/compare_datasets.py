@@ -44,7 +44,10 @@ class DatasetView:
     def get_field_keys(
         self,
     ) -> set[load_dataset.FieldKey]:
-        with load_dataset.QuokkaDataset(dataset_dir=self.dataset_dir, verbose=False) as ds:
+        with load_dataset.QuokkaDataset(
+                dataset_dir=self.dataset_dir,
+                verbose=False,
+        ) as ds:
             field_keys = ds.list_available_field_keys()
         return set(field_keys)
 
@@ -52,7 +55,10 @@ class DatasetView:
         self,
         field_key: load_dataset.FieldKey,
     ) -> numpy.ndarray:
-        with load_dataset.QuokkaDataset(dataset_dir=self.dataset_dir, verbose=False) as ds:
+        with load_dataset.QuokkaDataset(
+                dataset_dir=self.dataset_dir,
+                verbose=False,
+        ) as ds:
             sarray_3d = ds._load_3d_sarray(field_key=field_key)
         return numpy.ascontiguousarray(sarray_3d, dtype=numpy.float64)
 
@@ -135,7 +141,11 @@ class CompareFields:
                 shape_ref=shape_ref,
             )
         diff_mask = self._get_diff_mask()
-        num_diffs = int(diff_mask.sum(dtype=numpy.int64))
+        num_diffs = int(
+            diff_mask.sum(
+                dtype=numpy.int64,
+            ),
+        )
         preview_diff_coords = self._get_preview_diff_coords(diff_mask=diff_mask)
         preview_diff_indices = self._get_diff_indices(diff_coords=preview_diff_coords)
         preview_values_in = self._get_preview_values(
@@ -260,7 +270,11 @@ class CompareDatasets:
                 f"[{field_key}] dir-1 == dir-2 (no value differences over shape: {field_comparison.shape_in}).",
             )
             return
-        num_cells = int(numpy.prod(field_comparison.shape_in))
+        num_cells = int(
+            numpy.prod(
+                field_comparison.shape_in,
+            ),
+        )
         warning_message = f"[{field_key}] There are {field_comparison.num_diffs}/{num_cells} cells that are different."
         if field_comparison.num_diffs > self.preview_limit:
             warning_message += f" (previewing {self.preview_limit}/{field_comparison.num_diffs})."

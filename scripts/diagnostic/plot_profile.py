@@ -203,7 +203,10 @@ class ComputeCompProfiles:
     ) -> dict[str, list[CompProfile]]:
         comp_profiles_lookup: dict[str, list[CompProfile]] = {}
         for dataset_dir in self.dataset_dirs:
-            with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
+            with load_dataset.QuokkaDataset(
+                    dataset_dir=dataset_dir,
+                    verbose=False,
+            ) as ds:
                 udomain_3d = ds.load_3d_uniform_domain()
                 field = self.field_loader(ds)  # ScalarField or VectorField
             if isinstance(field, field_models.ScalarField_3D):
@@ -264,8 +267,13 @@ class RenderCompProfiles:
         comp_profiles_lookup: dict[str, list[CompProfile]],
         out_dir: Path,
     ) -> None:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        comp_labels = list(comp_profiles_lookup.keys())
+        out_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        comp_labels = list(
+            comp_profiles_lookup.keys(),
+        )
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         output_dict = {}
         for snapshot_index in range(num_snapshots):
@@ -316,7 +324,12 @@ class RenderCompProfiles:
             ax = axs_row[axis_index]
             x = comp_profile.get_domain(axis_index=axis_index)
             y = comp_profile.get_values(axis_index=axis_index)
-            ax.plot(x, y, lw=2.0, color=color)
+            ax.plot(
+                x,
+                y,
+                lw=2.0,
+                color=color,
+            )
 
     def _plot_series_row(
         self,
@@ -338,7 +351,11 @@ class RenderCompProfiles:
             ),
         )
         for time_index, comp_profile in enumerate(comp_profiles):
-            color = palette.mpl_cmap(palette.mpl_norm(time_index))
+            color = palette.mpl_cmap(
+                palette.mpl_norm(
+                    time_index,
+                ),
+            )
             RenderCompProfiles._plot_comp_profile(
                 axs_row=axs_row,
                 comp_profile=comp_profile,
@@ -364,7 +381,9 @@ class RenderCompProfiles:
         comp_profiles_lookup = compute_comp_profiles.run()
         if not comp_profiles_lookup:
             return
-        comp_labels = list(comp_profiles_lookup.keys())
+        comp_labels = list(
+            comp_profiles_lookup.keys(),
+        )
         axis_labels = comp_profiles_lookup[comp_labels[0]][0].axis_labels
         num_rows = len(comp_labels)
         num_cols = len(axis_labels)

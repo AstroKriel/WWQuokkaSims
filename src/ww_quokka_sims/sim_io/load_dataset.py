@@ -49,7 +49,9 @@ class HelmholtzKineticEnergy:
     Ekin_sol_sfield_3d: field_models.ScalarField_3D
     Ekin_bulk_sfield_3d: field_models.ScalarField_3D
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         field_models.ensure_3d_sfield(
             sfield_3d=self.Ekin_div_sfield_3d,
             param_name="<Ekin_div_sfield_3d>",
@@ -219,7 +221,11 @@ class QuokkaDataset:
             if not self.verbose:
                 ## reduce yt verbosity: only print warnings, errors and critical messages
                 yt_logger.setLevel("WARNING")
-            self.dataset = yt_load(str(self.dataset_dir))
+            self.dataset = yt_load(
+                str(
+                    self.dataset_dir,
+                ),
+            )
             self._sim_time = float(self.dataset.current_time)
 
     def _close_dataset_if_needed(
@@ -291,7 +297,11 @@ class QuokkaDataset:
         """Return all (field-group, field-name) yt keys available in the dataset."""
         self._open_dataset_if_needed()
         assert self.dataset is not None
-        field_keys = sorted(set(self.dataset.field_list))
+        field_keys = sorted(
+            set(
+                self.dataset.field_list,
+            ),
+        )
         self._close_dataset_if_needed()
         return field_keys
 
@@ -314,7 +324,9 @@ class QuokkaDataset:
         field_key: FieldKey,
     ) -> bool:
         """Return `True` iff a particular yt field key exists in the dataset."""
-        available_keys = set(self._get_available_field_keys())
+        available_keys = set(
+            self._get_available_field_keys(),
+        )
         return field_key in available_keys
 
 ##
@@ -327,7 +339,9 @@ class QuokkaDataset:
     ) -> FieldKey:
         """Resolve the yt key for a named scalar field."""
         if field_name not in YT_SFIELD_KEYS:
-            valid_string = ", ".join(YT_SFIELD_KEYS.keys())
+            valid_string = ", ".join(
+                YT_SFIELD_KEYS.keys(),
+            )
             msg = f"Unknown scalar field `{field_name}`. Valid options: {valid_string}"
             manage_log.log_error(msg)
             raise KeyError(msg)
@@ -351,7 +365,9 @@ class QuokkaDataset:
     ) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
         """Return the component yt keys for a named vector field."""
         if field_name not in YT_VFIELD_KEYS:
-            valid_string = ", ".join(YT_VFIELD_KEYS.keys())
+            valid_string = ", ".join(
+                YT_VFIELD_KEYS.keys(),
+            )
             msg = f"Unknown vector field `{field_name}`. Valid options: {valid_string}"
             manage_log.log_error(msg)
             raise KeyError(msg)
@@ -363,7 +379,9 @@ class QuokkaDataset:
     ) -> list[FieldKey]:
         """Return the list of missing component keys for a named vector field."""
         vfield_key_lookup = self._resolve_vfield_key_lookup(field_name)
-        available_keys = set(self._get_available_field_keys())
+        available_keys = set(
+            self._get_available_field_keys(),
+        )
         return [comp_key for comp_key in vfield_key_lookup.values() if comp_key not in available_keys]
 
     def _get_vfield_key_lookup(
@@ -387,7 +405,11 @@ class QuokkaDataset:
         field_name: str,
     ) -> bool:
         """Return `True` iff all components for the named vector field exist."""
-        return len(self._get_missing_vfield_keys(field_name)) == 0
+        return len(
+            self._get_missing_vfield_keys(
+                field_name,
+            ),
+        ) == 0
 
     def _load_3d_sarray(
         self,

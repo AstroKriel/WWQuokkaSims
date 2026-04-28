@@ -191,7 +191,10 @@ class ComputePDFs:
     ) -> list[PDFData]:
         field_pdfs: list[PDFData] = []
         for dataset_dir in self.dataset_dirs:
-            with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
+            with load_dataset.QuokkaDataset(
+                    dataset_dir=dataset_dir,
+                    verbose=False,
+            ) as ds:
                 field = self.field_loader(ds)
             if isinstance(field, field_models.ScalarField_3D):
                 pdf = self._compute_sfield_pdf(field=field)
@@ -254,7 +257,14 @@ class RenderPDFs:
         for comp_index in range(pdf_data.num_comps):
             ax = axs_grid[0][comp_index]
             x_values, y_values = pdf_data.get_pdf(comp_index)
-            ax.step(x_values, y_values, where="mid", lw=2.0, color=color, zorder=comp_index + 1)
+            ax.step(
+                x_values,
+                y_values,
+                where="mid",
+                lw=2.0,
+                color=color,
+                zorder=comp_index + 1,
+            )
 
     @staticmethod
     def _plot_series(
@@ -277,7 +287,11 @@ class RenderPDFs:
             ),
         )
         for series_index, pdf_data in enumerate(field_pdfs):
-            color = palette.mpl_cmap(palette.mpl_norm(series_index))
+            color = palette.mpl_cmap(
+                palette.mpl_norm(
+                    series_index,
+                ),
+            )
             RenderPDFs._plot_snapshot(
                 axs_grid=axs_grid,
                 pdf_data=pdf_data,
@@ -295,7 +309,10 @@ class RenderPDFs:
         field_pdfs: list[PDFData],
         out_dir: Path,
     ) -> None:
-        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
         output_dict = {}
         for snapshot_index, pdf_data in enumerate(field_pdfs):
             snapshot_dict: dict = {"time": pdf_data.sim_time}

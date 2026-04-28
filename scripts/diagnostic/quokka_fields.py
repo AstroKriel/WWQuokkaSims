@@ -122,7 +122,9 @@ QUOKKA_FIELD_LOOKUP = {
 def validate_fields(
     field_names: list[str] | tuple[str, ...] | None,
 ) -> None:
-    valid_field_names = set(QUOKKA_FIELD_LOOKUP.keys())
+    valid_field_names = set(
+        QUOKKA_FIELD_LOOKUP.keys(),
+    )
     if not field_names or not set(field_names).issubset(valid_field_names):
         raise ValueError(f"Provide fields via -f from: {sorted(valid_field_names)}")
 
@@ -169,8 +171,16 @@ def base_parser(
     )
     args = parser.parse_args() # args.dir, args.tag, args.fields, args.comps, args.axes, args.extract
     """
-    field_list = ww_lists.as_string(elems=sorted(QUOKKA_FIELD_LOOKUP.keys()))
-    axis_list = ww_lists.as_string(elems=list(cartesian_axes.VALID_3D_AXIS_LABELS))
+    field_list = ww_lists.as_string(
+        elems=sorted(
+            QUOKKA_FIELD_LOOKUP.keys(),
+        ),
+    )
+    axis_list = ww_lists.as_string(
+        elems=list(
+            cartesian_axes.VALID_3D_AXIS_LABELS,
+        ),
+    )
     parser = argparse.ArgumentParser(add_help=False)
     ## directory arguments (shape depends on num_dirs)
     if num_dirs == 1:

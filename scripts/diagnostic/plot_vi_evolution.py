@@ -97,7 +97,11 @@ class LoadDataSeries:
         field_loader: Callable,
         use_parallel: bool = True,
     ):
-        self.dataset_dirs = list(sorted(dataset_dirs))
+        self.dataset_dirs = list(
+            sorted(
+                dataset_dirs,
+            ),
+        )
         self.field_name = field_name
         self.field_loader = field_loader
         self.use_parallel = bool(use_parallel)
@@ -106,7 +110,10 @@ class LoadDataSeries:
     def _load_snapshot(
         field_args: FieldArgs,
     ) -> DataPoint:
-        with load_dataset.QuokkaDataset(dataset_dir=field_args.dataset_dir, verbose=False) as ds:
+        with load_dataset.QuokkaDataset(
+                dataset_dir=field_args.dataset_dir,
+                verbose=False,
+        ) as ds:
             sfield_3d = field_args.field_loader(ds)
         if not isinstance(sfield_3d, field_models.ScalarField_3D):
             raise TypeError(
@@ -209,7 +216,10 @@ class RenderDataSeries:
         data_series: DataSeries,
         out_dir: Path,
     ) -> None:
-        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
         time_array, values_array = data_series.get_sorted_arrays()
         json_io.save_dict_to_json_file(
             file_path=out_dir / f"{self.field_name}_vi_evolution.json",

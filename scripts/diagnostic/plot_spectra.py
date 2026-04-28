@@ -84,7 +84,10 @@ class ComputeSpectra:
     ) -> list[SpectraData]:
         field_spectra: list[SpectraData] = []
         for dataset_dir in self.dataset_dirs:
-            with load_dataset.QuokkaDataset(dataset_dir=dataset_dir, verbose=False) as ds:
+            with load_dataset.QuokkaDataset(
+                    dataset_dir=dataset_dir,
+                    verbose=False,
+            ) as ds:
                 field = self.field_loader(ds)
             if not isinstance(field, field_models.ScalarField_3D):
                 raise TypeError(
@@ -183,7 +186,11 @@ class RenderSpectra:
             ),
         )
         for series_index, spectra_data in enumerate(field_spectra):
-            color = palette.mpl_cmap(palette.mpl_norm(series_index))
+            color = palette.mpl_cmap(
+                palette.mpl_norm(
+                    series_index,
+                ),
+            )
             RenderSpectra._plot_snapshot(
                 ax=ax,
                 spectra_data=spectra_data,
@@ -201,7 +208,10 @@ class RenderSpectra:
         field_spectra: list[SpectraData],
         out_dir: Path,
     ) -> None:
-        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
         output_dict = {}
         for snapshot_index, spectra_data in enumerate(field_spectra):
             output_dict[str(snapshot_index)] = {

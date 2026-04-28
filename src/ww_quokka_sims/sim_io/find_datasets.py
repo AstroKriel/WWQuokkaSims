@@ -19,7 +19,10 @@ from jormi.ww_types import check_types
 def looks_like_boxlib_dir(
     dataset_dir: Path,
 ) -> bool:
-    check_types.ensure_type(param=dataset_dir, valid_types=Path)
+    check_types.ensure_type(
+        param=dataset_dir,
+        valid_types=Path,
+    )
     if not dataset_dir.exists() or not dataset_dir.is_dir():
         return False
     has_header = (dataset_dir / "Header").is_file()
@@ -52,7 +55,12 @@ def get_latest_dataset_dirs(
         if sub_dir.is_dir() and (dataset_tag in sub_dir.name) and ("old" not in sub_dir.name)
     ]
     dataset_dirs.sort(
-        key=lambda dataset_dir: int(get_dataset_index_string(dataset_dir, dataset_tag)),
+        key=lambda dataset_dir: int(
+            get_dataset_index_string(
+                dataset_dir,
+                dataset_tag,
+            ),
+        ),
     )
     return dataset_dirs
 
@@ -89,7 +97,11 @@ def get_max_index_width(
             dataset_dir=dataset_dir,
             dataset_tag=dataset_tag,
         )
-        index_widths.append(len(dataset_index_string))
+        index_widths.append(
+            len(
+                dataset_index_string,
+            ),
+        )
     return max(index_widths) if len(index_widths) > 0 else 1
 
 

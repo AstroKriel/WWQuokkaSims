@@ -36,7 +36,10 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
-        with load_dataset.QuokkaDataset(dataset_dir=self.dataset_dir, verbose=True) as ds:
+        with load_dataset.QuokkaDataset(
+                dataset_dir=self.dataset_dir,
+                verbose=True,
+        ) as ds:
             ds.list_available_field_keys()
 
 
