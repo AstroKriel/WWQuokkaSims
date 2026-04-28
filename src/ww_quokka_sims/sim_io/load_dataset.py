@@ -703,7 +703,7 @@ class QuokkaDataset:
             raise_error=False,
         )
         with compute_array_stats.suppress_divide_warnings():
-            Ekin_sarray_3d = 0.5 * farray_operators.sum_of_varray_comps_squared(
+            Ekin_sarray_3d = 0.5 * farray_operators.compute_sum_of_varray_comps_squared(
                 mom_varray_3d,
             ) / rho_sarray_3d
         if not rho_has_zeros:
@@ -880,9 +880,9 @@ class QuokkaDataset:
             vfield_3d=helmholtz_vfields.vfield_3d_bulk,
             param_name="<vfield_3d_bulk>",
         )
-        Ekin_div_sarray = 0.5 * rho_sarray_3d * farray_operators.sum_of_varray_comps_squared(v_div_varray)
-        Ekin_sol_sarray = 0.5 * rho_sarray_3d * farray_operators.sum_of_varray_comps_squared(v_sol_varray)
-        Ekin_bulk_sarray = 0.5 * rho_sarray_3d * farray_operators.sum_of_varray_comps_squared(v_bulk_varray)
+        Ekin_div_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(v_div_varray)
+        Ekin_sol_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(v_sol_varray)
+        Ekin_bulk_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(v_bulk_varray)
         compute_array_stats.check_no_nonfinite_values(
             array=Ekin_div_sarray,
             param_name="<Ekin_div_sfield_3d>",
@@ -985,7 +985,7 @@ class QuokkaDataset:
             vfield_3d=self.load_3d_magnetic_vfield(),
             param_name="<b_vfield_3d>",
         )
-        b_sq_sarray_3d = farray_operators.sum_of_varray_comps_squared(b_varray_3d)
+        b_sq_sarray_3d = farray_operators.compute_sum_of_varray_comps_squared(b_varray_3d)
         b_sq_has_zeros = compute_array_stats.check_no_zero_values(
             array=b_sq_sarray_3d,
             param_name="<|b|^2>",
