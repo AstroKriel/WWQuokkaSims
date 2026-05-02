@@ -69,21 +69,10 @@ reportMissingImports = true
 reportMissingTypeStubs = false  # third-party packages rarely ship stubs
 
 ## --- rules to suppress
-reportExplicitAny = "none"  # numpy/scipy code uses Any extensively; unavoidable
-reportAny = "none"  # noisy cascade of the above
-reportUnknownMemberType = "none"  # cascade from untyped third-party stubs
-reportUnknownVariableType = "none"  # cascade from untyped third-party stubs
-reportUnknownArgumentType = "none"  # cascade from untyped third-party stubs
-reportImplicitStringConcatenation = "none"  # valid style for long error messages
-reportImplicitOverride = "none"  # too verbose to require @override on every override
-reportUnusedCallResult = "none"  # ensure_*/check_* are called for side effects
-reportPrivateUsage = "none"  # tests legitimately access private members
-reportUninitializedInstanceVariable = "none"  # false positive: pyright misses variables set in setUp()
-enableTypeIgnoreComments = true  # honour "# type: ignore" (basedpyright defaults to false)
-reportIgnoreCommentWithoutRule = "none"  # test files use bare "# type: ignore" intentionally
-reportUnnecessaryTypeIgnoreComment = "none"  # suppress warnings about stale ignore comments
-reportUnnecessaryIsInstance = "none"  # isinstance guards for runtime safety beyond what annotations enforce
-reportUnreachable = "none"  # paired with the above: guards after exhaustive isinstance chains appear unreachable to pyright
+reportUnknownVariableType = "none"  # cascade from yt returning Any; yt ships no stubs
+reportUnknownMemberType = "none"  # cascade from yt returning Any; yt ships no stubs
+reportAny = "none"  # cascade from yt returning Any; yt ships no stubs
+reportUnusedCallResult = "none"  # validate_types.ensure_* called for side effects only
 
 ##
 ## === TEST RUNNER (pytest)
