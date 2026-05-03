@@ -8,6 +8,7 @@
 import argparse
 
 from pathlib import Path
+from typing import final
 
 ## third-party
 import numpy
@@ -34,6 +35,7 @@ from plot_vi_evolution import (
 ##
 
 
+@final
 class RenderComparisonPlot:
 
     def __init__(
@@ -185,6 +187,7 @@ class RenderComparisonPlot:
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

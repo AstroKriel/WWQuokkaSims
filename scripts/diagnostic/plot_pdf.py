@@ -10,6 +10,7 @@ import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import final
 
 ## third-party
 import numpy
@@ -100,6 +101,7 @@ class PDFData:
 ##
 
 
+@final
 class ComputePDFs:
 
     def __init__(
@@ -212,6 +214,7 @@ class ComputePDFs:
 ##
 
 
+@final
 class RenderPDFs:
 
     def __init__(
@@ -392,6 +395,7 @@ class RenderPDFs:
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

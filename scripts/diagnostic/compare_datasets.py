@@ -12,6 +12,7 @@ from dataclasses import (
     field,
 )
 from pathlib import Path
+from typing import final
 
 ## third-party
 import numpy
@@ -32,6 +33,7 @@ import quokka_fields
 ##
 
 
+@final
 class DatasetView:
 
     def __init__(
@@ -80,6 +82,7 @@ class FieldComparison:
     preview_abs_diff_values: list[float] = field(default_factory=list)
 
 
+@final
 class CompareFields:
 
     def __init__(
@@ -177,6 +180,7 @@ class CompareFields:
 ##
 
 
+@final
 class CompareDatasets:
 
     def __init__(
@@ -303,6 +307,7 @@ class CompareDatasets:
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

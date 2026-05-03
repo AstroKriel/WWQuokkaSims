@@ -10,7 +10,10 @@ import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple
+from typing import (
+    NamedTuple,
+    final,
+)
 
 ## third-party
 import numpy
@@ -292,22 +295,20 @@ class FieldPlotter:
                     label=field_models.get_label(field),
                 ),
             ]
-        if isinstance(field, field_models.VectorField_3D):
-            if not self.comps_to_plot:
-                raise ValueError(
-                    f"Vector field `{field_name}` requires at least one component to plot; none provided.",
-                )
-            varray_3d = field_models.extract_3d_varray(
-                vfield_3d=field,
-                param_name=f"<{field_name}_vfield_3d>",
+        if not self.comps_to_plot:
+            raise ValueError(
+                f"Vector field `{field_name}` requires at least one component to plot; none provided.",
             )
-            return [
-                FieldComp(
-                    data_3d=varray_3d[_axis_to_index(comp_axis)],
-                    label=field_models.get_vcomp_label(field, comp_axis=comp_axis),
-                ) for comp_axis in self.comps_to_plot
-            ]
-        raise ValueError(f"{field_name} is an unrecognised field type.")
+        varray_3d = field_models.extract_3d_varray(
+            vfield_3d=field,
+            param_name=f"<{field_name}_vfield_3d>",
+        )
+        return [
+            FieldComp(
+                data_3d=varray_3d[_axis_to_index(comp_axis)],
+                label=field_models.get_vcomp_label(field, comp_axis=comp_axis),
+            ) for comp_axis in self.comps_to_plot
+        ]
 
     def _plot_field_comps(
         self,
@@ -521,6 +522,7 @@ def render_fields_in_parallel(
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

@@ -10,6 +10,7 @@ import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import final
 
 ## third-party
 import numpy
@@ -73,6 +74,7 @@ class CompProfile:
 ##
 
 
+@final
 class ComputeCompProfiles:
 
     def __init__(
@@ -236,6 +238,7 @@ class ComputeCompProfiles:
 ##
 
 
+@final
 class RenderCompProfiles:
 
     def __init__(
@@ -438,6 +441,7 @@ class RenderCompProfiles:
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

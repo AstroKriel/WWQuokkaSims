@@ -31,7 +31,7 @@ from ._snapshot import (
     _DeriveMagneticFields,
     _DeriveMHDFields,
     _DeriveVelocityFields,
-    FieldKey,
+    FieldKey as FieldKey,
     LRUCache,
     YT_SFIELD_KEYS,
     YT_VFIELD_KEYS,

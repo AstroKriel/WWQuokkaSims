@@ -77,6 +77,11 @@ reportUnusedCallResult = "none"  # validate_types.ensure_* called for side effec
 reportPrivateUsage = "none"  # _Mixin classes are private-to-public-API but cross-module by design
 reportUnusedClass = "none"  # _Mixin and _Protocol classes are used as base classes / type hints across modules
 reportMissingTypeArgument = "none"  # scripts use bare Callable and dict; fully typing field loaders is impractical
+reportImplicitStringConcatenation = "none"  # multi-line f-string error messages are intentional
+reportUnknownParameterType = "none"  # matplotlib axes params are untyped in stubs
+reportMissingParameterType = "none"  # matplotlib axes params are untyped in stubs
+reportUnknownArgumentType = "none"  # cascade from yt/matplotlib returning Any; no stubs available
+reportUnusedFunction = "none"  # _annotate_fit is a helper retained for future use
 
 ##
 ## === TEST RUNNER (pytest)
