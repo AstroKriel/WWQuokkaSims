@@ -18,11 +18,11 @@ from jormi.ww_fields.fields_3d import (
 from ._snapshot_protocol import _QuokkaSnapshotProtocol
 
 ##
-## === MIXIN CLASS
+## === DERIVE CLASS
 ##
 
 
-class _VelocityFieldMethods:
+class _DeriveVelocityFields:
     """Velocity-derived field computations."""
 
     ##

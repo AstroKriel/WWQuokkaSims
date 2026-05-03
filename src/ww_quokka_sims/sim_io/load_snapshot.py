@@ -26,10 +26,10 @@ from jormi.ww_validation import validate_types
 
 ## local
 from ._snapshot import (
-    _EnergyFieldMethods,
-    _MagneticFieldMethods,
-    _MHDFieldMethods,
-    _VelocityFieldMethods,
+    _DeriveEnergyFields,
+    _DeriveMagneticFields,
+    _DeriveMHDFields,
+    _DeriveVelocityFields,
     FieldKey,
     LRUCache,
     YT_SFIELD_KEYS,
@@ -42,10 +42,10 @@ from ._snapshot import (
 
 
 class QuokkaSnapshot(
-        _VelocityFieldMethods,
-        _EnergyFieldMethods,
-        _MagneticFieldMethods,
-        _MHDFieldMethods,
+        _DeriveVelocityFields,
+        _DeriveEnergyFields,
+        _DeriveMagneticFields,
+        _DeriveMHDFields,
 ):
     """Interface for loading Quokka snapshots with yt."""
 

@@ -19,11 +19,11 @@ from ._read_fields import HelmholtzKineticEnergy
 from ._snapshot_protocol import _QuokkaSnapshotProtocol
 
 ##
-## === MIXIN CLASS
+## === DERIVE CLASS
 ##
 
 
-class _EnergyFieldMethods:
+class _DeriveEnergyFields:
     """Energy-derived field computations."""
 
     ##

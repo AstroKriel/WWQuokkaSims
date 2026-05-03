@@ -22,7 +22,7 @@ from ._read_fields import HelmholtzKineticEnergy
 
 
 class _QuokkaSnapshotProtocol(Protocol):
-    """Protocol declaring the interface that `_*FieldMethods` classes require."""
+    """Protocol declaring the interface that `_Derive*` classes require."""
 
     @property
     def sim_time(

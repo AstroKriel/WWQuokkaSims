@@ -20,11 +20,11 @@ from jormi.ww_validation import validate_types
 from ._snapshot_protocol import _QuokkaSnapshotProtocol
 
 ##
-## === MIXIN CLASS
+## === DERIVE CLASS
 ##
 
 
-class _MagneticFieldMethods:
+class _DeriveMagneticFields:
     """Magnetic-field-derived computations."""
 
     ##
