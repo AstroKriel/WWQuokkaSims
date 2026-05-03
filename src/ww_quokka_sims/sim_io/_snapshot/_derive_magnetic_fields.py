@@ -51,6 +51,7 @@ class _DeriveMagneticFields:
         with compute_array_stats.suppress_divide_warnings():
             v_A_varray_3d = b_varray_3d / numpy.sqrt(rho_sarray_3d)[numpy.newaxis, ...]
         if not rho_has_zeros:
+            ## warns if nonfinites arise from a source other than zero rho
             compute_array_stats.check_no_nonfinite_values(
                 array=v_A_varray_3d,
                 param_name="<v_A_vfield_3d>",
@@ -156,6 +157,7 @@ class _DeriveMagneticFields:
         with compute_array_stats.suppress_divide_warnings():
             beta_sarray_3d = 2.0 * p_sarray_3d / b_sq_sarray_3d
         if not b_sq_has_zeros:
+            ## warns if nonfinites arise from a source other than zero |b|^2
             compute_array_stats.check_no_nonfinite_values(
                 array=beta_sarray_3d,
                 param_name="<beta_sfield_3d>",
