@@ -25,7 +25,7 @@ from ._fields_protocol import _FieldsProtocol
 
 
 class _DeriveMagneticFields:
-    """Magnetic-field-derived computations."""
+    """Magnetic fields derived from a snapshot."""
 
     ##
     ## --- MAGNETIC FIELDS

@@ -23,7 +23,7 @@ from ._fields_protocol import _FieldsProtocol
 
 
 class _DeriveVelocityFields:
-    """Velocity-derived field computations."""
+    """Velocity fields derived from a snapshot."""
 
     ##
     ## --- VELOCITY FIELDS

@@ -20,7 +20,7 @@ from ._fields_protocol import _FieldsProtocol
 
 
 class _DeriveMHDFields:
-    """MHD composite field computations."""
+    """MHD fields derived from a snapshot."""
 
     ##
     ## --- MHD COMPOSITE FIELDS

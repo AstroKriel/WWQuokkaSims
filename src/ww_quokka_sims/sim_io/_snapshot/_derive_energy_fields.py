@@ -24,7 +24,7 @@ from ._fields_protocol import _FieldsProtocol
 
 
 class _DeriveEnergyFields:
-    """Energy-derived field computations."""
+    """Energy fields derived from a snapshot."""
 
     ##
     ## --- ENERGY FIELDS
