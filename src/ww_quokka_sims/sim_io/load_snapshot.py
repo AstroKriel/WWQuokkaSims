@@ -31,7 +31,7 @@ from ._snapshot import (
     _DeriveMagneticFields,
     _DeriveMHDFields,
     _DeriveVelocityFields,
-    FieldKey as FieldKey,
+    FieldKey as FieldKey,  # explicit re-export so pyright treats it as public API
     LRUCache,
     YT_SFIELD_KEYS,
     YT_VFIELD_KEYS,
