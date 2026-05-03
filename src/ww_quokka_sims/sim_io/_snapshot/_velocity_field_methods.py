@@ -22,7 +22,7 @@ from ._snapshot_protocol import _QuokkaSnapshotProtocol
 ##
 
 
-class _VelocityFieldsMixin:
+class _VelocityFieldMethods:
     """Mixin providing velocity-derived field computations."""
 
     ##

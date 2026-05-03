@@ -23,7 +23,7 @@ from ._snapshot_protocol import _QuokkaSnapshotProtocol
 ##
 
 
-class _EnergyFieldsMixin:
+class _EnergyFieldMethods:
     """Mixin providing energy-derived field computations."""
 
     ##
@@ -175,9 +175,15 @@ class _EnergyFieldsMixin:
             vfield_3d=helmholtz_vfields.vfield_3d_bulk,
             param_name="<vfield_3d_bulk>",
         )
-        Ekin_div_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(v_div_varray)
-        Ekin_sol_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(v_sol_varray)
-        Ekin_bulk_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(v_bulk_varray)
+        Ekin_div_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(
+            v_div_varray
+        )
+        Ekin_sol_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(
+            v_sol_varray
+        )
+        Ekin_bulk_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(
+            v_bulk_varray
+        )
         compute_array_stats.check_no_nonfinite_values(
             array=Ekin_div_sarray,
             param_name="<Ekin_div_sfield_3d>",

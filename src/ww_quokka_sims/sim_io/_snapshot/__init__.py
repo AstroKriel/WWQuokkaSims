@@ -3,7 +3,7 @@ from ._read_fields import HelmholtzKineticEnergy as HelmholtzKineticEnergy
 from ._read_fields import LRUCache as LRUCache
 from ._read_fields import YT_SFIELD_KEYS as YT_SFIELD_KEYS
 from ._read_fields import YT_VFIELD_KEYS as YT_VFIELD_KEYS
-from ._energy_fields import _EnergyFieldsMixin as _EnergyFieldsMixin
-from ._magnetic_fields import _MagneticFieldsMixin as _MagneticFieldsMixin
-from ._mhd_fields import _MHDFieldsMixin as _MHDFieldsMixin
-from ._velocity_fields import _VelocityFieldsMixin as _VelocityFieldsMixin
+from ._energy_field_methods import _EnergyFieldMethods as _EnergyFieldMethods
+from ._magnetic_field_methods import _MagneticFieldMethods as _MagneticFieldMethods
+from ._mhd_field_methods import _MHDFieldMethods as _MHDFieldMethods
+from ._velocity_field_methods import _VelocityFieldMethods as _VelocityFieldMethods
