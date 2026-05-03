@@ -22,6 +22,7 @@ from jormi.ww_fields.fields_3d import (
     field_models,
 )
 from jormi.ww_io import manage_log
+from jormi import ww_lists
 from jormi.ww_validation import validate_types
 
 ## local
@@ -225,9 +226,7 @@ class QuokkaSnapshot(
     ) -> FieldKey:
         """Resolve the yt key associated with a named scalar field."""
         if field_name not in YT_SFIELD_KEYS:
-            valid_string = ", ".join(
-                YT_SFIELD_KEYS.keys(),
-            )
+            valid_string = ww_lists.as_quoted_string(list(YT_SFIELD_KEYS.keys()))
             msg = f"Unknown scalar field `{field_name}`. Valid options: {valid_string}"
             manage_log.log_error(text=msg)
             raise KeyError(msg)
@@ -251,9 +250,7 @@ class QuokkaSnapshot(
     ) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
         """Return the component yt keys associated with a named vector field."""
         if field_name not in YT_VFIELD_KEYS:
-            valid_string = ", ".join(
-                YT_VFIELD_KEYS.keys(),
-            )
+            valid_string = ww_lists.as_quoted_string(list(YT_VFIELD_KEYS.keys()))
             msg = f"Unknown vector field `{field_name}`. Valid options: {valid_string}"
             manage_log.log_error(text=msg)
             raise KeyError(msg)
@@ -277,7 +274,7 @@ class QuokkaSnapshot(
         """Resolve and validate component keys associated with a named vector field."""
         missing_keys = self._get_missing_vfield_keys(field_name)
         if missing_keys:
-            missing_string = ", ".join(f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys)
+            missing_string = ww_lists.as_quoted_string([f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys])
             msg = (
                 f"Vector field `{field_name}` is incomplete in {self.dataset_dir}. "
                 f"Missing components: {missing_string}"
