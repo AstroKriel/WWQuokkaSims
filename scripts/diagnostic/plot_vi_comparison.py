@@ -17,10 +17,7 @@ from jormi.ww_data import (
     interpolate_series,
     series_types,
 )
-from jormi.ww_io import (
-    json_io,
-    manage_io,
-)
+from jormi.ww_io import json_io
 from jormi.ww_plots import manage_plots
 from jormi.ww_validation import validate_types
 
@@ -204,18 +201,12 @@ class ScriptInterface:
             param=dataset_tag,
             param_name="dataset_tag",
         )
-        manage_io.does_directory_exist(
-            directory=dir_1,
-            raise_error=True,
-        )
-        manage_io.does_directory_exist(
-            directory=dir_2,
-            raise_error=True,
-        )
-        manage_io.does_directory_exist(
-            directory=out_dir,
-            raise_error=True,
-        )
+        if not Path(dir_1).is_dir():
+            raise ValueError(f"dir_1 does not exist: {dir_1}")
+        if not Path(dir_2).is_dir():
+            raise ValueError(f"dir_2 does not exist: {dir_2}")
+        if not Path(out_dir).is_dir():
+            raise ValueError(f"out_dir does not exist: {out_dir}")
         self.dir_1 = Path(dir_1)
         self.dir_2 = Path(dir_2)
         self.out_dir = Path(out_dir)

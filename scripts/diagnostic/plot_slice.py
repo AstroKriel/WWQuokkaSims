@@ -78,7 +78,7 @@ class Dataset:
         sim_time = self.field.sim_time
         if (sim_time is None) or (not numpy.isfinite(sim_time)):
             msg = f"Invalid sim_time for field: {sim_time!r}"
-            manage_log.log_error(msg)
+            manage_log.log_error(text=msg)
             raise RuntimeError(msg)
         return float(sim_time)
 
@@ -304,7 +304,7 @@ class FieldPlotter:
             return [
                 FieldComp(
                     data_3d=varray_3d[_axis_to_index(comp_axis)],
-                    label=field_models.get_vcomp_label(field, comp_axis),
+                    label=field_models.get_vcomp_label(field, comp_axis=comp_axis),
                 ) for comp_axis in self.comps_to_plot
             ]
         raise ValueError(f"{field_name} is an unrecognised field type.")

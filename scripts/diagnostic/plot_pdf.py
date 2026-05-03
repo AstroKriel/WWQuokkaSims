@@ -150,7 +150,7 @@ class ComputePDFs:
         sim_time = field.sim_time
         assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
-        comp_labels = [field_models.get_vcomp_label(field, comp_name) for comp_name in comp_names]
+        comp_labels = [field_models.get_vcomp_label(field, comp_axis=comp_name) for comp_name in comp_names]
         grouped_bin_centers: list[numpy.ndarray] = []
         grouped_densities: list[numpy.ndarray] = []
         for comp_name in comp_names:

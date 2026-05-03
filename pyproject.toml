@@ -62,7 +62,7 @@ include = [
     "utests",
 ]
 ## where to look when resolving imports
-extraPaths = ["src"]
+extraPaths = ["src", "scripts/diagnostic"]
 
 ## --- rules to enforce
 reportMissingImports = true
@@ -76,6 +76,7 @@ reportExplicitAny = "none"  # yt dataset objects annotated as Any; no stubs avai
 reportUnusedCallResult = "none"  # validate_types.ensure_* called for side effects only
 reportPrivateUsage = "none"  # _Mixin classes are private-to-public-API but cross-module by design
 reportUnusedClass = "none"  # _Mixin and _Protocol classes are used as base classes / type hints across modules
+reportMissingTypeArgument = "none"  # scripts use bare Callable and dict; fully typing field loaders is impractical
 
 ##
 ## === TEST RUNNER (pytest)
