@@ -146,9 +146,9 @@ class QuokkaSnapshot(
         self._in_context = False
         self._close_dataset()
 
-##
-## --- PROBE SNAPSHOT
-##
+    ##
+    ## --- PROBE SNAPSHOT
+    ##
 
     @property
     def sim_time(
@@ -216,9 +216,9 @@ class QuokkaSnapshot(
         )
         return field_key in available_keys
 
-##
-## --- RESOLVE FIELD
-##
+    ##
+    ## --- RESOLVE FIELD
+    ##
 
     def _resolve_sfield_key(
         self,
@@ -274,7 +274,9 @@ class QuokkaSnapshot(
         """Resolve and validate component keys associated with a named vector field."""
         missing_keys = self._get_missing_vfield_keys(field_name)
         if missing_keys:
-            missing_string = ww_lists.as_quoted_string([f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys])
+            missing_string = ww_lists.as_quoted_string(
+                [f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys]
+            )
             msg = (
                 f"Vector field `{field_name}` is incomplete in {self.dataset_dir}. "
                 f"Missing components: {missing_string}"
@@ -312,9 +314,9 @@ class QuokkaSnapshot(
         self._close_dataset_if_needed()
         return numpy.ascontiguousarray(sarray_3d)
 
-##
-## --- CORE FIELD LOADERS
-##
+    ##
+    ## --- CORE FIELD LOADERS
+    ##
 
     def _extract_3d_sarray(
         self,
@@ -404,9 +406,9 @@ class QuokkaSnapshot(
             field_label=field_label,
         )
 
-##
-## --- DOMAIN
-##
+    ##
+    ## --- DOMAIN
+    ##
 
     def load_uniform_domain(
         self,
@@ -442,9 +444,9 @@ class QuokkaSnapshot(
         self._udomain_3d = udomain_3d
         return udomain_3d
 
-##
-## --- BASIC FIELDS
-##
+    ##
+    ## --- BASIC FIELDS
+    ##
 
     def load_density_sfield(
         self,
