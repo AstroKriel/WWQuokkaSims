@@ -25,16 +25,16 @@ from jormi.ww_io import manage_log
 from jormi.ww_validation import validate_types
 
 ## local
-from ._energy_fields import _EnergyFieldsMixin
-from ._magnetic_fields import _MagneticFieldsMixin
-from ._mhd_fields import _MHDFieldsMixin
-from ._read_fields import (
+from ._snapshot import (
+    _EnergyFieldsMixin,
+    _MagneticFieldsMixin,
+    _MHDFieldsMixin,
+    _VelocityFieldsMixin,
     FieldKey,
     LRUCache,
     YT_SFIELD_KEYS,
     YT_VFIELD_KEYS,
 )
-from ._velocity_fields import _VelocityFieldsMixin
 
 ##
 ## === SNAPSHOT OPERATOR CLASS
