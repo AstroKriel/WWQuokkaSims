@@ -32,8 +32,8 @@ from jormi.ww_validation import (
 
 ## local
 from ww_quokka_sims.sim_io import (
-    find_datasets,
-    load_dataset,
+    find_snapshots,
+    load_snapshot,
 )
 import quokka_fields
 
@@ -110,7 +110,7 @@ class LoadDataSeries:
     def _load_snapshot(
         field_args: FieldArgs,
     ) -> DataPoint:
-        with load_dataset.QuokkaDataset(
+        with load_snapshot.QuokkaSnapshot(
                 dataset_dir=field_args.dataset_dir,
                 verbose=False,
         ) as dataset:
@@ -304,7 +304,7 @@ class ScriptInterface:
         self,
     ) -> None:
         ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
-        dataset_dirs = find_datasets.resolve_dataset_dirs(
+        dataset_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )

@@ -36,8 +36,8 @@ from jormi.ww_validation import validate_types
 
 ## local
 from ww_quokka_sims.sim_io import (
-    find_datasets,
-    load_dataset,
+    find_snapshots,
+    load_snapshot,
 )
 import quokka_fields
 
@@ -264,11 +264,11 @@ class FieldPlotter:
         *,
         dataset_dir: Path,
     ) -> Dataset:
-        with load_dataset.QuokkaDataset(
+        with load_snapshot.QuokkaSnapshot(
                 dataset_dir=dataset_dir,
                 verbose=False,
         ) as dataset:
-            uniform_domain = dataset.load_3d_uniform_domain()
+            uniform_domain = dataset.load_uniform_domain()
             field = self.field_args.field_loader(dataset)  # ScalarField_3D or VectorField_3D
         return Dataset(
             uniform_domain=uniform_domain,
@@ -381,7 +381,7 @@ class FieldPlotter:
     ) -> None:
         dataset = self._load_dataset(dataset_dir=dataset_dir)
         dataset_index = int(
-            find_datasets.get_dataset_index_string(
+            find_snapshots.get_snapshot_index_string(
                 dataset_dir=dataset_dir,
                 dataset_tag=self.dataset_tag,
             ),
@@ -586,7 +586,7 @@ class ScriptInterface:
         self,
     ) -> None:
         ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
-        dataset_dirs = find_datasets.resolve_dataset_dirs(
+        dataset_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
             max_elems=100,
@@ -596,7 +596,7 @@ class ScriptInterface:
         ## output goes to the sim root (the shared parent of all dataset dirs)
         out_dir = dataset_dirs[0].parent
         ## index_width is the zero-pad width derived from the total number of datasets found
-        index_width = find_datasets.get_max_index_width(
+        index_width = find_snapshots.get_max_index_width(
             dataset_dirs=dataset_dirs,
             dataset_tag=self.dataset_tag,
         )

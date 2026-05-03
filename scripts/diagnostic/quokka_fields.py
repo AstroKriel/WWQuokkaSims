@@ -12,7 +12,7 @@ from collections.abc import Callable
 from jormi import ww_lists
 from jormi.ww_fields import cartesian_axes
 
-from ww_quokka_sims.sim_io import load_dataset
+from ww_quokka_sims.sim_io import load_snapshot
 
 ##
 ## === DEFAULT COLORMAPS
@@ -39,77 +39,77 @@ def _field_entry(
 QUOKKA_FIELD_LOOKUP = {
     "rho":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_density_sfield,
+        loader=load_snapshot.QuokkaSnapshot.load_density_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
     "vel":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_velocity_vfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_velocity_vfield,
         cmap=SEQUENTIAL_CMAP,
     ),
     "vel_magn":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_velocity_magnitude_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_velocity_magnitude_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
     "mag":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_magnetic_vfield,
+        loader=load_snapshot.QuokkaSnapshot.load_magnetic_vfield,
         cmap=SEQUENTIAL_CMAP,
     ),
-    "Etot":
+    "E_tot":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_total_energy_sfield,
+        loader=load_snapshot.QuokkaSnapshot.load_total_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
-    "Eint":
+    "E_int":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_internal_energy_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_internal_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
-    "Ekin":
+    "E_kin":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_kinetic_energy_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_kinetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
-    "Ekin_div":
+    "E_kin_div":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_div_kinetic_energy_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_div_kinetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
-    "Ekin_sol":
+    "E_kin_sol":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_sol_kinetic_energy_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_sol_kinetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
-    "Ekin_bulk":
+    "E_kin_bulk":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_bulk_kinetic_energy_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_bulk_kinetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
-    "Emag":
+    "E_mag":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_magnetic_energy_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_magnetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
-    "Eratio":
+    "E_ratio":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_energy_ratio_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_energy_ratio_sfield,
         cmap=DIVERGING_CMAP,
     ),
     "pressure":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_pressure_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_pressure_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
     "divb":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_divb_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_div_b_sfield,
         cmap=DIVERGING_CMAP,
     ),
     "cur":
     _field_entry(
-        loader=load_dataset.QuokkaDataset.load_3d_current_density_sfield,
+        loader=load_snapshot.QuokkaSnapshot.compute_current_density_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
 }

@@ -25,12 +25,12 @@ from jormi.ww_plots import (
     add_color,
     manage_plots,
 )
-from jormi.ww_types import check_types
+from jormi.ww_validation import validate_types
 
 ## local
 from ww_quokka_sims.sim_io import (
-    find_datasets,
-    load_dataset,
+    find_snapshots,
+    load_snapshot,
 )
 import quokka_fields
 
@@ -203,11 +203,11 @@ class ComputeCompProfiles:
     ) -> dict[str, list[CompProfile]]:
         comp_profiles_lookup: dict[str, list[CompProfile]] = {}
         for dataset_dir in self.dataset_dirs:
-            with load_dataset.QuokkaDataset(
+            with load_snapshot.QuokkaSnapshot(
                     dataset_dir=dataset_dir,
                     verbose=False,
             ) as dataset:
-                udomain_3d = dataset.load_3d_uniform_domain()
+                udomain_3d = dataset.load_uniform_domain()
                 field = self.field_loader(dataset)  # ScalarField or VectorField
             if isinstance(field, field_models.ScalarField_3D):
                 comp_profiles = self._compute_scalar_profiles(
@@ -422,7 +422,7 @@ class RenderCompProfiles:
         )
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         if num_snapshots == 1:
-            snapshot_index = find_datasets.get_dataset_index_string(self.dataset_dirs[0], self.dataset_tag)
+            snapshot_index = find_snapshots.get_snapshot_index_string(dataset_dir=self.dataset_dirs[0], dataset_tag=self.dataset_tag)
             fig_path = self.out_dir / f"{self.field_name}_profile_{snapshot_index}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}_profiles.png"
@@ -450,7 +450,7 @@ class ScriptInterface:
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
         extract_data: bool,
     ):
-        check_types.ensure_nonempty_string(
+        validate_types.ensure_nonempty_string(
             param=dataset_tag,
             param_name="dataset_tag",
         )
@@ -465,16 +465,16 @@ class ScriptInterface:
             raise ValueError("Provide one or more axes (via -a) from: x_0, x_1, x_2")
         self.input_dir = Path(input_dir)
         self.dataset_tag = dataset_tag
-        self.fields_to_plot = check_types.as_tuple(param=fields_to_plot)
-        self.comps_to_plot = check_types.as_tuple(param=comps_to_plot)
-        self.axes_to_slice = check_types.as_tuple(param=axes_to_slice)
+        self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
+        self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
+        self.axes_to_slice = validate_types.as_tuple(param=axes_to_slice)
         self.extract_data = extract_data
 
     def run(
         self,
     ) -> None:
         ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
-        dataset_dirs = find_datasets.resolve_dataset_dirs(
+        dataset_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )

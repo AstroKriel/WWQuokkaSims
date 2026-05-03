@@ -30,8 +30,8 @@ from jormi.ww_validation import (
 
 ## local
 from ww_quokka_sims.sim_io import (
-    find_datasets,
-    load_dataset,
+    find_snapshots,
+    load_snapshot,
 )
 import quokka_fields
 
@@ -191,7 +191,7 @@ class ComputePDFs:
     ) -> list[PDFData]:
         field_pdfs: list[PDFData] = []
         for dataset_dir in self.dataset_dirs:
-            with load_dataset.QuokkaDataset(
+            with load_snapshot.QuokkaSnapshot(
                     dataset_dir=dataset_dir,
                     verbose=False,
             ) as dataset:
@@ -424,7 +424,7 @@ class ScriptInterface:
         self,
     ) -> None:
         ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
-        dataset_dirs = find_datasets.resolve_dataset_dirs(
+        dataset_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )

@@ -22,10 +22,10 @@ from jormi.ww_io import (
     manage_io,
 )
 from jormi.ww_plots import manage_plots
-from jormi.ww_types import check_types
+from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims.sim_io import find_datasets
+from ww_quokka_sims.sim_io import find_snapshots
 import quokka_fields
 from plot_vi_evolution import (
     DataSeries,
@@ -200,7 +200,7 @@ class ScriptInterface:
         out_dir: Path,
         extract_data: bool,
     ):
-        check_types.ensure_nonempty_string(
+        validate_types.ensure_nonempty_string(
             param=dataset_tag,
             param_name="dataset_tag",
         )
@@ -232,12 +232,12 @@ class ScriptInterface:
         self,
     ) -> None:
         ## find dataset dirs for each of the two sim roots, matched by dataset_tag
-        dataset_dirs_1 = find_datasets.resolve_dataset_dirs(
+        dataset_dirs_1 = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.dir_1,
             dataset_tag=self.dataset_tag,
             max_elems=100,
         )
-        dataset_dirs_2 = find_datasets.resolve_dataset_dirs(
+        dataset_dirs_2 = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.dir_2,
             dataset_tag=self.dataset_tag,
             max_elems=100,

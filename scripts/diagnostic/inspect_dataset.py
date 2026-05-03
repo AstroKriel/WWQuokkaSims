@@ -8,7 +8,7 @@ import argparse
 
 from pathlib import Path
 
-from ww_quokka_sims.sim_io import load_dataset
+from ww_quokka_sims.sim_io import load_snapshot
 import quokka_fields
 
 ##
@@ -36,7 +36,7 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
-        with load_dataset.QuokkaDataset(
+        with load_snapshot.QuokkaSnapshot(
                 dataset_dir=self.dataset_dir,
                 verbose=True,
         ) as dataset:

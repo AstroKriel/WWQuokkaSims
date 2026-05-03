@@ -24,15 +24,15 @@ from jormi.ww_plots import (
     add_color,
     manage_plots,
 )
-from jormi.ww_types import (
-    check_arrays,
-    check_types,
+from jormi.ww_validation import (
+    validate_arrays,
+    validate_types,
 )
 
 ## local
 from ww_quokka_sims.sim_io import (
-    find_datasets,
-    load_dataset,
+    find_snapshots,
+    load_snapshot,
 )
 import quokka_fields
 
@@ -51,11 +51,11 @@ class SpectraData:
     def __post_init__(
         self,
     ) -> None:
-        check_arrays.ensure_array(array=self.k_bin_centers)
-        check_arrays.ensure_array(array=self.log10_spectrum)
-        check_arrays.ensure_1d(array=self.k_bin_centers)
-        check_arrays.ensure_1d(array=self.log10_spectrum)
-        check_arrays.ensure_same_shape(
+        validate_arrays.ensure_array(array=self.k_bin_centers)
+        validate_arrays.ensure_array(array=self.log10_spectrum)
+        validate_arrays.ensure_1d(array=self.k_bin_centers)
+        validate_arrays.ensure_1d(array=self.log10_spectrum)
+        validate_arrays.ensure_same_shape(
             array_a=self.k_bin_centers,
             array_b=self.log10_spectrum,
         )
@@ -84,7 +84,7 @@ class ComputeSpectra:
     ) -> list[SpectraData]:
         field_spectra: list[SpectraData] = []
         for dataset_dir in self.dataset_dirs:
-            with load_dataset.QuokkaDataset(
+            with load_snapshot.QuokkaSnapshot(
                     dataset_dir=dataset_dir,
                     verbose=False,
             ) as dataset:
@@ -266,7 +266,7 @@ class RenderSpectra:
         )
         ## include snapshot index in the filename if there is only one snapshot
         if len(field_spectra) == 1:
-            snapshot_index = find_datasets.get_dataset_index_string(self.dataset_dirs[0], self.dataset_tag)
+            snapshot_index = find_snapshots.get_snapshot_index_string(dataset_dir=self.dataset_dirs[0], dataset_tag=self.dataset_tag)
             fig_path = self.out_dir / f"{self.field_name}_spectrum_{snapshot_index}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}_spectra.png"
@@ -292,21 +292,21 @@ class ScriptInterface:
         fields_to_plot: tuple[str, ...] | list[str] | None,
         extract_data: bool,
     ):
-        check_types.ensure_nonempty_string(
+        validate_types.ensure_nonempty_string(
             param=dataset_tag,
             param_name="dataset_tag",
         )
         quokka_fields.validate_fields(field_names=fields_to_plot)
         self.input_dir = Path(input_dir)
         self.dataset_tag = dataset_tag
-        self.fields_to_plot = check_types.as_tuple(param=fields_to_plot)
+        self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.extract_data = extract_data
 
     def run(
         self,
     ) -> None:
         ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
-        dataset_dirs = find_datasets.resolve_dataset_dirs(
+        dataset_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             dataset_tag=self.dataset_tag,
         )

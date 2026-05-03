@@ -18,12 +18,12 @@ import numpy
 
 ## personal
 from jormi.ww_io import manage_log
-from jormi.ww_types import check_types
+from jormi.ww_validation import validate_types
 
 ## local
 from ww_quokka_sims.sim_io import (
-    find_datasets,
-    load_dataset,
+    find_snapshots,
+    load_snapshot,
 )
 import quokka_fields
 
@@ -43,8 +43,8 @@ class DatasetView:
 
     def get_field_keys(
         self,
-    ) -> set[load_dataset.FieldKey]:
-        with load_dataset.QuokkaDataset(
+    ) -> set[load_snapshot.FieldKey]:
+        with load_snapshot.QuokkaSnapshot(
                 dataset_dir=self.dataset_dir,
                 verbose=False,
         ) as dataset:
@@ -53,9 +53,9 @@ class DatasetView:
 
     def load_sfield(
         self,
-        field_key: load_dataset.FieldKey,
+        field_key: load_snapshot.FieldKey,
     ) -> numpy.ndarray:
-        with load_dataset.QuokkaDataset(
+        with load_snapshot.QuokkaSnapshot(
                 dataset_dir=self.dataset_dir,
                 verbose=False,
         ) as dataset:
@@ -192,7 +192,7 @@ class CompareDatasets:
 
     def get_shared_field_keys(
         self,
-    ) -> list[load_dataset.FieldKey]:
+    ) -> list[load_snapshot.FieldKey]:
         field_keys_in = self.dataset_view_in.get_field_keys()
         field_keys_ref = self.dataset_view_ref.get_field_keys()
         keys_missing_from_in = sorted(field_keys_ref - field_keys_in)
@@ -245,7 +245,7 @@ class CompareDatasets:
 
     def _compare_datasets(
         self,
-        field_key: load_dataset.FieldKey,
+        field_key: load_snapshot.FieldKey,
     ) -> None:
         sarray_in = self.dataset_view_in.load_sfield(field_key=field_key)
         sarray_ref = self.dataset_view_ref.load_sfield(field_key=field_key)
@@ -320,11 +320,11 @@ class ScriptInterface:
     def _validate_inputs(
         self,
     ) -> None:
-        check_types.ensure_finite_int(param=self.preview_limit)
+        validate_types.ensure_finite_int(param=self.preview_limit)
         assert self.preview_limit > 0
-        if not find_datasets.looks_like_boxlib_dir(self.dataset_dir_in):
+        if not find_snapshots.looks_like_boxlib_dir(dataset_dir=self.dataset_dir_in):
             raise ValueError(f"dir-1 does not look like a BoxLib directory: {self.dataset_dir_in}")
-        if not find_datasets.looks_like_boxlib_dir(self.dataset_dir_ref):
+        if not find_snapshots.looks_like_boxlib_dir(dataset_dir=self.dataset_dir_ref):
             raise ValueError(f"dir-2 does not look like a BoxLib directory: {self.dataset_dir_ref}")
 
     def run(
