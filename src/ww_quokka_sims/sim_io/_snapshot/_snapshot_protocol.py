@@ -24,6 +24,10 @@ from ._read_fields import HelmholtzKineticEnergy
 class _QuokkaSnapshotProtocol(Protocol):
     """Protocol declaring the interface that `_Derive*` classes require."""
 
+    ##
+    ## --- QuokkaSnapshot
+    ##
+
     @property
     def sim_time(
         self,
@@ -62,10 +66,24 @@ class _QuokkaSnapshotProtocol(Protocol):
     ) -> bool:
         ...
 
+    ##
+    ## --- _DeriveVelocityFields
+    ##
+
     def compute_velocity_vfield(
         self,
     ) -> field_models.VectorField_3D:
         ...
+
+    def compute_vorticity_vfield(
+        self,
+        grad_order: int,
+    ) -> field_models.VectorField_3D:
+        ...
+
+    ##
+    ## --- _DeriveEnergyFields
+    ##
 
     def compute_kinetic_energy_sfield(
         self,
@@ -89,9 +107,17 @@ class _QuokkaSnapshotProtocol(Protocol):
     ) -> field_models.ScalarField_3D:
         ...
 
-    def compute_vorticity_vfield(
+    def compute_helmholtz_kinetic_energy(
         self,
-        grad_order: int,
+    ) -> HelmholtzKineticEnergy:
+        ...
+
+    ##
+    ## --- _DeriveMagneticFields
+    ##
+
+    def compute_alfven_speed_vfield(
+        self,
     ) -> field_models.VectorField_3D:
         ...
 
@@ -101,19 +127,13 @@ class _QuokkaSnapshotProtocol(Protocol):
     ) -> field_models.VectorField_3D:
         ...
 
-    def compute_helmholtz_kinetic_energy(
-        self,
-    ) -> HelmholtzKineticEnergy:
-        ...
+    ##
+    ## --- _DeriveMHDFields
+    ##
 
     def compute_lorentz_force_vfield(
         self,
         grad_order: int,
-    ) -> field_models.VectorField_3D:
-        ...
-
-    def compute_alfven_speed_vfield(
-        self,
     ) -> field_models.VectorField_3D:
         ...
 
