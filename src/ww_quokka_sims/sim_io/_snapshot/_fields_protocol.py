@@ -25,9 +25,10 @@ class _FieldsProtocol(Protocol):
     """
     Protocol declaring the interface that `_Derive*` classes interact via.
 
-    Add a stub here for any method called via `self.*` inside a `_Derive*` method;
-    this includes both cross-class calls and same-class calls, since `self` is typed
-    as this protocol rather than the concrete class.
+    Each `_Derive*` method annotates `self` as `_FieldsProtocol`; basedpyright resolves
+    all `self.*` calls using the stubs (empty function definitions) provided here. All
+    functions called via `self.*`, including calls within the same `_Derive*` class,
+    must have a stub here.
     """
 
     ##
