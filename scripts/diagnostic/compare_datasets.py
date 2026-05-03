@@ -72,6 +72,8 @@ class DatasetView:
 
 @dataclass(frozen=True)
 class FieldComparison:
+    """Result of a field comparison; preview_* fields are empty when same_shape is False."""
+
     same_shape: bool
     shape_in: tuple[int, int, int]
     shape_ref: tuple[int, int, int]
