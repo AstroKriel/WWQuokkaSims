@@ -72,7 +72,10 @@ reportMissingTypeStubs = false  # third-party packages rarely ship stubs
 reportUnknownVariableType = "none"  # cascade from yt returning Any; yt ships no stubs
 reportUnknownMemberType = "none"  # cascade from yt returning Any; yt ships no stubs
 reportAny = "none"  # cascade from yt returning Any; yt ships no stubs
+reportExplicitAny = "none"  # yt dataset objects annotated as Any; no stubs available
 reportUnusedCallResult = "none"  # validate_types.ensure_* called for side effects only
+reportPrivateUsage = "none"  # _Mixin classes are private-to-public-API but cross-module by design
+reportUnusedClass = "none"  # _Mixin and _Protocol classes are used as base classes / type hints across modules
 
 ##
 ## === TEST RUNNER (pytest)

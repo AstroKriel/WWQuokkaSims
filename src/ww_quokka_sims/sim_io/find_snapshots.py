@@ -9,7 +9,7 @@ from pathlib import Path
 
 ## personal
 from jormi import ww_lists
-from jormi.ww_types import check_types
+from jormi.ww_validation import validate_types
 
 ##
 ## === FUNCTIONS
@@ -19,7 +19,7 @@ from jormi.ww_types import check_types
 def looks_like_boxlib_dir(
     dataset_dir: Path,
 ) -> bool:
-    check_types.ensure_type(
+    validate_types.ensure_type(
         param=dataset_dir,
         valid_types=Path,
     )
@@ -30,7 +30,7 @@ def looks_like_boxlib_dir(
     return has_header and has_level0
 
 
-def get_dataset_index_string(
+def get_snapshot_index_string(
     dataset_dir: Path,
     dataset_tag: str,
 ) -> str:
@@ -46,7 +46,7 @@ def get_dataset_index_string(
     return digits_string
 
 
-def get_latest_dataset_dirs(
+def get_latest_snapshot_dirs(
     sim_dir: Path,
     dataset_tag: str,
 ) -> list[Path]:
@@ -56,7 +56,7 @@ def get_latest_dataset_dirs(
     ]
     dataset_dirs.sort(
         key=lambda dataset_dir: int(
-            get_dataset_index_string(
+            get_snapshot_index_string(
                 dataset_dir,
                 dataset_tag,
             ),
@@ -65,14 +65,14 @@ def get_latest_dataset_dirs(
     return dataset_dirs
 
 
-def resolve_dataset_dirs(
+def resolve_snapshot_dirs(
     input_dir: Path,
     dataset_tag: str,
     max_elems: int | None = None,
 ) -> list[Path]:
     if (dataset_tag in input_dir.name) or looks_like_boxlib_dir(input_dir):
         return [input_dir]
-    dataset_dirs = get_latest_dataset_dirs(
+    dataset_dirs = get_latest_snapshot_dirs(
         sim_dir=input_dir,
         dataset_tag=dataset_tag,
     )
@@ -93,7 +93,7 @@ def get_max_index_width(
     if not dataset_dirs: return 1
     index_widths: list[int] = []
     for dataset_dir in dataset_dirs:
-        dataset_index_string = get_dataset_index_string(
+        dataset_index_string = get_snapshot_index_string(
             dataset_dir=dataset_dir,
             dataset_tag=dataset_tag,
         )
