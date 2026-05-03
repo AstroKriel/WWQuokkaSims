@@ -101,7 +101,7 @@ def get_max_index_width(
 ) -> int:
     """Return the character width of the widest index string across `dataset_dirs`."""
     if not dataset_dirs:
-        return 1
+        raise ValueError("`dataset_dirs` must be non-empty.")
     index_widths: list[int] = []
     for dataset_dir in dataset_dirs:
         dataset_index_string = get_snapshot_index_string(
@@ -113,7 +113,7 @@ def get_max_index_width(
                 dataset_index_string,
             ),
         )
-    return max(index_widths) if len(index_widths) > 0 else 1
+    return max(index_widths)
 
 
 ## } MODULE
