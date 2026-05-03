@@ -176,13 +176,13 @@ class _DeriveEnergyFields:
             param_name="<vfield_3d_bulk>",
         )
         E_kin_div_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(
-            v_div_varray
+            v_div_varray,
         )
         E_kin_sol_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(
-            v_sol_varray
+            v_sol_varray,
         )
         E_kin_bulk_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(
-            v_bulk_varray
+            v_bulk_varray,
         )
         compute_array_stats.check_no_nonfinite_values(
             array=E_kin_div_sarray,

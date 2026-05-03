@@ -269,7 +269,10 @@ class RenderSpectra:
         )
         ## include snapshot index in the filename if there is only one snapshot
         if len(field_spectra) == 1:
-            snapshot_index = find_snapshots.get_snapshot_index_string(dataset_dir=self.dataset_dirs[0], dataset_tag=self.dataset_tag)
+            snapshot_index = find_snapshots.get_snapshot_index_string(
+                dataset_dir=self.dataset_dirs[0],
+                dataset_tag=self.dataset_tag,
+            )
             fig_path = self.out_dir / f"{self.field_name}_spectrum_{snapshot_index}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}_spectra.png"

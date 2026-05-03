@@ -102,9 +102,12 @@ class ComputeCompProfiles:
         num_cells_x, num_cells_y, num_cells_z = udomain_3d.resolution
         cell_width_x, cell_width_y, cell_width_z = udomain_3d.cell_widths
         ax_idx = cartesian_axes.get_axis_index(axis_to_slice)
-        if ax_idx == 0: return x_min + (numpy.arange(num_cells_x) + 0.5) * cell_width_x
-        if ax_idx == 1: return y_min + (numpy.arange(num_cells_y) + 0.5) * cell_width_y
-        if ax_idx == 2: return z_min + (numpy.arange(num_cells_z) + 0.5) * cell_width_z
+        if ax_idx == 0:
+            return x_min + (numpy.arange(num_cells_x) + 0.5) * cell_width_x
+        if ax_idx == 1:
+            return y_min + (numpy.arange(num_cells_y) + 0.5) * cell_width_y
+        if ax_idx == 2:
+            return z_min + (numpy.arange(num_cells_z) + 0.5) * cell_width_z
         raise ValueError("axis must be one of: x_0, x_1, x_2")
 
     @staticmethod
@@ -118,9 +121,12 @@ class ComputeCompProfiles:
         slice_index_y = num_cells_y // 2
         slice_index_z = num_cells_z // 2
         ax_idx = cartesian_axes.get_axis_index(axis_to_slice)
-        if ax_idx == 0: return data_3d[:, slice_index_y, slice_index_z]
-        if ax_idx == 1: return data_3d[slice_index_x, :, slice_index_z]
-        if ax_idx == 2: return data_3d[slice_index_x, slice_index_y, :]
+        if ax_idx == 0:
+            return data_3d[:, slice_index_y, slice_index_z]
+        if ax_idx == 1:
+            return data_3d[slice_index_x, :, slice_index_z]
+        if ax_idx == 2:
+            return data_3d[slice_index_x, slice_index_y, :]
         raise ValueError("axis must be one of: x_0, x_1, x_2")
 
     def _compute_scalar_profiles(
@@ -425,7 +431,10 @@ class RenderCompProfiles:
         )
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         if num_snapshots == 1:
-            snapshot_index = find_snapshots.get_snapshot_index_string(dataset_dir=self.dataset_dirs[0], dataset_tag=self.dataset_tag)
+            snapshot_index = find_snapshots.get_snapshot_index_string(
+                dataset_dir=self.dataset_dirs[0],
+                dataset_tag=self.dataset_tag,
+            )
             fig_path = self.out_dir / f"{self.field_name}_profile_{snapshot_index}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}_profiles.png"

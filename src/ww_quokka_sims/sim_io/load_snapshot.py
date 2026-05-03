@@ -269,7 +269,7 @@ class QuokkaSnapshot(
         missing_keys = self._get_missing_vfield_keys(field_name)
         if missing_keys:
             missing_string = ww_lists.as_quoted_string(
-                [f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys]
+                [f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys],
             )
             msg = f"vector field `{field_name}` is incomplete in {self.dataset_dir}; missing components: {missing_string}."
             manage_log.log_error(text=msg)

@@ -271,7 +271,8 @@ class CompareDatasets:
             return
         if field_comparison.num_diffs == 0:
             manage_log.log_note(
-                text=f"[{field_key}] dir-1 == dir-2 (no value differences over shape: {field_comparison.shape_in}).",
+                text=
+                f"[{field_key}] dir-1 == dir-2 (no value differences over shape: {field_comparison.shape_in}).",
             )
             return
         num_cells = int(
