@@ -67,35 +67,35 @@ class _DeriveMHDFields:
         energy_prefactor: float = 0.5,
     ) -> field_models.ScalarField_3D:
         """Compute magnetic-to-kinetic energy ratio: `E_mag / E_kin`."""
-        Emag_sarray_3d = field_models.extract_3d_sarray(
+        E_mag_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=self.compute_magnetic_energy_sfield(energy_prefactor=energy_prefactor),
-            param_name="<Emag_sfield_3d>",
+            param_name="<E_mag_sfield_3d>",
         )
-        Ekin_sarray_3d = field_models.extract_3d_sarray(
+        E_kin_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=self.compute_kinetic_energy_sfield(),
-            param_name="<Ekin_sfield_3d>",
+            param_name="<E_kin_sfield_3d>",
         )
-        Ekin_has_zeros = compute_array_stats.check_no_zero_values(
-            array=Ekin_sarray_3d,
-            param_name="<Ekin_sfield_3d>",
+        E_kin_has_zeros = compute_array_stats.check_no_zero_values(
+            array=E_kin_sarray_3d,
+            param_name="<E_kin_sfield_3d>",
             raise_error=False,
         )
         with compute_array_stats.suppress_divide_warnings():
-            Eratio_sarray_3d = Emag_sarray_3d / Ekin_sarray_3d
-        if not Ekin_has_zeros:
+            E_ratio_sarray_3d = E_mag_sarray_3d / E_kin_sarray_3d
+        if not E_kin_has_zeros:
             compute_array_stats.check_no_nonfinite_values(
-                array=Eratio_sarray_3d,
-                param_name="<Eratio_sfield_3d>",
+                array=E_ratio_sarray_3d,
+                param_name="<E_ratio_sfield_3d>",
                 raise_error=False,
             )
         compute_array_stats.make_nonfinites_zero(
-            array=Eratio_sarray_3d,
+            array=E_ratio_sarray_3d,
             zero_nan=True,
             zero_posinf=True,
             zero_neginf=True,
         )
         return field_models.ScalarField_3D.from_3d_sarray(
-            sarray_3d=Eratio_sarray_3d,
+            sarray_3d=E_ratio_sarray_3d,
             udomain_3d=self.load_uniform_domain(),
             field_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
             sim_time=self.sim_time,

@@ -34,24 +34,24 @@ _BOXLIB_XYZ_LABELS: dict[cartesian_axes.CartesianAxis_3D, str] = {
 class HelmholtzKineticEnergy:
     """Helmholtz-decomposed kinetic energy fields: divergent, solenoidal, and bulk."""
 
-    Ekin_div_sfield_3d: field_models.ScalarField_3D
-    Ekin_sol_sfield_3d: field_models.ScalarField_3D
-    Ekin_bulk_sfield_3d: field_models.ScalarField_3D
+    E_kin_div_sfield_3d: field_models.ScalarField_3D
+    E_kin_sol_sfield_3d: field_models.ScalarField_3D
+    E_kin_bulk_sfield_3d: field_models.ScalarField_3D
 
     def __post_init__(
         self,
     ) -> None:
         field_models.ensure_3d_sfield(
-            sfield_3d=self.Ekin_div_sfield_3d,
-            param_name="<Ekin_div_sfield_3d>",
+            sfield_3d=self.E_kin_div_sfield_3d,
+            param_name="<E_kin_div_sfield_3d>",
         )
         field_models.ensure_3d_sfield(
-            sfield_3d=self.Ekin_sol_sfield_3d,
-            param_name="<Ekin_sol_sfield_3d>",
+            sfield_3d=self.E_kin_sol_sfield_3d,
+            param_name="<E_kin_sol_sfield_3d>",
         )
         field_models.ensure_3d_sfield(
-            sfield_3d=self.Ekin_bulk_sfield_3d,
-            param_name="<Ekin_bulk_sfield_3d>",
+            sfield_3d=self.E_kin_bulk_sfield_3d,
+            param_name="<E_kin_bulk_sfield_3d>",
         )
 
 

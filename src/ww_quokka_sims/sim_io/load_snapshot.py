@@ -504,9 +504,9 @@ class QuokkaSnapshot(
         self,
     ) -> field_models.ScalarField_3D:
         """Load total energy: `E_tot = E_int + E_kin + E_mag` (code units)."""
-        Etot_key = self._get_sfield_key("total_energy")
+        E_tot_key = self._get_sfield_key("total_energy")
         return self.load_3d_sfield(
-            field_key=Etot_key,
+            field_key=E_tot_key,
             field_label=r"E_\mathrm{tot}",
         )
 

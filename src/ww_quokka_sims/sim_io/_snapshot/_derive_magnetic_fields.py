@@ -49,21 +49,21 @@ class _DeriveMagneticFields:
             raise_error=False,
         )
         with compute_array_stats.suppress_divide_warnings():
-            va_varray_3d = b_varray_3d / numpy.sqrt(rho_sarray_3d)[numpy.newaxis, ...]
+            v_a_varray_3d = b_varray_3d / numpy.sqrt(rho_sarray_3d)[numpy.newaxis, ...]
         if not rho_has_zeros:
             compute_array_stats.check_no_nonfinite_values(
-                array=va_varray_3d,
-                param_name="<va_vfield_3d>",
+                array=v_a_varray_3d,
+                param_name="<v_a_vfield_3d>",
                 raise_error=False,
             )
         compute_array_stats.make_nonfinites_zero(
-            array=va_varray_3d,
+            array=v_a_varray_3d,
             zero_nan=True,
             zero_posinf=True,
             zero_neginf=True,
         )
         return field_models.VectorField_3D.from_3d_varray(
-            varray_3d=va_varray_3d,
+            varray_3d=v_a_varray_3d,
             udomain_3d=self.load_uniform_domain(),
             field_label=r"\vec{v}_A",
             sim_time=self.sim_time,
@@ -73,9 +73,9 @@ class _DeriveMagneticFields:
         self: _FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute Alfven speed magnitude: `|vec(v_A)|`."""
-        va_vfield_3d = self.compute_alfven_speed_vfield()
+        v_a_vfield_3d = self.compute_alfven_speed_vfield()
         return field_operators.compute_vfield_magnitude(
-            vfield_3d=va_vfield_3d,
+            vfield_3d=v_a_vfield_3d,
             field_label=r"|\vec{v}_A|",
         )
 
