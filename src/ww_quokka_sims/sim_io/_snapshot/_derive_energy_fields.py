@@ -94,7 +94,7 @@ class _DeriveEnergyFields:
     def compute_internal_energy_sfield(
         self: _FieldsProtocol,
     ) -> field_models.ScalarField_3D:
-        """Compute internal energy: `E_int = E_tot - E_kin - E_mag` (`E_mag = 0` if `vec(b)` is not available)."""
+        """Compute internal energy: `E_int = E_tot - E_kin - E_mag`; `E_mag = 0` if the snapshot did not store `vec(b)`."""
         E_tot_sarray = field_models.extract_3d_sarray(
             sfield_3d=self.load_total_energy_sfield(),
             param_name="<E_tot_sfield_3d>",
