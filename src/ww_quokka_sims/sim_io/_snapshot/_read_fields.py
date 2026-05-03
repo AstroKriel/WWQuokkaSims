@@ -32,6 +32,8 @@ _BOXLIB_XYZ_LABELS: dict[cartesian_axes.CartesianAxis_3D, str] = {
 
 @dataclass(frozen=True)
 class HelmholtzKineticEnergy:
+    """Helmholtz-decomposed kinetic energy fields: divergent, solenoidal, and bulk."""
+
     Ekin_div_sfield_3d: field_models.ScalarField_3D
     Ekin_sol_sfield_3d: field_models.ScalarField_3D
     Ekin_bulk_sfield_3d: field_models.ScalarField_3D
@@ -61,16 +63,7 @@ class HelmholtzKineticEnergy:
 def create_boxlib_vkeys(
     field_name: str,
 ) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
-    """
-    Create a mapping from CartesianAxis_3D -> yt field key for a given base field name.
-
-    For example, for field_name="GasMomentum", this yields:
-    {
-      X0: ("boxlib", "x-GasMomentum"),
-      X1: ("boxlib", "y-GasMomentum"),
-      X2: ("boxlib", "z-GasMomentum"),
-    }
-    """
+    """Map `CartesianAxis_3D` to yt field keys using the pattern `("boxlib", "<axis>-<field_name>")` for each axis."""
     return {
         axis: ("boxlib", f"{_BOXLIB_XYZ_LABELS[axis]}-{field_name}")
         for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER
@@ -105,7 +98,7 @@ YT_SFIELD_KEYS: dict[str, dict[str, Any]] = {
 
 
 class LRUCache:
-    """Simple least-recently-used (LRU) cache for storing field objects."""
+    """LRU cache for field objects, keyed by field name."""
 
     _cache_lookup: OrderedDict[str, field_models.ScalarField_3D | field_models.VectorField_3D]
     _max_size: int
@@ -139,7 +132,7 @@ class LRUCache:
         field_name: str,
         field_data: field_models.ScalarField_3D | field_models.VectorField_3D,
     ) -> None:
-        """Store `field_data` under `field_name` and evict the least-recently-used item if the cache is full."""
+        """Store `field_data` under `field_name`; evict the LRU entry if at capacity."""
         self._cache_lookup[field_name] = field_data
         self._cache_lookup.move_to_end(field_name)
         while len(self._cache_lookup) > self._max_size:

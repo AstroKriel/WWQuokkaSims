@@ -20,7 +20,7 @@ from ._snapshot_protocol import _QuokkaSnapshotProtocol
 
 
 class _MHDFieldMethods:
-    """Mixin providing MHD composite field computations."""
+    """MHD composite field computations."""
 
     ##
     ## --- MHD COMPOSITE FIELDS

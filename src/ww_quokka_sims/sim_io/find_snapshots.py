@@ -76,8 +76,8 @@ def resolve_snapshot_dirs(
     """
     Resolve `input_dir` to an ordered list of snapshot directories.
 
-    Returns `[input_dir]` directly if it is itself a snapshot directory. Otherwise scans for all
-    `dataset_tag` matched directories under `input_dir` and optionally subsamples them to `max_elems`.
+    Returns `[input_dir]` directly if it is itself a snapshot directory; otherwise scans for all
+    `dataset_tag`-matched directories under `input_dir` and subsamples to `max_elems` if provided.
     """
     if (dataset_tag in input_dir.name) or looks_like_boxlib_dir(input_dir):
         return [input_dir]

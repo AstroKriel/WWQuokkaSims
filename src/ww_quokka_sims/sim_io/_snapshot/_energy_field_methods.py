@@ -24,7 +24,7 @@ from ._snapshot_protocol import _QuokkaSnapshotProtocol
 
 
 class _EnergyFieldMethods:
-    """Mixin providing energy-derived field computations."""
+    """Energy-derived field computations."""
 
     ##
     ## --- ENERGY FIELDS
@@ -155,7 +155,7 @@ class _EnergyFieldMethods:
     def compute_helmholtz_kinetic_energy(
         self: _QuokkaSnapshotProtocol,
     ) -> HelmholtzKineticEnergy:
-        """Compute Helmholtz-decomposed kinetic energies from `vec(v) = vec(v)_div + vec(v)_sol + vec(v)_bulk`."""
+        """Compute Helmholtz-decomposed kinetic energies; splits `vec(v)` into `vec(v)_div + vec(v)_sol + vec(v)_bulk`."""
         udomain_3d = self.load_uniform_domain()
         v_vfield_3d = self.compute_velocity_vfield()
         rho_sarray_3d = field_models.extract_3d_sarray(
@@ -244,21 +244,21 @@ class _EnergyFieldMethods:
     def compute_div_kinetic_energy_sfield(
         self: _QuokkaSnapshotProtocol,
     ) -> field_models.ScalarField_3D:
-        """Compute kinetic energy in irrotational (curl-free) velocity modes: `E_kin,div = 0.5 rho (v_div)^2`."""
+        """Compute irrotational kinetic energy density: `E_kin,div = 0.5 rho |v_div|^2`."""
         helmholtz_Ekin = self.compute_helmholtz_kinetic_energy()
         return helmholtz_Ekin.Ekin_div_sfield_3d
 
     def compute_sol_kinetic_energy_sfield(
         self: _QuokkaSnapshotProtocol,
     ) -> field_models.ScalarField_3D:
-        """Compute kinetic energy in solenoidal (divergence-free) velocity modes: `E_kin,sol = 0.5 rho (v_sol)^2`."""
+        """Compute solenoidal kinetic energy density: `E_kin,sol = 0.5 rho |v_sol|^2`."""
         helmholtz_Ekin = self.compute_helmholtz_kinetic_energy()
         return helmholtz_Ekin.Ekin_sol_sfield_3d
 
     def compute_bulk_kinetic_energy_sfield(
         self: _QuokkaSnapshotProtocol,
     ) -> field_models.ScalarField_3D:
-        """Compute kinetic energy in bulk velocity: `E_kin,bulk = 0.5 rho (v_bulk)^2`."""
+        """Compute bulk kinetic energy density: `E_kin,bulk = 0.5 rho |v_bulk|^2`."""
         helmholtz_Ekin = self.compute_helmholtz_kinetic_energy()
         return helmholtz_Ekin.Ekin_bulk_sfield_3d
 

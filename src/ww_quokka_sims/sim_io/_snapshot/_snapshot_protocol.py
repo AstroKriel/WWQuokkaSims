@@ -22,7 +22,7 @@ from ._read_fields import HelmholtzKineticEnergy
 
 
 class _QuokkaSnapshotProtocol(Protocol):
-    """Typing-only protocol declaring the raw interface that mixins rely on."""
+    """Protocol declaring the interface that `_*FieldMethods` classes require."""
 
     @property
     def sim_time(

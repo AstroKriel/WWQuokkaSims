@@ -85,7 +85,7 @@ class QuokkaSnapshot(
     def __enter__(
         self,
     ):
-        """Enter a context, open the dataset if needed, and validate the simulation time."""
+        """Enter the context; open the dataset if needed; validate simulation time."""
         self._in_context = True
         self._open_dataset_if_needed()
         _ = self.sim_time  # force implicit validation
@@ -97,14 +97,14 @@ class QuokkaSnapshot(
         _exc_value: BaseException | None,
         _traceback: TracebackType | None,
     ) -> None:
-        """Exit a context and close the dataset handle."""
+        """Exit the context; close the dataset handle."""
         self._in_context = False
         self._close_dataset()
 
     def _open_dataset_if_needed(
         self,
     ) -> None:
-        """Open the yt dataset if it is not already open and cache the simulation time."""
+        """Open the yt dataset if not already open; cache the simulation time."""
         if self.dataset is None:
             if not self.verbose:
                 ## reduce yt verbosity: only print warnings, errors and critical messages
@@ -123,7 +123,7 @@ class QuokkaSnapshot(
     def _close_dataset(
         self,
     ) -> None:
-        """Close the yt dataset and clear cached grid objects. Keep the simulation time cached."""
+        """Close the yt dataset; clear cached grid objects; keep simulation time cached."""
         if self.dataset is not None:
             self.dataset.close()
             self.dataset = None
@@ -141,7 +141,7 @@ class QuokkaSnapshot(
     def close(
         self,
     ) -> None:
-        """Close the dataset handle and exit any active context."""
+        """Close the dataset handle; exit any active context."""
         self._in_context = False
         self._close_dataset()
 
@@ -209,7 +209,7 @@ class QuokkaSnapshot(
         self,
         field_key: FieldKey,
     ) -> bool:
-        """Return `True` iff a particular yt field key exists in the dataset."""
+        """Return `True` iff `field_key` exists in the dataset."""
         available_keys = set(
             self._get_available_field_keys(),
         )
@@ -263,7 +263,7 @@ class QuokkaSnapshot(
         self,
         field_name: str,
     ) -> list[FieldKey]:
-        """Return the list of missing component keys associated with a named vector field."""
+        """Return missing component yt keys for `field_name`."""
         vfield_key_lookup = self._resolve_vfield_key_lookup(field_name)
         available_keys = set(
             self._get_available_field_keys(),
@@ -416,10 +416,9 @@ class QuokkaSnapshot(
         force_periodicity: bool = True,
     ) -> domain_models.UniformDomain_3D:
         """
-        Return uniform domain metadata (bounds, resolution, periodicity).
+        Return uniform domain metadata: bounds, resolution, and periodicity; result is cached.
 
-        Note: force_periodicity only affects the first call; subsequent calls returns the cached domain.
-        This is required because yt cannot read this property reliably yet
+        `force_periodicity` only takes effect on the first call; yt cannot read periodicity reliably.
         """
         validate_types.ensure_bool(
             param=force_periodicity,

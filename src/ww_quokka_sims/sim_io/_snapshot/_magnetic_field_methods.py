@@ -25,7 +25,7 @@ from ._snapshot_protocol import _QuokkaSnapshotProtocol
 
 
 class _MagneticFieldMethods:
-    """Mixin providing magnetic-field-derived computations."""
+    """Magnetic-field-derived computations."""
 
     ##
     ## --- MAGNETIC FIELDS

@@ -23,7 +23,7 @@ from ._snapshot_protocol import _QuokkaSnapshotProtocol
 
 
 class _VelocityFieldMethods:
-    """Mixin providing velocity-derived field computations."""
+    """Velocity-derived field computations."""
 
     ##
     ## --- VELOCITY FIELDS
@@ -32,7 +32,7 @@ class _VelocityFieldMethods:
     def compute_velocity_vfield(
         self: _QuokkaSnapshotProtocol,
     ) -> field_models.VectorField_3D:
-        """Load velocity field: `vec(v) = vec(m) / rho`."""
+        """Compute velocity field: `vec(v) = vec(m) / rho`."""
         rho_sfield_3d = self.load_density_sfield()
         rho_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=rho_sfield_3d,
@@ -84,7 +84,7 @@ class _VelocityFieldMethods:
         self: _QuokkaSnapshotProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
-        """Compute divergence of velocity: `nabla cdot vec(v)` using a `grad_order` accurate stencil."""
+        """Compute velocity divergence `nabla cdot vec(v)`; `grad_order` controls stencil accuracy."""
         v_vfield_3d = self.compute_velocity_vfield()
         return field_operators.compute_vfield_divergence(
             vfield_3d=v_vfield_3d,
@@ -96,7 +96,7 @@ class _VelocityFieldMethods:
         self: _QuokkaSnapshotProtocol,
         grad_order: int = 2,
     ) -> field_models.VectorField_3D:
-        """Compute vorticity vector: `curl(vec(v))` using a `grad_order` accurate stencil."""
+        """Compute vorticity vector `curl(vec(v))`; `grad_order` controls stencil accuracy."""
         v_vfield_3d = self.compute_velocity_vfield()
         return field_operators.compute_vfield_curl(
             vfield_3d=v_vfield_3d,
