@@ -65,6 +65,7 @@ class QuokkaSnapshot(
 
     def __init__(
         self,
+        *,
         dataset_dir: str | Path,
         verbose: bool = True,
     ):
@@ -208,6 +209,7 @@ class QuokkaSnapshot(
 
     def is_field_key_available(
         self,
+        *,
         field_key: FieldKey,
     ) -> bool:
         """Return `True` iff `field_key` exists in the dataset."""
@@ -238,7 +240,7 @@ class QuokkaSnapshot(
     ) -> FieldKey:
         """Resolve and validate the yt key associated with a scalar field."""
         field_key = self._resolve_sfield_key(field_name)
-        if not self.is_field_key_available(field_key):
+        if not self.is_field_key_available(field_key=field_key):
             msg = f"Scalar field `{field_name}` ({field_key[0]}:{field_key[1]}) is not available in: {self.dataset_dir}."
             manage_log.log_error(text=msg)
             raise KeyError(msg)
@@ -342,6 +344,7 @@ class QuokkaSnapshot(
 
     def load_3d_sfield(
         self,
+        *,
         field_key: FieldKey,
         field_label: str,
     ) -> field_models.ScalarField_3D:
@@ -361,6 +364,7 @@ class QuokkaSnapshot(
 
     def load_3d_vfield(
         self,
+        *,
         vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, FieldKey],
         field_label: str,
     ) -> field_models.VectorField_3D:
@@ -412,6 +416,7 @@ class QuokkaSnapshot(
 
     def load_uniform_domain(
         self,
+        *,
         force_periodicity: bool = True,
     ) -> domain_models.UniformDomain_3D:
         """

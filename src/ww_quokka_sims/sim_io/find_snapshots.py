@@ -17,6 +17,7 @@ from jormi.ww_validation import validate_types
 
 
 def looks_like_boxlib_dir(
+    *,
     dataset_dir: Path,
 ) -> bool:
     """Return `True` iff `dataset_dir` contains a boxlib `Header` file and `Level_0` subdirectory."""
@@ -32,6 +33,7 @@ def looks_like_boxlib_dir(
 
 
 def get_snapshot_index_string(
+    *,
     dataset_dir: Path,
     dataset_tag: str,
 ) -> str:
@@ -49,6 +51,7 @@ def get_snapshot_index_string(
 
 
 def get_latest_snapshot_dirs(
+    *,
     sim_dir: Path,
     dataset_tag: str,
 ) -> list[Path]:
@@ -60,8 +63,8 @@ def get_latest_snapshot_dirs(
     dataset_dirs.sort(
         key=lambda dataset_dir: int(
             get_snapshot_index_string(
-                dataset_dir,
-                dataset_tag,
+                dataset_dir=dataset_dir,
+                dataset_tag=dataset_tag,
             ),
         ),
     )
@@ -69,6 +72,7 @@ def get_latest_snapshot_dirs(
 
 
 def resolve_snapshot_dirs(
+    *,
     input_dir: Path,
     dataset_tag: str,
     max_elems: int | None = None,
@@ -79,7 +83,7 @@ def resolve_snapshot_dirs(
     Returns `[input_dir]` directly if it is itself a snapshot directory; otherwise scans for all
     `dataset_tag`-matched directories under `input_dir` and subsamples to `max_elems` if provided.
     """
-    if (dataset_tag in input_dir.name) or looks_like_boxlib_dir(input_dir):
+    if (dataset_tag in input_dir.name) or looks_like_boxlib_dir(dataset_dir=input_dir):
         return [input_dir]
     dataset_dirs = get_latest_snapshot_dirs(
         sim_dir=input_dir,
@@ -96,6 +100,7 @@ def resolve_snapshot_dirs(
 
 
 def get_max_index_width(
+    *,
     dataset_dirs: list[Path],
     dataset_tag: str,
 ) -> int:

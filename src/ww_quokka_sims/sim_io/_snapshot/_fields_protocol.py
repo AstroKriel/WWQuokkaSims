@@ -43,6 +43,7 @@ class _FieldsProtocol(Protocol):
 
     def load_uniform_domain(
         self,
+        *,
         force_periodicity: bool = True,
     ) -> domain_models.UniformDomain_3D:
         ...
