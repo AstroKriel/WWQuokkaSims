@@ -268,7 +268,7 @@ class FieldPlotter:
                 dataset_dir=dataset_dir,
                 verbose=False,
         ) as dataset:
-            uniform_domain = dataset.load_uniform_domain()
+            uniform_domain = dataset.load_3d_uniform_domain()
             field = self.field_args.field_loader(dataset)  # ScalarField_3D or VectorField_3D
         return Dataset(
             uniform_domain=uniform_domain,

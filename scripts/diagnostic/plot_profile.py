@@ -207,7 +207,7 @@ class ComputeCompProfiles:
                     dataset_dir=dataset_dir,
                     verbose=False,
             ) as dataset:
-                udomain_3d = dataset.load_uniform_domain()
+                udomain_3d = dataset.load_3d_uniform_domain()
                 field = self.field_loader(dataset)  # ScalarField or VectorField
             if isinstance(field, field_models.ScalarField_3D):
                 comp_profiles = self._compute_scalar_profiles(

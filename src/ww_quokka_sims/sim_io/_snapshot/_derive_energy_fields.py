@@ -34,12 +34,12 @@ class _DeriveEnergyFields:
         self: _FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute kinetic energy density: `E_kin = 0.5 * rho * |v|^2`."""
-        rho_sfield_3d = self.load_density_sfield()
+        rho_sfield_3d = self.load_3d_density_sfield()
         rho_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=rho_sfield_3d,
             param_name="<rho_sfield_3d>",
         )
-        mom_vfield_3d = self.load_momentum_vfield()
+        mom_vfield_3d = self.load_3d_momentum_vfield()
         mom_varray_3d = field_models.extract_3d_varray(
             vfield_3d=mom_vfield_3d,
             param_name="<mom_vfield_3d>",
@@ -65,7 +65,7 @@ class _DeriveEnergyFields:
             zero_posinf=True,
             zero_neginf=True,
         )
-        udomain_3d = self.load_uniform_domain()
+        udomain_3d = self.load_3d_uniform_domain()
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_sarray_3d,
             udomain_3d=udomain_3d,
@@ -84,7 +84,7 @@ class _DeriveEnergyFields:
             param_name="energy_prefactor",
             allow_none=False,
         )
-        b_vfield_3d = self.load_magnetic_vfield()
+        b_vfield_3d = self.load_3d_magnetic_vfield()
         return compute_fields.compute_magnetic_energy_density_sfield(
             vfield_3d_b=b_vfield_3d,
             energy_prefactor=energy_prefactor,
@@ -96,7 +96,7 @@ class _DeriveEnergyFields:
     ) -> field_models.ScalarField_3D:
         """Compute internal energy: `E_int = E_tot - E_kin - E_mag`; `E_mag = 0` if the snapshot did not store `vec(b)`."""
         E_tot_sarray = field_models.extract_3d_sarray(
-            sfield_3d=self.load_total_energy_sfield(),
+            sfield_3d=self.load_3d_total_energy_sfield(),
             param_name="<E_tot_sfield_3d>",
         )
         E_kin_sarray_3d = field_models.extract_3d_sarray(
@@ -123,7 +123,7 @@ class _DeriveEnergyFields:
         )
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_int_sarray,
-            udomain_3d=self.load_uniform_domain(),
+            udomain_3d=self.load_3d_uniform_domain(),
             field_label=r"E_\mathrm{int}",
             sim_time=self.sim_time,
         )
@@ -147,7 +147,7 @@ class _DeriveEnergyFields:
         p_sarray = (gamma - 1.0) * E_int_sarray
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=p_sarray,
-            udomain_3d=self.load_uniform_domain(),
+            udomain_3d=self.load_3d_uniform_domain(),
             field_label=r"p",
             sim_time=self.sim_time,
         )
@@ -156,10 +156,10 @@ class _DeriveEnergyFields:
         self: _FieldsProtocol,
     ) -> HelmholtzKineticEnergy:
         """Compute Helmholtz-decomposed kinetic energies; splits `vec(v)` into `vec(v)_div + vec(v)_sol + vec(v)_bulk`."""
-        udomain_3d = self.load_uniform_domain()
+        udomain_3d = self.load_3d_uniform_domain()
         v_vfield_3d = self.compute_velocity_vfield()
         rho_sarray_3d = field_models.extract_3d_sarray(
-            sfield_3d=self.load_density_sfield(),
+            sfield_3d=self.load_3d_density_sfield(),
             param_name="<rho_sfield_3d>",
         )
         helmholtz_vfields = decompose_fields.compute_helmholtz_decomposed_fields(vfield_3d=v_vfield_3d)

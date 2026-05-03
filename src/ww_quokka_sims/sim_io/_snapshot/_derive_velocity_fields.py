@@ -33,12 +33,12 @@ class _DeriveVelocityFields:
         self: _FieldsProtocol,
     ) -> field_models.VectorField_3D:
         """Compute velocity field: `vec(v) = vec(m) / rho`."""
-        rho_sfield_3d = self.load_density_sfield()
+        rho_sfield_3d = self.load_3d_density_sfield()
         rho_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=rho_sfield_3d,
             param_name="<rho_sfield_3d>",
         )
-        mom_vfield_3d = self.load_momentum_vfield()
+        mom_vfield_3d = self.load_3d_momentum_vfield()
         mom_varray_3d = field_models.extract_3d_varray(
             vfield_3d=mom_vfield_3d,
             param_name="<mom_vfield_3d>",
@@ -62,7 +62,7 @@ class _DeriveVelocityFields:
             zero_posinf=True,
             zero_neginf=True,
         )
-        udomain_3d = self.load_uniform_domain()
+        udomain_3d = self.load_3d_uniform_domain()
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=v_varray,
             udomain_3d=udomain_3d,

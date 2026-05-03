@@ -339,7 +339,7 @@ class QuokkaSnapshot(
             param_name="field_label",
         )
         sarray_3d = self._load_3d_sarray(field_key)
-        udomain_3d = self.load_uniform_domain()
+        udomain_3d = self.load_3d_uniform_domain()
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=sarray_3d,
             udomain_3d=udomain_3d,
@@ -384,7 +384,7 @@ class QuokkaSnapshot(
             [grouped_sarrays[comp_axis] for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER],
             axis=0,
         )
-        udomain_3d = self.load_uniform_domain()
+        udomain_3d = self.load_3d_uniform_domain()
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=varray_3d,
             udomain_3d=udomain_3d,
@@ -396,7 +396,7 @@ class QuokkaSnapshot(
     ## --- DOMAIN
     ##
 
-    def load_uniform_domain(
+    def load_3d_uniform_domain(
         self,
         *,
         force_periodicity: bool = True,
@@ -435,7 +435,7 @@ class QuokkaSnapshot(
     ## --- BASIC FIELDS
     ##
 
-    def load_density_sfield(
+    def load_3d_density_sfield(
         self,
     ) -> field_models.ScalarField_3D:
         """Load gas density: `rho`."""
@@ -453,7 +453,7 @@ class QuokkaSnapshot(
         )
         return rho_sfield_3d
 
-    def load_momentum_vfield(
+    def load_3d_momentum_vfield(
         self,
     ) -> field_models.VectorField_3D:
         """Load momentum field: `vec(m) = rho vec(v)`."""
@@ -471,7 +471,7 @@ class QuokkaSnapshot(
         )
         return mom_vfield_3d
 
-    def load_magnetic_vfield(
+    def load_3d_magnetic_vfield(
         self,
     ) -> field_models.VectorField_3D:
         """Load magnetic field: `vec(b)`."""
@@ -489,7 +489,7 @@ class QuokkaSnapshot(
         )
         return b_vfield_3d
 
-    def load_total_energy_sfield(
+    def load_3d_total_energy_sfield(
         self,
     ) -> field_models.ScalarField_3D:
         """Load total energy: `E_tot = E_int + E_kin + E_mag` (code units)."""
