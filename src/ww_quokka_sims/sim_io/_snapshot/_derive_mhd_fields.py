@@ -12,7 +12,7 @@ from jormi.ww_fields.fields_3d import (
 )
 
 ## local
-from ._snapshot_protocol import _QuokkaSnapshotProtocol
+from ._fields_protocol import _FieldsProtocol
 
 ##
 ## === DERIVE CLASS
@@ -27,7 +27,7 @@ class _DeriveMHDFields:
     ##
 
     def compute_cross_helicity_sfield(
-        self: _QuokkaSnapshotProtocol,
+        self: _FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute cross helicity density: `vec(v) cdot vec(b)`."""
         v_vfield_3d = self.compute_velocity_vfield()
@@ -39,7 +39,7 @@ class _DeriveMHDFields:
         )
 
     def compute_lorentz_force_vfield(
-        self: _QuokkaSnapshotProtocol,
+        self: _FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.VectorField_3D:
         """Compute Lorentz force: `curl[vec(b)] x vec(b)`."""
@@ -52,7 +52,7 @@ class _DeriveMHDFields:
         )
 
     def compute_lorentz_force_sfield(
-        self: _QuokkaSnapshotProtocol,
+        self: _FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
         """Compute Lorentz force magnitude: `| curl[vec(b)] x vec(b) |`."""
@@ -63,7 +63,7 @@ class _DeriveMHDFields:
         )
 
     def compute_energy_ratio_sfield(
-        self: _QuokkaSnapshotProtocol,
+        self: _FieldsProtocol,
         energy_prefactor: float = 0.5,
     ) -> field_models.ScalarField_3D:
         """Compute magnetic-to-kinetic energy ratio: `E_mag / E_kin`."""
@@ -102,7 +102,7 @@ class _DeriveMHDFields:
         )
 
     def compute_poynting_flux_vfield(
-        self: _QuokkaSnapshotProtocol,
+        self: _FieldsProtocol,
     ) -> field_models.VectorField_3D:
         """Compute Poynting-flux-like vector: `vec(b) x [vec(v) x vec(b)]`."""
         v_vfield_3d = self.compute_velocity_vfield()

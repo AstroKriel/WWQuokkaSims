@@ -21,7 +21,7 @@ from ._read_fields import HelmholtzKineticEnergy
 ##
 
 
-class _QuokkaSnapshotProtocol(Protocol):
+class _FieldsProtocol(Protocol):
     """
     Protocol declaring the interface that `_Derive*` classes require.
 
