@@ -80,7 +80,7 @@ class _DeriveVelocityFields:
             field_label=r"|\vec{v}|",
         )
 
-    def compute_divu_sfield(
+    def compute_div_v_sfield(
         self: _FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:

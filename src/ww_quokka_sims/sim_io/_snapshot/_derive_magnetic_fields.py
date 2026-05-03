@@ -79,7 +79,7 @@ class _DeriveMagneticFields:
             field_label=r"|\vec{v}_A|",
         )
 
-    def compute_divb_sfield(
+    def compute_div_b_sfield(
         self: _FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
