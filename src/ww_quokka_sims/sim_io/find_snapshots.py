@@ -40,13 +40,13 @@ def get_snapshot_index_string(
     """Extract the index string from a snapshot directory named `<dataset_tag><index_string>`."""
     dataset_name = dataset_dir.name
     if dataset_tag not in dataset_name:
-        raise ValueError(f"Dataset tag `{dataset_tag}` was not found in `{dataset_name}`.")
+        raise ValueError(f"dataset tag `{dataset_tag}` not found in dataset name `{dataset_name}`.")
     name_parts = dataset_name.split(dataset_tag)
     if len(name_parts) < 2:
-        raise ValueError(f"Unexpected dataset name format: {dataset_name}")
+        raise ValueError(f"unexpected format for dataset name: {dataset_name}.")
     digits_string = name_parts[1].split(".")[0]
     if not digits_string.isdigit():
-        raise ValueError(f"Expected digits after `{dataset_tag}` in {dataset_name}")
+        raise ValueError(f"expected digits after `{dataset_tag}` in dataset name {dataset_name}.")
     return digits_string
 
 
@@ -90,7 +90,7 @@ def resolve_snapshot_dirs(
         dataset_tag=dataset_tag,
     )
     if not dataset_dirs:
-        raise ValueError(f"No dataset directories found using tag `{dataset_tag}` under: {input_dir}")
+        raise ValueError(f"no snapshot directories found using tag `{dataset_tag}`; searched in {input_dir}.")
     if max_elems is not None:
         dataset_dirs = ww_lists.sample_list(
             elems=dataset_dirs,
@@ -113,11 +113,7 @@ def get_max_index_width(
             dataset_dir=dataset_dir,
             dataset_tag=dataset_tag,
         )
-        index_widths.append(
-            len(
-                dataset_index_string,
-            ),
-        )
+        index_widths.append(len(dataset_index_string))
     return max(index_widths)
 
 

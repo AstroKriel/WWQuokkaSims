@@ -160,7 +160,7 @@ class QuokkaSnapshot(
             self._open_dataset_if_needed()
         sim_time = self._sim_time
         if (sim_time is None) or not numpy.isfinite(sim_time):
-            msg = f"Invalid simulation time in dataset: {self.dataset_dir} (sim_time = {sim_time!r})"
+            msg = f"invalid simulation time in {self.dataset_dir}: {sim_time!r}."
             manage_log.log_error(text=msg)
             raise RuntimeError(msg)
         return float(sim_time)
@@ -185,11 +185,7 @@ class QuokkaSnapshot(
         """Return all (field-group, field-name) yt keys available in the dataset."""
         self._open_dataset_if_needed()
         assert self.dataset is not None
-        field_keys = sorted(
-            set(
-                self.dataset.field_list,
-            ),
-        )
+        field_keys = sorted(set(self.dataset.field_list))
         self._close_dataset_if_needed()
         return field_keys
 
@@ -213,9 +209,7 @@ class QuokkaSnapshot(
         field_key: FieldKey,
     ) -> bool:
         """Return `True` iff `field_key` exists in the dataset."""
-        available_keys = set(
-            self._get_available_field_keys(),
-        )
+        available_keys = set(self._get_available_field_keys())
         return field_key in available_keys
 
     ##
@@ -229,7 +223,7 @@ class QuokkaSnapshot(
         """Resolve the yt key associated with a named scalar field."""
         if field_name not in YT_SFIELD_KEYS:
             valid_string = ww_lists.as_quoted_string(list(YT_SFIELD_KEYS.keys()))
-            msg = f"Unknown scalar field `{field_name}`. Valid options: {valid_string}"
+            msg = f"unknown scalar field `{field_name}`; valid options: {valid_string}."
             manage_log.log_error(text=msg)
             raise KeyError(msg)
         return YT_SFIELD_KEYS[field_name]["key"]
@@ -241,7 +235,7 @@ class QuokkaSnapshot(
         """Resolve and validate the yt key associated with a scalar field."""
         field_key = self._resolve_sfield_key(field_name)
         if not self.is_field_key_available(field_key=field_key):
-            msg = f"Scalar field `{field_name}` ({field_key[0]}:{field_key[1]}) is not available in: {self.dataset_dir}."
+            msg = f"scalar field `{field_name}` ({field_key[0]}:{field_key[1]}) not found; searched in {self.dataset_dir}."
             manage_log.log_error(text=msg)
             raise KeyError(msg)
         return field_key
@@ -253,7 +247,7 @@ class QuokkaSnapshot(
         """Return the component yt keys associated with a named vector field."""
         if field_name not in YT_VFIELD_KEYS:
             valid_string = ww_lists.as_quoted_string(list(YT_VFIELD_KEYS.keys()))
-            msg = f"Unknown vector field `{field_name}`. Valid options: {valid_string}"
+            msg = f"unknown vector field `{field_name}`; valid options: {valid_string}."
             manage_log.log_error(text=msg)
             raise KeyError(msg)
         return YT_VFIELD_KEYS[field_name]["keys"]
@@ -264,9 +258,7 @@ class QuokkaSnapshot(
     ) -> list[FieldKey]:
         """Return missing component yt keys for `field_name`."""
         vfield_key_lookup = self._resolve_vfield_key_lookup(field_name)
-        available_keys = set(
-            self._get_available_field_keys(),
-        )
+        available_keys = set(self._get_available_field_keys())
         return [comp_key for comp_key in vfield_key_lookup.values() if comp_key not in available_keys]
 
     def _get_vfield_key_lookup(
@@ -279,10 +271,7 @@ class QuokkaSnapshot(
             missing_string = ww_lists.as_quoted_string(
                 [f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys]
             )
-            msg = (
-                f"Vector field `{field_name}` is incomplete in {self.dataset_dir}. "
-                f"Missing components: {missing_string}"
-            )
+            msg = f"vector field `{field_name}` is incomplete in {self.dataset_dir}; missing components: {missing_string}."
             manage_log.log_error(text=msg)
             raise KeyError(msg)
         return self._resolve_vfield_key_lookup(field_name)
@@ -292,11 +281,7 @@ class QuokkaSnapshot(
         field_name: str,
     ) -> bool:
         """Return `True` iff all components associated with a named vector field exist."""
-        return len(
-            self._get_missing_vfield_keys(
-                field_name,
-            ),
-        ) == 0
+        return len(self._get_missing_vfield_keys(field_name)) == 0
 
     def _load_3d_sarray(
         self,
@@ -308,11 +293,11 @@ class QuokkaSnapshot(
         covering_grid = self._get_covering_grid()
         if field_key not in self.dataset.field_list:
             self._close_dataset_if_needed()
-            raise KeyError(f"Field {field_key} not found in {self.dataset_dir}")
+            raise KeyError(f"field {field_key} not found; searched in {self.dataset_dir}.")
         sarray_3d = numpy.asarray(covering_grid[field_key], dtype=numpy.float64)
         if sarray_3d.ndim != 3:
             self._close_dataset_if_needed()
-            raise ValueError(f"Expected a 3D field for {field_key}; received: {sarray_3d.shape}")
+            raise ValueError(f"expected a 3D array for {field_key}; got shape {sarray_3d.shape}.")
         self._close_dataset_if_needed()
         return numpy.ascontiguousarray(sarray_3d)
 
@@ -372,10 +357,7 @@ class QuokkaSnapshot(
         if set(vfield_key_lookup) != set(cartesian_axes.DEFAULT_3D_AXES_ORDER):
             received_axes = [axis.value for axis in sorted(vfield_key_lookup.keys(), key=lambda a: a.value)]
             expected_axes = [axis.value for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER]
-            msg = (
-                "`vfield_key_lookup` must contain all 3 components "
-                f"{expected_axes}; only received: {received_axes}"
-            )
+            msg = f"`vfield_key_lookup` must contain all 3 components {expected_axes}; got {received_axes}."
             manage_log.log_error(text=msg)
             raise KeyError(msg)
         validate_types.ensure_nonempty_string(
@@ -390,11 +372,11 @@ class QuokkaSnapshot(
             comp_key = vfield_key_lookup[comp_axis]
             if comp_key not in self.dataset.field_list:
                 self._close_dataset_if_needed()
-                raise KeyError(f"Field {comp_key} was not found in {self.dataset_dir}")
+                raise KeyError(f"field {comp_key} not found; searched in {self.dataset_dir}.")
             comp_sarray = numpy.asarray(covering_grid[comp_key], dtype=numpy.float64)
             if comp_sarray.ndim != 3:
                 self._close_dataset_if_needed()
-                raise ValueError(f"Expected a 3D field for {comp_key}; received: {comp_sarray.shape}")
+                raise ValueError(f"expected a 3D array for {comp_key}; got shape {comp_sarray.shape}.")
             grouped_sarrays[comp_axis] = comp_sarray
         self._close_dataset_if_needed()
         sim_time = self.sim_time
