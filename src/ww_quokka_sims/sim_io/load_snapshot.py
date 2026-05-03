@@ -79,7 +79,7 @@ class QuokkaSnapshot(
         self._sim_time = None
         self._covering_grid = None
         self._udomain_3d = None
-        ## we will cache the following fields: rho_sfield_3d, mom_vfield_3d, v_vfield_3d, and b_vfield_3d
+        ## the following fields are cached: rho_sfield_3d, mom_vfield_3d, v_vfield_3d, and b_vfield_3d
         self._field_cache = LRUCache(max_size=4)
 
     def __enter__(
@@ -109,9 +109,9 @@ class QuokkaSnapshot(
             if not self.verbose:
                 ## reduce yt verbosity: only print warnings, errors and critical messages
                 yt_logger.setLevel("WARNING")
-            ds = yt_load(str(self.dataset_dir))
-            self._sim_time = float(ds.current_time)
-            self.dataset = ds
+            dataset = yt_load(str(self.dataset_dir))
+            self._sim_time = float(dataset.current_time)
+            self.dataset = dataset
 
     def _close_dataset_if_needed(
         self,
@@ -141,6 +141,7 @@ class QuokkaSnapshot(
     def close(
         self,
     ) -> None:
+        """Close the dataset handle and exit any active context."""
         self._in_context = False
         self._close_dataset()
 
@@ -165,7 +166,7 @@ class QuokkaSnapshot(
     def _get_covering_grid(
         self,
     ) -> Any:
-        """Return the coarsest (level 0) covering grid spanning the domain."""
+        """Return the coarsest (level 0) covering grid spanning the whole domain."""
         self._open_dataset_if_needed()
         assert self.dataset is not None
         if self._covering_grid is None:
@@ -222,7 +223,7 @@ class QuokkaSnapshot(
         self,
         field_name: str,
     ) -> FieldKey:
-        """Resolve the yt key for a named scalar field."""
+        """Resolve the yt key associated with a named scalar field."""
         if field_name not in YT_SFIELD_KEYS:
             valid_string = ", ".join(
                 YT_SFIELD_KEYS.keys(),
@@ -236,7 +237,7 @@ class QuokkaSnapshot(
         self,
         field_name: str,
     ) -> FieldKey:
-        """Resolve and validate the yt key for a scalar field."""
+        """Resolve and validate the yt key associated with a scalar field."""
         field_key = self._resolve_sfield_key(field_name)
         if not self.is_field_key_available(field_key):
             msg = f"Scalar field `{field_name}` ({field_key[0]}:{field_key[1]}) is not available in: {self.dataset_dir}."
@@ -248,7 +249,7 @@ class QuokkaSnapshot(
         self,
         field_name: str,
     ) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
-        """Return the component yt keys for a named vector field."""
+        """Return the component yt keys associated with a named vector field."""
         if field_name not in YT_VFIELD_KEYS:
             valid_string = ", ".join(
                 YT_VFIELD_KEYS.keys(),
@@ -262,7 +263,7 @@ class QuokkaSnapshot(
         self,
         field_name: str,
     ) -> list[FieldKey]:
-        """Return the list of missing component keys for a named vector field."""
+        """Return the list of missing component keys associated with a named vector field."""
         vfield_key_lookup = self._resolve_vfield_key_lookup(field_name)
         available_keys = set(
             self._get_available_field_keys(),
@@ -273,7 +274,7 @@ class QuokkaSnapshot(
         self,
         field_name: str,
     ) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
-        """Resolve and validate component keys for a named vector field."""
+        """Resolve and validate component keys associated with a named vector field."""
         missing_keys = self._get_missing_vfield_keys(field_name)
         if missing_keys:
             missing_string = ", ".join(f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys)
@@ -289,7 +290,7 @@ class QuokkaSnapshot(
         self,
         field_name: str,
     ) -> bool:
-        """Return `True` iff all components for the named vector field exist."""
+        """Return `True` iff all components associated with a named vector field exist."""
         return len(
             self._get_missing_vfield_keys(
                 field_name,

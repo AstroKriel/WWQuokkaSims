@@ -19,6 +19,7 @@ from jormi.ww_validation import validate_types
 def looks_like_boxlib_dir(
     dataset_dir: Path,
 ) -> bool:
+    """Return `True` iff `dataset_dir` contains a boxlib `Header` file and `Level_0` subdirectory."""
     validate_types.ensure_type(
         param=dataset_dir,
         valid_types=Path,
@@ -34,6 +35,7 @@ def get_snapshot_index_string(
     dataset_dir: Path,
     dataset_tag: str,
 ) -> str:
+    """Extract the index string from a snapshot directory named `<dataset_tag><index_string>`."""
     dataset_name = dataset_dir.name
     if dataset_tag not in dataset_name:
         raise ValueError(f"Dataset tag `{dataset_tag}` was not found in `{dataset_name}`.")
@@ -50,6 +52,7 @@ def get_latest_snapshot_dirs(
     sim_dir: Path,
     dataset_tag: str,
 ) -> list[Path]:
+    """Return all snapshot directories under `sim_dir` matching `dataset_tag`; sorted by ascending index."""
     dataset_dirs = [
         sub_dir for sub_dir in sim_dir.iterdir()
         if sub_dir.is_dir() and (dataset_tag in sub_dir.name) and ("old" not in sub_dir.name)
@@ -70,6 +73,12 @@ def resolve_snapshot_dirs(
     dataset_tag: str,
     max_elems: int | None = None,
 ) -> list[Path]:
+    """
+    Resolve `input_dir` to an ordered list of snapshot directories.
+
+    Returns `[input_dir]` directly if it is itself a snapshot directory. Otherwise scans for all
+    `dataset_tag` matched directories under `input_dir` and optionally subsamples them to `max_elems`.
+    """
     if (dataset_tag in input_dir.name) or looks_like_boxlib_dir(input_dir):
         return [input_dir]
     dataset_dirs = get_latest_snapshot_dirs(
@@ -90,7 +99,9 @@ def get_max_index_width(
     dataset_dirs: list[Path],
     dataset_tag: str,
 ) -> int:
-    if not dataset_dirs: return 1
+    """Return the character width of the widest index string across `dataset_dirs`."""
+    if not dataset_dirs:
+        return 1
     index_widths: list[int] = []
     for dataset_dir in dataset_dirs:
         dataset_index_string = get_snapshot_index_string(
