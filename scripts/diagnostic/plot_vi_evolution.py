@@ -113,8 +113,8 @@ class LoadDataSeries:
         with load_dataset.QuokkaDataset(
                 dataset_dir=field_args.dataset_dir,
                 verbose=False,
-        ) as ds:
-            sfield_3d = field_args.field_loader(ds)
+        ) as dataset:
+            sfield_3d = field_args.field_loader(dataset)
         if not isinstance(sfield_3d, field_models.ScalarField_3D):
             raise TypeError(
                 f"Expected ScalarField_3D from `{field_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",

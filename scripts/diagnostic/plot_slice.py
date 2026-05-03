@@ -267,9 +267,9 @@ class FieldPlotter:
         with load_dataset.QuokkaDataset(
                 dataset_dir=dataset_dir,
                 verbose=False,
-        ) as ds:
-            uniform_domain = ds.load_3d_uniform_domain()
-            field = self.field_args.field_loader(ds)  # ScalarField_3D or VectorField_3D
+        ) as dataset:
+            uniform_domain = dataset.load_3d_uniform_domain()
+            field = self.field_args.field_loader(dataset)  # ScalarField_3D or VectorField_3D
         return Dataset(
             uniform_domain=uniform_domain,
             field=field,

@@ -47,8 +47,8 @@ class DatasetView:
         with load_dataset.QuokkaDataset(
                 dataset_dir=self.dataset_dir,
                 verbose=False,
-        ) as ds:
-            field_keys = ds.list_available_field_keys()
+        ) as dataset:
+            field_keys = dataset.list_available_field_keys()
         return set(field_keys)
 
     def load_sfield(
@@ -58,8 +58,8 @@ class DatasetView:
         with load_dataset.QuokkaDataset(
                 dataset_dir=self.dataset_dir,
                 verbose=False,
-        ) as ds:
-            sarray_3d = ds._load_3d_sarray(field_key=field_key)
+        ) as dataset:
+            sarray_3d = dataset._load_3d_sarray(field_key=field_key)
         return numpy.ascontiguousarray(sarray_3d, dtype=numpy.float64)
 
 

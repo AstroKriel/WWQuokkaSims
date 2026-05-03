@@ -39,8 +39,8 @@ class ScriptInterface:
         with load_dataset.QuokkaDataset(
                 dataset_dir=self.dataset_dir,
                 verbose=True,
-        ) as ds:
-            ds.list_available_field_keys()
+        ) as dataset:
+            dataset.list_available_field_keys()
 
 
 ##

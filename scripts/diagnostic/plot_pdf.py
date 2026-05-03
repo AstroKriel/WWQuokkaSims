@@ -194,8 +194,8 @@ class ComputePDFs:
             with load_dataset.QuokkaDataset(
                     dataset_dir=dataset_dir,
                     verbose=False,
-            ) as ds:
-                field = self.field_loader(ds)
+            ) as dataset:
+                field = self.field_loader(dataset)
             if isinstance(field, field_models.ScalarField_3D):
                 pdf = self._compute_sfield_pdf(field=field)
             elif isinstance(field, field_models.VectorField_3D):

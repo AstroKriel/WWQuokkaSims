@@ -87,8 +87,8 @@ class ComputeSpectra:
             with load_dataset.QuokkaDataset(
                     dataset_dir=dataset_dir,
                     verbose=False,
-            ) as ds:
-                field = self.field_loader(ds)
+            ) as dataset:
+                field = self.field_loader(dataset)
             if not isinstance(field, field_models.ScalarField_3D):
                 raise TypeError(
                     f"`{self.field_name}` is not a scalar field; "
