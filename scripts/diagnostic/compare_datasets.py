@@ -99,6 +99,7 @@ class CompareFields:
     def _get_diff_mask(
         self,
     ) -> numpy.ndarray:
+        """Returns a boolean mask of cells that differ, including signed-zero mismatches."""
         ## Note: NaNs are naturally different (NaN == NaN -> False)
         diff_value_mask = numpy.not_equal(self.sarray_in, self.sarray_ref)
         both_zero_mask = (self.sarray_in == 0.0) & (self.sarray_ref == 0.0)
@@ -197,6 +198,7 @@ class CompareDatasets:
     def get_shared_field_keys(
         self,
     ) -> list[load_snapshot.FieldKey]:
+        """Returns keys present in both datasets; exits with code 4 if no keys overlap."""
         field_keys_in = self.dataset_view_in.get_field_keys()
         field_keys_ref = self.dataset_view_ref.get_field_keys()
         keys_missing_from_in = sorted(field_keys_ref - field_keys_in)

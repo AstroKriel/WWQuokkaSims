@@ -83,6 +83,7 @@ class RenderComparisonPlot:
         data_series_1: DataSeries,
         data_series_2: DataSeries,
     ) -> None:
+        """Plots (series_2 / series_1) - 1; series_1 is the reference denominator."""
         ## sort both series by time and check that neither is empty
         x_array_1, y_array_1 = data_series_1.get_sorted_arrays()
         x_array_2, y_array_2 = data_series_2.get_sorted_arrays()

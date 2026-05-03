@@ -57,6 +57,8 @@ class FieldArgs:
 
 
 class WorkerArgs(NamedTuple):
+    """Flat, pickleable argument bundle passed to the parallel slice-render worker."""
+
     dataset_dir: str
     dataset_tag: str
     field_name: str
@@ -137,6 +139,7 @@ def get_slice_bounds(
     uniform_domain: domain_models.UniformDomain_3D,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
 ) -> AxisBounds:
+    """Returns physical bounds of the two plane axes (i.e. those not being sliced)."""
     (x0_min, x0_max), (x1_min, x1_max), (x2_min, x2_max) = uniform_domain.domain_bounds
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X2:
         return ((x0_min, x0_max), (x1_min, x1_max))
@@ -458,6 +461,7 @@ def render_fields_in_serial(
 def _plot_dataset_worker(
     *user_args,
 ) -> None:
+    """Positional-only signature required so WorkerArgs elements survive multiprocessing pickling."""
     worker_args = WorkerArgs(*user_args)
     field_args = FieldArgs(
         field_name=worker_args.field_name,
