@@ -23,7 +23,7 @@ from ._read_fields import HelmholtzKineticEnergy
 
 class _FieldsProtocol(Protocol):
     """
-    Protocol declaring the interface that `_Derive*` classes require.
+    Protocol declaring the interface that `_Derive*` classes interact via.
 
     Add a stub here for any method called via `self.*` inside a `_Derive*` method;
     this includes both cross-class calls and same-class calls, since `self` is typed
