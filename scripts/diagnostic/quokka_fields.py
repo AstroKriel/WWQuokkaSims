@@ -39,7 +39,7 @@ def _field_entry(
 QUOKKA_FIELD_LOOKUP = {
     "rho":
     _field_entry(
-        loader=load_snapshot.QuokkaSnapshot.load_density_sfield,
+        loader=load_snapshot.QuokkaSnapshot.load_3d_density_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
     "vel":
@@ -54,12 +54,12 @@ QUOKKA_FIELD_LOOKUP = {
     ),
     "mag":
     _field_entry(
-        loader=load_snapshot.QuokkaSnapshot.load_magnetic_vfield,
+        loader=load_snapshot.QuokkaSnapshot.load_3d_magnetic_vfield,
         cmap=SEQUENTIAL_CMAP,
     ),
     "E_tot":
     _field_entry(
-        loader=load_snapshot.QuokkaSnapshot.load_total_energy_sfield,
+        loader=load_snapshot.QuokkaSnapshot.load_3d_total_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
     "E_int":

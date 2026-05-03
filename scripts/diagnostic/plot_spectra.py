@@ -10,6 +10,7 @@ import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import final
 
 ## third-party
 import numpy
@@ -66,6 +67,7 @@ class SpectraData:
 ##
 
 
+@final
 class ComputeSpectra:
 
     def __init__(
@@ -120,6 +122,7 @@ class ComputeSpectra:
 ##
 
 
+@final
 class RenderSpectra:
 
     def __init__(
@@ -282,6 +285,7 @@ class RenderSpectra:
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

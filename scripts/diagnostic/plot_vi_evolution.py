@@ -10,6 +10,7 @@ import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import final
 
 ## third-party
 import numpy
@@ -87,6 +88,7 @@ class DataSeries:
 ##
 
 
+@final
 class LoadDataSeries:
 
     def __init__(
@@ -161,6 +163,7 @@ class LoadDataSeries:
 ##
 
 
+@final
 class RenderDataSeries:
 
     def __init__(
@@ -278,6 +281,7 @@ class RenderDataSeries:
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

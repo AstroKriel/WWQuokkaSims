@@ -7,6 +7,7 @@
 import argparse
 
 from pathlib import Path
+from typing import final
 
 from ww_quokka_sims.sim_io import load_snapshot
 import quokka_fields
@@ -16,6 +17,7 @@ import quokka_fields
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

@@ -10,7 +10,10 @@ import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple
+from typing import (
+    NamedTuple,
+    final,
+)
 
 ## third-party
 import numpy
@@ -78,7 +81,7 @@ class Dataset:
         sim_time = self.field.sim_time
         if (sim_time is None) or (not numpy.isfinite(sim_time)):
             msg = f"Invalid sim_time for field: {sim_time!r}"
-            manage_log.log_error(msg)
+            manage_log.log_error(text=msg)
             raise RuntimeError(msg)
         return float(sim_time)
 
@@ -268,7 +271,7 @@ class FieldPlotter:
                 dataset_dir=dataset_dir,
                 verbose=False,
         ) as dataset:
-            uniform_domain = dataset.load_uniform_domain()
+            uniform_domain = dataset.load_3d_uniform_domain()
             field = self.field_args.field_loader(dataset)  # ScalarField_3D or VectorField_3D
         return Dataset(
             uniform_domain=uniform_domain,
@@ -292,22 +295,20 @@ class FieldPlotter:
                     label=field_models.get_label(field),
                 ),
             ]
-        if isinstance(field, field_models.VectorField_3D):
-            if not self.comps_to_plot:
-                raise ValueError(
-                    f"Vector field `{field_name}` requires at least one component to plot; none provided.",
-                )
-            varray_3d = field_models.extract_3d_varray(
-                vfield_3d=field,
-                param_name=f"<{field_name}_vfield_3d>",
+        if not self.comps_to_plot:
+            raise ValueError(
+                f"Vector field `{field_name}` requires at least one component to plot; none provided.",
             )
-            return [
-                FieldComp(
-                    data_3d=varray_3d[_axis_to_index(comp_axis)],
-                    label=field_models.get_vcomp_label(field, comp_axis),
-                ) for comp_axis in self.comps_to_plot
-            ]
-        raise ValueError(f"{field_name} is an unrecognised field type.")
+        varray_3d = field_models.extract_3d_varray(
+            vfield_3d=field,
+            param_name=f"<{field_name}_vfield_3d>",
+        )
+        return [
+            FieldComp(
+                data_3d=varray_3d[_axis_to_index(comp_axis)],
+                label=field_models.get_vcomp_label(field, comp_axis=comp_axis),
+            ) for comp_axis in self.comps_to_plot
+        ]
 
     def _plot_field_comps(
         self,
@@ -521,6 +522,7 @@ def render_fields_in_parallel(
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

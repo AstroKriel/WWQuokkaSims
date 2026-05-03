@@ -10,6 +10,7 @@ import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import final
 
 ## third-party
 import numpy
@@ -73,6 +74,7 @@ class CompProfile:
 ##
 
 
+@final
 class ComputeCompProfiles:
 
     def __init__(
@@ -171,7 +173,7 @@ class ComputeCompProfiles:
         axis_labels = list(self.axes_to_slice)
         comp_profiles: list[CompProfile] = []
         for comp_name in comp_names:
-            comp_label = field_models.get_vcomp_label(field, comp_name)
+            comp_label = field_models.get_vcomp_label(field, comp_axis=comp_name)
             x_array_by_axis: list[numpy.ndarray] = []
             y_array_by_axis: list[numpy.ndarray] = []
             for axis_to_slice in axis_labels:
@@ -207,7 +209,7 @@ class ComputeCompProfiles:
                     dataset_dir=dataset_dir,
                     verbose=False,
             ) as dataset:
-                udomain_3d = dataset.load_uniform_domain()
+                udomain_3d = dataset.load_3d_uniform_domain()
                 field = self.field_loader(dataset)  # ScalarField or VectorField
             if isinstance(field, field_models.ScalarField_3D):
                 comp_profiles = self._compute_scalar_profiles(
@@ -236,6 +238,7 @@ class ComputeCompProfiles:
 ##
 
 
+@final
 class RenderCompProfiles:
 
     def __init__(
@@ -438,6 +441,7 @@ class RenderCompProfiles:
 ##
 
 
+@final
 class ScriptInterface:
 
     def __init__(

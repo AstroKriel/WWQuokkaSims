@@ -41,29 +41,29 @@ class _FieldsProtocol(Protocol):
     ) -> float:
         ...
 
-    def load_uniform_domain(
+    def load_3d_uniform_domain(
         self,
         *,
         force_periodicity: bool = True,
     ) -> domain_models.UniformDomain_3D:
         ...
 
-    def load_density_sfield(
+    def load_3d_density_sfield(
         self,
     ) -> field_models.ScalarField_3D:
         ...
 
-    def load_momentum_vfield(
+    def load_3d_momentum_vfield(
         self,
     ) -> field_models.VectorField_3D:
         ...
 
-    def load_magnetic_vfield(
+    def load_3d_magnetic_vfield(
         self,
     ) -> field_models.VectorField_3D:
         ...
 
-    def load_total_energy_sfield(
+    def load_3d_total_energy_sfield(
         self,
     ) -> field_models.ScalarField_3D:
         ...
