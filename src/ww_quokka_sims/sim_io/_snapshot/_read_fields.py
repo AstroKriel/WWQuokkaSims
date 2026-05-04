@@ -11,9 +11,7 @@ from typing import Any, TypeAlias
 
 ## personal
 from jormi.ww_fields import cartesian_axes
-from jormi.ww_fields.fields_3d import (
-    field_models,
-)
+from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_validation import validate_types
 
 ##
