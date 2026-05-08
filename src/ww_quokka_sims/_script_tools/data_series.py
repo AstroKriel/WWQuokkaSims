@@ -16,7 +16,10 @@ from jormi.ww_fields.fields_3d import (
     field_models,
 )
 from jormi.ww_fns import parallel_dispatch
-from jormi.ww_validation import validate_arrays
+from jormi.ww_validation import (
+    validate_arrays,
+    validate_types,
+)
 
 from ww_quokka_sims.sim_io import load_snapshot
 
@@ -81,17 +84,17 @@ class LoadDataSeries:
         field_loader: Callable,
         use_parallel: bool = True,
     ):
-        self.snapshot_dirs = list(
-            sorted(
-                snapshot_dirs,
-            ),
+        validate_types.ensure_nonempty_string(
+            param=field_name,
+            param_name="field_name",
         )
+        self.snapshot_dirs = sorted(snapshot_dirs)
         self.field_name = field_name
         self.field_loader = field_loader
         self.use_parallel = bool(use_parallel)
 
     @staticmethod
-    def _load_snapshot(
+    def load_snapshot(
         field_args: FieldArgs,
     ) -> DataPoint:
         with load_snapshot.QuokkaSnapshot(
@@ -127,7 +130,7 @@ class LoadDataSeries:
         ## load each snapshot in parallel if the series is large enough to justify it, else serial
         if self.use_parallel and (len(grouped_field_args) > 5):
             data_points: list[DataPoint] = parallel_dispatch.run_in_parallel(
-                worker_fn=LoadDataSeries._load_snapshot,
+                worker_fn=LoadDataSeries.load_snapshot,
                 grouped_args=grouped_field_args,
                 timeout_seconds=120,
                 show_progress=True,
@@ -135,7 +138,7 @@ class LoadDataSeries:
             )
         else:
             data_points = [
-                LoadDataSeries._load_snapshot(field_args=field_args) for field_args in grouped_field_args
+                LoadDataSeries.load_snapshot(field_args=field_args) for field_args in grouped_field_args
             ]
         return DataSeries(points=data_points)
 
