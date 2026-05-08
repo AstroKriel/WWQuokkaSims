@@ -17,7 +17,7 @@ from jormi.ww_fields.fields_3d import (
 from jormi.ww_validation import validate_types
 
 ## local
-from ._fields_protocol import _FieldsProtocol
+from ._fields_protocol import FieldsProtocol
 
 ##
 ## === DERIVE CLASS
@@ -32,7 +32,7 @@ class _DeriveMagneticFields:
     ##
 
     def compute_alfven_speed_vfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> field_models.VectorField_3D:
         """Compute Alfven speed: `vec(v_A) = vec(b) / sqrt(rho)`."""
         b_varray_3d = field_models.extract_3d_varray(
@@ -71,7 +71,7 @@ class _DeriveMagneticFields:
         )
 
     def compute_alfven_speed_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute Alfven speed magnitude: `|vec(v_A)|`."""
         v_A_vfield_3d = self.compute_alfven_speed_vfield()
@@ -81,7 +81,7 @@ class _DeriveMagneticFields:
         )
 
     def compute_div_b_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
         """Compute magnetic divergence: `div[vec(b)]`."""
@@ -93,7 +93,7 @@ class _DeriveMagneticFields:
         )
 
     def compute_current_density_vfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.VectorField_3D:
         """Compute current density: `curl[vec(b)]`."""
@@ -105,7 +105,7 @@ class _DeriveMagneticFields:
         )
 
     def compute_current_density_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
         """Compute current magnitude: `|curl[vec(b)]|`."""
@@ -116,7 +116,7 @@ class _DeriveMagneticFields:
         )
 
     def compute_current_helicity_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
         """Compute current helicity density: `curl[vec(b)] cdot vec(b)`."""
@@ -129,7 +129,7 @@ class _DeriveMagneticFields:
         )
 
     def compute_plasma_beta_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         gamma: float = 5.0 / 3.0,
     ) -> field_models.ScalarField_3D:
         """Compute plasma beta: `beta = 2 p / |vec(b)|^2`."""

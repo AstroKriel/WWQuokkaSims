@@ -15,8 +15,8 @@ from jormi.ww_fields.fields_3d import (
 from jormi.ww_validation import validate_types
 
 ## local
+from ._fields_protocol import FieldsProtocol
 from ._read_fields import HelmholtzKineticEnergy
-from ._fields_protocol import _FieldsProtocol
 
 ##
 ## === DERIVE CLASS
@@ -31,7 +31,7 @@ class _DeriveEnergyFields:
     ##
 
     def compute_kinetic_energy_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute kinetic energy density: `E_kin = 0.5 * rho * |v|^2`."""
         rho_sfield_3d = self.load_3d_density_sfield()
@@ -74,7 +74,7 @@ class _DeriveEnergyFields:
         )
 
     def compute_magnetic_energy_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         energy_prefactor: float = 0.5,
         field_label: str = r"E_\mathrm{mag}",
     ) -> field_models.ScalarField_3D:
@@ -92,7 +92,7 @@ class _DeriveEnergyFields:
         )
 
     def compute_internal_energy_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute internal energy: `E_int = E_tot - E_kin - E_mag`; `E_mag = 0` if the snapshot did not store `vec(b)`."""
         E_tot_sarray = field_models.extract_3d_sarray(
@@ -129,7 +129,7 @@ class _DeriveEnergyFields:
         )
 
     def compute_pressure_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         gamma: float = 5.0 / 3.0,
     ) -> field_models.ScalarField_3D:
         """Compute thermal pressure: `p = (gamma - 1) * E_int`."""
@@ -153,7 +153,7 @@ class _DeriveEnergyFields:
         )
 
     def compute_helmholtz_kinetic_energy(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> HelmholtzKineticEnergy:
         """Compute Helmholtz-decomposed kinetic energies; splits `vec(v)` into `vec(v)_div + vec(v)_sol + vec(v)_bulk`."""
         udomain_3d = self.load_3d_uniform_domain()
@@ -242,21 +242,21 @@ class _DeriveEnergyFields:
         )
 
     def compute_div_kinetic_energy_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute irrotational kinetic energy density: `E_kin,div = 0.5 rho |v_div|^2`."""
         helmholtz_E_kin = self.compute_helmholtz_kinetic_energy()
         return helmholtz_E_kin.E_kin_div_sfield_3d
 
     def compute_sol_kinetic_energy_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute solenoidal kinetic energy density: `E_kin,sol = 0.5 rho |v_sol|^2`."""
         helmholtz_E_kin = self.compute_helmholtz_kinetic_energy()
         return helmholtz_E_kin.E_kin_sol_sfield_3d
 
     def compute_bulk_kinetic_energy_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute bulk kinetic energy density: `E_kin,bulk = 0.5 rho |v_bulk|^2`."""
         helmholtz_E_kin = self.compute_helmholtz_kinetic_energy()

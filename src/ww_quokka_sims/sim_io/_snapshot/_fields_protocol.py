@@ -21,11 +21,11 @@ from ._read_fields import HelmholtzKineticEnergy
 ##
 
 
-class _FieldsProtocol(Protocol):
+class FieldsProtocol(Protocol):
     """
     Protocol declaring the interface that `_Derive*` classes interact via.
 
-    Each `_Derive*` method annotates `self` as `_FieldsProtocol`; basedpyright resolves
+    Each `_Derive*` method annotates `self` as `FieldsProtocol`; basedpyright resolves
     all `self.*` calls using the stubs (empty function definitions) provided here. All
     functions called via `self.*`, including calls within the same `_Derive*` class,
     must have a stub here.

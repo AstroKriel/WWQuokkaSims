@@ -15,7 +15,7 @@ from jormi.ww_fields.fields_3d import (
 )
 
 ## local
-from ._fields_protocol import _FieldsProtocol
+from ._fields_protocol import FieldsProtocol
 
 ##
 ## === DERIVE CLASS
@@ -30,7 +30,7 @@ class _DeriveVelocityFields:
     ##
 
     def compute_velocity_vfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> field_models.VectorField_3D:
         """Compute velocity field: `vec(v) = vec(m) / rho`."""
         rho_sfield_3d = self.load_3d_density_sfield()
@@ -71,7 +71,7 @@ class _DeriveVelocityFields:
         )
 
     def compute_velocity_magnitude_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
         """Compute velocity magnitude: `|vec(v)|`."""
         v_vfield_3d = self.compute_velocity_vfield()
@@ -81,7 +81,7 @@ class _DeriveVelocityFields:
         )
 
     def compute_div_v_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
         """Compute velocity divergence `nabla cdot vec(v)`; `grad_order` controls stencil accuracy."""
@@ -93,7 +93,7 @@ class _DeriveVelocityFields:
         )
 
     def compute_vorticity_vfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.VectorField_3D:
         """Compute vorticity vector `curl(vec(v))`; `grad_order` controls stencil accuracy."""
@@ -105,7 +105,7 @@ class _DeriveVelocityFields:
         )
 
     def compute_vorticity_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
         """Compute vorticity magnitude: `|curl(vec(v))|`."""
@@ -116,7 +116,7 @@ class _DeriveVelocityFields:
         )
 
     def compute_kinetic_helicity_sfield(
-        self: _FieldsProtocol,
+        self: FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
         """Compute kinetic helicity density: `curl(vec(v)) dot vec(v)`."""
