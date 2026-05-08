@@ -35,7 +35,10 @@ from ww_quokka_sims.sim_io import (
     find_snapshots,
     load_snapshot,
 )
-from ww_quokka_sims._script_tools import field_registry, cli
+from ww_quokka_sims._script_tools import (
+    cli,
+    field_registry,
+)
 
 ##
 ## === DATA CLASSES
@@ -322,7 +325,10 @@ class ScriptInterface:
         if not snapshot_dirs:
             return
         out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
-        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
         ## compute and render power spectra for each requested field
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
@@ -331,8 +337,8 @@ class ScriptInterface:
                 snapshot_tag=self.snapshot_tag,
                 out_dir=out_dir,
                 field_name=field_name,
-                field_loader=field_meta["loader"],
-                cmap_name=field_meta["cmap"],
+                field_loader=field_meta.loader,
+                cmap_name=field_meta.cmap,
                 extract_data=self.extract_data,
             )
             renderer.run()

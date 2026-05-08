@@ -90,7 +90,9 @@ def resolve_snapshot_dirs(
         snapshot_tag=snapshot_tag,
     )
     if not snapshot_dirs:
-        raise ValueError(f"no snapshot directories found using tag `{snapshot_tag}`; searched in {input_dir}.")
+        raise ValueError(
+            f"no snapshot directories found using tag `{snapshot_tag}`; searched in {input_dir}.",
+        )
     if max_elems is not None:
         snapshot_dirs = ww_lists.sample_list(
             elems=snapshot_dirs,

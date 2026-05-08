@@ -83,7 +83,8 @@ def base_parser(
                 "--out-dir",
                 type=lambda path: Path(path).expanduser().resolve(),
                 default=None,
-                help="Output directory for figures and extracted data; defaults to the snapshot's parent directory.",
+                help=
+                "Output directory for figures and extracted data; defaults to the snapshot's parent directory.",
             )
     else:
         for dir_index in range(1, num_dirs + 1):

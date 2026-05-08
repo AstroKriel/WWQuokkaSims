@@ -42,7 +42,10 @@ from ww_quokka_sims.sim_io import (
     find_snapshots,
     load_snapshot,
 )
-from ww_quokka_sims._script_tools import field_registry, cli
+from ww_quokka_sims._script_tools import (
+    cli,
+    field_registry,
+)
 
 ##
 ## === DATA CLASSES
@@ -439,8 +442,8 @@ def render_fields_in_serial(
         field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
         field_args = FieldArgs(
             field_name=field_name,
-            field_loader=field_meta["loader"],
-            cmap_name=field_meta["cmap"],
+            field_loader=field_meta.loader,
+            cmap_name=field_meta.cmap,
         )
         field_plotter = FieldPlotter(
             snapshot_tag=snapshot_tag,
@@ -503,10 +506,10 @@ def render_fields_in_parallel(
                     snapshot_dir=str(snapshot_dir),
                     snapshot_tag=snapshot_tag,
                     field_name=field_name,
-                    field_loader=field_meta["loader"],
+                    field_loader=field_meta.loader,
                     comps_to_plot=comps_to_plot,
                     axes_to_slice=axes_to_slice,
-                    cmap_name=field_meta["cmap"],
+                    cmap_name=field_meta.cmap,
                     out_dir=str(out_dir),
                     index_width=index_width,
                     extract_data=extract_data,
@@ -601,7 +604,10 @@ class ScriptInterface:
         if not snapshot_dirs:
             return
         out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
-        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
         index_width = find_snapshots.get_max_index_width(
             snapshot_dirs=snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
