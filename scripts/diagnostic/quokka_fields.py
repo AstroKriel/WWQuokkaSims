@@ -136,10 +136,10 @@ def validate_fields(
 
 def base_parser(
     num_dirs: int = 1,
-    allow_vfields: bool = True,
-    allow_slicing: bool = True,
     allow_fields: bool = True,
-    produces_data: bool = True,
+    allow_vfields: bool = False,
+    allow_slicing: bool = False,
+    produces_data: bool = False,
 ) -> argparse.ArgumentParser:
     """
     Shared argument parser for diagnostic scripts.
@@ -151,34 +151,29 @@ def base_parser(
     Parameters
     ---
     - `num_dirs`:
-        Number of input directory arguments to add. If 1, adds a single optional `--input-dir`.
-        If >1, adds `--input-dir-1`, `--input-dir-2`, ... (all required).
-
-    - `allow_vfields`:
-        If True, adds `--comps` for selecting vector field components.
-
-    - `allow_slicing`:
-        If True, adds `--axes` for selecting slice axes. Typically paired with `allow_vfields`.
+        Number of input directory arguments to add.
+        Default: `num_dirs = 1` adds a single optional `--input-dir`.
+        `num_dirs = N > 1` adds `--input-dir-1`, `--input-dir-2`, ... `--input-dir-N` (all required).
 
     - `allow_fields`:
-        If True, adds `--fields`. Set to False for scripts that operate on all fields (e.g. compare_datasets).
+        `True` adds `--fields` argument; default: `True`.
+        Set to `False` for scripts that operate on all fields.
+
+    - `allow_vfields`:
+        `True` adds `--comps` argument for selecting vector field components; default: `False`.
+
+    - `allow_slicing`:
+        `True` adds `--axes` argument for selecting slice axes; default: `False`.
 
     - `produces_data`:
-        If True, adds `--out-dir` and `--save-data`. Default: True.
-        Set to False for scripts that write no data or figures to disk (e.g. inspection or comparison scripts).
+        `True` adds arguments `--out-dir` and `--save-data`; default: `False`.
+        Set to `False` for scripts that write no data or figures to disk.
 
     Example
     ---
-    parser = argparse.ArgumentParser(
-        parents=[quokka_fields.base_parser(
-            num_dirs=1,
-            allow_vfields=True,
-            allow_slicing=True,
-            produces_data=True,
-        )],
-        description="...",
-    )
-    args = parser.parse_args() # args.input_dir, args.tag, args.fields, args.comps, args.axes, args.save_data
+    parser = argparse.ArgumentParser(parents=[quokka_fields.base_parser(...)], description="...")
+
+    args = parser.parse_args()
     """
     field_list = ww_lists.as_string(
         elems=sorted(
@@ -204,7 +199,7 @@ def base_parser(
                 "--out-dir",
                 type=lambda path: Path(path).expanduser().resolve(),
                 default=None,
-                help="Output directory for figures and extracted data. Defaults to the snapshot parent directory.",
+                help="Output directory for figures and extracted data; defaults to the snapshot's parent directory.",
             )
     else:
         for dir_index in range(1, num_dirs + 1):
@@ -225,14 +220,14 @@ def base_parser(
     parser.add_argument(
         "--tag",
         default="plt",
-        help="Snapshot tag (e.g. `plt_` -> plt_0000000, plt_0000100). Default: `plt`.",
+        help="Snapshot prefex tag; default: `plt`.",
     )
     if allow_fields:
         parser.add_argument(
             "--fields",
             nargs="+",
             default=None,
-            help=f"Fields to plot. Options: {field_list}",
+            help=f"Fields to plot; options: {field_list}",
         )
     ## optional vector field component argument
     if allow_vfields:
@@ -240,7 +235,7 @@ def base_parser(
             "--comps",
             nargs="+",
             default=None,
-            help=f"Vector field components to show. Options: {axis_list}",
+            help=f"Vector field components to show; options: {axis_list}",
         )
     ## optional slice axis argument
     if allow_slicing:
@@ -248,7 +243,7 @@ def base_parser(
             "--axes",
             nargs="+",
             default=None,
-            help=f"Axes to slice along. Options: {axis_list}",
+            help=f"Axes to slice along; options: {axis_list}",
         )
     ## optional extract argument (skip for non-plot scripts)
     if produces_data:
@@ -256,7 +251,7 @@ def base_parser(
             "--save-data",
             action="store_true",
             default=False,
-            help="Save plotted data to disk (default: False).",
+            help="Save plotted data to disk; default: False.",
         )
     return parser
 
