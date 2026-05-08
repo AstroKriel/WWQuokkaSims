@@ -18,102 +18,102 @@ from jormi.ww_validation import validate_types
 
 def looks_like_boxlib_dir(
     *,
-    dataset_dir: Path,
+    snapshot_dir: Path,
 ) -> bool:
-    """Return `True` iff `dataset_dir` contains a boxlib `Header` file and `Level_0` subdirectory."""
+    """Return `True` iff `snapshot_dir` contains a boxlib `Header` file and `Level_0` subdirectory."""
     validate_types.ensure_type(
-        param=dataset_dir,
+        param=snapshot_dir,
         valid_types=Path,
     )
-    if not dataset_dir.exists() or not dataset_dir.is_dir():
+    if not snapshot_dir.exists() or not snapshot_dir.is_dir():
         return False
-    has_header = (dataset_dir / "Header").is_file()
-    has_level0 = (dataset_dir / "Level_0").is_dir()
+    has_header = (snapshot_dir / "Header").is_file()
+    has_level0 = (snapshot_dir / "Level_0").is_dir()
     return has_header and has_level0
 
 
 def get_snapshot_index_string(
     *,
-    dataset_dir: Path,
-    dataset_tag: str,
+    snapshot_dir: Path,
+    snapshot_tag: str,
 ) -> str:
-    """Extract the index string from a snapshot directory named `<dataset_tag><index_string>`."""
-    dataset_name = dataset_dir.name
-    if dataset_tag not in dataset_name:
-        raise ValueError(f"dataset tag `{dataset_tag}` not found in dataset name `{dataset_name}`.")
-    name_parts = dataset_name.split(dataset_tag)
+    """Extract the index string from a snapshot directory named `<snapshot_tag><index_string>`."""
+    snapshot_name = snapshot_dir.name
+    if snapshot_tag not in snapshot_name:
+        raise ValueError(f"snapshot tag `{snapshot_tag}` not found in snapshot name `{snapshot_name}`.")
+    name_parts = snapshot_name.split(snapshot_tag)
     if len(name_parts) < 2:
-        raise ValueError(f"unexpected format for dataset name: {dataset_name}.")
+        raise ValueError(f"unexpected format for snapshot name: {snapshot_name}.")
     digits_string = name_parts[1].split(".")[0]
     if not digits_string.isdigit():
-        raise ValueError(f"expected digits after `{dataset_tag}` in dataset name {dataset_name}.")
+        raise ValueError(f"expected digits after `{snapshot_tag}` in snapshot name {snapshot_name}.")
     return digits_string
 
 
 def get_latest_snapshot_dirs(
     *,
     sim_dir: Path,
-    dataset_tag: str,
+    snapshot_tag: str,
 ) -> list[Path]:
-    """Return all snapshot directories under `sim_dir` matching `dataset_tag`; sorted by ascending index."""
-    dataset_dirs = [
+    """Return all snapshot directories under `sim_dir` matching `snapshot_tag`; sorted by ascending index."""
+    snapshot_dirs = [
         sub_dir for sub_dir in sim_dir.iterdir()
-        if sub_dir.is_dir() and (dataset_tag in sub_dir.name) and ("old" not in sub_dir.name)
+        if sub_dir.is_dir() and (snapshot_tag in sub_dir.name) and ("old" not in sub_dir.name)
     ]
-    dataset_dirs.sort(
-        key=lambda dataset_dir: int(
+    snapshot_dirs.sort(
+        key=lambda snapshot_dir: int(
             get_snapshot_index_string(
-                dataset_dir=dataset_dir,
-                dataset_tag=dataset_tag,
+                snapshot_dir=snapshot_dir,
+                snapshot_tag=snapshot_tag,
             ),
         ),
     )
-    return dataset_dirs
+    return snapshot_dirs
 
 
 def resolve_snapshot_dirs(
     *,
     input_dir: Path,
-    dataset_tag: str,
+    snapshot_tag: str,
     max_elems: int | None = None,
 ) -> list[Path]:
     """
     Resolve `input_dir` to an ordered list of snapshot directories.
 
     Returns `[input_dir]` directly if it is itself a snapshot directory; otherwise scans for all
-    `dataset_tag`-matched directories under `input_dir` and subsamples to `max_elems` if provided.
+    `snapshot_tag`-matched directories under `input_dir` and subsamples to `max_elems` if provided.
     """
-    if (dataset_tag in input_dir.name) or looks_like_boxlib_dir(dataset_dir=input_dir):
+    if (snapshot_tag in input_dir.name) or looks_like_boxlib_dir(snapshot_dir=input_dir):
         return [input_dir]
-    dataset_dirs = get_latest_snapshot_dirs(
+    snapshot_dirs = get_latest_snapshot_dirs(
         sim_dir=input_dir,
-        dataset_tag=dataset_tag,
+        snapshot_tag=snapshot_tag,
     )
-    if not dataset_dirs:
-        raise ValueError(f"no snapshot directories found using tag `{dataset_tag}`; searched in {input_dir}.")
+    if not snapshot_dirs:
+        raise ValueError(f"no snapshot directories found using tag `{snapshot_tag}`; searched in {input_dir}.")
     if max_elems is not None:
-        dataset_dirs = ww_lists.sample_list(
-            elems=dataset_dirs,
+        snapshot_dirs = ww_lists.sample_list(
+            elems=snapshot_dirs,
             max_elems=max_elems,
         )
-    return dataset_dirs
+    return snapshot_dirs
 
 
 def get_max_index_width(
     *,
-    dataset_dirs: list[Path],
-    dataset_tag: str,
+    snapshot_dirs: list[Path],
+    snapshot_tag: str,
 ) -> int:
-    """Return the character width of the widest index string across `dataset_dirs`."""
-    if not dataset_dirs:
-        raise ValueError("`dataset_dirs` must be non-empty.")
+    """Return the character width of the widest index string across `snapshot_dirs`."""
+    if not snapshot_dirs:
+        raise ValueError("`snapshot_dirs` must be non-empty.")
     index_widths: list[int] = []
-    for dataset_dir in dataset_dirs:
-        dataset_index_string = get_snapshot_index_string(
-            dataset_dir=dataset_dir,
-            dataset_tag=dataset_tag,
+    for snapshot_dir in snapshot_dirs:
+        snapshot_index_string = get_snapshot_index_string(
+            snapshot_dir=snapshot_dir,
+            snapshot_tag=snapshot_tag,
         )
-        index_widths.append(len(dataset_index_string))
+        index_widths.append(len(snapshot_index_string))
     return max(index_widths)
 
 

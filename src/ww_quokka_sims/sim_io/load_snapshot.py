@@ -50,9 +50,9 @@ class QuokkaSnapshot(
 ):
     """Interface for loading Quokka snapshots with yt."""
 
-    dataset_dir: Path
+    snapshot_dir: Path
     verbose: bool
-    dataset: Any | None
+    _yt_dataset: Any | None
     _in_context: bool
     _sim_time: float | None
     _covering_grid: Any | None
@@ -66,7 +66,7 @@ class QuokkaSnapshot(
     def __init__(
         self,
         *,
-        dataset_dir: str | Path,
+        snapshot_dir: str | Path,
         verbose: bool = True,
     ):
         """Initialise a snapshot handle without opening the underlying yt dataset."""
@@ -74,9 +74,9 @@ class QuokkaSnapshot(
             param=verbose,
             param_name="verbose",
         )
-        self.dataset_dir = Path(dataset_dir)
+        self.snapshot_dir = Path(snapshot_dir)
         self.verbose = verbose
-        self.dataset = None
+        self._yt_dataset = None
         self._in_context = False
         self._sim_time = None
         self._covering_grid = None
@@ -87,9 +87,9 @@ class QuokkaSnapshot(
     def __enter__(
         self,
     ):
-        """Enter the context; open the dataset if needed; validate simulation time."""
+        """Enter the context; open the yt dataset if needed; validate simulation time."""
         self._in_context = True
-        self._open_dataset_if_needed()
+        self._open_if_needed()
         _ = self.sim_time  # force implicit validation
         return self
 
@@ -99,36 +99,36 @@ class QuokkaSnapshot(
         _exc_value: BaseException | None,
         _traceback: TracebackType | None,
     ) -> None:
-        """Exit the context; close the dataset handle."""
+        """Exit the context; close the yt dataset."""
         self._in_context = False
-        self._close_dataset()
+        self._close()
 
-    def _open_dataset_if_needed(
+    def _open_if_needed(
         self,
     ) -> None:
         """Open the yt dataset if not already open; cache the simulation time."""
-        if self.dataset is None:
+        if self._yt_dataset is None:
             if not self.verbose:
                 ## reduce yt verbosity: only print warnings, errors and critical messages
                 yt_logger.setLevel("WARNING")
-            dataset = yt_load(str(self.dataset_dir))
-            self._sim_time = float(dataset.current_time)
-            self.dataset = dataset
+            yt_dataset = yt_load(str(self.snapshot_dir))
+            self._sim_time = float(yt_dataset.current_time)
+            self._yt_dataset = yt_dataset
 
-    def _close_dataset_if_needed(
+    def _close_if_needed(
         self,
     ) -> None:
         """Close the yt dataset unless currently inside a context manager."""
         if not self._in_context:
-            self._close_dataset()
+            self._close()
 
-    def _close_dataset(
+    def _close(
         self,
     ) -> None:
         """Close the yt dataset; clear cached grid objects; keep simulation time cached."""
-        if self.dataset is not None:
-            self.dataset.close()
-            self.dataset = None
+        if self._yt_dataset is not None:
+            self._yt_dataset.close()
+            self._yt_dataset = None
             self._covering_grid = None
             self._udomain_3d = None
             self._field_cache.clear_cache()
@@ -137,15 +137,15 @@ class QuokkaSnapshot(
     def is_open(
         self,
     ) -> bool:
-        """`True` iff the yt dataset handle is currently open."""
-        return self.dataset is not None
+        """`True` iff the yt dataset is currently open."""
+        return self._yt_dataset is not None
 
     def close(
         self,
     ) -> None:
-        """Close the dataset handle; exit any active context."""
+        """Close the yt dataset; exit any active context."""
         self._in_context = False
-        self._close_dataset()
+        self._close()
 
     ##
     ## --- PROBE SNAPSHOT
@@ -157,10 +157,10 @@ class QuokkaSnapshot(
     ) -> float:
         """Simulation time in code units."""
         if self._sim_time is None:
-            self._open_dataset_if_needed()
+            self._open_if_needed()
         sim_time = self._sim_time
         if (sim_time is None) or not numpy.isfinite(sim_time):
-            msg = f"invalid simulation time in {self.dataset_dir}: {sim_time!r}."
+            msg = f"invalid simulation time in {self.snapshot_dir}: {sim_time!r}."
             manage_log.log_error(text=msg)
             raise RuntimeError(msg)
         return float(sim_time)
@@ -169,24 +169,24 @@ class QuokkaSnapshot(
         self,
     ) -> Any:
         """Return the coarsest (level 0) covering grid spanning the whole domain."""
-        self._open_dataset_if_needed()
-        assert self.dataset is not None
+        self._open_if_needed()
+        assert self._yt_dataset is not None
         if self._covering_grid is None:
-            self._covering_grid = self.dataset.covering_grid(
+            self._covering_grid = self._yt_dataset.covering_grid(
                 level=0,
-                left_edge=self.dataset.domain_left_edge,
-                dims=self.dataset.domain_dimensions,
+                left_edge=self._yt_dataset.domain_left_edge,
+                dims=self._yt_dataset.domain_dimensions,
             )
         return self._covering_grid
 
     def _get_available_field_keys(
         self,
     ) -> list[FieldKey]:
-        """Return all (field-group, field-name) yt keys available in the dataset."""
-        self._open_dataset_if_needed()
-        assert self.dataset is not None
-        field_keys = sorted(set(self.dataset.field_list))
-        self._close_dataset_if_needed()
+        """Return all (field-group, field-name) yt keys available in the snapshot."""
+        self._open_if_needed()
+        assert self._yt_dataset is not None
+        field_keys = sorted(set(self._yt_dataset.field_list))
+        self._close_if_needed()
         return field_keys
 
     def list_available_field_keys(
@@ -197,7 +197,7 @@ class QuokkaSnapshot(
         manage_log.log_items(
             title="Available Fields",
             items=field_keys,
-            message=f"Stored under: {self.dataset_dir}",
+            message=f"Stored under: {self.snapshot_dir}",
             message_position="bottom",
             show_time=False,
         )
@@ -208,7 +208,7 @@ class QuokkaSnapshot(
         *,
         field_key: FieldKey,
     ) -> bool:
-        """Return `True` iff `field_key` exists in the dataset."""
+        """Return `True` iff `field_key` exists in the snapshot."""
         available_keys = set(self._get_available_field_keys())
         return field_key in available_keys
 
@@ -235,7 +235,7 @@ class QuokkaSnapshot(
         """Resolve and validate the yt key associated with a scalar field."""
         field_key = self._resolve_sfield_key(field_name)
         if not self.is_field_key_available(field_key=field_key):
-            msg = f"scalar field `{field_name}` ({field_key[0]}:{field_key[1]}) not found; searched in {self.dataset_dir}."
+            msg = f"scalar field `{field_name}` ({field_key[0]}:{field_key[1]}) not found; searched in {self.snapshot_dir}."
             manage_log.log_error(text=msg)
             raise KeyError(msg)
         return field_key
@@ -271,7 +271,7 @@ class QuokkaSnapshot(
             missing_string = ww_lists.as_quoted_string(
                 [f"{yt_group}:{yt_field}" for yt_group, yt_field in missing_keys],
             )
-            msg = f"vector field `{field_name}` is incomplete in {self.dataset_dir}; missing components: {missing_string}."
+            msg = f"vector field `{field_name}` is incomplete in {self.snapshot_dir}; missing components: {missing_string}."
             manage_log.log_error(text=msg)
             raise KeyError(msg)
         return self._resolve_vfield_key_lookup(field_name)
@@ -288,17 +288,17 @@ class QuokkaSnapshot(
         field_key: FieldKey,
     ) -> numpy.ndarray:
         """Load a scalar field from the covering grid as a 3D `ndarray`."""
-        self._open_dataset_if_needed()
-        assert self.dataset is not None
+        self._open_if_needed()
+        assert self._yt_dataset is not None
         covering_grid = self._get_covering_grid()
-        if field_key not in self.dataset.field_list:
-            self._close_dataset_if_needed()
-            raise KeyError(f"field {field_key} not found; searched in {self.dataset_dir}.")
+        if field_key not in self._yt_dataset.field_list:
+            self._close_if_needed()
+            raise KeyError(f"field {field_key} not found; searched in {self.snapshot_dir}.")
         sarray_3d = numpy.asarray(covering_grid[field_key], dtype=numpy.float64)
         if sarray_3d.ndim != 3:
-            self._close_dataset_if_needed()
+            self._close_if_needed()
             raise ValueError(f"expected a 3D array for {field_key}; got shape {sarray_3d.shape}.")
-        self._close_dataset_if_needed()
+        self._close_if_needed()
         return numpy.ascontiguousarray(sarray_3d)
 
     ##
@@ -364,21 +364,21 @@ class QuokkaSnapshot(
             param=field_label,
             param_name="field_label",
         )
-        self._open_dataset_if_needed()
-        assert self.dataset is not None
+        self._open_if_needed()
+        assert self._yt_dataset is not None
         covering_grid = self._get_covering_grid()
         grouped_sarrays: dict[cartesian_axes.CartesianAxis_3D, numpy.ndarray] = {}
         for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER:
             comp_key = vfield_key_lookup[comp_axis]
-            if comp_key not in self.dataset.field_list:
-                self._close_dataset_if_needed()
-                raise KeyError(f"field {comp_key} not found; searched in {self.dataset_dir}.")
+            if comp_key not in self._yt_dataset.field_list:
+                self._close_if_needed()
+                raise KeyError(f"field {comp_key} not found; searched in {self.snapshot_dir}.")
             comp_sarray = numpy.asarray(covering_grid[comp_key], dtype=numpy.float64)
             if comp_sarray.ndim != 3:
-                self._close_dataset_if_needed()
+                self._close_if_needed()
                 raise ValueError(f"expected a 3D array for {comp_key}; got shape {comp_sarray.shape}.")
             grouped_sarrays[comp_axis] = comp_sarray
-        self._close_dataset_if_needed()
+        self._close_if_needed()
         sim_time = self.sim_time
         varray_3d = numpy.stack(
             [grouped_sarrays[comp_axis] for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER],
@@ -412,17 +412,17 @@ class QuokkaSnapshot(
         )
         if self._udomain_3d is not None:
             return self._udomain_3d
-        self._open_dataset_if_needed()
-        assert self.dataset is not None
-        x_min, y_min, z_min = (float(value) for value in self.dataset.domain_left_edge)
-        x_max, y_max, z_max = (float(value) for value in self.dataset.domain_right_edge)
+        self._open_if_needed()
+        assert self._yt_dataset is not None
+        x_min, y_min, z_min = (float(value) for value in self._yt_dataset.domain_left_edge)
+        x_max, y_max, z_max = (float(value) for value in self._yt_dataset.domain_right_edge)
         num_cells_x, num_cells_y, num_cells_z = (
-            int(num_cells) for num_cells in self.dataset.domain_dimensions
+            int(num_cells) for num_cells in self._yt_dataset.domain_dimensions
         )
         is_periodic_x, is_periodic_y, is_periodic_z = (
-            (bool(is_periodic) or force_periodicity) for is_periodic in self.dataset.periodicity
+            (bool(is_periodic) or force_periodicity) for is_periodic in self._yt_dataset.periodicity
         )
-        self._close_dataset_if_needed()
+        self._close_if_needed()
         udomain_3d = domain_models.UniformDomain_3D(
             periodicity=(is_periodic_x, is_periodic_y, is_periodic_z),
             resolution=(num_cells_x, num_cells_y, num_cells_z),
