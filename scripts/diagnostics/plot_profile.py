@@ -532,6 +532,7 @@ def main():
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
+                allow_slicing=True,
                 produces_data=True,
             ),
         ],
