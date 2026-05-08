@@ -23,12 +23,12 @@ from jormi.ww_plots import manage_plots
 from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims.sim_io import find_snapshots
 from ww_quokka_sims._script_tools import (
     cli,
     data_series,
     field_registry,
 )
+from ww_quokka_sims.sim_io import find_snapshots
 
 ##
 ## === FIGURE RENDERING

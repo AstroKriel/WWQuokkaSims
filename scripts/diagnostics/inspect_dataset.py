@@ -4,13 +4,15 @@
 ## === DEPENDENCIES
 ##
 
+## stdlib
 import argparse
 
 from pathlib import Path
 from typing import final
 
+## local
+from ww_quokka_sims._script_tools import cli
 from ww_quokka_sims.sim_io import load_snapshot
-from ww_quokka_sims._script_tools import field_registry, cli
 
 ##
 ## === SCRIPT INTERFACE

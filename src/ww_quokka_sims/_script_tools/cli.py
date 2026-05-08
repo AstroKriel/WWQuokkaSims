@@ -4,13 +4,16 @@
 ## === DEPENDENCIES
 ##
 
+## stdlib
 import argparse
 
 from pathlib import Path
 
+## personal
 from jormi import ww_lists
 from jormi.ww_fields import cartesian_axes
 
+## local
 from ww_quokka_sims._script_tools import field_registry
 
 ##

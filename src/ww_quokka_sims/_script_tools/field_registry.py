@@ -4,9 +4,11 @@
 ## === DEPENDENCIES
 ##
 
+## stdlib
 from collections.abc import Callable
 from dataclasses import dataclass
 
+## local
 from ww_quokka_sims.sim_io import load_snapshot
 
 ##

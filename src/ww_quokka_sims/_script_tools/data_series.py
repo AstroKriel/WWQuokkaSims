@@ -4,13 +4,16 @@
 ## === DEPENDENCIES
 ##
 
+## stdlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import final
 
+## third-party
 import numpy
 
+## personal
 from jormi.ww_fields.fields_3d import (
     field_operators,
     field_models,
@@ -21,6 +24,7 @@ from jormi.ww_validation import (
     validate_types,
 )
 
+## local
 from ww_quokka_sims.sim_io import load_snapshot
 
 ##

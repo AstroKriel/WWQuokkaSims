@@ -22,11 +22,11 @@ from jormi.ww_io import manage_log
 from jormi.ww_validation import validate_types
 
 ## local
+from ww_quokka_sims._script_tools import cli
 from ww_quokka_sims.sim_io import (
     find_snapshots,
     load_snapshot,
 )
-from ww_quokka_sims._script_tools import field_registry, cli
 
 ##
 ## === DATA ACCESS
