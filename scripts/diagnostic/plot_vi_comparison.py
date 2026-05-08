@@ -196,14 +196,14 @@ class ScriptInterface:
         *,
         dir_1: Path,
         dir_2: Path,
-        dataset_tag: str,
+        snapshot_tag: str,
         fields_to_plot: list[str],
         out_dir: Path,
         extract_data: bool,
     ):
         validate_types.ensure_nonempty_string(
-            param=dataset_tag,
-            param_name="dataset_tag",
+            param=snapshot_tag,
+            param_name="snapshot_tag",
         )
         if not Path(dir_1).is_dir():
             raise ValueError(f"dir_1 does not exist: {dir_1}")
@@ -219,31 +219,31 @@ class ScriptInterface:
         )
         if (not fields_to_plot) or (not set(fields_to_plot).issubset(valid_fields)):
             raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}")
-        self.dataset_tag = dataset_tag
+        self.snapshot_tag = snapshot_tag
         self.fields_to_plot = list(fields_to_plot)
         self.extract_data = extract_data
 
     def run(
         self,
     ) -> None:
-        ## find dataset dirs for each of the two sim roots, matched by dataset_tag
-        dataset_dirs_1 = find_snapshots.resolve_snapshot_dirs(
+        ## find snapshot dirs for each of the two sim roots, matched by snapshot_tag
+        snapshot_dirs_1 = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.dir_1,
-            dataset_tag=self.dataset_tag,
+            snapshot_tag=self.snapshot_tag,
             max_elems=100,
         )
-        dataset_dirs_2 = find_snapshots.resolve_snapshot_dirs(
+        snapshot_dirs_2 = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.dir_2,
-            dataset_tag=self.dataset_tag,
+            snapshot_tag=self.snapshot_tag,
             max_elems=100,
         )
-        if not dataset_dirs_1:
+        if not snapshot_dirs_1:
             raise RuntimeError(
-                f"No dataset directories resolved for dir_1: {self.dir_1} (tag={self.dataset_tag!r})",
+                f"No snapshot directories resolved for dir_1: {self.dir_1} (tag={self.snapshot_tag!r})",
             )
-        if not dataset_dirs_2:
+        if not snapshot_dirs_2:
             raise RuntimeError(
-                f"No dataset directories resolved for dir_2: {self.dir_2} (tag={self.dataset_tag!r})",
+                f"No snapshot directories resolved for dir_2: {self.dir_2} (tag={self.snapshot_tag!r})",
             )
         ## use the sim root directory names as labels in the plot legend
         label_dir_1 = self.dir_1.name
@@ -251,13 +251,13 @@ class ScriptInterface:
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             load_data_series_1 = LoadDataSeries(
-                dataset_dirs=dataset_dirs_1,
+                snapshot_dirs=snapshot_dirs_1,
                 field_name=field_name,
                 field_loader=field_meta["loader"],
                 use_parallel=True,
             )
             load_data_series_2 = LoadDataSeries(
-                dataset_dirs=dataset_dirs_2,
+                snapshot_dirs=snapshot_dirs_2,
                 field_name=field_name,
                 field_loader=field_meta["loader"],
                 use_parallel=True,
@@ -291,17 +291,17 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=2,
                 allow_vfields=False,
-                allow_extract=True,
+                produces_data=True,
             ),
         ],
     ).parse_args()
     script_interface = ScriptInterface(
-        dir_1=user_args.dir_1,
-        dir_2=user_args.dir_2,
-        dataset_tag=user_args.tag,
+        dir_1=user_args.input_dir_1,
+        dir_2=user_args.input_dir_2,
+        snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
-        out_dir=user_args.out,
-        extract_data=user_args.extract,
+        out_dir=user_args.out_dir,
+        extract_data=user_args.save_data,
     )
     script_interface.run()
 

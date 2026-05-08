@@ -34,23 +34,23 @@ import quokka_fields
 
 
 @final
-class DatasetView:
+class SnapshotView:
 
     def __init__(
         self,
         *,
-        dataset_dir: Path,
+        snapshot_dir: Path,
     ):
-        self.dataset_dir = Path(dataset_dir).expanduser().resolve()
+        self.snapshot_dir = Path(snapshot_dir).expanduser().resolve()
 
     def get_field_keys(
         self,
     ) -> set[load_snapshot.FieldKey]:
         with load_snapshot.QuokkaSnapshot(
-                dataset_dir=self.dataset_dir,
+                snapshot_dir=self.snapshot_dir,
                 verbose=False,
-        ) as dataset:
-            field_keys = dataset.list_available_field_keys()
+        ) as snapshot:
+            field_keys = snapshot.list_available_field_keys()
         return set(field_keys)
 
     def load_sfield(
@@ -58,10 +58,10 @@ class DatasetView:
         field_key: load_snapshot.FieldKey,
     ) -> numpy.ndarray:
         with load_snapshot.QuokkaSnapshot(
-                dataset_dir=self.dataset_dir,
+                snapshot_dir=self.snapshot_dir,
                 verbose=False,
-        ) as dataset:
-            sarray_3d = dataset._load_3d_sarray(field_key=field_key)
+        ) as snapshot:
+            sarray_3d = snapshot._load_3d_sarray(field_key=field_key)
         return numpy.ascontiguousarray(sarray_3d, dtype=numpy.float64)
 
 
@@ -179,30 +179,30 @@ class CompareFields:
 
 
 ##
-## === DATASET COMPARISON
+## === SNAPSHOT COMPARISON
 ##
 
 
 @final
-class CompareDatasets:
+class CompareSnapshots:
 
     def __init__(
         self,
         *,
-        dataset_view_in: DatasetView,
-        dataset_view_ref: DatasetView,
+        snapshot_view_in: SnapshotView,
+        snapshot_view_ref: SnapshotView,
         preview_limit: int,
     ):
-        self.dataset_view_in = dataset_view_in
-        self.dataset_view_ref = dataset_view_ref
+        self.snapshot_view_in = snapshot_view_in
+        self.snapshot_view_ref = snapshot_view_ref
         self.preview_limit = preview_limit
 
     def get_shared_field_keys(
         self,
     ) -> list[load_snapshot.FieldKey]:
-        """Returns keys present in both datasets; exits with code 4 if no keys overlap."""
-        field_keys_in = self.dataset_view_in.get_field_keys()
-        field_keys_ref = self.dataset_view_ref.get_field_keys()
+        """Returns keys present in both snapshots; exits with code 4 if no keys overlap."""
+        field_keys_in = self.snapshot_view_in.get_field_keys()
+        field_keys_ref = self.snapshot_view_ref.get_field_keys()
         keys_missing_from_in = sorted(field_keys_ref - field_keys_in)
         keys_missing_from_ref = sorted(field_keys_in - field_keys_ref)
         shared_keys = sorted(field_keys_in & field_keys_ref)
@@ -236,8 +236,8 @@ class CompareDatasets:
             manage_log.log_error(
                 text="There are no shared fields to compare.",
                 notes={
-                    "dir-1": str(self.dataset_view_in.dataset_dir),
-                    "dir-2": str(self.dataset_view_ref.dataset_dir),
+                    "dir-1": str(self.snapshot_view_in.snapshot_dir),
+                    "dir-2": str(self.snapshot_view_ref.snapshot_dir),
                 },
             )
             raise SystemExit(4)
@@ -251,12 +251,12 @@ class CompareDatasets:
         )
         return shared_keys
 
-    def _compare_datasets(
+    def _compare_snapshots(
         self,
         field_key: load_snapshot.FieldKey,
     ) -> None:
-        sarray_in = self.dataset_view_in.load_sfield(field_key=field_key)
-        sarray_ref = self.dataset_view_ref.load_sfield(field_key=field_key)
+        sarray_in = self.snapshot_view_in.load_sfield(field_key=field_key)
+        sarray_ref = self.snapshot_view_ref.load_sfield(field_key=field_key)
         compare_fields = CompareFields(
             sarray_in=sarray_in,
             sarray_ref=sarray_ref,
@@ -304,7 +304,7 @@ class CompareDatasets:
     ) -> None:
         field_keys = self.get_shared_field_keys()
         for field_key in field_keys:
-            self._compare_datasets(field_key=field_key)
+            self._compare_snapshots(field_key=field_key)
 
 
 ##
@@ -318,12 +318,12 @@ class ScriptInterface:
     def __init__(
         self,
         *,
-        dataset_dir_in: Path,
-        dataset_dir_ref: Path,
+        snapshot_dir_in: Path,
+        snapshot_dir_ref: Path,
         preview_limit: int,
     ):
-        self.dataset_dir_in = Path(dataset_dir_in).expanduser().resolve()
-        self.dataset_dir_ref = Path(dataset_dir_ref).expanduser().resolve()
+        self.snapshot_dir_in = Path(snapshot_dir_in).expanduser().resolve()
+        self.snapshot_dir_ref = Path(snapshot_dir_ref).expanduser().resolve()
         self.preview_limit = preview_limit
         self._validate_inputs()
 
@@ -332,22 +332,22 @@ class ScriptInterface:
     ) -> None:
         validate_types.ensure_finite_int(param=self.preview_limit)
         assert self.preview_limit > 0
-        if not find_snapshots.looks_like_boxlib_dir(dataset_dir=self.dataset_dir_in):
-            raise ValueError(f"dir-1 does not look like a BoxLib directory: {self.dataset_dir_in}")
-        if not find_snapshots.looks_like_boxlib_dir(dataset_dir=self.dataset_dir_ref):
-            raise ValueError(f"dir-2 does not look like a BoxLib directory: {self.dataset_dir_ref}")
+        if not find_snapshots.looks_like_boxlib_dir(snapshot_dir=self.snapshot_dir_in):
+            raise ValueError(f"dir-1 does not look like a BoxLib directory: {self.snapshot_dir_in}")
+        if not find_snapshots.looks_like_boxlib_dir(snapshot_dir=self.snapshot_dir_ref):
+            raise ValueError(f"dir-2 does not look like a BoxLib directory: {self.snapshot_dir_ref}")
 
     def run(
         self,
     ) -> None:
-        dataset_view_in = DatasetView(dataset_dir=self.dataset_dir_in)
-        dataset_view_ref = DatasetView(dataset_dir=self.dataset_dir_ref)
-        compare_datasets = CompareDatasets(
-            dataset_view_in=dataset_view_in,
-            dataset_view_ref=dataset_view_ref,
+        snapshot_view_in = SnapshotView(snapshot_dir=self.snapshot_dir_in)
+        snapshot_view_ref = SnapshotView(snapshot_dir=self.snapshot_dir_ref)
+        compare_snapshots = CompareSnapshots(
+            snapshot_view_in=snapshot_view_in,
+            snapshot_view_ref=snapshot_view_ref,
             preview_limit=self.preview_limit,
         )
-        compare_datasets.run()
+        compare_snapshots.run()
 
 
 ##
@@ -362,21 +362,22 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=2,
                 allow_vfields=False,
-                allow_extract=False,
+                allow_slicing=False,
+                allow_fields=False,
+                produces_data=False,
             ),
         ],
     )
     parser.add_argument(
         "--preview-limit",
-        "-N",
         type=int,
         default=100,
         help="Maximum number of index locations to preview.",
     )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
-        dataset_dir_in=user_args.dir_1,
-        dataset_dir_ref=user_args.dir_2,
+        snapshot_dir_in=user_args.input_dir_1,
+        snapshot_dir_ref=user_args.input_dir_2,
         preview_limit=user_args.preview_limit,
     )
     script_interface.run()

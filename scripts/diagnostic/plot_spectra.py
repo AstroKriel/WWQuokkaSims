@@ -73,11 +73,11 @@ class ComputeSpectra:
     def __init__(
         self,
         *,
-        dataset_dirs: list[Path],
+        snapshot_dirs: list[Path],
         field_name: str,
         field_loader: Callable,
     ):
-        self.dataset_dirs = dataset_dirs
+        self.snapshot_dirs = snapshot_dirs
         self.field_name = field_name
         self.field_loader = field_loader
 
@@ -85,12 +85,12 @@ class ComputeSpectra:
         self,
     ) -> list[SpectraData]:
         field_spectra: list[SpectraData] = []
-        for dataset_dir in self.dataset_dirs:
+        for snapshot_dir in self.snapshot_dirs:
             with load_snapshot.QuokkaSnapshot(
-                    dataset_dir=dataset_dir,
+                    snapshot_dir=snapshot_dir,
                     verbose=False,
-            ) as dataset:
-                field = self.field_loader(dataset)
+            ) as snapshot:
+                field = self.field_loader(snapshot)
             if not isinstance(field, field_models.ScalarField_3D):
                 raise TypeError(
                     f"`{self.field_name}` is not a scalar field; "
@@ -128,16 +128,16 @@ class RenderSpectra:
     def __init__(
         self,
         *,
-        dataset_dirs: list[Path],
-        dataset_tag: str,
+        snapshot_dirs: list[Path],
+        snapshot_tag: str,
         out_dir: Path,
         field_name: str,
         field_loader: Callable,
         cmap_name: str,
         extract_data: bool,
     ):
-        self.dataset_dirs = dataset_dirs
-        self.dataset_tag = dataset_tag
+        self.snapshot_dirs = snapshot_dirs
+        self.snapshot_tag = snapshot_tag
         self.out_dir = out_dir
         self.field_name = field_name
         self.field_loader = field_loader
@@ -234,7 +234,7 @@ class RenderSpectra:
     ) -> None:
         ## compute the isotropic power spectrum for each snapshot
         compute = ComputeSpectra(
-            dataset_dirs=self.dataset_dirs,
+            snapshot_dirs=self.snapshot_dirs,
             field_name=self.field_name,
             field_loader=self.field_loader,
         )
@@ -270,8 +270,8 @@ class RenderSpectra:
         ## include snapshot index in the filename if there is only one snapshot
         if len(field_spectra) == 1:
             snapshot_index = find_snapshots.get_snapshot_index_string(
-                dataset_dir=self.dataset_dirs[0],
-                dataset_tag=self.dataset_tag,
+                snapshot_dir=self.snapshot_dirs[0],
+                snapshot_tag=self.snapshot_tag,
             )
             fig_path = self.out_dir / f"{self.field_name}_spectrum_{snapshot_index}.png"
         else:
@@ -295,38 +295,40 @@ class ScriptInterface:
         self,
         *,
         input_dir: Path,
-        dataset_tag: str,
+        snapshot_tag: str,
         fields_to_plot: tuple[str, ...] | list[str] | None,
         extract_data: bool,
+        out_dir: Path | None = None,
     ):
         validate_types.ensure_nonempty_string(
-            param=dataset_tag,
-            param_name="dataset_tag",
+            param=snapshot_tag,
+            param_name="snapshot_tag",
         )
         quokka_fields.validate_fields(field_names=fields_to_plot)
         self.input_dir = Path(input_dir)
-        self.dataset_tag = dataset_tag
+        self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.extract_data = extract_data
+        self.out_dir = Path(out_dir) if out_dir is not None else None
 
     def run(
         self,
     ) -> None:
-        ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
-        dataset_dirs = find_snapshots.resolve_snapshot_dirs(
+        ## find all snapshot dirs under input_dir whose names match snapshot_tag, sorted by index
+        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
-            dataset_tag=self.dataset_tag,
+            snapshot_tag=self.snapshot_tag,
         )
-        if not dataset_dirs:
+        if not snapshot_dirs:
             return
-        ## output goes to the sim root (the shared parent of all dataset dirs)
-        out_dir = dataset_dirs[0].parent
+        out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
+        out_dir.mkdir(parents=True, exist_ok=True)
         ## compute and render power spectra for each requested field
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderSpectra(
-                dataset_dirs=dataset_dirs,
-                dataset_tag=self.dataset_tag,
+                snapshot_dirs=snapshot_dirs,
+                snapshot_tag=self.snapshot_tag,
                 out_dir=out_dir,
                 field_name=field_name,
                 field_loader=field_meta["loader"],
@@ -348,15 +350,16 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=1,
                 allow_vfields=False,
-                allow_extract=True,
+                produces_data=True,
             ),
         ],
     ).parse_args()
     script_interface = ScriptInterface(
-        input_dir=user_args.dir,
-        dataset_tag=user_args.tag,
+        input_dir=user_args.input_dir,
+        snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
-        extract_data=user_args.extract,
+        extract_data=user_args.save_data,
+        out_dir=user_args.out_dir,
     )
     script_interface.run()
 

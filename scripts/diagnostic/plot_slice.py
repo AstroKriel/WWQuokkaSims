@@ -59,8 +59,8 @@ class FieldArgs:
 class WorkerArgs(NamedTuple):
     """Flat, pickleable argument bundle passed to the parallel slice-render worker."""
 
-    dataset_dir: str
-    dataset_tag: str
+    snapshot_dir: str
+    snapshot_tag: str
     field_name: str
     field_loader: Callable
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
@@ -72,7 +72,7 @@ class WorkerArgs(NamedTuple):
 
 
 @dataclass(frozen=True)
-class Dataset:
+class SnapshotData:
     uniform_domain: domain_models.UniformDomain_3D
     field: field_models.ScalarField_3D | field_models.VectorField_3D
 
@@ -197,7 +197,7 @@ def slice_field(
 
 @dataclass(frozen=True)
 class FieldPlotter:
-    dataset_tag: str
+    snapshot_tag: str
     field_args: FieldArgs
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
@@ -265,18 +265,18 @@ class FieldPlotter:
             box_alpha=0.5,
         )
 
-    def _load_dataset(
+    def _load_snapshot(
         self,
         *,
-        dataset_dir: Path,
-    ) -> Dataset:
+        snapshot_dir: Path,
+    ) -> SnapshotData:
         with load_snapshot.QuokkaSnapshot(
-                dataset_dir=dataset_dir,
+                snapshot_dir=snapshot_dir,
                 verbose=False,
-        ) as dataset:
-            uniform_domain = dataset.load_3d_uniform_domain()
-            field = self.field_args.field_loader(dataset)  # ScalarField_3D or VectorField_3D
-        return Dataset(
+        ) as snapshot:
+            uniform_domain = snapshot.load_3d_uniform_domain()
+            field = self.field_args.field_loader(snapshot)  # ScalarField_3D or VectorField_3D
+        return SnapshotData(
             uniform_domain=uniform_domain,
             field=field,
         )
@@ -356,13 +356,13 @@ class FieldPlotter:
         *,
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
-        dataset_index: int,
+        snapshot_index: int,
         index_width: int,
         out_dir: Path,
     ) -> None:
         is_vfield = len(field_comps) > 1
         field_name = self.field_args.field_name
-        padded_index = f"{dataset_index:0{index_width}d}"
+        padded_index = f"{snapshot_index:0{index_width}d}"
         for comp_index, field_comp in enumerate(field_comps):
             for axis_to_slice in self.axes_to_slice:
                 field_slice = slice_field(
@@ -375,27 +375,27 @@ class FieldPlotter:
                 file_name = f"{field_name}{comp_part}_slice={axis_name}_{padded_index}.npy"
                 numpy.save(out_dir / file_name, field_slice.data_2d)
 
-    def plot_dataset(
+    def plot_snapshot(
         self,
         *,
-        dataset_dir: Path,
+        snapshot_dir: Path,
         out_dir: Path,
         index_width: int,
         verbose: bool,
     ) -> None:
-        dataset = self._load_dataset(dataset_dir=dataset_dir)
-        dataset_index = int(
+        snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
+        snapshot_index = int(
             find_snapshots.get_snapshot_index_string(
-                dataset_dir=dataset_dir,
-                dataset_tag=self.dataset_tag,
+                snapshot_dir=snapshot_dir,
+                snapshot_tag=self.snapshot_tag,
             ),
         )
-        field_comps = self._get_field_comps(field=dataset.field)
+        field_comps = self._get_field_comps(field=snapshot_data.field)
         if self.extract_data:
             self._save_slices(
                 field_comps=field_comps,
-                uniform_domain=dataset.uniform_domain,
-                dataset_index=dataset_index,
+                uniform_domain=snapshot_data.uniform_domain,
+                snapshot_index=snapshot_index,
                 index_width=index_width,
                 out_dir=out_dir,
             )
@@ -409,12 +409,12 @@ class FieldPlotter:
         self._plot_field_comps(
             axs_grid=axs_grid,
             field_comps=field_comps,
-            uniform_domain=dataset.uniform_domain,
-            sim_time=dataset.sim_time,
+            uniform_domain=snapshot_data.uniform_domain,
+            sim_time=snapshot_data.sim_time,
         )
         self._label_axes(axs_grid=axs_grid)
         field_name = self.field_args.field_name
-        padded_index = f"{dataset_index:0{index_width}d}"
+        padded_index = f"{snapshot_index:0{index_width}d}"
         fig_name = f"{field_name}_slice_{padded_index}.png"
         fig_path = out_dir / fig_name
         manage_plots.save_figure(
@@ -426,11 +426,11 @@ class FieldPlotter:
 
 def render_fields_in_serial(
     *,
-    dataset_tag: str,
+    snapshot_tag: str,
     fields_to_plot: tuple[str, ...],
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...],
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...],
-    dataset_dirs: list[Path],
+    snapshot_dirs: list[Path],
     out_dir: Path,
     index_width: int,
     extract_data: bool,
@@ -443,22 +443,22 @@ def render_fields_in_serial(
             cmap_name=field_meta["cmap"],
         )
         field_plotter = FieldPlotter(
-            dataset_tag=dataset_tag,
+            snapshot_tag=snapshot_tag,
             field_args=field_args,
             comps_to_plot=comps_to_plot,
             axes_to_slice=axes_to_slice,
             extract_data=extract_data,
         )
-        for dataset_dir in dataset_dirs:
-            field_plotter.plot_dataset(
-                dataset_dir=dataset_dir,
+        for snapshot_dir in snapshot_dirs:
+            field_plotter.plot_snapshot(
+                snapshot_dir=snapshot_dir,
                 out_dir=out_dir,
                 index_width=index_width,
                 verbose=False,
             )
 
 
-def _plot_dataset_worker(
+def _plot_snapshot_worker(
     *user_args,
 ) -> None:
     """Positional-only signature required so WorkerArgs elements survive multiprocessing pickling."""
@@ -469,14 +469,14 @@ def _plot_dataset_worker(
         cmap_name=worker_args.cmap_name,
     )
     field_plotter = FieldPlotter(
-        dataset_tag=worker_args.dataset_tag,
+        snapshot_tag=worker_args.snapshot_tag,
         field_args=field_args,
         comps_to_plot=worker_args.comps_to_plot,
         axes_to_slice=worker_args.axes_to_slice,
         extract_data=worker_args.extract_data,
     )
-    field_plotter.plot_dataset(
-        dataset_dir=Path(worker_args.dataset_dir),
+    field_plotter.plot_snapshot(
+        snapshot_dir=Path(worker_args.snapshot_dir),
         out_dir=Path(worker_args.out_dir),
         index_width=int(worker_args.index_width),
         verbose=False,
@@ -485,11 +485,11 @@ def _plot_dataset_worker(
 
 def render_fields_in_parallel(
     *,
-    dataset_tag: str,
+    snapshot_tag: str,
     fields_to_plot: tuple[str, ...],
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...],
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...],
-    dataset_dirs: list[Path],
+    snapshot_dirs: list[Path],
     out_dir: Path,
     index_width: int,
     extract_data: bool,
@@ -497,11 +497,11 @@ def render_fields_in_parallel(
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_plot:
         field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
-        for dataset_dir in dataset_dirs:
+        for snapshot_dir in snapshot_dirs:
             grouped_args.append(
                 WorkerArgs(
-                    dataset_dir=str(dataset_dir),
-                    dataset_tag=dataset_tag,
+                    snapshot_dir=str(snapshot_dir),
+                    snapshot_tag=snapshot_tag,
                     field_name=field_name,
                     field_loader=field_meta["loader"],
                     comps_to_plot=comps_to_plot,
@@ -513,7 +513,7 @@ def render_fields_in_parallel(
                 ),
             )
     parallel_dispatch.run_in_parallel(
-        worker_fn=_plot_dataset_worker,
+        worker_fn=_plot_snapshot_worker,
         grouped_args=grouped_args,
         timeout_seconds=120,
         show_progress=True,
@@ -533,17 +533,18 @@ class ScriptInterface:
         self,
         *,
         input_dir: Path,
-        dataset_tag: str,
+        snapshot_tag: str,
         fields_to_plot: tuple[str, ...] | list[str] | None,
         comps_to_plot: tuple[str, ...] | list[str] | None,
         axes_to_slice: tuple[str, ...] | list[str] | None,
         extract_data: bool,
+        out_dir: Path | None = None,
         use_parallel: bool = True,
         animate_only: bool = False,
     ):
         validate_types.ensure_nonempty_string(
-            param=dataset_tag,
-            param_name="dataset_tag",
+            param=snapshot_tag,
+            param_name="snapshot_tag",
         )
         valid_fields = set(
             quokka_fields.QUOKKA_FIELD_LOOKUP.keys(),
@@ -551,11 +552,12 @@ class ScriptInterface:
         if not fields_to_plot or not set(fields_to_plot).issubset(valid_fields):
             raise ValueError(f"Provide one or more field to plot (via -f) from: {sorted(valid_fields)}")
         self.input_dir = Path(input_dir)
-        self.dataset_tag = dataset_tag
+        self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.comps_to_plot = _parse_axes(axes=comps_to_plot)
         self.axes_to_slice = _parse_axes(axes=axes_to_slice)
         self.extract_data = extract_data
+        self.out_dir = Path(out_dir) if out_dir is not None else None
         self.use_parallel = bool(use_parallel)
         self.animate_only = bool(animate_only)
 
@@ -591,41 +593,38 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
-        ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
-        dataset_dirs = find_snapshots.resolve_snapshot_dirs(
+        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
-            dataset_tag=self.dataset_tag,
+            snapshot_tag=self.snapshot_tag,
             max_elems=100,
         )
-        if not dataset_dirs:
+        if not snapshot_dirs:
             return
-        ## output goes to the sim root (the shared parent of all dataset dirs)
-        out_dir = dataset_dirs[0].parent
-        ## index_width is the zero-pad width derived from the total number of datasets found
+        out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
+        out_dir.mkdir(parents=True, exist_ok=True)
         index_width = find_snapshots.get_max_index_width(
-            dataset_dirs=dataset_dirs,
-            dataset_tag=self.dataset_tag,
+            snapshot_dirs=snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
         )
-        ## render slice images; use parallel workers if the dataset count warrants it
         if not self.animate_only:
-            if self.use_parallel and (len(dataset_dirs) > 5):
+            if self.use_parallel and (len(snapshot_dirs) > 5):
                 render_fields_in_parallel(
-                    dataset_tag=self.dataset_tag,
+                    snapshot_tag=self.snapshot_tag,
                     fields_to_plot=self.fields_to_plot,
                     comps_to_plot=self.comps_to_plot,
                     axes_to_slice=self.axes_to_slice,
-                    dataset_dirs=dataset_dirs,
+                    snapshot_dirs=snapshot_dirs,
                     out_dir=out_dir,
                     index_width=index_width,
                     extract_data=self.extract_data,
                 )
             else:
                 render_fields_in_serial(
-                    dataset_tag=self.dataset_tag,
+                    snapshot_tag=self.snapshot_tag,
                     fields_to_plot=self.fields_to_plot,
                     comps_to_plot=self.comps_to_plot,
                     axes_to_slice=self.axes_to_slice,
-                    dataset_dirs=dataset_dirs,
+                    snapshot_dirs=snapshot_dirs,
                     out_dir=out_dir,
                     index_width=index_width,
                     extract_data=self.extract_data,
@@ -646,7 +645,7 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
-                allow_extract=True,
+                produces_data=True,
             ),
         ],
     )
@@ -658,12 +657,13 @@ def main():
     )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
-        input_dir=user_args.dir,
-        dataset_tag=user_args.tag,
+        input_dir=user_args.input_dir,
+        snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
         comps_to_plot=user_args.comps,
         axes_to_slice=user_args.axes,
-        extract_data=user_args.extract,
+        extract_data=user_args.save_data,
+        out_dir=user_args.out_dir,
         animate_only=user_args.animate_only,
         use_parallel=True,
     )

@@ -107,13 +107,13 @@ class ComputePDFs:
     def __init__(
         self,
         *,
-        dataset_dirs: list[Path],
+        snapshot_dirs: list[Path],
         field_name: str,
         field_loader: Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         num_bins: int,
     ):
-        self.dataset_dirs = dataset_dirs
+        self.snapshot_dirs = snapshot_dirs
         self.field_name = field_name
         self.field_loader = field_loader
         self.comps_to_plot = comps_to_plot
@@ -193,12 +193,12 @@ class ComputePDFs:
         self,
     ) -> list[PDFData]:
         field_pdfs: list[PDFData] = []
-        for dataset_dir in self.dataset_dirs:
+        for snapshot_dir in self.snapshot_dirs:
             with load_snapshot.QuokkaSnapshot(
-                    dataset_dir=dataset_dir,
+                    snapshot_dir=snapshot_dir,
                     verbose=False,
-            ) as dataset:
-                field = self.field_loader(dataset)
+            ) as snapshot:
+                field = self.field_loader(snapshot)
             if isinstance(field, field_models.ScalarField_3D):
                 pdf = self._compute_sfield_pdf(field=field)
             elif isinstance(field, field_models.VectorField_3D):
@@ -221,7 +221,7 @@ class RenderPDFs:
     def __init__(
         self,
         *,
-        dataset_dirs: list[Path],
+        snapshot_dirs: list[Path],
         out_dir: Path,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
@@ -230,7 +230,7 @@ class RenderPDFs:
         num_bins: int,
         extract_data: bool,
     ):
-        self.dataset_dirs = dataset_dirs
+        self.snapshot_dirs = snapshot_dirs
         self.out_dir = out_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
@@ -339,7 +339,7 @@ class RenderPDFs:
     ) -> None:
         ## compute PDFs for each snapshot and component
         compute_pdfs = ComputePDFs(
-            dataset_dirs=self.dataset_dirs,
+            snapshot_dirs=self.snapshot_dirs,
             field_name=self.field_name,
             field_loader=self.field_loader,
             comps_to_plot=self.comps_to_plot,
@@ -403,15 +403,16 @@ class ScriptInterface:
         self,
         *,
         input_dir: Path,
-        dataset_tag: str,
+        snapshot_tag: str,
         fields_to_plot: tuple[str, ...] | list[str] | None,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
         extract_data: bool,
         num_bins: int = 15,
+        out_dir: Path | None = None,
     ):
         validate_types.ensure_nonempty_string(
-            param=dataset_tag,
-            param_name="dataset_tag",
+            param=snapshot_tag,
+            param_name="snapshot_tag",
         )
         quokka_fields.validate_fields(field_names=fields_to_plot)
         if comps_to_plot is None:
@@ -419,29 +420,30 @@ class ScriptInterface:
         elif not set(comps_to_plot).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):
             raise ValueError("Provide one or more components (via -c) from: x_0, x_1, x_2")
         self.input_dir = Path(input_dir)
-        self.dataset_tag = dataset_tag
+        self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
         self.extract_data = extract_data
         self.num_bins = int(num_bins)
+        self.out_dir = Path(out_dir) if out_dir is not None else None
 
     def run(
         self,
     ) -> None:
-        ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
-        dataset_dirs = find_snapshots.resolve_snapshot_dirs(
+        ## find all snapshot dirs under input_dir whose names match snapshot_tag, sorted by index
+        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
-            dataset_tag=self.dataset_tag,
+            snapshot_tag=self.snapshot_tag,
         )
-        if not dataset_dirs:
+        if not snapshot_dirs:
             return
-        ## output goes to the sim root (the shared parent of all dataset dirs)
-        out_dir = dataset_dirs[0].parent
+        out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
+        out_dir.mkdir(parents=True, exist_ok=True)
         ## compute and render PDFs for each requested field
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderPDFs(
-                dataset_dirs=dataset_dirs,
+                snapshot_dirs=snapshot_dirs,
                 out_dir=out_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
@@ -465,17 +467,19 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
-                allow_extract=True,
+                allow_slicing=False,
+                produces_data=True,
             ),
         ],
     ).parse_args()
     script_interface = ScriptInterface(
-        input_dir=user_args.dir,
-        dataset_tag=user_args.tag,
+        input_dir=user_args.input_dir,
+        snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
         comps_to_plot=user_args.comps,
-        extract_data=user_args.extract,
+        extract_data=user_args.save_data,
         num_bins=15,
+        out_dir=user_args.out_dir,
     )
     script_interface.run()
 

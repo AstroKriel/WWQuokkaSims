@@ -45,7 +45,7 @@ import quokka_fields
 
 @dataclass(frozen=True)
 class FieldArgs:
-    dataset_dir: Path
+    snapshot_dir: Path
     field_name: str
     field_loader: Callable
 
@@ -94,14 +94,14 @@ class LoadDataSeries:
     def __init__(
         self,
         *,
-        dataset_dirs: list[Path],
+        snapshot_dirs: list[Path],
         field_name: str,
         field_loader: Callable,
         use_parallel: bool = True,
     ):
-        self.dataset_dirs = list(
+        self.snapshot_dirs = list(
             sorted(
-                dataset_dirs,
+                snapshot_dirs,
             ),
         )
         self.field_name = field_name
@@ -113,10 +113,10 @@ class LoadDataSeries:
         field_args: FieldArgs,
     ) -> DataPoint:
         with load_snapshot.QuokkaSnapshot(
-                dataset_dir=field_args.dataset_dir,
+                snapshot_dir=field_args.snapshot_dir,
                 verbose=False,
-        ) as dataset:
-            sfield_3d = field_args.field_loader(dataset)
+        ) as snapshot:
+            sfield_3d = field_args.field_loader(snapshot)
         if not isinstance(sfield_3d, field_models.ScalarField_3D):
             raise TypeError(
                 f"Expected ScalarField_3D from `{field_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
@@ -135,10 +135,10 @@ class LoadDataSeries:
     ) -> DataSeries:
         grouped_field_args: list[FieldArgs] = [
             FieldArgs(
-                dataset_dir=Path(dataset_dir),
+                snapshot_dir=Path(snapshot_dir),
                 field_name=self.field_name,
                 field_loader=self.field_loader,
-            ) for dataset_dir in self.dataset_dirs
+            ) for snapshot_dir in self.snapshot_dirs
         ]
         if not grouped_field_args:
             return DataSeries(points=[])
@@ -288,39 +288,39 @@ class ScriptInterface:
         self,
         *,
         input_dir: Path,
-        dataset_tag: str,
+        snapshot_tag: str,
         fields_to_plot: list[str],
         extract_data: bool,
+        out_dir: Path | None = None,
         use_parallel: bool = True,
     ):
         validate_types.ensure_nonempty_string(
-            param=dataset_tag,
-            param_name="dataset_tag",
+            param=snapshot_tag,
+            param_name="snapshot_tag",
         )
         quokka_fields.validate_fields(field_names=fields_to_plot)
         self.input_dir = Path(input_dir)
-        self.dataset_tag = dataset_tag
+        self.snapshot_tag = snapshot_tag
         self.fields_to_plot = list(fields_to_plot)
         self.extract_data = extract_data
+        self.out_dir = Path(out_dir) if out_dir is not None else None
         self.use_parallel = bool(use_parallel)
 
     def run(
         self,
     ) -> None:
-        ## find all dataset dirs under input_dir whose names match dataset_tag, sorted by index
-        dataset_dirs = find_snapshots.resolve_snapshot_dirs(
+        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
-            dataset_tag=self.dataset_tag,
+            snapshot_tag=self.snapshot_tag,
         )
-        if not dataset_dirs:
+        if not snapshot_dirs:
             return
-        ## output goes to the sim root (the shared parent of all dataset dirs)
-        out_dir = dataset_dirs[0].parent
-        ## load the volume-integral time series and render the evolution plot for each requested field
+        out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
+        out_dir.mkdir(parents=True, exist_ok=True)
         for field_name in self.fields_to_plot:
             field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
             load_data_series = LoadDataSeries(
-                dataset_dirs=dataset_dirs,
+                snapshot_dirs=snapshot_dirs,
                 field_name=field_name,
                 field_loader=field_meta["loader"],
                 use_parallel=self.use_parallel,
@@ -346,15 +346,16 @@ def main():
             quokka_fields.base_parser(
                 num_dirs=1,
                 allow_vfields=False,
-                allow_extract=True,
+                produces_data=True,
             ),
         ],
     ).parse_args()
     script_interface = ScriptInterface(
-        input_dir=user_args.dir,
-        dataset_tag=user_args.tag,
+        input_dir=user_args.input_dir,
+        snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
-        extract_data=user_args.extract,
+        extract_data=user_args.save_data,
+        out_dir=user_args.out_dir,
         use_parallel=True,
     )
     script_interface.run()
