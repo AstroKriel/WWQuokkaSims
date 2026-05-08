@@ -24,10 +24,10 @@ from jormi.ww_validation import validate_types
 
 ## local
 from ww_quokka_sims.sim_io import find_snapshots
-from ww_quokka_sims._script_tools import field_registry, cli
-from plot_vi_evolution import (
-    DataSeries,
-    LoadDataSeries,
+from ww_quokka_sims._script_tools import (
+    cli,
+    data_series,
+    field_registry,
 )
 
 ##
@@ -60,7 +60,7 @@ class RenderComparisonPlot:
     def _save_comparison(
         self,
         *,
-        x_array: numpy.ndarray,
+        t_array: numpy.ndarray,
         y_array: numpy.ndarray,
     ) -> None:
         self.out_dir.mkdir(
@@ -70,7 +70,7 @@ class RenderComparisonPlot:
         json_io.save_dict_to_json_file(
             file_path=self.out_dir / f"{self.field_name}_time_comparison.json",
             input_dict={
-                "time": x_array,
+                "time": t_array,
                 "frac_diff": y_array,
             },
             overwrite=True,
@@ -80,36 +80,36 @@ class RenderComparisonPlot:
     def run(
         self,
         *,
-        data_series_1: DataSeries,
-        data_series_2: DataSeries,
+        vi_series_1: data_series.DataSeries,
+        vi_series_2: data_series.DataSeries,
     ) -> None:
         """Plots (series_2 / series_1) - 1; series_1 is the reference denominator."""
         ## sort both series by time and check that neither is empty
-        x_array_1, y_array_1 = data_series_1.get_sorted_arrays()
-        x_array_2, y_array_2 = data_series_2.get_sorted_arrays()
-        if (x_array_1.size == 0) and (x_array_2.size == 0):
+        t_array_1, y_array_1 = vi_series_1.get_sorted_arrays()
+        t_array_2, y_array_2 = vi_series_2.get_sorted_arrays()
+        if (t_array_1.size == 0) and (t_array_2.size == 0):
             raise RuntimeError(
                 "No data found for either directory.\n"
                 f"dir_1 ({self.label_dir_1}): empty DataSeries\n"
                 f"dir_2 ({self.label_dir_2}): empty DataSeries",
             )
-        if x_array_1.size == 0:
+        if t_array_1.size == 0:
             raise RuntimeError(
                 "No data found for dir_1.\n"
                 f"dir_1 ({self.label_dir_1}): empty DataSeries\n"
-                f"dir_2 ({self.label_dir_2}): {x_array_2.size} points",
+                f"dir_2 ({self.label_dir_2}): {t_array_2.size} points",
             )
-        if x_array_2.size == 0:
+        if t_array_2.size == 0:
             raise RuntimeError(
                 "No data found for dir_2.\n"
-                f"dir_1 ({self.label_dir_1}): {x_array_1.size} points\n"
+                f"dir_1 ({self.label_dir_1}): {t_array_1.size} points\n"
                 f"dir_2 ({self.label_dir_2}): empty DataSeries",
             )
-        x1_min = float(x_array_1[0])
-        x1_max = float(x_array_1[-1])
-        x2_min = float(x_array_2[0])
-        x2_max = float(x_array_2[-1])
-        in_bounds_mask_1 = (x2_min <= x_array_1) & (x_array_1 <= x2_max)
+        x1_min = float(t_array_1[0])
+        x1_max = float(t_array_1[-1])
+        x2_min = float(t_array_2[0])
+        x2_max = float(t_array_2[-1])
+        in_bounds_mask_1 = (x2_min <= t_array_1) & (t_array_1 <= x2_max)
         if not numpy.any(in_bounds_mask_1):
             raise RuntimeError(
                 "There are no overlapping times for the comparison.\n"
@@ -119,22 +119,22 @@ class RenderComparisonPlot:
         ## interpolate series_2 onto the overlapping subset of series_1's time grid
         interp_result = interpolate_series.interpolate_1d(
             data_series=series_types.DataSeries(
-                x_values=x_array_2,
+                x_values=t_array_2,
                 y_values=y_array_2,
             ),
-            x_interp=x_array_1[in_bounds_mask_1],
+            x_interp=t_array_1[in_bounds_mask_1],
             spline_order=3,
         )
-        x_array_common = interp_result.x_values
+        t_array_common = interp_result.x_values
         y_array_2_interp = interp_result.y_values
-        if x_array_common.size == 0:
+        if t_array_common.size == 0:
             raise RuntimeError(
                 "No overlapping times remain after interpolation bounds handling.\n"
-                f"dir_1 ({self.label_dir_1}): x in [{float(x_array_1[0])}, {float(x_array_1[-1])}]\n"
+                f"dir_1 ({self.label_dir_1}): x in [{float(t_array_1[0])}, {float(t_array_1[-1])}]\n"
                 f"dir_2 ({self.label_dir_2}): x in [{x2_min}, {x2_max}]",
             )
         y_array_1_common = y_array_1[in_bounds_mask_1]
-        y_array_1_common = y_array_1_common[:x_array_common.size]
+        y_array_1_common = y_array_1_common[:t_array_common.size]
         if not numpy.all(numpy.isfinite(y_array_1_common)):
             raise RuntimeError(
                 f"Non-finite values found in dir_1 ({self.label_dir_1}) on the comparison grid.",
@@ -159,12 +159,12 @@ class RenderComparisonPlot:
         ## optionally write the comparison data to JSON
         if self.extract_data:
             self._save_comparison(
-                x_array=x_array_common,
+                t_array=t_array_common,
                 y_array=y_array_frac_diff,
             )
         fig, ax = manage_plots.create_figure()
         ax.plot(
-            x_array_common,
+            t_array_common,
             y_array_frac_diff,
             color="black",
             marker=self.marker_dir_2,
@@ -250,20 +250,20 @@ class ScriptInterface:
         label_dir_2 = self.dir_2.name
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
-            load_data_series_1 = LoadDataSeries(
+            loader_1 = data_series.LoadDataSeries(
                 snapshot_dirs=snapshot_dirs_1,
                 field_name=field_name,
-                field_loader=field_meta["loader"],
+                field_loader=field_meta.loader,
                 use_parallel=True,
             )
-            load_data_series_2 = LoadDataSeries(
+            loader_2 = data_series.LoadDataSeries(
                 snapshot_dirs=snapshot_dirs_2,
                 field_name=field_name,
-                field_loader=field_meta["loader"],
+                field_loader=field_meta.loader,
                 use_parallel=True,
             )
-            data_series_1 = load_data_series_1.run()
-            data_series_2 = load_data_series_2.run()
+            vi_series_1 = loader_1.run()
+            vi_series_2 = loader_2.run()
             render_comparison_plot = RenderComparisonPlot(
                 out_dir=self.out_dir,
                 field_name=field_name,
@@ -274,8 +274,8 @@ class ScriptInterface:
                 marker_dir_2="s",
             )
             render_comparison_plot.run(
-                data_series_1=data_series_1,
-                data_series_2=data_series_2,
+                vi_series_1=vi_series_1,
+                vi_series_2=vi_series_2,
             )
 
 

@@ -7,156 +7,24 @@
 ## stdlib
 import argparse
 
-from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
 from typing import final
 
-## third-party
-import numpy
-
 ## personal
-from jormi.ww_fields.fields_3d import (
-    field_operators,
-    field_models,
-)
-from jormi.ww_fns import parallel_dispatch
 from jormi.ww_io import json_io
 from jormi.ww_plots import (
     annotate_axis,
     manage_plots,
 )
-from jormi.ww_validation import (
-    validate_arrays,
-    validate_types,
-)
+from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims.sim_io import (
-    find_snapshots,
-    load_snapshot,
+from ww_quokka_sims.sim_io import find_snapshots
+from ww_quokka_sims._script_tools import (
+    cli,
+    data_series,
+    field_registry,
 )
-from ww_quokka_sims._script_tools import field_registry, cli
-
-##
-## === DATA CLASSES
-##
-
-
-@dataclass(frozen=True)
-class FieldArgs:
-    snapshot_dir: Path
-    field_name: str
-    field_loader: Callable
-
-
-@dataclass(frozen=True)
-class DataPoint:
-    sim_time: float
-    vi_value: float
-
-
-@dataclass(frozen=True)
-class DataSeries:
-    points: list[DataPoint]
-
-    @property
-    def num_points(
-        self,
-    ) -> int:
-        return len(self.points)
-
-    def get_sorted_arrays(
-        self,
-    ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        if not self.points:
-            return (
-                numpy.asarray([], dtype=float),
-                numpy.asarray([], dtype=float),
-            )
-        sorted_points = sorted(self.points, key=lambda point: point.sim_time)
-        time_array = validate_arrays.as_1d([point.sim_time for point in sorted_points])
-        values_array = validate_arrays.as_1d([point.vi_value for point in sorted_points])
-        return (
-            time_array,
-            values_array,
-        )
-
-
-##
-## === FIELD PROCESSING
-##
-
-
-@final
-class LoadDataSeries:
-
-    def __init__(
-        self,
-        *,
-        snapshot_dirs: list[Path],
-        field_name: str,
-        field_loader: Callable,
-        use_parallel: bool = True,
-    ):
-        self.snapshot_dirs = list(
-            sorted(
-                snapshot_dirs,
-            ),
-        )
-        self.field_name = field_name
-        self.field_loader = field_loader
-        self.use_parallel = bool(use_parallel)
-
-    @staticmethod
-    def _load_snapshot(
-        field_args: FieldArgs,
-    ) -> DataPoint:
-        with load_snapshot.QuokkaSnapshot(
-                snapshot_dir=field_args.snapshot_dir,
-                verbose=False,
-        ) as snapshot:
-            sfield_3d = field_args.field_loader(snapshot)
-        if not isinstance(sfield_3d, field_models.ScalarField_3D):
-            raise TypeError(
-                f"Expected ScalarField_3D from `{field_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
-            )
-        sim_time = sfield_3d.sim_time
-        if (sim_time is None) or (not numpy.isfinite(sim_time)):
-            raise ValueError(f"Invalid sim_time for field: {sim_time!r}")
-        vi_value = field_operators.compute_sfield_volume_integral(sfield_3d=sfield_3d)
-        return DataPoint(
-            sim_time=float(sim_time),
-            vi_value=float(vi_value),
-        )
-
-    def run(
-        self,
-    ) -> DataSeries:
-        grouped_field_args: list[FieldArgs] = [
-            FieldArgs(
-                snapshot_dir=Path(snapshot_dir),
-                field_name=self.field_name,
-                field_loader=self.field_loader,
-            ) for snapshot_dir in self.snapshot_dirs
-        ]
-        if not grouped_field_args:
-            return DataSeries(points=[])
-        ## load each snapshot in parallel if the series is large enough to justify it, else serial
-        if self.use_parallel and (len(grouped_field_args) > 5):
-            data_points: list[DataPoint] = parallel_dispatch.run_in_parallel(
-                worker_fn=LoadDataSeries._load_snapshot,
-                grouped_args=grouped_field_args,
-                timeout_seconds=120,
-                show_progress=True,
-                enable_plotting=True,
-            )
-        else:
-            data_points = [
-                LoadDataSeries._load_snapshot(field_args=field_args) for field_args in grouped_field_args
-            ]
-        return DataSeries(points=data_points)
-
 
 ##
 ## === FIGURE RENDERING
@@ -216,14 +84,14 @@ class RenderDataSeries:
     def _save_series(
         self,
         *,
-        data_series: DataSeries,
+        vi_series: data_series.DataSeries,
         out_dir: Path,
     ) -> None:
         out_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
-        time_array, values_array = data_series.get_sorted_arrays()
+        time_array, values_array = vi_series.get_sorted_arrays()
         json_io.save_dict_to_json_file(
             file_path=out_dir / f"{self.field_name}_vi_evolution.json",
             input_dict={
@@ -237,16 +105,16 @@ class RenderDataSeries:
     def run(
         self,
         *,
-        data_series: DataSeries,
+        vi_series: data_series.DataSeries,
     ) -> None:
         ## optionally write the time series data to JSON
         if self.extract_data:
             self._save_series(
-                data_series=data_series,
+                vi_series=vi_series,
                 out_dir=self.out_dir,
             )
         fig, ax = manage_plots.create_figure()
-        time_array, values_array = data_series.get_sorted_arrays()
+        time_array, values_array = vi_series.get_sorted_arrays()
         if time_array.size == 0:
             annotate_axis.add_text(
                 ax=ax,
@@ -316,22 +184,25 @@ class ScriptInterface:
         if not snapshot_dirs:
             return
         out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
-        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
-            load_data_series = LoadDataSeries(
+            loader = data_series.LoadDataSeries(
                 snapshot_dirs=snapshot_dirs,
                 field_name=field_name,
-                field_loader=field_meta["loader"],
+                field_loader=field_meta.loader,
                 use_parallel=self.use_parallel,
             )
-            data_series = load_data_series.run()
+            vi_series = loader.run()
             render_data_series = RenderDataSeries(
                 out_dir=out_dir,
                 field_name=field_name,
                 extract_data=self.extract_data,
             )
-            render_data_series.run(data_series=data_series)
+            render_data_series.run(vi_series=vi_series)
 
 
 ##
