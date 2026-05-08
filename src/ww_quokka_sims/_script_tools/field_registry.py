@@ -95,7 +95,7 @@ QUOKKA_FIELD_LOOKUP = {
         loader=load_snapshot.QuokkaSnapshot.compute_pressure_sfield,
         cmap=SEQUENTIAL_CMAP,
     ),
-    "divb":
+    "div_b":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_div_b_sfield,
         cmap=DIVERGING_CMAP,
