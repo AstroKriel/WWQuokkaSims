@@ -24,7 +24,7 @@ from jormi.ww_validation import validate_types
 
 ## local
 from ww_quokka_sims.sim_io import find_snapshots
-import quokka_fields
+from ww_quokka_sims._script_tools import field_registry, cli
 from plot_vi_evolution import (
     DataSeries,
     LoadDataSeries,
@@ -215,7 +215,7 @@ class ScriptInterface:
         self.dir_2 = Path(dir_2)
         self.out_dir = Path(out_dir)
         valid_fields = set(
-            quokka_fields.QUOKKA_FIELD_LOOKUP.keys(),
+            field_registry.QUOKKA_FIELD_LOOKUP.keys(),
         )
         if (not fields_to_plot) or (not set(fields_to_plot).issubset(valid_fields)):
             raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}")
@@ -249,7 +249,7 @@ class ScriptInterface:
         label_dir_1 = self.dir_1.name
         label_dir_2 = self.dir_2.name
         for field_name in self.fields_to_plot:
-            field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
+            field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             load_data_series_1 = LoadDataSeries(
                 snapshot_dirs=snapshot_dirs_1,
                 field_name=field_name,
@@ -288,7 +288,7 @@ def main():
     user_args = argparse.ArgumentParser(
         description="Compare volume-integrated field evolution between two Quokka simulations.",
         parents=[
-            quokka_fields.base_parser(
+            cli.base_parser(
                 num_dirs=2,
                 allow_vfields=False,
                 produces_data=True,

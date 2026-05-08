@@ -36,7 +36,7 @@ from ww_quokka_sims.sim_io import (
     find_snapshots,
     load_snapshot,
 )
-import quokka_fields
+from ww_quokka_sims._script_tools import field_registry, cli
 
 ##
 ## === DATA CLASSES
@@ -298,7 +298,7 @@ class ScriptInterface:
             param=snapshot_tag,
             param_name="snapshot_tag",
         )
-        quokka_fields.validate_fields(field_names=fields_to_plot)
+        field_registry.validate_fields(field_names=fields_to_plot)
         self.input_dir = Path(input_dir)
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = list(fields_to_plot)
@@ -318,7 +318,7 @@ class ScriptInterface:
         out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
         out_dir.mkdir(parents=True, exist_ok=True)
         for field_name in self.fields_to_plot:
-            field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
+            field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             load_data_series = LoadDataSeries(
                 snapshot_dirs=snapshot_dirs,
                 field_name=field_name,
@@ -343,7 +343,7 @@ def main():
     user_args = argparse.ArgumentParser(
         description="Plot volume-integrated field evolution from Quokka simulations.",
         parents=[
-            quokka_fields.base_parser(
+            cli.base_parser(
                 num_dirs=1,
                 allow_vfields=False,
                 produces_data=True,

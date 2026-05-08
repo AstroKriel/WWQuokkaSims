@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import final
 
 from ww_quokka_sims.sim_io import load_snapshot
-import quokka_fields
+from ww_quokka_sims._script_tools import field_registry, cli
 
 ##
 ## === SCRIPT INTERFACE
@@ -54,7 +54,7 @@ def main():
     user_args = argparse.ArgumentParser(
         description="Inspect a Quokka snapshot and list available field keys.",
         parents=[
-            quokka_fields.base_parser(
+            cli.base_parser(
                 num_dirs=1,
                 allow_vfields=False,
                 allow_slicing=False,

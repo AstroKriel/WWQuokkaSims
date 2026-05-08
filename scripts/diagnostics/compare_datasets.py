@@ -26,7 +26,7 @@ from ww_quokka_sims.sim_io import (
     find_snapshots,
     load_snapshot,
 )
-import quokka_fields
+from ww_quokka_sims._script_tools import field_registry, cli
 
 ##
 ## === DATA ACCESS
@@ -359,7 +359,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Compare two Quokka (BoxLib) data-directories.",
         parents=[
-            quokka_fields.base_parser(
+            cli.base_parser(
                 num_dirs=2,
                 allow_vfields=False,
                 allow_slicing=False,

@@ -35,7 +35,7 @@ from ww_quokka_sims.sim_io import (
     find_snapshots,
     load_snapshot,
 )
-import quokka_fields
+from ww_quokka_sims._script_tools import field_registry, cli
 
 ##
 ## === DATA CLASSES
@@ -304,7 +304,7 @@ class ScriptInterface:
             param=snapshot_tag,
             param_name="snapshot_tag",
         )
-        quokka_fields.validate_fields(field_names=fields_to_plot)
+        field_registry.validate_fields(field_names=fields_to_plot)
         self.input_dir = Path(input_dir)
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
@@ -325,7 +325,7 @@ class ScriptInterface:
         out_dir.mkdir(parents=True, exist_ok=True)
         ## compute and render power spectra for each requested field
         for field_name in self.fields_to_plot:
-            field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
+            field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderSpectra(
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
@@ -347,7 +347,7 @@ def main():
     user_args = argparse.ArgumentParser(
         description="Plot power spectra of Quokka scalar fields.",
         parents=[
-            quokka_fields.base_parser(
+            cli.base_parser(
                 num_dirs=1,
                 allow_vfields=False,
                 produces_data=True,

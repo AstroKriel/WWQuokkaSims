@@ -42,7 +42,7 @@ from ww_quokka_sims.sim_io import (
     find_snapshots,
     load_snapshot,
 )
-import quokka_fields
+from ww_quokka_sims._script_tools import field_registry, cli
 
 ##
 ## === DATA CLASSES
@@ -436,7 +436,7 @@ def render_fields_in_serial(
     extract_data: bool,
 ) -> None:
     for field_name in fields_to_plot:
-        field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
+        field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
         field_args = FieldArgs(
             field_name=field_name,
             field_loader=field_meta["loader"],
@@ -496,7 +496,7 @@ def render_fields_in_parallel(
 ) -> None:
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_plot:
-        field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
+        field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
         for snapshot_dir in snapshot_dirs:
             grouped_args.append(
                 WorkerArgs(
@@ -547,7 +547,7 @@ class ScriptInterface:
             param_name="snapshot_tag",
         )
         valid_fields = set(
-            quokka_fields.QUOKKA_FIELD_LOOKUP.keys(),
+            field_registry.QUOKKA_FIELD_LOOKUP.keys(),
         )
         if not fields_to_plot or not set(fields_to_plot).issubset(valid_fields):
             raise ValueError(f"Provide one or more field to plot (via -f) from: {sorted(valid_fields)}")
@@ -642,7 +642,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Plot midplane slices of Quokka field components.",
         parents=[
-            quokka_fields.base_parser(
+            cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
                 produces_data=True,

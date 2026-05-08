@@ -33,7 +33,7 @@ from ww_quokka_sims.sim_io import (
     find_snapshots,
     load_snapshot,
 )
-import quokka_fields
+from ww_quokka_sims._script_tools import field_registry, cli
 
 ##
 ## === DATA CLASSES
@@ -468,7 +468,7 @@ class ScriptInterface:
             param=snapshot_tag,
             param_name="snapshot_tag",
         )
-        quokka_fields.validate_fields(field_names=fields_to_plot)
+        field_registry.validate_fields(field_names=fields_to_plot)
         if comps_to_plot is None:
             comps_to_plot = cartesian_axes.DEFAULT_3D_AXES_ORDER
         elif not set(comps_to_plot).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):
@@ -499,7 +499,7 @@ class ScriptInterface:
         out_dir.mkdir(parents=True, exist_ok=True)
         ## compute and render profiles for each requested field
         for field_name in self.fields_to_plot:
-            field_meta = quokka_fields.QUOKKA_FIELD_LOOKUP[field_name]
+            field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             render_comp_profiles = RenderCompProfiles(
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
@@ -523,7 +523,7 @@ def main():
     user_args = argparse.ArgumentParser(
         description="Plot midplane profiles of Quokka field components.",
         parents=[
-            quokka_fields.base_parser(
+            cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
                 produces_data=True,
