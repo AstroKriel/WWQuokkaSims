@@ -317,13 +317,21 @@ class RenderCompProfiles:
         comp_labels: list[str],
         axis_labels: list[cartesian_axes.AxisLike_3D],
     ) -> None:
+        num_rows = len(comp_labels)
         for row_index, comp_label in enumerate(comp_labels):
+            is_bottom_row = row_index == num_rows - 1
             for col_index, axis_label in enumerate(axis_labels):
                 ax = axs_grid[row_index][col_index]
-                if col_index == 0:
+                is_left_col = col_index == 0
+                if is_left_col:
                     ax.set_ylabel(comp_label)
-                axis_label_str = cartesian_axes.get_axis_label(axis_label)
-                ax.set_xlabel(axis_label_str if "$" in axis_label_str else f"${axis_label_str}$")
+                else:
+                    ax.tick_params(labelleft=False)
+                if is_bottom_row:
+                    axis_label_str = cartesian_axes.get_axis_label(axis_label)
+                    ax.set_xlabel(axis_label_str if "$" in axis_label_str else f"${axis_label_str}$")
+                else:
+                    ax.tick_params(labelbottom=False)
 
     @staticmethod
     def _plot_comp_profile(
