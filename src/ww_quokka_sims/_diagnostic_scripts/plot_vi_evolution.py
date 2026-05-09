@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import final
 
 ## personal
-from jormi.ww_io import json_io
+from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     annotate_axis,
     manage_plots,
@@ -211,6 +211,7 @@ class ScriptInterface:
 
 
 def main():
+    manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     user_args = argparse.ArgumentParser(
         description="Plot volume-integrated field evolution from Quokka simulations.",
         parents=[

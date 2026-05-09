@@ -10,6 +10,9 @@ import argparse
 from pathlib import Path
 from typing import final
 
+## personal
+from jormi.ww_io import manage_log
+
 ## local
 from ww_quokka_sims._script_tools import cli
 from ww_quokka_sims.sim_io import load_snapshot
@@ -53,6 +56,7 @@ class ScriptInterface:
 
 
 def main():
+    manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     user_args = argparse.ArgumentParser(
         description="Inspect a Quokka snapshot and list available field keys.",
         parents=[

@@ -19,7 +19,7 @@ import numpy
 from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_models
-from jormi.ww_io import json_io
+from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
     manage_plots,
@@ -467,6 +467,7 @@ class ScriptInterface:
 
 
 def main():
+    manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     user_args = argparse.ArgumentParser(
         description="Plot PDFs of Quokka field components.",
         parents=[

@@ -21,7 +21,7 @@ from jormi.ww_fields.fields_3d import (
     domain_models,
     field_models,
 )
-from jormi.ww_io import json_io
+from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
     manage_plots,
@@ -534,6 +534,7 @@ class ScriptInterface:
 
 
 def main():
+    manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     user_args = argparse.ArgumentParser(
         description="Plot midplane profiles of Quokka field components.",
         parents=[

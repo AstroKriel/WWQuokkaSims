@@ -18,7 +18,7 @@ from jormi.ww_data import (
     interpolate_series,
     series_types,
 )
-from jormi.ww_io import json_io
+from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import manage_plots
 from jormi.ww_validation import validate_types
 
@@ -285,6 +285,7 @@ class ScriptInterface:
 
 
 def main():
+    manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     user_args = argparse.ArgumentParser(
         description="Compare volume-integrated field evolution between two Quokka simulations.",
         parents=[

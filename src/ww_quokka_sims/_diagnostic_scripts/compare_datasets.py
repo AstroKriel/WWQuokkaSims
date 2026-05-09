@@ -356,6 +356,7 @@ class ScriptInterface:
 
 
 def main():
+    manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     parser = argparse.ArgumentParser(
         description="Compare two Quokka (BoxLib) data-directories.",
         parents=[

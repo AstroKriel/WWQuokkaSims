@@ -645,6 +645,7 @@ class ScriptInterface:
 
 
 def main():
+    manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     parser = argparse.ArgumentParser(
         description="Plot midplane slices of Quokka field components.",
         parents=[
