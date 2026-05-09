@@ -1,2 +1,6 @@
-# ignore extraneous python by products
-**/__pycache__
+## ignore extraneous artefacts
+.DS_Store
+__pycache__/
+dist/
+
+## .
