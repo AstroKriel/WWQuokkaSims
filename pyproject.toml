@@ -68,7 +68,6 @@ packages = ["src/ww_quokka_sims"]
 ## which directories to lint under
 include = [
     "src",
-    "utests",
 ]
 ## where to look when resolving imports
 extraPaths = ["src"]
@@ -98,4 +97,4 @@ reportUnusedFunction = "none"  # _annotate_fit is a helper retained for future u
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-testpaths = ["utests"]
+testpaths = []
