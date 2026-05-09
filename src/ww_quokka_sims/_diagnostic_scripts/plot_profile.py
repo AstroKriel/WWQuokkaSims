@@ -411,8 +411,8 @@ class RenderCompProfiles:
         fig, axs_grid = manage_plots.create_figure_grid(
             num_rows=num_rows,
             num_cols=num_cols,
-            x_spacing=0.25,
-            y_spacing=0.25,
+            x_spacing=0.05,
+            y_spacing=0.05,
         )
         ## plot each component row; use a sequential color series if there are multiple snapshots
         for row_index, comp_label in enumerate(comp_labels):
