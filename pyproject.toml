@@ -23,9 +23,9 @@ dependencies = [
 [project.scripts]
 quokka-compare-snapshots = "ww_quokka_sims._diagnostic_scripts.compare_snapshots:main"
 quokka-inspect-snapshot = "ww_quokka_sims._diagnostic_scripts.inspect_snapshot:main"
-quokka-plot-pdf = "ww_quokka_sims._diagnostic_scripts.plot_pdf:main"
-quokka-plot-profile = "ww_quokka_sims._diagnostic_scripts.plot_profile:main"
-quokka-plot-slice = "ww_quokka_sims._diagnostic_scripts.plot_slice:main"
+quokka-plot-pdfs = "ww_quokka_sims._diagnostic_scripts.plot_pdfs:main"
+quokka-plot-profiles = "ww_quokka_sims._diagnostic_scripts.plot_profiles:main"
+quokka-plot-slices = "ww_quokka_sims._diagnostic_scripts.plot_slices:main"
 quokka-plot-spectra = "ww_quokka_sims._diagnostic_scripts.plot_spectra:main"
 quokka-plot-vi-comparison = "ww_quokka_sims._diagnostic_scripts.plot_vi_comparison:main"
 quokka-plot-vi-evolution = "ww_quokka_sims._diagnostic_scripts.plot_vi_evolution:main"
