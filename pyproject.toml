@@ -20,6 +20,16 @@ dependencies = [
   "yt>=4.4.1",
 ]
 
+[project.scripts]
+quokka-compare-datasets   = "ww_quokka_sims._diagnostic_scripts.compare_datasets:main"
+quokka-inspect-dataset    = "ww_quokka_sims._diagnostic_scripts.inspect_dataset:main"
+quokka-plot-pdf           = "ww_quokka_sims._diagnostic_scripts.plot_pdf:main"
+quokka-plot-profile       = "ww_quokka_sims._diagnostic_scripts.plot_profile:main"
+quokka-plot-slice         = "ww_quokka_sims._diagnostic_scripts.plot_slice:main"
+quokka-plot-spectra       = "ww_quokka_sims._diagnostic_scripts.plot_spectra:main"
+quokka-plot-vi-comparison = "ww_quokka_sims._diagnostic_scripts.plot_vi_comparison:main"
+quokka-plot-vi-evolution  = "ww_quokka_sims._diagnostic_scripts.plot_vi_evolution:main"
+
 [tool.uv.sources]
 jormi = { path = "../jormi", editable = true }
 
@@ -58,11 +68,10 @@ packages = ["src/ww_quokka_sims"]
 ## which directories to lint under
 include = [
     "src",
-    "scripts",
     "utests",
 ]
 ## where to look when resolving imports
-extraPaths = ["src", "scripts/diagnostic"]
+extraPaths = ["src"]
 
 ## --- rules to enforce
 reportMissingImports = true
