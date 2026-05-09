@@ -297,7 +297,7 @@ class RenderCompProfiles:
                 for axis_index, axis in enumerate(comp_profile.axis_labels):
                     domain = comp_profile.get_domain(axis_index=axis_index)
                     values = comp_profile.get_values(axis_index=axis_index)
-                    axis_dict[str(axis)] = {
+                    axis_dict[cartesian_axes.get_axis_label(axis)] = {
                         "domain": domain,
                         "values": values,
                     }
@@ -322,7 +322,7 @@ class RenderCompProfiles:
                 ax = axs_grid[row_index][col_index]
                 if col_index == 0:
                     ax.set_ylabel(comp_label)
-                axis_label_str = str(axis_label)
+                axis_label_str = cartesian_axes.get_axis_label(axis_label)
                 ax.set_xlabel(axis_label_str if "$" in axis_label_str else f"${axis_label_str}$")
 
     @staticmethod
