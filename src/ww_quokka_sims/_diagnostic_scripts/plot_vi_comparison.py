@@ -43,6 +43,7 @@ class RenderComparisonPlot:
         *,
         out_dir: Path,
         field_name: str,
+        latex_label: str,
         label_dir_1: str,
         label_dir_2: str,
         extract_data: bool,
@@ -51,6 +52,7 @@ class RenderComparisonPlot:
     ):
         self.out_dir = out_dir
         self.field_name = field_name
+        self.latex_label = latex_label
         self.label_dir_1 = str(label_dir_1)
         self.label_dir_2 = str(label_dir_2)
         self.extract_data = extract_data
@@ -174,7 +176,7 @@ class RenderComparisonPlot:
             label=f"{self.label_dir_2}/{self.label_dir_1} - 1",
         )
         ax.set_xlabel("time")
-        ax.set_ylabel(self.field_name + " (frac. diff.)")
+        ax.set_ylabel(f"${self.latex_label}$ (frac. diff.)")
         fig_path = self.out_dir / f"{self.field_name}_time_comparison.png"
         manage_plots.save_figure(
             fig=fig,
@@ -267,6 +269,7 @@ class ScriptInterface:
             render_comparison_plot = RenderComparisonPlot(
                 out_dir=self.out_dir,
                 field_name=field_name,
+                latex_label=field_meta.latex_label,
                 label_dir_1=label_dir_1,
                 label_dir_2=label_dir_2,
                 extract_data=self.extract_data,

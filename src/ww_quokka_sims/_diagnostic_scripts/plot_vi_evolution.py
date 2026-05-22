@@ -39,10 +39,12 @@ class RenderDataSeries:
         *,
         out_dir: Path,
         field_name: str,
+        latex_label: str,
         extract_data: bool,
     ):
         self.out_dir = out_dir
         self.field_name = field_name
+        self.latex_label = latex_label
         self.extract_data = extract_data
 
     @staticmethod
@@ -135,7 +137,7 @@ class RenderDataSeries:
             lw=1.5,
         )
         ax.set_xlabel("time")
-        ax.set_ylabel(self.field_name)
+        ax.set_ylabel(f"${self.latex_label}$")
         fig_path = self.out_dir / f"{self.field_name}_time_evolution.png"
         manage_plots.save_figure(
             fig=fig,
@@ -200,6 +202,7 @@ class ScriptInterface:
             render_data_series = RenderDataSeries(
                 out_dir=out_dir,
                 field_name=field_name,
+                latex_label=field_meta.latex_label,
                 extract_data=self.extract_data,
             )
             render_data_series.run(vi_series=vi_series)

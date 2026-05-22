@@ -48,7 +48,7 @@ from ww_quokka_sims.sim_io import (
 @dataclass(frozen=True)
 class SpectraData:
     sim_time: float
-    field_label: str
+    latex_label: str
     k_bin_centers: numpy.ndarray
     log10_spectrum: numpy.ndarray
 
@@ -111,7 +111,7 @@ class ComputeSpectra:
             field_spectra.append(
                 SpectraData(
                     sim_time=sim_time,
-                    field_label=field_models.get_label(field),
+                    latex_label=field.latex_label,
                     k_bin_centers=spectrum.k_bin_centers_1d,
                     log10_spectrum=log10_spectrum,
                 ),
@@ -151,11 +151,10 @@ class RenderSpectra:
     def _style_ax(
         *,
         ax,
-        field_label: str,
+        latex_label: str,
     ) -> None:
         ax.set_xlabel(r"$k$")
-        raw_field_label = field_label.replace("$", "")
-        ax.set_ylabel(rf"$\log_{{10}}\big(\mathcal{{P}}_{{{raw_field_label}}}(k)\big)$")
+        ax.set_ylabel(rf"$\log_{{10}}\big(\mathcal{{P}}_{{{latex_label}}}(k)\big)$")
 
     @staticmethod
     def _plot_snapshot(
@@ -268,7 +267,7 @@ class RenderSpectra:
             )
         self._style_ax(
             ax=ax,
-            field_label=field_spectra[0].field_label,
+            latex_label=field_spectra[0].latex_label,
         )
         ## include snapshot index in the filename if there is only one snapshot
         if len(field_spectra) == 1:
