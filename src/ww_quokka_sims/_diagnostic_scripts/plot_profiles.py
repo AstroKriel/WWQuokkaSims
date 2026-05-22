@@ -46,6 +46,7 @@ from ww_quokka_sims.sim_io import (
 @dataclass(frozen=True)
 class CompProfile:
     sim_time: float
+    comp_name: str
     comp_label: str
     axis_labels: list[cartesian_axes.AxisLike_3D]
     x_array_by_axis: list[numpy.ndarray]
@@ -158,6 +159,7 @@ class ComputeCompProfiles:
         return [
             CompProfile(
                 sim_time=sim_time,
+                comp_name=self.field_name,
                 axis_labels=axis_labels,
                 comp_label=field_models.get_label(field),
                 x_array_by_axis=x_array_by_axis,
@@ -201,6 +203,7 @@ class ComputeCompProfiles:
             comp_profiles.append(
                 CompProfile(
                     sim_time=sim_time,
+                    comp_name=cartesian_axes.get_axis_label(comp_name),
                     axis_labels=axis_labels,
                     comp_label=comp_label,
                     x_array_by_axis=x_array_by_axis,
@@ -301,7 +304,7 @@ class RenderCompProfiles:
                         "domain": domain,
                         "values": values,
                     }
-                snapshot_dict[comp_label] = axis_dict
+                snapshot_dict[comp_profile.comp_name] = axis_dict
             output_dict[str(snapshot_index)] = snapshot_dict
         json_io.save_dict_to_json_file(
             file_path=out_dir / f"{self.field_name}_profiles.json",
