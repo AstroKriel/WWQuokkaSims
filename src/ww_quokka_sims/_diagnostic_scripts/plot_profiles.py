@@ -21,7 +21,7 @@ from jormi.ww_fields.fields_3d import (
     domain_models,
     field_models,
 )
-from jormi.ww_io import csv_io, manage_log
+from jormi.ww_io import manage_log
 from jormi.ww_plots import (
     add_color,
     manage_plots,
@@ -36,6 +36,7 @@ from ww_quokka_sims._script_tools import (
 from ww_quokka_sims.sim_io import (
     find_snapshots,
     load_snapshot,
+    profile_models,
 )
 
 ##
@@ -290,28 +291,38 @@ class RenderCompProfiles:
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         first_profile = comp_profiles_lookup[comp_labels[0]][0]
         num_axes = first_profile.num_axes
-        for comp_label in comp_labels:
-            for snapshot_index in range(num_snapshots):
-                comp_profile = comp_profiles_lookup[comp_label][snapshot_index]
-                time_tag = f"t={comp_profile.sim_time:.3f}"
-                for axis_index, axis in enumerate(comp_profile.axis_labels):
-                    axis_label = cartesian_axes.get_axis_label(axis)
-                    position = comp_profile.get_domain(axis_index=axis_index)
-                    field_value = comp_profile.get_values(axis_index=axis_index)
-                    if num_axes == 1:
-                        stem = f"{comp_profile.comp_name}_{time_tag}"
-                    else:
-                        stem = f"{comp_profile.comp_name}_{axis_label}_{time_tag}"
-                    file_path = out_dir / f"{stem}.csv"
-                    csv_io.save_dict_to_csv_file(
-                        file_path=file_path,
-                        input_dict={
-                            "position": position,
-                            "field_value": field_value,
-                        },
-                        overwrite=True,
-                        verbose=False,
-                    )
+        is_scalar = first_profile.comp_name == self.field_name
+        for snapshot_index in range(num_snapshots):
+            any_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
+            sim_time = any_profile.sim_time
+            time_tag = f"t={sim_time:.3f}"
+            for axis_index, axis in enumerate(any_profile.axis_labels):
+                axis_label = cartesian_axes.get_axis_label(axis)
+                stem = f"{self.field_name}_{time_tag}" if num_axes == 1 else f"{self.field_name}_{axis_label}_{time_tag}"
+                file_path = out_dir / f"{stem}.json"
+                if is_scalar:
+                    comp_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
+                    profile_models.ScalarProfile(
+                        field_name=self.field_name,
+                        sim_time=sim_time,
+                        profile_axis=axis_label,
+                        position=comp_profile.get_domain(axis_index=axis_index),
+                        field_value=comp_profile.get_values(axis_index=axis_index),
+                    ).save_to_file(file_path)
+                else:
+                    components = {
+                        comp_profiles_lookup[comp_label][snapshot_index].comp_name: profile_models.ComponentArrays(
+                            position=comp_profiles_lookup[comp_label][snapshot_index].get_domain(axis_index=axis_index),
+                            field_value=comp_profiles_lookup[comp_label][snapshot_index].get_values(axis_index=axis_index),
+                        )
+                        for comp_label in comp_labels
+                    }
+                    profile_models.VectorProfile(
+                        field_name=self.field_name,
+                        sim_time=sim_time,
+                        profile_axis=axis_label,
+                        components=components,
+                    ).save_to_file(file_path)
 
     @staticmethod
     def _style_axs(
