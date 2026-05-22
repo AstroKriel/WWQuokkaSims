@@ -495,7 +495,7 @@ class QuokkaSnapshot(
         b_key_lookup = self._get_vfield_key_lookup("magnetic")
         b_vfield_3d = self.load_3d_vfield(
             vfield_key_lookup=b_key_lookup,
-            field_name="magnetic_field",
+            field_name="magnetic",
             latex_label=r"\vec{b}",
         )
         self._field_cache.cache_field(
