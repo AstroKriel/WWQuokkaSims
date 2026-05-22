@@ -27,6 +27,7 @@ DIVERGING_CMAP = "cmr.iceburn"
 class FieldEntry:
     loader: Callable
     cmap: str
+    latex_label: str
 
 
 QUOKKA_FIELD_LOOKUP = {
@@ -34,76 +35,91 @@ QUOKKA_FIELD_LOOKUP = {
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.load_3d_density_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"\rho",
     ),
     "vel":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_velocity_vfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"\vec{v}",
     ),
     "vel_magn":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_velocity_magnitude_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"|\vec{v}|",
     ),
     "mag":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.load_3d_magnetic_vfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"\vec{b}",
     ),
     "E_tot":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.load_3d_total_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"E_\mathrm{tot}",
     ),
     "E_int":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_internal_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"E_\mathrm{int}",
     ),
     "E_kin":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_kinetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"E_\mathrm{kin}",
     ),
     "E_kin_div":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_div_kinetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"E_{\mathrm{kin}, \parallel}",
     ),
     "E_kin_sol":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_sol_kinetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"E_{\mathrm{kin}, \perp}",
     ),
     "E_kin_bulk":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_bulk_kinetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"E_{\mathrm{kin}, \mathrm{bulk}}",
     ),
     "E_mag":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_magnetic_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"E_\mathrm{mag}",
     ),
     "E_ratio":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_energy_ratio_sfield,
         cmap=DIVERGING_CMAP,
+        latex_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
     ),
     "pressure":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_pressure_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"p",
     ),
     "div_b":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_div_b_sfield,
         cmap=DIVERGING_CMAP,
+        latex_label=r"\nabla\cdot\vec{b}",
     ),
     "cur":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_current_density_sfield,
         cmap=SEQUENTIAL_CMAP,
+        latex_label=r"|\nabla\times\vec{b}|",
     ),
 }
 
