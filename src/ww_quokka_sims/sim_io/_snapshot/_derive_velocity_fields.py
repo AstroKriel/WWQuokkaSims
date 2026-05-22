@@ -66,7 +66,8 @@ class _DeriveVelocityFields:
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=v_varray,
             udomain_3d=udomain_3d,
-            field_label=r"\vec{v}",
+            field_name="velocity",
+            latex_label=r"\vec{v}",
             sim_time=self.sim_time,
         )
 
@@ -77,7 +78,8 @@ class _DeriveVelocityFields:
         v_vfield_3d = self.compute_velocity_vfield()
         return field_operators.compute_vfield_magnitude(
             vfield_3d=v_vfield_3d,
-            field_label=r"|\vec{v}|",
+            field_name="velocity_magnitude",
+            latex_label=r"|\vec{v}|",
         )
 
     def compute_div_v_sfield(
@@ -88,7 +90,8 @@ class _DeriveVelocityFields:
         v_vfield_3d = self.compute_velocity_vfield()
         return field_operators.compute_vfield_divergence(
             vfield_3d=v_vfield_3d,
-            field_label=r"\nabla\cdot\vec{v}",
+            field_name="div_velocity",
+            latex_label=r"\nabla\cdot\vec{v}",
             grad_order=grad_order,
         )
 
@@ -101,7 +104,8 @@ class _DeriveVelocityFields:
         return field_operators.compute_vfield_curl(
             vfield_3d=v_vfield_3d,
             grad_order=grad_order,
-            field_label=r"\nabla\times\vec{v}",
+            field_name="vorticity",
+            latex_label=r"\nabla\times\vec{v}",
         )
 
     def compute_vorticity_sfield(
@@ -112,7 +116,8 @@ class _DeriveVelocityFields:
         omega_vfield_3d = self.compute_vorticity_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=omega_vfield_3d,
-            field_label=r"|\nabla\times\vec{v}|",
+            field_name="vorticity_magnitude",
+            latex_label=r"|\nabla\times\vec{v}|",
         )
 
     def compute_kinetic_helicity_sfield(
@@ -125,7 +130,8 @@ class _DeriveVelocityFields:
         return field_operators.compute_vfield_dot_product(
             vfield_3d_a=omega_vfield_3d,
             vfield_3d_b=v_vfield_3d,
-            field_label=r"(\nabla\times\vec{v})\cdot\vec{v}",
+            field_name="kinetic_helicity",
+            latex_label=r"(\nabla\times\vec{v})\cdot\vec{v}",
         )
 
 

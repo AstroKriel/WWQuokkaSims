@@ -69,14 +69,14 @@ class _DeriveEnergyFields:
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_sarray_3d,
             udomain_3d=udomain_3d,
-            field_label=r"E_\mathrm{kin}",
+            field_name="kinetic_energy",
+            latex_label=r"E_\mathrm{kin}",
             sim_time=self.sim_time,
         )
 
     def compute_magnetic_energy_sfield(
         self: FieldsProtocol,
         energy_prefactor: float = 0.5,
-        field_label: str = r"E_\mathrm{mag}",
     ) -> field_models.ScalarField_3D:
         """Compute magnetic energy density: `E_mag = alpha * |b|^2` with `alpha=0.5` by default."""
         validate_types.ensure_finite_float(
@@ -88,7 +88,8 @@ class _DeriveEnergyFields:
         return compute_fields.compute_magnetic_energy_density_sfield(
             vfield_3d_b=b_vfield_3d,
             energy_prefactor=energy_prefactor,
-            field_label=field_label,
+            field_name="magnetic_energy",
+            latex_label=r"E_\mathrm{mag}",
         )
 
     def compute_internal_energy_sfield(
@@ -124,7 +125,8 @@ class _DeriveEnergyFields:
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_int_sarray,
             udomain_3d=self.load_3d_uniform_domain(),
-            field_label=r"E_\mathrm{int}",
+            field_name="internal_energy",
+            latex_label=r"E_\mathrm{int}",
             sim_time=self.sim_time,
         )
 
@@ -148,7 +150,8 @@ class _DeriveEnergyFields:
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=p_sarray,
             udomain_3d=self.load_3d_uniform_domain(),
-            field_label=r"p",
+            field_name="pressure",
+            latex_label=r"p",
             sim_time=self.sim_time,
         )
 
@@ -220,19 +223,22 @@ class _DeriveEnergyFields:
         E_kin_div_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_div_sarray,
             udomain_3d=udomain_3d,
-            field_label=r"E_{\mathrm{kin}, \parallel}",
+            field_name="kinetic_energy_div",
+            latex_label=r"E_{\mathrm{kin}, \parallel}",
             sim_time=self.sim_time,
         )
         E_kin_sol_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_sol_sarray,
             udomain_3d=udomain_3d,
-            field_label=r"E_{\mathrm{kin}, \perp}",
+            field_name="kinetic_energy_sol",
+            latex_label=r"E_{\mathrm{kin}, \perp}",
             sim_time=self.sim_time,
         )
         E_kin_bulk_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_bulk_sarray,
             udomain_3d=udomain_3d,
-            field_label=r"E_{\mathrm{kin}, \mathrm{bulk}}",
+            field_name="kinetic_energy_bulk",
+            latex_label=r"E_{\mathrm{kin}, \mathrm{bulk}}",
             sim_time=self.sim_time,
         )
         return HelmholtzKineticEnergy(

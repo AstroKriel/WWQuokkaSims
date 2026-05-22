@@ -66,7 +66,8 @@ class _DeriveMagneticFields:
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=v_A_varray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
-            field_label=r"\vec{v}_A",
+            field_name="alfven_velocity",
+            latex_label=r"\vec{v}_A",
             sim_time=self.sim_time,
         )
 
@@ -77,7 +78,8 @@ class _DeriveMagneticFields:
         v_A_vfield_3d = self.compute_alfven_speed_vfield()
         return field_operators.compute_vfield_magnitude(
             vfield_3d=v_A_vfield_3d,
-            field_label=r"|\vec{v}_A|",
+            field_name="alfven_speed",
+            latex_label=r"|\vec{v}_A|",
         )
 
     def compute_div_b_sfield(
@@ -88,7 +90,8 @@ class _DeriveMagneticFields:
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_divergence(
             vfield_3d=b_vfield_3d,
-            field_label=r"\nabla\cdot\vec{b}",
+            field_name="div_magnetic",
+            latex_label=r"\nabla\cdot\vec{b}",
             grad_order=grad_order,
         )
 
@@ -100,7 +103,8 @@ class _DeriveMagneticFields:
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_curl(
             vfield_3d=b_vfield_3d,
-            field_label=r"\nabla\times\vec{b}",
+            field_name="current_density",
+            latex_label=r"\nabla\times\vec{b}",
             grad_order=grad_order,
         )
 
@@ -112,7 +116,8 @@ class _DeriveMagneticFields:
         j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=j_vfield_3d,
-            field_label=r"|\nabla\times\vec{b}|",
+            field_name="current_density_magnitude",
+            latex_label=r"|\nabla\times\vec{b}|",
         )
 
     def compute_current_helicity_sfield(
@@ -125,7 +130,8 @@ class _DeriveMagneticFields:
         return field_operators.compute_vfield_dot_product(
             vfield_3d_a=j_vfield_3d,
             vfield_3d_b=b_vfield_3d,
-            field_label=r"(\nabla\times\vec{b})\cdot\vec{b}",
+            field_name="current_helicity",
+            latex_label=r"(\nabla\times\vec{b})\cdot\vec{b}",
         )
 
     def compute_plasma_beta_sfield(
@@ -172,7 +178,8 @@ class _DeriveMagneticFields:
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=beta_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
-            field_label=r"\beta",
+            field_name="plasma_beta",
+            latex_label=r"\beta",
             sim_time=self.sim_time,
         )
 

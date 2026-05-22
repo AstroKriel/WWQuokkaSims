@@ -35,7 +35,8 @@ class _DeriveMHDFields:
         return field_operators.compute_vfield_dot_product(
             vfield_3d_a=v_vfield_3d,
             vfield_3d_b=b_vfield_3d,
-            field_label=r"\vec{v}\cdot\vec{b}",
+            field_name="cross_helicity",
+            latex_label=r"\vec{v}\cdot\vec{b}",
         )
 
     def compute_lorentz_force_vfield(
@@ -48,7 +49,8 @@ class _DeriveMHDFields:
         return field_operators.compute_vfield_cross_product(
             vfield_3d_a=j_vfield_3d,
             vfield_3d_b=b_vfield_3d,
-            field_label=r"(\nabla\times\vec{b})\times\vec{b}",
+            field_name="lorentz_force",
+            latex_label=r"(\nabla\times\vec{b})\times\vec{b}",
         )
 
     def compute_lorentz_force_sfield(
@@ -59,7 +61,8 @@ class _DeriveMHDFields:
         lf_vfield_3d = self.compute_lorentz_force_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=lf_vfield_3d,
-            field_label=r"|(\nabla\times\vec{b})\times\vec{b}|",
+            field_name="lorentz_force_magnitude",
+            latex_label=r"|(\nabla\times\vec{b})\times\vec{b}|",
         )
 
     def compute_energy_ratio_sfield(
@@ -97,7 +100,8 @@ class _DeriveMHDFields:
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_ratio_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
-            field_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
+            field_name="energy_ratio",
+            latex_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
             sim_time=self.sim_time,
         )
 
@@ -110,12 +114,14 @@ class _DeriveMHDFields:
         vxb_vfield_3d = field_operators.compute_vfield_cross_product(
             vfield_3d_a=v_vfield_3d,
             vfield_3d_b=b_vfield_3d,
-            field_label=r"\vec{v}\times\vec{b}",
+            field_name="velocity_cross_magnetic",
+            latex_label=r"\vec{v}\times\vec{b}",
         )
         return field_operators.compute_vfield_cross_product(
             vfield_3d_a=b_vfield_3d,
             vfield_3d_b=vxb_vfield_3d,
-            field_label=r"\vec{b}\times(\vec{v}\times\vec{b})",
+            field_name="poynting_flux",
+            latex_label=r"\vec{b}\times(\vec{v}\times\vec{b})",
         )
 
 

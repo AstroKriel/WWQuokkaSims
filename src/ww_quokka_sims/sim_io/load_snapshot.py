@@ -331,19 +331,25 @@ class QuokkaSnapshot(
         self,
         *,
         field_key: FieldKey,
-        field_label: str,
+        field_name: str,
+        latex_label: str,
     ) -> field_models.ScalarField_3D:
-        """Wrap a scalar array as `ScalarField` with a `field_label` and `sim_time`."""
+        """Wrap a scalar array as `ScalarField_3D` with a `field_name`, `latex_label`, and `sim_time`."""
         validate_types.ensure_nonempty_string(
-            param=field_label,
-            param_name="field_label",
+            param=field_name,
+            param_name="field_name",
+        )
+        validate_types.ensure_nonempty_string(
+            param=latex_label,
+            param_name="latex_label",
         )
         sarray_3d = self._load_3d_sarray(field_key)
         udomain_3d = self.load_3d_uniform_domain()
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=sarray_3d,
             udomain_3d=udomain_3d,
-            field_label=field_label,
+            field_name=field_name,
+            latex_label=latex_label,
             sim_time=self.sim_time,
         )
 
@@ -351,9 +357,10 @@ class QuokkaSnapshot(
         self,
         *,
         vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, FieldKey],
-        field_label: str,
+        field_name: str,
+        latex_label: str,
     ) -> field_models.VectorField_3D:
-        """Load and stack 3 components into a `VectorField_3D` with a `field_label` and `sim_time`."""
+        """Load and stack 3 components into a `VectorField_3D` with a `field_name`, `latex_label`, and `sim_time`."""
         if set(vfield_key_lookup) != set(cartesian_axes.DEFAULT_3D_AXES_ORDER):
             received_axes = [axis.value for axis in sorted(vfield_key_lookup.keys(), key=lambda a: a.value)]
             expected_axes = [axis.value for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER]
@@ -361,8 +368,12 @@ class QuokkaSnapshot(
             manage_log.log_error(text=msg)
             raise KeyError(msg)
         validate_types.ensure_nonempty_string(
-            param=field_label,
-            param_name="field_label",
+            param=field_name,
+            param_name="field_name",
+        )
+        validate_types.ensure_nonempty_string(
+            param=latex_label,
+            param_name="latex_label",
         )
         self._open_if_needed()
         assert self._yt_dataset is not None
@@ -389,7 +400,8 @@ class QuokkaSnapshot(
             varray_3d=varray_3d,
             udomain_3d=udomain_3d,
             sim_time=sim_time,
-            field_label=field_label,
+            field_name=field_name,
+            latex_label=latex_label,
         )
 
     ##
@@ -445,7 +457,8 @@ class QuokkaSnapshot(
         rho_key = self._get_sfield_key("density")
         rho_sfield_3d = self.load_3d_sfield(
             field_key=rho_key,
-            field_label=r"\rho",
+            field_name="density",
+            latex_label=r"\rho",
         )
         self._field_cache.cache_field(
             field_name="density",
@@ -463,7 +476,8 @@ class QuokkaSnapshot(
         mom_key_lookup = self._get_vfield_key_lookup("momentum")
         mom_vfield_3d = self.load_3d_vfield(
             vfield_key_lookup=mom_key_lookup,
-            field_label=r"\rho \,\vec{v}",
+            field_name="momentum",
+            latex_label=r"\rho \,\vec{v}",
         )
         self._field_cache.cache_field(
             field_name="momentum",
@@ -481,7 +495,8 @@ class QuokkaSnapshot(
         b_key_lookup = self._get_vfield_key_lookup("magnetic")
         b_vfield_3d = self.load_3d_vfield(
             vfield_key_lookup=b_key_lookup,
-            field_label=r"\vec{b}",
+            field_name="magnetic_field",
+            latex_label=r"\vec{b}",
         )
         self._field_cache.cache_field(
             field_name="magnetic",
@@ -496,7 +511,8 @@ class QuokkaSnapshot(
         E_tot_key = self._get_sfield_key("total_energy")
         return self.load_3d_sfield(
             field_key=E_tot_key,
-            field_label=r"E_\mathrm{tot}",
+            field_name="total_energy",
+            latex_label=r"E_\mathrm{tot}",
         )
 
 
