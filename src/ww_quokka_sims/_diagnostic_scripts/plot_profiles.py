@@ -21,7 +21,7 @@ from jormi.ww_fields.fields_3d import (
     domain_models,
     field_models,
 )
-from jormi.ww_io import json_io, manage_log
+from jormi.ww_io import csv_io, manage_log
 from jormi.ww_plots import (
     add_color,
     manage_plots,
@@ -286,32 +286,32 @@ class RenderCompProfiles:
             parents=True,
             exist_ok=True,
         )
-        comp_labels = list(
-            comp_profiles_lookup.keys(),
-        )
+        comp_labels = list(comp_profiles_lookup.keys())
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
-        output_dict = {}
-        for snapshot_index in range(num_snapshots):
-            first_comp_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
-            snapshot_dict: dict = {"time": first_comp_profile.sim_time}
-            for comp_label in comp_labels:
+        first_profile = comp_profiles_lookup[comp_labels[0]][0]
+        num_axes = first_profile.num_axes
+        for comp_label in comp_labels:
+            for snapshot_index in range(num_snapshots):
                 comp_profile = comp_profiles_lookup[comp_label][snapshot_index]
-                axis_dict = {}
+                time_tag = f"t={comp_profile.sim_time:.3f}"
                 for axis_index, axis in enumerate(comp_profile.axis_labels):
-                    domain = comp_profile.get_domain(axis_index=axis_index)
-                    values = comp_profile.get_values(axis_index=axis_index)
-                    axis_dict[cartesian_axes.get_axis_label(axis)] = {
-                        "domain": domain,
-                        "values": values,
-                    }
-                snapshot_dict[comp_profile.comp_name] = axis_dict
-            output_dict[str(snapshot_index)] = snapshot_dict
-        json_io.save_dict_to_json_file(
-            file_path=out_dir / f"{self.field_name}_profiles.json",
-            input_dict=output_dict,
-            overwrite=True,
-            verbose=False,
-        )
+                    axis_label = cartesian_axes.get_axis_label(axis)
+                    position = comp_profile.get_domain(axis_index=axis_index)
+                    field_value = comp_profile.get_values(axis_index=axis_index)
+                    if num_axes == 1:
+                        stem = f"{comp_profile.comp_name}_{time_tag}"
+                    else:
+                        stem = f"{comp_profile.comp_name}_{axis_label}_{time_tag}"
+                    file_path = out_dir / f"{stem}.csv"
+                    csv_io.save_dict_to_csv_file(
+                        file_path=file_path,
+                        input_dict={
+                            "position": position,
+                            "field_value": field_value,
+                        },
+                        overwrite=True,
+                        verbose=False,
+                    )
 
     @staticmethod
     def _style_axs(
