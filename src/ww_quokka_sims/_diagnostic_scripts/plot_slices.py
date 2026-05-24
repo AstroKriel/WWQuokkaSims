@@ -95,6 +95,7 @@ class SnapshotData:
 class FieldComp:
     data_3d: numpy.ndarray
     label: str
+    comp_axis: cartesian_axes.CartesianAxis_3D | None = None
 
 
 AxisBounds = tuple[tuple[float, float], tuple[float, float]]  # ((xmin, xmax), (ymin, ymax))
@@ -313,6 +314,7 @@ class FieldPlotter:
             FieldComp(
                 data_3d=varray_3d[_axis_to_index(comp_axis)],
                 label=field_models.get_vcomp_label(field, comp_axis=comp_axis),
+                comp_axis=comp_axis,
             ) for comp_axis in self.comps_to_plot
         ]
 
@@ -363,19 +365,17 @@ class FieldPlotter:
         index_width: int,
         out_dir: Path,
     ) -> None:
-        is_vfield = len(field_comps) > 1
         field_name = self.field_args.field_name
         padded_index = f"{snapshot_index:0{index_width}d}"
-        for comp_index, field_comp in enumerate(field_comps):
+        for field_comp in field_comps:
             for axis_to_slice in self.axes_to_slice:
                 field_slice = slice_field(
                     data_3d=field_comp.data_3d,
                     axis_to_slice=axis_to_slice,
                     uniform_domain=uniform_domain,
                 )
-                axis_name = axis_to_slice.name.lower()
-                comp_part = f"-comp{comp_index}" if is_vfield else ""
-                file_name = f"{field_name}{comp_part}-slice={axis_name}-{padded_index}.npy"
+                comp_part = f"-{field_comp.comp_axis.axis_label}" if field_comp.comp_axis is not None else ""
+                file_name = f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-{padded_index}.npy"
                 numpy.save(out_dir / file_name, field_slice.data_2d)
 
     def plot_snapshot(
