@@ -374,8 +374,8 @@ class FieldPlotter:
                     uniform_domain=uniform_domain,
                 )
                 axis_name = axis_to_slice.name.lower()
-                comp_part = f"_comp{comp_index}" if is_vfield else ""
-                file_name = f"{field_name}{comp_part}_slice={axis_name}_{padded_index}.npy"
+                comp_part = f"-comp{comp_index}" if is_vfield else ""
+                file_name = f"{field_name}{comp_part}-slice={axis_name}-{padded_index}.npy"
                 numpy.save(out_dir / file_name, field_slice.data_2d)
 
     def plot_snapshot(
@@ -418,7 +418,7 @@ class FieldPlotter:
         self._label_axes(axs_grid=axs_grid)
         field_name = self.field_args.field_name
         padded_index = f"{snapshot_index:0{index_width}d}"
-        fig_name = f"{field_name}_slice_{padded_index}.png"
+        fig_name = f"{field_name}-slice-{padded_index}.png"
         fig_path = out_dir / fig_name
         manage_plots.save_figure(
             fig=fig,
@@ -572,7 +572,7 @@ class ScriptInterface:
         for field_name in self.fields_to_plot:
             fig_paths = manage_io.filter_directory(
                 out_dir,
-                prefix=f"{field_name}_slice_",
+                prefix=f"{field_name}-slice-",
                 suffix=".png",
                 include_folders=False,
             )
@@ -584,11 +584,11 @@ class ScriptInterface:
                     ),
                 )
                 continue
-            mp4_path = out_dir / f"{field_name}_slices.mp4"
+            mp4_path = out_dir / f"{field_name}-slices.mp4"
             manage_plots.animate_pngs_to_mp4(
                 frames_dir=out_dir,
                 mp4_path=mp4_path,
-                pattern=f"{field_name}_slice_*.png",
+                pattern=f"{field_name}-slice-*.png",
                 fps=60,
                 timeout_seconds=120,
             )

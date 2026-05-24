@@ -225,7 +225,7 @@ class RenderSpectra:
                 "log10_spectrum": spectra_data.log10_spectrum,
             }
         json_io.save_dict_to_json_file(
-            file_path=out_dir / f"{self.field_name}_spectra.json",
+            file_path=out_dir / f"{self.field_name}-spectra.json",
             input_dict=output_dict,
             overwrite=True,
             verbose=False,
@@ -275,9 +275,9 @@ class RenderSpectra:
                 snapshot_dir=self.snapshot_dirs[0],
                 snapshot_tag=self.snapshot_tag,
             )
-            fig_path = self.out_dir / f"{self.field_name}_spectrum_{snapshot_index}.png"
+            fig_path = self.out_dir / f"{self.field_name}-spectrum-{snapshot_index}.png"
         else:
-            fig_path = self.out_dir / f"{self.field_name}_spectra.png"
+            fig_path = self.out_dir / f"{self.field_name}-spectra.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,

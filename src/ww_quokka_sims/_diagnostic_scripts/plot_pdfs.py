@@ -331,7 +331,7 @@ class RenderPDFs:
                 }
             output_dict[str(snapshot_index)] = snapshot_dict
         json_io.save_dict_to_json_file(
-            file_path=out_dir / f"{self.field_name}_pdfs.json",
+            file_path=out_dir / f"{self.field_name}-pdfs.json",
             input_dict=output_dict,
             overwrite=True,
             verbose=False,
@@ -386,7 +386,7 @@ class RenderPDFs:
             comp_labels=field_pdfs[0].comp_labels,
         )
         suffix = "pdf" if len(field_pdfs) == 1 else "pdfs"
-        fig_path = self.out_dir / f"{self.field_name}_{suffix}.png"
+        fig_path = self.out_dir / f"{self.field_name}-{suffix}.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,

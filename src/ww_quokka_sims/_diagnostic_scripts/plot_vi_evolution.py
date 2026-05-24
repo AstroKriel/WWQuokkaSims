@@ -95,7 +95,7 @@ class RenderDataSeries:
         )
         time_array, values_array = vi_series.get_sorted_arrays()
         json_io.save_dict_to_json_file(
-            file_path=out_dir / f"{self.field_name}_vi_evolution.json",
+            file_path=out_dir / f"{self.field_name}-vi-evolution.json",
             input_dict={
                 "sim_times": time_array,
                 "vi_values": values_array,
@@ -138,7 +138,7 @@ class RenderDataSeries:
         )
         ax.set_xlabel("time")
         ax.set_ylabel(f"${self.latex_label}$")
-        fig_path = self.out_dir / f"{self.field_name}_time_evolution.png"
+        fig_path = self.out_dir / f"{self.field_name}-time-evolution.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
