@@ -192,7 +192,7 @@ class VectorProfile:
                 "field_name": self.field_name,
                 "sim_time": self.sim_time,
                 "profile_axis": self.profile_axis,
-                "components": {
+                "field_comps": {
                     comp_axis: {
                         "position": comp.position,
                         "field_value": comp.field_value,
@@ -215,7 +215,7 @@ class VectorProfile:
         )
         validate_types.ensure_dict_has_keys(
             param=data,
-            required_keys={"field_name", "sim_time", "profile_axis", "components"},
+            required_keys={"field_name", "sim_time", "profile_axis", "field_comps"},
             param_name="<VectorProfile JSON>",
         )
         components = {
@@ -223,7 +223,7 @@ class VectorProfile:
                 position=numpy.asarray(comp_data["position"]),
                 field_value=numpy.asarray(comp_data["field_value"]),
             )
-            for comp_axis, comp_data in data["components"].items()
+            for comp_axis, comp_data in data["field_comps"].items()
         }
         return cls(
             field_name=data["field_name"],
