@@ -375,7 +375,7 @@ class FieldPlotter:
                     uniform_domain=uniform_domain,
                 )
                 comp_part = f"-comp={field_comp.comp_axis.axis_label}" if field_comp.comp_axis is not None else ""
-                file_name = f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-{padded_index}.npy"
+                file_name = f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_index}.npy"
                 numpy.save(out_dir / file_name, field_slice.data_2d)
 
     def plot_snapshot(
@@ -418,7 +418,7 @@ class FieldPlotter:
         self._label_axes(axs_grid=axs_grid)
         field_name = self.field_args.field_name
         padded_index = f"{snapshot_index:0{index_width}d}"
-        fig_name = f"{field_name}-slice-{padded_index}.png"
+        fig_name = f"{field_name}-slice-index={padded_index}.png"
         fig_path = out_dir / fig_name
         manage_plots.save_figure(
             fig=fig,
@@ -572,7 +572,7 @@ class ScriptInterface:
         for field_name in self.fields_to_plot:
             fig_paths = manage_io.filter_directory(
                 out_dir,
-                prefix=f"{field_name}-slice-",
+                prefix=f"{field_name}-slice-index=",
                 suffix=".png",
                 include_folders=False,
             )
@@ -588,7 +588,7 @@ class ScriptInterface:
             manage_plots.animate_pngs_to_mp4(
                 frames_dir=out_dir,
                 mp4_path=mp4_path,
-                pattern=f"{field_name}-slice-*.png",
+                pattern=f"{field_name}-slice-index=*.png",
                 fps=60,
                 timeout_seconds=120,
             )

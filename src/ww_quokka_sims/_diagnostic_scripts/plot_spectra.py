@@ -275,7 +275,7 @@ class RenderSpectra:
                 snapshot_dir=self.snapshot_dirs[0],
                 snapshot_tag=self.snapshot_tag,
             )
-            fig_path = self.out_dir / f"{self.field_name}-spectrum-{snapshot_index}.png"
+            fig_path = self.out_dir / f"{self.field_name}-spectrum-index={snapshot_index}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}-spectra.png"
         manage_plots.save_figure(

@@ -460,7 +460,7 @@ class RenderCompProfiles:
                 snapshot_dir=self.snapshot_dirs[0],
                 snapshot_tag=self.snapshot_tag,
             )
-            fig_path = self.out_dir / f"{self.field_name}-profile-{snapshot_index}.png"
+            fig_path = self.out_dir / f"{self.field_name}-profile-index={snapshot_index}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}-profiles.png"
         manage_plots.save_figure(
