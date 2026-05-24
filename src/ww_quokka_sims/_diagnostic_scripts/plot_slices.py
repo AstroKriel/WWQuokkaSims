@@ -374,7 +374,7 @@ class FieldPlotter:
                     axis_to_slice=axis_to_slice,
                     uniform_domain=uniform_domain,
                 )
-                comp_part = f"-{field_comp.comp_axis.axis_label}" if field_comp.comp_axis is not None else ""
+                comp_part = f"-comp={field_comp.comp_axis.axis_label}" if field_comp.comp_axis is not None else ""
                 file_name = f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-{padded_index}.npy"
                 numpy.save(out_dir / file_name, field_slice.data_2d)
 
