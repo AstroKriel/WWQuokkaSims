@@ -70,7 +70,7 @@ class RenderComparisonPlot:
             exist_ok=True,
         )
         json_io.save_dict_to_json_file(
-            file_path=self.out_dir / f"{self.field_name}-time-comparison.json",
+            file_path=self.out_dir / f"{self.field_name}-time_comparison.json",
             input_dict={
                 "time": t_array,
                 "frac_diff": y_array,
@@ -177,7 +177,7 @@ class RenderComparisonPlot:
         )
         ax.set_xlabel("time")
         ax.set_ylabel(f"${self.latex_label}$ (frac. diff.)")
-        fig_path = self.out_dir / f"{self.field_name}-time-comparison.png"
+        fig_path = self.out_dir / f"{self.field_name}-time_comparison.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
