@@ -298,7 +298,7 @@ class RenderCompProfiles:
             time_tag = f"t={sim_time:.3f}"
             for axis_index, axis in enumerate(any_profile.axis_labels):
                 axis_label = cartesian_axes.get_axis_label(axis)
-                stem = f"{self.field_name}_{time_tag}" if num_axes == 1 else f"{self.field_name}_{axis_label}_{time_tag}"
+                stem = f"{self.field_name}-axis={axis_label}-{time_tag}"
                 file_path = out_dir / f"{stem}.json"
                 if is_scalar:
                     comp_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
