@@ -72,6 +72,7 @@ class WorkerArgs(NamedTuple):
     out_dir: str
     index_width: int
     extract_data: bool
+    hide_annotations: bool
 
 
 @dataclass(frozen=True)
@@ -206,6 +207,7 @@ class FieldPlotter:
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
     extract_data: bool
+    hide_annotations: bool = False
 
     @staticmethod
     def plot_slice(
@@ -215,6 +217,7 @@ class FieldPlotter:
         field_slice: SlicedField,
         label: str,
         cmap_name: str,
+        hide_annotations: bool = False,
     ) -> None:
         min_value = float(
             numpy.nanmin(
@@ -234,40 +237,41 @@ class FieldPlotter:
             axis_bounds=field_slice.axis_bounds,
             cbar_bounds=(min_value, max_value),
             palette_config=add_color.SequentialConfig(palette_name=cmap_name),
-            add_cbar=True,
+            add_cbar=not hide_annotations,
             cbar_label=label,
             cbar_side="right",
         )
-        annotate_axis.add_text(
-            ax=ax,
-            x_pos=0.5,
-            y_pos=0.95,
-            x_alignment="center",
-            y_alignment="top",
-            label=f"min-value = {min_value:.2e}\nmax-value = {max_value:.2e}",
-            text_size=16,
-            box_alpha=0.5,
-        )
-        annotate_axis.add_text(
-            ax=ax,
-            x_pos=0.5,
-            y_pos=0.5,
-            x_alignment="center",
-            y_alignment="center",
-            label=rf"$t = {sim_time:.2f}$",
-            text_size=16,
-            box_alpha=0.5,
-        )
-        annotate_axis.add_text(
-            ax=ax,
-            x_pos=0.5,
-            y_pos=0.05,
-            x_alignment="center",
-            y_alignment="bottom",
-            label=field_slice.label,
-            text_size=16,
-            box_alpha=0.5,
-        )
+        if not hide_annotations:
+            annotate_axis.add_text(
+                ax=ax,
+                x_pos=0.5,
+                y_pos=0.95,
+                x_alignment="center",
+                y_alignment="top",
+                label=f"min-value = {min_value:.2e}\nmax-value = {max_value:.2e}",
+                text_size=16,
+                box_alpha=0.5,
+            )
+            annotate_axis.add_text(
+                ax=ax,
+                x_pos=0.5,
+                y_pos=0.5,
+                x_alignment="center",
+                y_alignment="center",
+                label=rf"$t = {sim_time:.2f}$",
+                text_size=16,
+                box_alpha=0.5,
+            )
+            annotate_axis.add_text(
+                ax=ax,
+                x_pos=0.5,
+                y_pos=0.05,
+                x_alignment="center",
+                y_alignment="bottom",
+                label=field_slice.label,
+                text_size=16,
+                box_alpha=0.5,
+            )
 
     def _load_snapshot(
         self,
@@ -340,6 +344,7 @@ class FieldPlotter:
                     field_slice=field_slice,
                     label=field_comp.label,
                     cmap_name=self.field_args.cmap_name,
+                    hide_annotations=self.hide_annotations,
                 )
 
     def _label_axes(
@@ -347,6 +352,8 @@ class FieldPlotter:
         *,
         axs_grid,
     ) -> None:
+        if self.hide_annotations:
+            return
         num_rows = len(axs_grid)
         for row_index in range(num_rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
@@ -437,6 +444,7 @@ def render_fields_in_serial(
     out_dir: Path,
     index_width: int,
     extract_data: bool,
+    hide_annotations: bool = False,
 ) -> None:
     for field_name in fields_to_plot:
         field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
@@ -451,6 +459,7 @@ def render_fields_in_serial(
             comps_to_plot=comps_to_plot,
             axes_to_slice=axes_to_slice,
             extract_data=extract_data,
+            hide_annotations=hide_annotations,
         )
         for snapshot_dir in snapshot_dirs:
             field_plotter.plot_snapshot(
@@ -477,6 +486,7 @@ def _plot_snapshot_worker(
         comps_to_plot=worker_args.comps_to_plot,
         axes_to_slice=worker_args.axes_to_slice,
         extract_data=worker_args.extract_data,
+        hide_annotations=worker_args.hide_annotations,
     )
     field_plotter.plot_snapshot(
         snapshot_dir=Path(worker_args.snapshot_dir),
@@ -496,6 +506,7 @@ def render_fields_in_parallel(
     out_dir: Path,
     index_width: int,
     extract_data: bool,
+    hide_annotations: bool = False,
 ) -> None:
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_plot:
@@ -513,6 +524,7 @@ def render_fields_in_parallel(
                     out_dir=str(out_dir),
                     index_width=index_width,
                     extract_data=extract_data,
+                    hide_annotations=hide_annotations,
                 ),
             )
     parallel_dispatch.run_in_parallel(
@@ -544,6 +556,7 @@ class ScriptInterface:
         out_dir: Path | None = None,
         use_parallel: bool = True,
         animate_only: bool = False,
+        hide_annotations: bool = False,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
@@ -563,6 +576,7 @@ class ScriptInterface:
         self.out_dir = Path(out_dir) if out_dir is not None else None
         self.use_parallel = bool(use_parallel)
         self.animate_only = bool(animate_only)
+        self.hide_annotations = bool(hide_annotations)
 
     def _animate_fields(
         self,
@@ -623,6 +637,7 @@ class ScriptInterface:
                     out_dir=out_dir,
                     index_width=index_width,
                     extract_data=self.extract_data,
+                    hide_annotations=self.hide_annotations,
                 )
             else:
                 render_fields_in_serial(
@@ -634,6 +649,7 @@ class ScriptInterface:
                     out_dir=out_dir,
                     index_width=index_width,
                     extract_data=self.extract_data,
+                    hide_annotations=self.hide_annotations,
                 )
         ## stitch rendered PNGs into an MP4 animation (no-op if animate flag is not set)
         self._animate_fields(out_dir=out_dir)
@@ -663,6 +679,12 @@ def main():
         default=False,
         help="Skip rendering and go straight to animation (default: False).",
     )
+    parser.add_argument(
+        "--no-annotations",
+        action="store_true",
+        default=False,
+        help="Hide all annotations: colorbars, text overlays, and axis labels (default: False).",
+    )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.input_dir,
@@ -673,6 +695,7 @@ def main():
         extract_data=user_args.save_data,
         out_dir=user_args.out_dir,
         animate_only=user_args.animate_only,
+        hide_annotations=user_args.no_annotations,
         use_parallel=True,
     )
     script_interface.run()
