@@ -373,7 +373,7 @@ class RenderCompProfiles:
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialConfig(
-                palette_name=self.cmap_name,
+                palette_name=field_registry.SEQUENTIAL_CMAP,
                 palette_range=(0.25, 1.0),
             ),
             value_range=(
@@ -426,7 +426,7 @@ class RenderCompProfiles:
             num_rows=num_rows,
             num_cols=num_cols,
             x_spacing=0.05,
-            y_spacing=0.05,
+            y_spacing=0.15 if num_rows > 1 else 0.05,
         )
         ## plot each component row; use a sequential color series if there are multiple snapshots
         for row_index, comp_label in enumerate(comp_labels):
