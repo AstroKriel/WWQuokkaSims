@@ -237,7 +237,7 @@ class FieldPlotter:
             axis_bounds=field_slice.axis_bounds,
             cbar_bounds=(min_value, max_value),
             palette_config=add_color.SequentialConfig(palette_name=cmap_name),
-            add_cbar=not hide_annotations,
+            add_cbar=True,
             cbar_label=label,
             cbar_side="right",
         )
@@ -352,8 +352,6 @@ class FieldPlotter:
         *,
         axs_grid,
     ) -> None:
-        if self.hide_annotations:
-            return
         num_rows = len(axs_grid)
         for row_index in range(num_rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
@@ -409,10 +407,11 @@ class FieldPlotter:
                 index_width=index_width,
                 out_dir=out_dir,
             )
+        num_rows = len(field_comps)
         fig, axs_grid = manage_plots.create_figure_grid(
-            num_rows=len(field_comps),
+            num_rows=num_rows,
             num_cols=len(self.axes_to_slice),
-            x_spacing=0.75,
+            x_spacing=1.0,
             y_spacing=0.25,
         )
         fig.subplots_adjust(right=0.82)
@@ -683,7 +682,7 @@ def main():
         "--no-annotations",
         action="store_true",
         default=False,
-        help="Hide all annotations: colorbars, text overlays, and axis labels (default: False).",
+        help="Hide in-panel text annotations: min/max values, sim time, and slice label (default: False).",
     )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
