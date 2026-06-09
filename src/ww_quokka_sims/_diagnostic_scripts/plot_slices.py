@@ -684,6 +684,12 @@ def main():
         default=False,
         help="Hide in-panel text annotations: min/max values, sim time, and slice label (default: False).",
     )
+    parser.add_argument(
+        "--serial-plotting",
+        action="store_true",
+        default=False,
+        help="Render snapshots serially instead of in parallel. Use for large datasets where forked workers crash (e.g. on GPU nodes with CUDA context issues).",
+    )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.input_dir,
@@ -695,7 +701,7 @@ def main():
         out_dir=user_args.out_dir,
         animate_only=user_args.animate_only,
         hide_annotations=user_args.no_annotations,
-        use_parallel=True,
+        use_parallel=not user_args.serial_plotting,
     )
     script_interface.run()
 
