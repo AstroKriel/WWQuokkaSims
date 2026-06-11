@@ -28,9 +28,9 @@ def _ensure_field_name(
     field_name: object,
 ) -> None:
     validate_types.ensure_nonempty_string(
-        param=field_name,
+        param=field_name,  # pyright: ignore[reportArgumentType]
         param_name="<field_name>",
-    )  # pyright: ignore[reportArgumentType]
+    )
     if not re.fullmatch(r"[a-z][a-z0-9_]*", str(field_name)):
         raise ValueError(
             f"`<field_name>` must be snake_case, got: {field_name!r}",
@@ -80,7 +80,9 @@ class ComponentArrays:
     position: NDArray[numpy.floating]
     field_value: NDArray[numpy.floating]
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         _ensure_profile_arrays(
             position=self.position,
             field_value=self.field_value,
@@ -100,7 +102,9 @@ class ScalarProfile:
     position: NDArray[numpy.floating]
     field_value: NDArray[numpy.floating]
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         _ensure_field_name(self.field_name)
         validate_types.ensure_finite_float(
             param=self.sim_time,
@@ -165,7 +169,9 @@ class VectorProfile:
     profile_axis: str
     components: dict[str, ComponentArrays]
 
-    def __post_init__(self) -> None:
+    def __post_init__(
+        self,
+    ) -> None:
         _ensure_field_name(self.field_name)
         validate_types.ensure_finite_float(
             param=self.sim_time,
@@ -219,7 +225,8 @@ class VectorProfile:
             param_name="<VectorProfile JSON>",
         )
         components = {
-            comp_axis: ComponentArrays(
+            comp_axis:
+            ComponentArrays(
                 position=numpy.asarray(comp_data["position"]),
                 field_value=numpy.asarray(comp_data["field_value"]),
             )

@@ -311,9 +311,14 @@ class RenderCompProfiles:
                     ).save_to_file(file_path)
                 else:
                     components = {
-                        comp_profiles_lookup[comp_label][snapshot_index].comp_name: profile_models.ComponentArrays(
-                            position=comp_profiles_lookup[comp_label][snapshot_index].get_domain(axis_index=axis_index),
-                            field_value=comp_profiles_lookup[comp_label][snapshot_index].get_values(axis_index=axis_index),
+                        comp_profiles_lookup[comp_label][snapshot_index].comp_name:
+                        profile_models.ComponentArrays(
+                            position=comp_profiles_lookup[comp_label][snapshot_index].get_domain(
+                                axis_index=axis_index,
+                            ),
+                            field_value=comp_profiles_lookup[comp_label][snapshot_index].get_values(
+                                axis_index=axis_index,
+                            ),
                         )
                         for comp_label in comp_labels
                     }

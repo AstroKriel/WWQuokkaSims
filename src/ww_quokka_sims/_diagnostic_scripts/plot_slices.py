@@ -688,7 +688,8 @@ def main():
         "--serial-plotting",
         action="store_true",
         default=False,
-        help="Render snapshots serially instead of in parallel. Use for large datasets where forked workers crash (e.g. on GPU nodes with CUDA context issues).",
+        help=
+        "Render snapshots serially instead of in parallel. Use for large datasets where forked workers crash (e.g. on GPU nodes with CUDA context issues).",
     )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
