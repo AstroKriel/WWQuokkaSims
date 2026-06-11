@@ -89,4 +89,3 @@ reportImplicitStringConcatenation = "none"  # multi-line f-string error messages
 reportUnknownParameterType = "none"  # matplotlib axes params are untyped in stubs
 reportMissingParameterType = "none"  # matplotlib axes params are untyped in stubs
 reportUnknownArgumentType = "none"  # cascade from yt/matplotlib returning Any; no stubs available
-reportUnusedFunction = "none"  # _annotate_fit is a helper retained for future use
