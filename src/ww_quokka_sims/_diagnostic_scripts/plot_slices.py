@@ -325,7 +325,7 @@ class FieldPlotter:
     def _plot_field_comps(
         self,
         *,
-        axs_grid,
+        axs_grid: manage_plots.PlotAxesGrid,
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
         sim_time: float,
@@ -350,7 +350,7 @@ class FieldPlotter:
     def _label_axes(
         self,
         *,
-        axs_grid,
+        axs_grid: manage_plots.PlotAxesGrid,
     ) -> None:
         num_rows = len(axs_grid)
         for row_index in range(num_rows):

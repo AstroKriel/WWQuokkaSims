@@ -53,7 +53,7 @@ class RenderDataSeries:
         ax,
         slope_stat,
         intercept_stat,
-        color: str = "black",
+        color: annotate_axis.ColorType = "black",
         x_pos: float = 0.95,
         y_pos: float = 0.95,
         x_alignment: str = "right",

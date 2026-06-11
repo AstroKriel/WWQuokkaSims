@@ -23,6 +23,7 @@ from jormi.ww_fields.fields_3d import (
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
+    annotate_axis,
     manage_plots,
 )
 from jormi.ww_validation import (
@@ -161,7 +162,7 @@ class RenderSpectra:
         *,
         ax,
         spectra_data: SpectraData,
-        color,
+        color: annotate_axis.ColorType,
     ) -> None:
         ax.plot(
             spectra_data.k_bin_centers,

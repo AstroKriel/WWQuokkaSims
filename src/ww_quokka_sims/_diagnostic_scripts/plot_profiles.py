@@ -24,6 +24,7 @@ from jormi.ww_fields.fields_3d import (
 from jormi.ww_io import manage_log
 from jormi.ww_plots import (
     add_color,
+    annotate_axis,
     manage_plots,
 )
 from jormi.ww_validation import validate_types
@@ -290,7 +291,6 @@ class RenderCompProfiles:
         comp_labels = list(comp_profiles_lookup.keys())
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         first_profile = comp_profiles_lookup[comp_labels[0]][0]
-        num_axes = first_profile.num_axes
         is_scalar = first_profile.comp_name == self.field_name
         for snapshot_index in range(num_snapshots):
             any_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
@@ -327,7 +327,7 @@ class RenderCompProfiles:
     @staticmethod
     def _style_axs(
         *,
-        axs_grid,
+        axs_grid: manage_plots.PlotAxesGrid,
         comp_labels: list[str],
         axis_labels: list[cartesian_axes.AxisLike_3D],
     ) -> None:
@@ -350,9 +350,9 @@ class RenderCompProfiles:
     @staticmethod
     def _plot_comp_profile(
         *,
-        axs_row,
+        axs_row: manage_plots.PlotAxesGrid,
         comp_profile: CompProfile,
-        color,
+        color: annotate_axis.ColorType,
     ) -> None:
         for axis_index in range(comp_profile.num_axes):
             ax = axs_row[axis_index]
@@ -368,7 +368,7 @@ class RenderCompProfiles:
     def _plot_series_row(
         self,
         *,
-        axs_row,
+        axs_row: manage_plots.PlotAxesGrid,
         comp_profiles: list[CompProfile],
     ) -> None:
         palette = add_color.make_palette(

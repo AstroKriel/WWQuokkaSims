@@ -22,6 +22,7 @@ from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
+    annotate_axis,
     manage_plots,
 )
 from jormi.ww_validation import (
@@ -245,7 +246,7 @@ class RenderPDFs:
     @staticmethod
     def _style_axs(
         *,
-        axs_grid,
+        axs_grid: manage_plots.PlotAxesGrid,
         comp_labels: list[str],
     ) -> None:
         for comp_index, label in enumerate(comp_labels):
@@ -257,9 +258,9 @@ class RenderPDFs:
     @staticmethod
     def _plot_snapshot(
         *,
-        axs_grid,
+        axs_grid: manage_plots.PlotAxesGrid,
         pdf_data: PDFData,
-        color,
+        color: annotate_axis.ColorType,
     ) -> None:
         for comp_index in range(pdf_data.num_comps):
             ax = axs_grid[0][comp_index]
@@ -276,7 +277,7 @@ class RenderPDFs:
     @staticmethod
     def _plot_series(
         *,
-        axs_grid,
+        axs_grid: manage_plots.PlotAxesGrid,
         field_pdfs: list[PDFData],
         cmap_name: str,
     ) -> None:
