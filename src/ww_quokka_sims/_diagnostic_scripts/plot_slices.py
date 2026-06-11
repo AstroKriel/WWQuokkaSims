@@ -212,7 +212,7 @@ class FieldPlotter:
     @staticmethod
     def plot_slice(
         *,
-        ax,
+        ax: manage_plots.PlotAxis,
         sim_time: float,
         field_slice: SlicedField,
         label: str,

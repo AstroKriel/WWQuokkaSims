@@ -151,7 +151,7 @@ class RenderSpectra:
     @staticmethod
     def _style_ax(
         *,
-        ax,
+        ax: manage_plots.PlotAxis,
         latex_label: str,
     ) -> None:
         ax.set_xlabel(r"$k$")
@@ -160,7 +160,7 @@ class RenderSpectra:
     @staticmethod
     def _plot_snapshot(
         *,
-        ax,
+        ax: manage_plots.PlotAxis,
         spectra_data: SpectraData,
         color: annotate_axis.ColorType,
     ) -> None:
@@ -174,7 +174,7 @@ class RenderSpectra:
     @staticmethod
     def _plot_series(
         *,
-        ax,
+        ax: manage_plots.PlotAxis,
         field_spectra: list[SpectraData],
         cmap_name: str,
     ) -> None:
