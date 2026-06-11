@@ -47,42 +47,6 @@ class RenderDataSeries:
         self.latex_label = latex_label
         self.extract_data = extract_data
 
-    @staticmethod
-    def _annotate_fit(
-        *,
-        ax,
-        slope_stat,
-        intercept_stat,
-        color: annotate_axis.ColorType = "black",
-        x_pos: float = 0.95,
-        y_pos: float = 0.95,
-        x_alignment: str = "right",
-        y_alignment: str = "top",
-        fontsize: float = 12,
-        with_box: bool = True,
-    ) -> None:
-
-        def _fmt(
-            stat,
-        ) -> str:
-            return f"{stat.value:.3e}" + (
-                f" +/- {stat.sigma:.1e}" if getattr(stat, "sigma", None) is not None else ""
-            )
-
-        label = f"slope: {_fmt(slope_stat)} intercept: {_fmt(intercept_stat)}"
-        annotate_axis.add_text(
-            ax=ax,
-            x_pos=x_pos,
-            y_pos=y_pos,
-            label=label,
-            x_alignment=x_alignment,
-            y_alignment=y_alignment,
-            text_size=fontsize,
-            text_color=color,
-            box_alpha=0.85 if with_box else 0.0,
-            box_color="white",
-        )
-
     def _save_series(
         self,
         *,
