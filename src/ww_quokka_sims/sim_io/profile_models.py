@@ -30,7 +30,7 @@ def _ensure_field_name(
     validate_types.ensure_nonempty_string(
         param=field_name,
         param_name="<field_name>",
-    )
+    )  # pyright: ignore[reportArgumentType]
     if not re.fullmatch(r"[a-z][a-z0-9_]*", str(field_name)):
         raise ValueError(
             f"`<field_name>` must be snake_case, got: {field_name!r}",
@@ -61,12 +61,12 @@ def _ensure_profile_arrays(
         ndim=1,
         param_name="<field_value>",
     )
-    if len(position) == 0:  # type: ignore[arg-type]
+    if len(position) == 0:  # pyright: ignore[reportArgumentType]
         raise ValueError("`<position>` must be non-empty.")
-    if len(position) != len(field_value):  # type: ignore[arg-type]
+    if len(position) != len(field_value):  # pyright: ignore[reportArgumentType]
         raise ValueError(
             f"`<position>` and `<field_value>` must have the same length, "
-            f"got {len(position)} and {len(field_value)}.",  # type: ignore[arg-type]
+            f"got {len(position)} and {len(field_value)}.",  # pyright: ignore[reportArgumentType]
         )
 
 
