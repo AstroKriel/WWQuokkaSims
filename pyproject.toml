@@ -63,7 +63,7 @@ packages = ["src/ww_quokka_sims"]
 ##
 
 ## for full config reference: https://docs.basedpyright.com/v1.20.0/configuration/config-files/
-[tool.pyright]
+[tool.basedpyright]
 
 ## which directories to lint under
 include = [
@@ -86,6 +86,7 @@ reportPrivateUsage = "none"  # _Mixin classes are private-to-public-API but cros
 reportUnusedClass = "none"  # _Mixin and _Protocol classes are used as base classes / type hints across modules
 reportMissingTypeArgument = "none"  # scripts use bare Callable and dict; fully typing field loaders is impractical
 reportImplicitStringConcatenation = "none"  # multi-line f-string error messages are intentional
+reportImplicitOverride = "none"
 reportUnknownParameterType = "none"  # matplotlib axes params are untyped in stubs
 reportMissingParameterType = "none"  # matplotlib axes params are untyped in stubs
 reportUnknownArgumentType = "none"  # cascade from yt/matplotlib returning Any; no stubs available
