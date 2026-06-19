@@ -73,6 +73,7 @@ class WorkerArgs(NamedTuple):
     index_width: int
     extract_data: bool
     hide_annotations: bool
+    apply_log10: bool = False
 
 
 @dataclass(frozen=True)
@@ -208,6 +209,7 @@ class FieldPlotter:
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
     extract_data: bool
     hide_annotations: bool = False
+    apply_log10: bool = False
 
     @staticmethod
     def plot_slice(
@@ -407,6 +409,15 @@ class FieldPlotter:
                 index_width=index_width,
                 out_dir=out_dir,
             )
+        if self.apply_log10:
+            field_comps = [
+                FieldComp(
+                    data_3d=numpy.log10(numpy.abs(field_comp.data_3d)),
+                    label=field_comp.label,
+                    comp_axis=field_comp.comp_axis,
+                )
+                for field_comp in field_comps
+            ]
         num_rows = len(field_comps)
         fig, axs_grid = manage_plots.create_figure_grid(
             num_rows=num_rows,
@@ -444,6 +455,7 @@ def render_fields_in_serial(
     index_width: int,
     extract_data: bool,
     hide_annotations: bool = False,
+    apply_log10: bool = False,
 ) -> None:
     for field_name in fields_to_plot:
         field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
@@ -459,6 +471,7 @@ def render_fields_in_serial(
             axes_to_slice=axes_to_slice,
             extract_data=extract_data,
             hide_annotations=hide_annotations,
+            apply_log10=apply_log10,
         )
         for snapshot_dir in snapshot_dirs:
             field_plotter.plot_snapshot(
@@ -486,6 +499,7 @@ def _plot_snapshot_worker(
         axes_to_slice=worker_args.axes_to_slice,
         extract_data=worker_args.extract_data,
         hide_annotations=worker_args.hide_annotations,
+        apply_log10=worker_args.apply_log10,
     )
     field_plotter.plot_snapshot(
         snapshot_dir=Path(worker_args.snapshot_dir),
@@ -506,6 +520,7 @@ def render_fields_in_parallel(
     index_width: int,
     extract_data: bool,
     hide_annotations: bool = False,
+    apply_log10: bool = False,
 ) -> None:
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_plot:
@@ -524,6 +539,7 @@ def render_fields_in_parallel(
                     index_width=index_width,
                     extract_data=extract_data,
                     hide_annotations=hide_annotations,
+                    apply_log10=apply_log10,
                 ),
             )
     parallel_dispatch.run_in_parallel(
@@ -556,6 +572,7 @@ class ScriptInterface:
         use_parallel: bool = True,
         animate_only: bool = False,
         hide_annotations: bool = False,
+        apply_log10: bool = False,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
@@ -576,6 +593,7 @@ class ScriptInterface:
         self.use_parallel = bool(use_parallel)
         self.animate_only = bool(animate_only)
         self.hide_annotations = bool(hide_annotations)
+        self.apply_log10 = bool(apply_log10)
 
     def _animate_fields(
         self,
@@ -637,6 +655,7 @@ class ScriptInterface:
                     index_width=index_width,
                     extract_data=self.extract_data,
                     hide_annotations=self.hide_annotations,
+                    apply_log10=self.apply_log10,
                 )
             else:
                 render_fields_in_serial(
@@ -649,6 +668,7 @@ class ScriptInterface:
                     index_width=index_width,
                     extract_data=self.extract_data,
                     hide_annotations=self.hide_annotations,
+                    apply_log10=self.apply_log10,
                 )
         ## stitch rendered PNGs into an MP4 animation (no-op if animate flag is not set)
         self._animate_fields(out_dir=out_dir)
@@ -691,6 +711,12 @@ def main():
         help=
         "Render snapshots serially instead of in parallel. Use for large datasets where forked workers crash (e.g. on GPU nodes with CUDA context issues).",
     )
+    parser.add_argument(
+        "--log10",
+        action="store_true",
+        default=False,
+        help="Apply log10(|field|) to the plotted data (does not affect saved NPY slices).",
+    )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.input_dir,
@@ -703,6 +729,7 @@ def main():
         animate_only=user_args.animate_only,
         hide_annotations=user_args.no_annotations,
         use_parallel=not user_args.serial_plotting,
+        apply_log10=user_args.log10,
     )
     script_interface.run()
 
