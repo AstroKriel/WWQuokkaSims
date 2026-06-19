@@ -19,6 +19,7 @@ from typing import (
 import numpy
 
 ## personal
+from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import (
     domain_models,
@@ -412,7 +413,7 @@ class FieldPlotter:
         if self.apply_log10:
             field_comps = [
                 FieldComp(
-                    data_3d=numpy.log10(numpy.abs(field_comp.data_3d)),
+                    data_3d=compute_array_stats.compute_safe_log10(numpy.abs(field_comp.data_3d)),
                     label=field_comp.label,
                     comp_axis=field_comp.comp_axis,
                 )
