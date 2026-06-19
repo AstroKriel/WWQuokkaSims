@@ -418,6 +418,7 @@ class FieldPlotter:
                     comp_axis=field_comp.comp_axis,
                 )
                 for field_comp in field_comps
+                if not numpy.all(field_comp.data_3d == 0)
             ]
         num_rows = len(field_comps)
         fig, axs_grid = manage_plots.create_figure_grid(
