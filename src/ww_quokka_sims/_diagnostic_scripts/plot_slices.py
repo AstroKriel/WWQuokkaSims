@@ -414,7 +414,7 @@ class FieldPlotter:
             field_comps = [
                 FieldComp(
                     data_3d=compute_array_stats.compute_safe_log10(numpy.abs(field_comp.data_3d)),
-                    label=field_comp.label,
+                    label=rf"$\log_{{10}}({field_comp.label.strip('$')})$",
                     comp_axis=field_comp.comp_axis,
                 )
                 for field_comp in field_comps
