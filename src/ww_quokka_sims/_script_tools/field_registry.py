@@ -121,6 +121,12 @@ QUOKKA_FIELD_LOOKUP = {
         cmap=SEQUENTIAL_CMAP,
         latex_label=r"|\nabla\times\vec{b}|",
     ),
+    "cur_vec":
+    FieldEntry(
+        loader=load_snapshot.QuokkaSnapshot.compute_current_density_vfield,
+        cmap=DIVERGING_CMAP,
+        latex_label=r"\nabla\times\vec{b}",
+    ),
 }
 
 ##
