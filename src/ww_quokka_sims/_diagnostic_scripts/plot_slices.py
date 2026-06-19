@@ -434,8 +434,9 @@ class FieldPlotter:
         )
         self._label_axes(axs_grid=axs_grid)
         field_name = self.field_args.field_name
+        plot_name = f"log10_{field_name}" if self.apply_log10 else field_name
         padded_index = f"{snapshot_index:0{index_width}d}"
-        fig_name = f"{field_name}-slice-index={padded_index}.png"
+        fig_name = f"{plot_name}-slice-index={padded_index}.png"
         fig_path = out_dir / fig_name
         manage_plots.save_figure(
             fig=fig,
@@ -601,25 +602,26 @@ class ScriptInterface:
         out_dir: Path,
     ) -> None:
         for field_name in self.fields_to_plot:
+            plot_name = f"log10_{field_name}" if self.apply_log10 else field_name
             fig_paths = manage_io.filter_directory(
                 out_dir,
-                prefix=f"{field_name}-slice-index=",
+                prefix=f"{plot_name}-slice-index=",
                 suffix=".png",
                 include_folders=False,
             )
             if len(fig_paths) < 3:
                 manage_log.log_hint(
                     text=(
-                        f"Skipping animation for `{field_name}`: "
+                        f"Skipping animation for `{plot_name}`: "
                         f"only found {len(fig_paths)} frame(s), but need at least 3."
                     ),
                 )
                 continue
-            mp4_path = out_dir / f"{field_name}-slices.mp4"
+            mp4_path = out_dir / f"{plot_name}-slices.mp4"
             manage_plots.animate_pngs_to_mp4(
                 frames_dir=out_dir,
                 mp4_path=mp4_path,
-                pattern=f"{field_name}-slice-index=*.png",
+                pattern=f"{plot_name}-slice-index=*.png",
                 fps=60,
                 timeout_seconds=120,
             )
