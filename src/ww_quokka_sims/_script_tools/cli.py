@@ -79,7 +79,7 @@ def base_parser(
             "--input-dir",
             type=lambda path: Path(path).expanduser().resolve(),
             default=None,
-            help="Path to a Quokka simulation or snapshot directory.",
+            help="Path to a directory containing snapshot dirs (matched by --tag), or to a single snapshot dir.",
         )
         if produces_data:
             parser.add_argument(
