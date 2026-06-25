@@ -86,7 +86,7 @@ YT_SFIELD_KEYS: dict[str, dict[str, Any]] = {
     },
     "total_energy": {
         "key": ("boxlib", "gasEnergy"),
-        "description": "Total energy density: E_tot = E_int + E_kin + E_mag",
+        "description": "Total energy density: e_tot = e_int + e_kin + e_mag",
     },
 }
 

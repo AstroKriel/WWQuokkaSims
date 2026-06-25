@@ -58,9 +58,9 @@ class _DeriveMHDFields:
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
         """Compute Lorentz force magnitude: `| curl[vec(b)] x vec(b) |`."""
-        lf_vfield_3d = self.compute_lorentz_force_vfield(grad_order=grad_order)
+        lorentz_force_vfield_3d = self.compute_lorentz_force_vfield(grad_order=grad_order)
         return field_operators.compute_vfield_magnitude(
-            vfield_3d=lf_vfield_3d,
+            vfield_3d=lorentz_force_vfield_3d,
             field_name="lorentz_force_magnitude",
             latex_label=r"|(\nabla\times\vec{b})\times\vec{b}|",
         )
@@ -69,7 +69,7 @@ class _DeriveMHDFields:
         self: FieldsProtocol,
         energy_prefactor: float = 0.5,
     ) -> field_models.ScalarField_3D:
-        """Compute magnetic-to-kinetic energy ratio: `E_mag / E_kin`."""
+        """Compute magnetic-to-kinetic energy ratio: `e_mag / e_kin`."""
         E_mag_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=self.compute_magnetic_energy_sfield(energy_prefactor=energy_prefactor),
             param_name="<E_mag_sfield_3d>",
@@ -84,21 +84,21 @@ class _DeriveMHDFields:
             raise_error=False,
         )
         with compute_array_stats.suppress_divide_warnings():
-            E_ratio_sarray_3d = E_mag_sarray_3d / E_kin_sarray_3d
+            energy_ratio_sarray_3d = E_mag_sarray_3d / E_kin_sarray_3d
         if not E_kin_has_zeros:
             compute_array_stats.check_no_nonfinite_values(
-                array=E_ratio_sarray_3d,
+                array=energy_ratio_sarray_3d,
                 param_name="<E_ratio_sfield_3d>",
                 raise_error=False,
             )
         compute_array_stats.make_nonfinites_zero(
-            array=E_ratio_sarray_3d,
+            array=energy_ratio_sarray_3d,
             zero_nan=True,
             zero_posinf=True,
             zero_neginf=True,
         )
         return field_models.ScalarField_3D.from_3d_sarray(
-            sarray_3d=E_ratio_sarray_3d,
+            sarray_3d=energy_ratio_sarray_3d,
             udomain_3d=self.load_3d_uniform_domain(),
             field_name="energy_ratio",
             latex_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
