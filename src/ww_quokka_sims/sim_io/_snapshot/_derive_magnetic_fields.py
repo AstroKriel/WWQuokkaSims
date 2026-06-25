@@ -128,8 +128,8 @@ class _DeriveMagneticFields:
         j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order)
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_dot_product(
-            vfield_3d_a=j_vfield_3d,
-            vfield_3d_b=b_vfield_3d,
+            a_vfield_3d=j_vfield_3d,
+            b_vfield_3d=b_vfield_3d,
             field_name="current_helicity",
             latex_label=r"(\nabla\times\vec{b})\cdot\vec{b}",
         )

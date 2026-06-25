@@ -86,7 +86,7 @@ class _DeriveEnergyFields:
         )
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return compute_fields.compute_magnetic_energy_density_sfield(
-            vfield_3d_b=b_vfield_3d,
+            b_vfield_3d=b_vfield_3d,
             energy_prefactor=energy_prefactor,
             field_name="magnetic_energy",
             latex_label=r"E_\mathrm{mag}",
@@ -167,16 +167,16 @@ class _DeriveEnergyFields:
         )
         helmholtz_vfields = decompose_fields.compute_helmholtz_decomposed_fields(vfield_3d=v_vfield_3d)
         v_div_varray = field_models.extract_3d_varray(
-            vfield_3d=helmholtz_vfields.vfield_3d_div,
-            param_name="<vfield_3d_div>",
+            vfield_3d=helmholtz_vfields.div_vfield_3d,
+            param_name="<div_vfield_3d>",
         )
         v_sol_varray = field_models.extract_3d_varray(
-            vfield_3d=helmholtz_vfields.vfield_3d_sol,
-            param_name="<vfield_3d_sol>",
+            vfield_3d=helmholtz_vfields.sol_vfield_3d,
+            param_name="<sol_vfield_3d>",
         )
         v_bulk_varray = field_models.extract_3d_varray(
-            vfield_3d=helmholtz_vfields.vfield_3d_bulk,
-            param_name="<vfield_3d_bulk>",
+            vfield_3d=helmholtz_vfields.bulk_vfield_3d,
+            param_name="<bulk_vfield_3d>",
         )
         E_kin_div_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(
             v_div_varray,

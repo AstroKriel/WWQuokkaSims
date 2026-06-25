@@ -33,8 +33,8 @@ class _DeriveMHDFields:
         v_vfield_3d = self.compute_velocity_vfield()
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_dot_product(
-            vfield_3d_a=v_vfield_3d,
-            vfield_3d_b=b_vfield_3d,
+            a_vfield_3d=v_vfield_3d,
+            b_vfield_3d=b_vfield_3d,
             field_name="cross_helicity",
             latex_label=r"\vec{v}\cdot\vec{b}",
         )
@@ -47,8 +47,8 @@ class _DeriveMHDFields:
         j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order)
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_cross_product(
-            vfield_3d_a=j_vfield_3d,
-            vfield_3d_b=b_vfield_3d,
+            a_vfield_3d=j_vfield_3d,
+            b_vfield_3d=b_vfield_3d,
             field_name="lorentz_force",
             latex_label=r"(\nabla\times\vec{b})\times\vec{b}",
         )
@@ -112,14 +112,14 @@ class _DeriveMHDFields:
         v_vfield_3d = self.compute_velocity_vfield()
         b_vfield_3d = self.load_3d_magnetic_vfield()
         vxb_vfield_3d = field_operators.compute_vfield_cross_product(
-            vfield_3d_a=v_vfield_3d,
-            vfield_3d_b=b_vfield_3d,
+            a_vfield_3d=v_vfield_3d,
+            b_vfield_3d=b_vfield_3d,
             field_name="velocity_cross_magnetic",
             latex_label=r"\vec{v}\times\vec{b}",
         )
         return field_operators.compute_vfield_cross_product(
-            vfield_3d_a=b_vfield_3d,
-            vfield_3d_b=vxb_vfield_3d,
+            a_vfield_3d=b_vfield_3d,
+            b_vfield_3d=vxb_vfield_3d,
             field_name="poynting_flux",
             latex_label=r"\vec{b}\times(\vec{v}\times\vec{b})",
         )
