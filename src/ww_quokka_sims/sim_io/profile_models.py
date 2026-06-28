@@ -31,9 +31,9 @@ def _ensure_field_name(
         param=field_name,  # pyright: ignore[reportArgumentType]
         param_name="<field_name>",
     )
-    if not re.fullmatch(r"[a-z][a-z0-9_]*", str(field_name)):
+    if not re.fullmatch(r"[a-zA-Z][a-zA-Z0-9_]*", str(field_name)):
         raise ValueError(
-            f"`<field_name>` must be snake_case, got: {field_name!r}",
+            f"`<field_name>` must be a valid identifier, got: {field_name!r}",
         )
 
 
