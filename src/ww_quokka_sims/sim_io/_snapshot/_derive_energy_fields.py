@@ -33,7 +33,7 @@ class _DeriveEnergyFields:
     def compute_kinetic_energy_sfield(
         self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
-        """Compute kinetic energy density: `E_kin = 0.5 * rho * |v|^2`."""
+        """Compute kinetic energy density: `e_kin = 0.5 * rho * |v|^2`."""
         rho_sfield_3d = self.load_3d_density_sfield()
         rho_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=rho_sfield_3d,
@@ -78,7 +78,7 @@ class _DeriveEnergyFields:
         self: FieldsProtocol,
         energy_prefactor: float = 0.5,
     ) -> field_models.ScalarField_3D:
-        """Compute magnetic energy density: `E_mag = alpha * |b|^2` with `alpha=0.5` by default."""
+        """Compute magnetic energy density: `e_mag = alpha * |b|^2` with `alpha=0.5` by default."""
         validate_types.ensure_finite_float(
             param=energy_prefactor,
             param_name="energy_prefactor",
@@ -86,7 +86,7 @@ class _DeriveEnergyFields:
         )
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return compute_fields.compute_magnetic_energy_density_sfield(
-            vfield_3d_b=b_vfield_3d,
+            b_vfield_3d=b_vfield_3d,
             energy_prefactor=energy_prefactor,
             field_name="magnetic_energy",
             latex_label=r"E_\mathrm{mag}",
@@ -95,7 +95,7 @@ class _DeriveEnergyFields:
     def compute_internal_energy_sfield(
         self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
-        """Compute internal energy: `E_int = E_tot - E_kin - E_mag`; `E_mag = 0` if the snapshot did not store `vec(b)`."""
+        """Compute internal energy: `e_int = e_tot - e_kin - e_mag`; `e_mag = 0` if the snapshot did not store `vec(b)`."""
         E_tot_sarray = field_models.extract_3d_sarray(
             sfield_3d=self.load_3d_total_energy_sfield(),
             param_name="<E_tot_sfield_3d>",
@@ -134,7 +134,7 @@ class _DeriveEnergyFields:
         self: FieldsProtocol,
         gamma: float = 5.0 / 3.0,
     ) -> field_models.ScalarField_3D:
-        """Compute thermal pressure: `p = (gamma - 1) * E_int`."""
+        """Compute thermal pressure: `p = (gamma - 1) * e_int`."""
         validate_types.ensure_finite_float(
             param=gamma,
             param_name="gamma",
@@ -167,16 +167,16 @@ class _DeriveEnergyFields:
         )
         helmholtz_vfields = decompose_fields.compute_helmholtz_decomposed_fields(vfield_3d=v_vfield_3d)
         v_div_varray = field_models.extract_3d_varray(
-            vfield_3d=helmholtz_vfields.vfield_3d_div,
-            param_name="<vfield_3d_div>",
+            vfield_3d=helmholtz_vfields.div_vfield_3d,
+            param_name="<div_vfield_3d>",
         )
         v_sol_varray = field_models.extract_3d_varray(
-            vfield_3d=helmholtz_vfields.vfield_3d_sol,
-            param_name="<vfield_3d_sol>",
+            vfield_3d=helmholtz_vfields.sol_vfield_3d,
+            param_name="<sol_vfield_3d>",
         )
         v_bulk_varray = field_models.extract_3d_varray(
-            vfield_3d=helmholtz_vfields.vfield_3d_bulk,
-            param_name="<vfield_3d_bulk>",
+            vfield_3d=helmholtz_vfields.bulk_vfield_3d,
+            param_name="<bulk_vfield_3d>",
         )
         E_kin_div_sarray = 0.5 * rho_sarray_3d * farray_operators.compute_sum_of_varray_comps_squared(
             v_div_varray,
@@ -250,23 +250,23 @@ class _DeriveEnergyFields:
     def compute_div_kinetic_energy_sfield(
         self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
-        """Compute irrotational kinetic energy density: `E_kin,div = 0.5 rho |v_div|^2`."""
-        helmholtz_E_kin = self.compute_helmholtz_kinetic_energy()
-        return helmholtz_E_kin.E_kin_div_sfield_3d
+        """Compute irrotational kinetic energy density: `e_kin,div = 0.5 rho |v_div|^2`."""
+        helmholtz_e_kin = self.compute_helmholtz_kinetic_energy()
+        return helmholtz_e_kin.E_kin_div_sfield_3d
 
     def compute_sol_kinetic_energy_sfield(
         self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
-        """Compute solenoidal kinetic energy density: `E_kin,sol = 0.5 rho |v_sol|^2`."""
-        helmholtz_E_kin = self.compute_helmholtz_kinetic_energy()
-        return helmholtz_E_kin.E_kin_sol_sfield_3d
+        """Compute solenoidal kinetic energy density: `e_kin,sol = 0.5 rho |v_sol|^2`."""
+        helmholtz_e_kin = self.compute_helmholtz_kinetic_energy()
+        return helmholtz_e_kin.E_kin_sol_sfield_3d
 
     def compute_bulk_kinetic_energy_sfield(
         self: FieldsProtocol,
     ) -> field_models.ScalarField_3D:
-        """Compute bulk kinetic energy density: `E_kin,bulk = 0.5 rho |v_bulk|^2`."""
-        helmholtz_E_kin = self.compute_helmholtz_kinetic_energy()
-        return helmholtz_E_kin.E_kin_bulk_sfield_3d
+        """Compute bulk kinetic energy density: `e_kin,bulk = 0.5 rho |v_bulk|^2`."""
+        helmholtz_e_kin = self.compute_helmholtz_kinetic_energy()
+        return helmholtz_e_kin.E_kin_bulk_sfield_3d
 
 
 ## } MODULE
