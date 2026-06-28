@@ -84,9 +84,9 @@ class _DeriveEnergyFields:
             param_name="energy_prefactor",
             allow_none=False,
         )
-        b_vfield_3d = self.load_3d_magnetic_vfield()
+        magnetic_vfield_3d = self.load_3d_magnetic_vfield()
         return compute_fields.compute_magnetic_energy_density_sfield(
-            b_vfield_3d=b_vfield_3d,
+            magnetic_vfield_3d=magnetic_vfield_3d,
             energy_prefactor=energy_prefactor,
             field_name="magnetic_energy",
             latex_label=r"E_\mathrm{mag}",
