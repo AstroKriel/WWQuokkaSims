@@ -128,8 +128,8 @@ class _DeriveVelocityFields:
         omega_vfield_3d = self.compute_vorticity_vfield(grad_order=grad_order)
         v_vfield_3d = self.compute_velocity_vfield()
         return field_operators.compute_vfield_dot_product(
-            a_vfield_3d=omega_vfield_3d,
-            b_vfield_3d=v_vfield_3d,
+            f_vfield_3d=omega_vfield_3d,
+            g_vfield_3d=v_vfield_3d,
             field_name="kinetic_helicity",
             latex_label=r"(\nabla\times\vec{v})\cdot\vec{v}",
         )
