@@ -35,6 +35,7 @@ from jormi.ww_plots import (
     annotate_axis,
     manage_plots,
     plot_data,
+    style_plots,
 )
 from jormi.ww_validation import validate_types
 
@@ -685,6 +686,7 @@ class ScriptInterface:
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
+    style_plots.set_theme()
     parser = argparse.ArgumentParser(
         description="Plot midplane slices of Quokka field components.",
         parents=[

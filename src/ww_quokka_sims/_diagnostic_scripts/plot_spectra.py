@@ -25,6 +25,7 @@ from jormi.ww_plots import (
     add_color,
     annotate_axis,
     manage_plots,
+    style_plots,
 )
 from jormi.ww_validation import (
     validate_arrays,
@@ -351,6 +352,7 @@ class ScriptInterface:
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
+    style_plots.set_theme()
     user_args = argparse.ArgumentParser(
         description="Plot power spectra of Quokka scalar fields.",
         parents=[
