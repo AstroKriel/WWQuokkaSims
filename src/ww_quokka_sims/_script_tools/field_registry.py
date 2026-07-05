@@ -115,6 +115,24 @@ QUOKKA_FIELD_LOOKUP = {
         cmap=SEQUENTIAL_CMAP,
         latex_label=r"p",
     ),
+    "velocity_divergence":
+    FieldEntry(
+        loader=load_snapshot.QuokkaSnapshot.compute_div_v_sfield,
+        cmap=DIVERGING_CMAP,
+        latex_label=r"\nabla\cdot\vec{v}",
+    ),
+    "vorticity":
+    FieldEntry(
+        loader=load_snapshot.QuokkaSnapshot.compute_vorticity_vfield,
+        cmap=DIVERGING_CMAP,
+        latex_label=r"\nabla\times\vec{v}",
+    ),
+    "vorticity_magnitude":
+    FieldEntry(
+        loader=load_snapshot.QuokkaSnapshot.compute_vorticity_sfield,
+        cmap=SEQUENTIAL_CMAP,
+        latex_label=r"|\nabla\times\vec{v}|",
+    ),
     "magnetic_divergence":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_div_b_sfield,
