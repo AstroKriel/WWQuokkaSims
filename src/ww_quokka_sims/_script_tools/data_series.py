@@ -42,6 +42,7 @@ class FieldArgs:
 @dataclass(frozen=True)
 class DataPoint:
     sim_time: float
+    latex_label: str
     vi_value: float
 
 
@@ -54,6 +55,12 @@ class DataSeries:
         self,
     ) -> int:
         return len(self.points)
+
+    @property
+    def latex_label(
+        self,
+    ) -> str:
+        return self.points[0].latex_label
 
     def get_sorted_arrays(
         self,
@@ -116,6 +123,7 @@ class LoadDataSeries:
         vi_value = field_operators.compute_sfield_volume_integral(sfield_3d=sfield_3d)
         return DataPoint(
             sim_time=float(sim_time),
+            latex_label=sfield_3d.latex_label,
             vi_value=float(vi_value),
         )
 
