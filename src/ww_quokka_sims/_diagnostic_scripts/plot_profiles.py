@@ -102,12 +102,12 @@ class ComputeCompProfiles:
     @staticmethod
     def _compute_cell_centers(
         *,
-        udomain_3d: domain_models.UniformDomain_3D,
+        uniform_domain_3d: domain_models.UniformDomain_3D,
         axis_to_slice: cartesian_axes.AxisLike_3D,
     ) -> numpy.ndarray:
-        (x_min, _), (y_min, _), (z_min, _) = udomain_3d.domain_bounds
-        num_cells_x, num_cells_y, num_cells_z = udomain_3d.resolution
-        cell_width_x, cell_width_y, cell_width_z = udomain_3d.cell_widths
+        (x_min, _), (y_min, _), (z_min, _) = uniform_domain_3d.domain_bounds
+        num_cells_x, num_cells_y, num_cells_z = uniform_domain_3d.resolution
+        cell_width_x, cell_width_y, cell_width_z = uniform_domain_3d.cell_widths
         ax_idx = cartesian_axes.get_axis_index(axis_to_slice)
         if ax_idx == 0:
             return x_min + (numpy.arange(num_cells_x) + 0.5) * cell_width_x
@@ -140,7 +140,7 @@ class ComputeCompProfiles:
         self,
         *,
         field: field_models.ScalarField_3D,
-        udomain_3d: domain_models.UniformDomain_3D,
+        uniform_domain_3d: domain_models.UniformDomain_3D,
     ) -> list[CompProfile]:
         field_models.ensure_3d_sfield(field)
         sim_time = field.sim_time
@@ -150,7 +150,7 @@ class ComputeCompProfiles:
         y_array_by_axis: list[numpy.ndarray] = []
         for axis_to_slice in axis_labels:
             x_positions = ComputeCompProfiles._compute_cell_centers(
-                udomain_3d=udomain_3d,
+                uniform_domain_3d=uniform_domain_3d,
                 axis_to_slice=axis_to_slice,
             )
             field_profile = ComputeCompProfiles._extract_1d_midplane_profile(
@@ -174,7 +174,7 @@ class ComputeCompProfiles:
         self,
         *,
         field: field_models.VectorField_3D,
-        udomain_3d: domain_models.UniformDomain_3D,
+        uniform_domain_3d: domain_models.UniformDomain_3D,
     ) -> list[CompProfile]:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
@@ -192,7 +192,7 @@ class ComputeCompProfiles:
             y_array_by_axis: list[numpy.ndarray] = []
             for axis_to_slice in axis_labels:
                 x_positions = ComputeCompProfiles._compute_cell_centers(
-                    udomain_3d=udomain_3d,
+                    uniform_domain_3d=uniform_domain_3d,
                     axis_to_slice=axis_to_slice,
                 )
                 comp_index = cartesian_axes.get_axis_index(comp_name)
@@ -224,17 +224,17 @@ class ComputeCompProfiles:
                     snapshot_dir=snapshot_dir,
                     verbose=False,
             ) as snapshot:
-                udomain_3d = snapshot.load_3d_uniform_domain()
+                uniform_domain_3d = snapshot.load_3d_uniform_domain()
                 field = self.field_loader(snapshot)  # ScalarField or VectorField
             if isinstance(field, field_models.ScalarField_3D):
                 comp_profiles = self._compute_scalar_profiles(
                     field=field,
-                    udomain_3d=udomain_3d,
+                    uniform_domain_3d=uniform_domain_3d,
                 )
             elif isinstance(field, field_models.VectorField_3D):
                 comp_profiles = self._compute_vector_profiles(
                     field=field,
-                    udomain_3d=udomain_3d,
+                    uniform_domain_3d=uniform_domain_3d,
                 )
             else:
                 raise ValueError(f"{self.field_name} is an unrecognised field type.")

@@ -56,7 +56,7 @@ class QuokkaSnapshot(
     _in_context: bool
     _sim_time: float | None
     _covering_grid: Any | None
-    _udomain_3d: domain_models.UniformDomain_3D | None
+    _uniform_domain_3d: domain_models.UniformDomain_3D | None
     _field_cache: LRUCache
 
     ##
@@ -80,7 +80,7 @@ class QuokkaSnapshot(
         self._in_context = False
         self._sim_time = None
         self._covering_grid = None
-        self._udomain_3d = None
+        self._uniform_domain_3d = None
         ## the following fields are cached: rho_sfield_3d, mom_vfield_3d, v_vfield_3d, and b_vfield_3d
         self._field_cache = LRUCache(max_size=4)
 
@@ -130,7 +130,7 @@ class QuokkaSnapshot(
             self._yt_dataset.close()
             self._yt_dataset = None
             self._covering_grid = None
-            self._udomain_3d = None
+            self._uniform_domain_3d = None
             self._field_cache.clear_cache()
 
     @property
@@ -344,10 +344,10 @@ class QuokkaSnapshot(
             param_name="latex_label",
         )
         sarray_3d = self._load_3d_sarray(field_key)
-        udomain_3d = self.load_3d_uniform_domain()
+        uniform_domain_3d = self.load_3d_uniform_domain()
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=sarray_3d,
-            udomain_3d=udomain_3d,
+            uniform_domain_3d=uniform_domain_3d,
             field_name=field_name,
             latex_label=latex_label,
             sim_time=self.sim_time,
@@ -395,10 +395,10 @@ class QuokkaSnapshot(
             [grouped_sarrays[comp_axis] for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER],
             axis=0,
         )
-        udomain_3d = self.load_3d_uniform_domain()
+        uniform_domain_3d = self.load_3d_uniform_domain()
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=varray_3d,
-            udomain_3d=udomain_3d,
+            uniform_domain_3d=uniform_domain_3d,
             sim_time=sim_time,
             field_name=field_name,
             latex_label=latex_label,
@@ -422,8 +422,8 @@ class QuokkaSnapshot(
             param=force_periodicity,
             param_name="force_periodicity",
         )
-        if self._udomain_3d is not None:
-            return self._udomain_3d
+        if self._uniform_domain_3d is not None:
+            return self._uniform_domain_3d
         self._open_if_needed()
         assert self._yt_dataset is not None
         x_min, y_min, z_min = (float(value) for value in self._yt_dataset.domain_left_edge)
@@ -435,13 +435,13 @@ class QuokkaSnapshot(
             (bool(is_periodic) or force_periodicity) for is_periodic in self._yt_dataset.periodicity
         )
         self._close_if_needed()
-        udomain_3d = domain_models.UniformDomain_3D(
+        uniform_domain_3d = domain_models.UniformDomain_3D(
             periodicity=(is_periodic_x, is_periodic_y, is_periodic_z),
             resolution=(num_cells_x, num_cells_y, num_cells_z),
             domain_bounds=((x_min, x_max), (y_min, y_max), (z_min, z_max)),
         )
-        self._udomain_3d = udomain_3d
-        return udomain_3d
+        self._uniform_domain_3d = uniform_domain_3d
+        return uniform_domain_3d
 
     ##
     ## --- BASIC FIELDS

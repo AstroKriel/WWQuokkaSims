@@ -62,10 +62,10 @@ class _DeriveVelocityFields:
             zero_posinf=True,
             zero_neginf=True,
         )
-        udomain_3d = self.load_3d_uniform_domain()
+        uniform_domain_3d = self.load_3d_uniform_domain()
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=v_varray,
-            udomain_3d=udomain_3d,
+            uniform_domain_3d=uniform_domain_3d,
             field_name="velocity",
             latex_label=r"\vec{v}",
             sim_time=self.sim_time,

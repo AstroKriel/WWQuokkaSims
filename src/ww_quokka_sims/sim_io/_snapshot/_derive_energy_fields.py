@@ -65,10 +65,10 @@ class _DeriveEnergyFields:
             zero_posinf=True,
             zero_neginf=True,
         )
-        udomain_3d = self.load_3d_uniform_domain()
+        uniform_domain_3d = self.load_3d_uniform_domain()
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_sarray_3d,
-            udomain_3d=udomain_3d,
+            uniform_domain_3d=uniform_domain_3d,
             field_name="kinetic_energy",
             latex_label=r"E_\mathrm{kin}",
             sim_time=self.sim_time,
@@ -124,7 +124,7 @@ class _DeriveEnergyFields:
         )
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_int_sarray,
-            udomain_3d=self.load_3d_uniform_domain(),
+            uniform_domain_3d=self.load_3d_uniform_domain(),
             field_name="internal_energy",
             latex_label=r"E_\mathrm{int}",
             sim_time=self.sim_time,
@@ -149,7 +149,7 @@ class _DeriveEnergyFields:
         p_sarray = (gamma - 1.0) * E_int_sarray
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=p_sarray,
-            udomain_3d=self.load_3d_uniform_domain(),
+            uniform_domain_3d=self.load_3d_uniform_domain(),
             field_name="pressure",
             latex_label=r"p",
             sim_time=self.sim_time,
@@ -159,7 +159,7 @@ class _DeriveEnergyFields:
         self: FieldsProtocol,
     ) -> HelmholtzKineticEnergy:
         """Compute Helmholtz-decomposed kinetic energies; splits `vec(v)` into `vec(v)_div + vec(v)_sol + vec(v)_bulk`."""
-        udomain_3d = self.load_3d_uniform_domain()
+        uniform_domain_3d = self.load_3d_uniform_domain()
         v_vfield_3d = self.compute_velocity_vfield()
         rho_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=self.load_3d_density_sfield(),
@@ -222,21 +222,21 @@ class _DeriveEnergyFields:
         )
         E_kin_div_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_div_sarray,
-            udomain_3d=udomain_3d,
+            uniform_domain_3d=uniform_domain_3d,
             field_name="kinetic_energy_div",
             latex_label=r"E_{\mathrm{kin}, \parallel}",
             sim_time=self.sim_time,
         )
         E_kin_sol_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_sol_sarray,
-            udomain_3d=udomain_3d,
+            uniform_domain_3d=uniform_domain_3d,
             field_name="kinetic_energy_sol",
             latex_label=r"E_{\mathrm{kin}, \perp}",
             sim_time=self.sim_time,
         )
         E_kin_bulk_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_bulk_sarray,
-            udomain_3d=udomain_3d,
+            uniform_domain_3d=uniform_domain_3d,
             field_name="kinetic_energy_bulk",
             latex_label=r"E_{\mathrm{kin}, \mathrm{bulk}}",
             sim_time=self.sim_time,

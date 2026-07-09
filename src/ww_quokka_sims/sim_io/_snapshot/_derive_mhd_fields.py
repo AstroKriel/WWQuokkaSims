@@ -99,7 +99,7 @@ class _DeriveMHDFields:
         )
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=energy_ratio_sarray_3d,
-            udomain_3d=self.load_3d_uniform_domain(),
+            uniform_domain_3d=self.load_3d_uniform_domain(),
             field_name="energy_ratio",
             latex_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
             sim_time=self.sim_time,

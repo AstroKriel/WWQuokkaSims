@@ -65,7 +65,7 @@ class _DeriveMagneticFields:
         )
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=v_A_varray_3d,
-            udomain_3d=self.load_3d_uniform_domain(),
+            uniform_domain_3d=self.load_3d_uniform_domain(),
             field_name="alfven_velocity",
             latex_label=r"\vec{v}_A",
             sim_time=self.sim_time,
@@ -177,7 +177,7 @@ class _DeriveMagneticFields:
         )
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=beta_sarray_3d,
-            udomain_3d=self.load_3d_uniform_domain(),
+            uniform_domain_3d=self.load_3d_uniform_domain(),
             field_name="plasma_beta",
             latex_label=r"\beta",
             sim_time=self.sim_time,
