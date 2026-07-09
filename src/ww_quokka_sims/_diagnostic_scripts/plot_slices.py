@@ -421,6 +421,14 @@ class FieldPlotter:
                 for field_comp in field_comps
                 if not numpy.all(field_comp.data_3d == 0)
             ]
+            if not field_comps:
+                manage_log.log_hint(
+                    text=(
+                        f"Skipping `{self.field_args.field_name}` at snapshot {snapshot_index}: "
+                        f"all components are exactly zero, so there is no data to safely log10."
+                    ),
+                )
+                return
         num_rows = len(field_comps)
         fig, axs_grid = manage_plots.create_figure_grid(
             num_rows=num_rows,
