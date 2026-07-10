@@ -49,6 +49,7 @@ from ww_quokka_sims.sim_io import (
 @dataclass(frozen=True)
 class PDFData:
     sim_time: float
+    snapshot_index: int
     grouped_bin_centers: list[numpy.ndarray]
     grouped_densities: list[numpy.ndarray]
     comp_labels: list[str]
@@ -113,12 +114,14 @@ class ComputePDFs:
         self,
         *,
         snapshot_dirs: list[Path],
+        snapshot_tag: str,
         field_name: str,
         field_loader: Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         num_bins: int,
     ):
         self.snapshot_dirs = snapshot_dirs
+        self.snapshot_tag = snapshot_tag
         self.field_name = field_name
         self.field_loader = field_loader
         self.comps_to_plot = comps_to_plot
@@ -149,6 +152,7 @@ class ComputePDFs:
     def _compute_vfield_pdf(
         self,
         field: field_models.VectorField_3D,
+        snapshot_index: int,
     ) -> PDFData:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
@@ -171,6 +175,7 @@ class ComputePDFs:
             grouped_densities.append(densities)
         return PDFData(
             sim_time=sim_time,
+            snapshot_index=snapshot_index,
             grouped_bin_centers=grouped_bin_centers,
             grouped_densities=grouped_densities,
             comp_labels=comp_labels,
@@ -179,6 +184,7 @@ class ComputePDFs:
     def _compute_sfield_pdf(
         self,
         field: field_models.ScalarField_3D,
+        snapshot_index: int,
     ) -> PDFData:
         field_models.ensure_3d_sfield(field)
         sim_time = field.sim_time
@@ -189,6 +195,7 @@ class ComputePDFs:
         )
         return PDFData(
             sim_time=sim_time,
+            snapshot_index=snapshot_index,
             grouped_bin_centers=[bin_centers],
             grouped_densities=[densities],
             comp_labels=[field_models.get_label(field)],
@@ -199,15 +206,21 @@ class ComputePDFs:
     ) -> list[PDFData]:
         field_pdfs: list[PDFData] = []
         for snapshot_dir in self.snapshot_dirs:
+            snapshot_index = int(
+                find_snapshots.get_snapshot_index_string(
+                    snapshot_dir=snapshot_dir,
+                    snapshot_tag=self.snapshot_tag,
+                ),
+            )
             with load_snapshot.QuokkaSnapshot(
                     snapshot_dir=snapshot_dir,
                     verbose=False,
             ) as snapshot:
                 field = self.field_loader(snapshot)
             if isinstance(field, field_models.ScalarField_3D):
-                pdf = self._compute_sfield_pdf(field=field)
+                pdf = self._compute_sfield_pdf(field=field, snapshot_index=snapshot_index)
             elif isinstance(field, field_models.VectorField_3D):
-                pdf = self._compute_vfield_pdf(field=field)
+                pdf = self._compute_vfield_pdf(field=field, snapshot_index=snapshot_index)
             else:
                 raise ValueError(f"{self.field_name} is an unrecognised field type.")
             field_pdfs.append(pdf)
@@ -227,6 +240,7 @@ class RenderPDFs:
         self,
         *,
         snapshot_dirs: list[Path],
+        snapshot_tag: str,
         out_dir: Path,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
@@ -236,6 +250,7 @@ class RenderPDFs:
         extract_data: bool,
     ):
         self.snapshot_dirs = snapshot_dirs
+        self.snapshot_tag = snapshot_tag
         self.out_dir = out_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
@@ -323,7 +338,7 @@ class RenderPDFs:
             exist_ok=True,
         )
         output_dict = {}
-        for snapshot_index, pdf_data in enumerate(field_pdfs):
+        for pdf_data in field_pdfs:
             snapshot_dict: dict = {"time": pdf_data.sim_time}
             for comp_index, comp_label in enumerate(pdf_data.comp_labels):
                 bin_centers, densities = pdf_data.get_pdf(comp_index)
@@ -331,7 +346,7 @@ class RenderPDFs:
                     "bin_centers": bin_centers,
                     "log10_density": densities,
                 }
-            output_dict[str(snapshot_index)] = snapshot_dict
+            output_dict[str(pdf_data.snapshot_index)] = snapshot_dict
         json_io.save_dict_to_json_file(
             file_path=out_dir / f"{self.field_name}-pdfs.json",
             input_dict=output_dict,
@@ -345,6 +360,7 @@ class RenderPDFs:
         ## compute PDFs for each snapshot and component
         compute_pdfs = ComputePDFs(
             snapshot_dirs=self.snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
             field_name=self.field_name,
             field_loader=self.field_loader,
             comps_to_plot=self.comps_to_plot,
@@ -452,6 +468,7 @@ class ScriptInterface:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderPDFs(
                 snapshot_dirs=snapshot_dirs,
+                snapshot_tag=self.snapshot_tag,
                 out_dir=out_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,

@@ -49,6 +49,7 @@ from ww_quokka_sims.sim_io import (
 @dataclass(frozen=True)
 class CompProfile:
     sim_time: float
+    snapshot_index: int
     comp_name: str
     comp_label: str
     axis_labels: list[cartesian_axes.AxisLike_3D]
@@ -88,12 +89,14 @@ class ComputeCompProfiles:
         self,
         *,
         snapshot_dirs: list[Path],
+        snapshot_tag: str,
         field_name: str,
         field_loader: Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
     ):
         self.snapshot_dirs = snapshot_dirs
+        self.snapshot_tag = snapshot_tag
         self.field_name = field_name
         self.field_loader = field_loader
         self.comps_to_plot = comps_to_plot
@@ -141,6 +144,7 @@ class ComputeCompProfiles:
         *,
         field: field_models.ScalarField_3D,
         uniform_domain_3d: domain_models.UniformDomain_3D,
+        snapshot_index: int,
     ) -> list[CompProfile]:
         field_models.ensure_3d_sfield(field)
         sim_time = field.sim_time
@@ -162,6 +166,7 @@ class ComputeCompProfiles:
         return [
             CompProfile(
                 sim_time=sim_time,
+                snapshot_index=snapshot_index,
                 comp_name=self.field_name,
                 axis_labels=axis_labels,
                 comp_label=field_models.get_label(field),
@@ -175,6 +180,7 @@ class ComputeCompProfiles:
         *,
         field: field_models.VectorField_3D,
         uniform_domain_3d: domain_models.UniformDomain_3D,
+        snapshot_index: int,
     ) -> list[CompProfile]:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
@@ -206,6 +212,7 @@ class ComputeCompProfiles:
             comp_profiles.append(
                 CompProfile(
                     sim_time=sim_time,
+                    snapshot_index=snapshot_index,
                     comp_name=cartesian_axes.get_axis_label(comp_name),
                     axis_labels=axis_labels,
                     comp_label=comp_label,
@@ -220,6 +227,12 @@ class ComputeCompProfiles:
     ) -> dict[str, list[CompProfile]]:
         comp_profiles_lookup: dict[str, list[CompProfile]] = {}
         for snapshot_dir in self.snapshot_dirs:
+            snapshot_index = int(
+                find_snapshots.get_snapshot_index_string(
+                    snapshot_dir=snapshot_dir,
+                    snapshot_tag=self.snapshot_tag,
+                ),
+            )
             with load_snapshot.QuokkaSnapshot(
                     snapshot_dir=snapshot_dir,
                     verbose=False,
@@ -230,11 +243,13 @@ class ComputeCompProfiles:
                 comp_profiles = self._compute_scalar_profiles(
                     field=field,
                     uniform_domain_3d=uniform_domain_3d,
+                    snapshot_index=snapshot_index,
                 )
             elif isinstance(field, field_models.VectorField_3D):
                 comp_profiles = self._compute_vector_profiles(
                     field=field,
                     uniform_domain_3d=uniform_domain_3d,
+                    snapshot_index=snapshot_index,
                 )
             else:
                 raise ValueError(f"{self.field_name} is an unrecognised field type.")
@@ -261,6 +276,7 @@ class RenderCompProfiles:
         *,
         snapshot_dirs: list[Path],
         snapshot_tag: str,
+        index_width: int,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
@@ -271,6 +287,7 @@ class RenderCompProfiles:
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
+        self.index_width = index_width
         self.out_dir = out_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
@@ -296,16 +313,18 @@ class RenderCompProfiles:
         for snapshot_index in range(num_snapshots):
             any_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
             sim_time = any_profile.sim_time
-            time_tag = f"t={sim_time:.3f}"
+            real_snapshot_index = any_profile.snapshot_index
+            index_tag = f"index={real_snapshot_index:0{self.index_width}d}"
             for axis_index, axis in enumerate(any_profile.axis_labels):
                 axis_label = cartesian_axes.get_axis_label(axis)
-                stem = f"{self.field_name}-axis={axis_label}-{time_tag}"
+                stem = f"{self.field_name}-axis={axis_label}-{index_tag}"
                 file_path = out_dir / f"{stem}.json"
                 if is_scalar:
                     comp_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
                     profile_models.ScalarProfile(
                         field_name=self.field_name,
                         sim_time=sim_time,
+                        snapshot_index=real_snapshot_index,
                         profile_axis=axis_label,
                         position=comp_profile.get_domain(axis_index=axis_index),
                         field_value=comp_profile.get_values(axis_index=axis_index),
@@ -326,6 +345,7 @@ class RenderCompProfiles:
                     profile_models.VectorProfile(
                         field_name=self.field_name,
                         sim_time=sim_time,
+                        snapshot_index=real_snapshot_index,
                         profile_axis=axis_label,
                         components=components,
                     ).save_to_file(file_path)
@@ -413,6 +433,7 @@ class RenderCompProfiles:
         ## compute midplane profiles for each snapshot and component
         compute_comp_profiles = ComputeCompProfiles(
             snapshot_dirs=self.snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
             field_name=self.field_name,
             field_loader=self.field_loader,
             comps_to_plot=self.comps_to_plot,
@@ -531,12 +552,17 @@ class ScriptInterface:
             parents=True,
             exist_ok=True,
         )
+        index_width = find_snapshots.get_max_index_width(
+            snapshot_dirs=snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
+        )
         ## compute and render profiles for each requested field
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             render_comp_profiles = RenderCompProfiles(
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
+                index_width=index_width,
                 out_dir=out_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,

@@ -370,6 +370,7 @@ class FieldPlotter:
         *,
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
+        sim_time: float,
         snapshot_index: int,
         index_width: int,
         out_dir: Path,
@@ -384,8 +385,13 @@ class FieldPlotter:
                     uniform_domain=uniform_domain,
                 )
                 comp_part = f"-comp={field_comp.comp_axis.axis_label}" if field_comp.comp_axis is not None else ""
-                file_name = f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_index}.npy"
-                numpy.save(out_dir / file_name, field_slice.data_2d)
+                file_name = f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_index}.npz"
+                numpy.savez(
+                    out_dir / file_name,
+                    data_2d=field_slice.data_2d,
+                    sim_time=sim_time,
+                    snapshot_index=snapshot_index,
+                )
 
     def plot_snapshot(
         self,
@@ -407,6 +413,7 @@ class FieldPlotter:
             self._save_slices(
                 field_comps=field_comps,
                 uniform_domain=snapshot_data.uniform_domain,
+                sim_time=snapshot_data.sim_time,
                 snapshot_index=snapshot_index,
                 index_width=index_width,
                 out_dir=out_dir,

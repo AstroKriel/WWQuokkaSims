@@ -50,6 +50,7 @@ from ww_quokka_sims.sim_io import (
 @dataclass(frozen=True)
 class SpectraData:
     sim_time: float
+    snapshot_index: int
     latex_label: str
     k_bin_centers: numpy.ndarray
     log10_spectrum: numpy.ndarray
@@ -79,10 +80,12 @@ class ComputeSpectra:
         self,
         *,
         snapshot_dirs: list[Path],
+        snapshot_tag: str,
         field_name: str,
         field_loader: Callable,
     ):
         self.snapshot_dirs = snapshot_dirs
+        self.snapshot_tag = snapshot_tag
         self.field_name = field_name
         self.field_loader = field_loader
 
@@ -91,6 +94,12 @@ class ComputeSpectra:
     ) -> list[SpectraData]:
         field_spectra: list[SpectraData] = []
         for snapshot_dir in self.snapshot_dirs:
+            snapshot_index = int(
+                find_snapshots.get_snapshot_index_string(
+                    snapshot_dir=snapshot_dir,
+                    snapshot_tag=self.snapshot_tag,
+                ),
+            )
             with load_snapshot.QuokkaSnapshot(
                     snapshot_dir=snapshot_dir,
                     verbose=False,
@@ -113,6 +122,7 @@ class ComputeSpectra:
             field_spectra.append(
                 SpectraData(
                     sim_time=sim_time,
+                    snapshot_index=snapshot_index,
                     latex_label=field.latex_label,
                     k_bin_centers=spectrum.k_bin_centers_1d,
                     log10_spectrum=log10_spectrum,
@@ -220,8 +230,8 @@ class RenderSpectra:
             exist_ok=True,
         )
         output_dict = {}
-        for snapshot_index, spectra_data in enumerate(field_spectra):
-            output_dict[str(snapshot_index)] = {
+        for spectra_data in field_spectra:
+            output_dict[str(spectra_data.snapshot_index)] = {
                 "sim_time": spectra_data.sim_time,
                 "k_bin_centers": spectra_data.k_bin_centers,
                 "log10_spectrum": spectra_data.log10_spectrum,
@@ -239,6 +249,7 @@ class RenderSpectra:
         ## compute the isotropic power spectrum for each snapshot
         compute = ComputeSpectra(
             snapshot_dirs=self.snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
             field_name=self.field_name,
             field_loader=self.field_loader,
         )
