@@ -94,8 +94,13 @@ class _DeriveEnergyFields:
 
     def compute_internal_energy_sfield(
         self: FieldsProtocol,
+        magnetic_energy_sfield_3d: field_models.ScalarField_3D | None = None,
     ) -> field_models.ScalarField_3D:
-        """Compute internal energy: `e_int = e_tot - e_kin - e_mag`; `e_mag = 0` if the snapshot did not store `vec(b)`."""
+        """Compute internal energy: `e_int = e_tot - e_kin - e_mag`; `e_mag = 0` if the snapshot did not store `vec(b)`.
+
+        `magnetic_energy_sfield_3d` lets a caller that already computed `e_mag` pass it in,
+        instead of paying for `|vec(b)|^2` a second time.
+        """
         E_tot_sarray = field_models.extract_3d_sarray(
             sfield_3d=self.load_3d_total_energy_sfield(),
             param_name="<E_tot_sfield_3d>",
@@ -107,7 +112,9 @@ class _DeriveEnergyFields:
         E_int_sarray = E_tot_sarray - E_kin_sarray_3d
         if self._is_vfield_keys_available("magnetic"):
             E_mag_sarray = field_models.extract_3d_sarray(
-                sfield_3d=self.compute_magnetic_energy_sfield(),
+                sfield_3d=magnetic_energy_sfield_3d
+                if magnetic_energy_sfield_3d is not None
+                else self.compute_magnetic_energy_sfield(),
                 param_name="<E_mag_sfield_3d>",
             )
             E_int_sarray -= E_mag_sarray
@@ -133,8 +140,13 @@ class _DeriveEnergyFields:
     def compute_pressure_sfield(
         self: FieldsProtocol,
         gamma: float = 5.0 / 3.0,
+        magnetic_energy_sfield_3d: field_models.ScalarField_3D | None = None,
     ) -> field_models.ScalarField_3D:
-        """Compute thermal pressure: `p = (gamma - 1) * e_int`."""
+        """Compute thermal pressure: `p = (gamma - 1) * e_int`.
+
+        `magnetic_energy_sfield_3d` lets a caller that already computed `e_mag` pass it in,
+        instead of paying for `|vec(b)|^2` a second time.
+        """
         validate_types.ensure_finite_float(
             param=gamma,
             param_name="gamma",
@@ -143,7 +155,9 @@ class _DeriveEnergyFields:
             allow_zero=False,
         )
         E_int_sarray = field_models.extract_3d_sarray(
-            sfield_3d=self.compute_internal_energy_sfield(),
+            sfield_3d=self.compute_internal_energy_sfield(
+                magnetic_energy_sfield_3d=magnetic_energy_sfield_3d,
+            ),
             param_name="<E_int_sfield_3d>",
         )
         p_sarray = (gamma - 1.0) * E_int_sarray

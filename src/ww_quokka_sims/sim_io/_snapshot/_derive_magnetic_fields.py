@@ -9,7 +9,6 @@ import numpy
 
 ## personal
 from jormi.ww_arrays import compute_array_stats
-from jormi.ww_arrays.farrays_3d import farray_operators
 from jormi.ww_fields.fields_3d import (
     field_models,
     field_operators,
@@ -146,15 +145,20 @@ class _DeriveMagneticFields:
             require_positive=True,
             allow_zero=False,
         )
+        energy_prefactor = 0.5
+        e_mag_sfield_3d = self.compute_magnetic_energy_sfield(energy_prefactor=energy_prefactor)
         p_sarray_3d = field_models.extract_3d_sarray(
-            sfield_3d=self.compute_pressure_sfield(gamma=gamma),
+            sfield_3d=self.compute_pressure_sfield(
+                gamma=gamma,
+                magnetic_energy_sfield_3d=e_mag_sfield_3d,
+            ),
             param_name="<p_sfield_3d>",
         )
-        b_varray_3d = field_models.extract_3d_varray(
-            vfield_3d=self.load_3d_magnetic_vfield(),
-            param_name="<b_vfield_3d>",
+        e_mag_sarray_3d = field_models.extract_3d_sarray(
+            sfield_3d=e_mag_sfield_3d,
+            param_name="<E_mag_sfield_3d>",
         )
-        b_sq_sarray_3d = farray_operators.compute_sum_of_varray_comps_squared(b_varray_3d)
+        b_sq_sarray_3d = e_mag_sarray_3d / energy_prefactor
         b_sq_has_zeros = compute_array_stats.check_no_zero_values(
             array=b_sq_sarray_3d,
             param_name="<|b|^2>",
