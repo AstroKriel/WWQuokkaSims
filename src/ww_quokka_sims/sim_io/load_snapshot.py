@@ -508,12 +508,20 @@ class QuokkaSnapshot(
         self,
     ) -> field_models.ScalarField_3D:
         """Load total energy: `e_tot = e_int + e_kin + e_mag` (code units)."""
+        cached_field = self._field_cache.get_cached_field("total_energy")
+        if isinstance(cached_field, field_models.ScalarField_3D):
+            return cached_field
         E_tot_key = self._get_sfield_key("total_energy")
-        return self.load_3d_sfield(
+        E_tot_sfield_3d = self.load_3d_sfield(
             field_key=E_tot_key,
             field_name="total_energy",
             latex_label=r"E_\mathrm{tot}",
         )
+        self._field_cache.cache_field(
+            field_name="total_energy",
+            field_data=E_tot_sfield_3d,
+        )
+        return E_tot_sfield_3d
 
 
 ## } MODULE
