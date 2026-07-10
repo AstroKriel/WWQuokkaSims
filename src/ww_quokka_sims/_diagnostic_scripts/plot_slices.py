@@ -97,7 +97,7 @@ class SnapshotData:
 
 @dataclass(frozen=True)
 class FieldComp:
-    data_3d: numpy.ndarray
+    sarray_3d: numpy.ndarray
     label: str
     comp_axis: cartesian_axes.CartesianAxis_3D | None = None
 
@@ -107,7 +107,7 @@ AxisBounds = tuple[tuple[float, float], tuple[float, float]]  # ((xmin, xmax), (
 
 @dataclass(frozen=True)
 class SlicedField:
-    data_2d: numpy.ndarray
+    sarray_2d: numpy.ndarray
     label: str
     axis_bounds: AxisBounds
 
@@ -171,17 +171,17 @@ def get_slice_labels(
 
 def slice_field(
     *,
-    data_3d: numpy.ndarray,
+    sarray_3d: numpy.ndarray,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
     uniform_domain: domain_models.UniformDomain_3D,
 ) -> SlicedField:
-    num_cells_x0, num_cells_x1, num_cells_x2 = data_3d.shape
+    num_cells_x0, num_cells_x1, num_cells_x2 = sarray_3d.shape
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X2:
-        data_2d = data_3d[:, :, num_cells_x2 // 2]
+        sarray_2d = sarray_3d[:, :, num_cells_x2 // 2]
     elif axis_to_slice == cartesian_axes.CartesianAxis_3D.X1:
-        data_2d = data_3d[:, num_cells_x1 // 2, :]
+        sarray_2d = sarray_3d[:, num_cells_x1 // 2, :]
     else:
-        data_2d = data_3d[num_cells_x0 // 2, :, :]
+        sarray_2d = sarray_3d[num_cells_x0 // 2, :, :]
     label_parts = [
         rf"{ax.axis_label}=L_{ax.axis_index}/2" if ax == axis_to_slice else ax.axis_label
         for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER
@@ -192,7 +192,7 @@ def slice_field(
         axis_to_slice=axis_to_slice,
     )
     return SlicedField(
-        data_2d=data_2d,
+        sarray_2d=sarray_2d,
         label=label,
         axis_bounds=axis_bounds,
     )
@@ -225,17 +225,17 @@ class FieldPlotter:
     ) -> None:
         min_value = float(
             numpy.nanmin(
-                field_slice.data_2d,
+                field_slice.sarray_2d,
             ),
         )
         max_value = float(
             numpy.nanmax(
-                field_slice.data_2d,
+                field_slice.sarray_2d,
             ),
         )
         plot_data.plot_2d_array(
             ax=ax,
-            array_2d=field_slice.data_2d,
+            array_2d=field_slice.sarray_2d,
             data_format="xy",
             axis_aspect_ratio="equal",
             axis_bounds=field_slice.axis_bounds,
@@ -306,7 +306,7 @@ class FieldPlotter:
             )
             return [
                 FieldComp(
-                    data_3d=sarray_3d,
+                    sarray_3d=sarray_3d,
                     label=field_models.get_label(field),
                 ),
             ]
@@ -320,7 +320,7 @@ class FieldPlotter:
         )
         return [
             FieldComp(
-                data_3d=varray_3d[_axis_to_index(comp_axis)],
+                sarray_3d=varray_3d[_axis_to_index(comp_axis)],
                 label=field_models.get_vcomp_label(field, comp_axis=comp_axis),
                 comp_axis=comp_axis,
             ) for comp_axis in self.comps_to_plot
@@ -338,7 +338,7 @@ class FieldPlotter:
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
                 ax = axs_grid[row_index][col_index]
                 field_slice = slice_field(
-                    data_3d=field_comp.data_3d,
+                    sarray_3d=field_comp.sarray_3d,
                     axis_to_slice=axis_to_slice,
                     uniform_domain=uniform_domain,
                 )
@@ -380,7 +380,7 @@ class FieldPlotter:
         for field_comp in field_comps:
             for axis_to_slice in self.axes_to_slice:
                 field_slice = slice_field(
-                    data_3d=field_comp.data_3d,
+                    sarray_3d=field_comp.sarray_3d,
                     axis_to_slice=axis_to_slice,
                     uniform_domain=uniform_domain,
                 )
@@ -388,7 +388,7 @@ class FieldPlotter:
                 file_name = f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_index}.npz"
                 numpy.savez(
                     out_dir / file_name,
-                    data_2d=field_slice.data_2d,
+                    sarray_2d=field_slice.sarray_2d,
                     step_time=step_time,
                     step_index=step_index,
                 )
@@ -421,12 +421,12 @@ class FieldPlotter:
         if self.apply_log10:
             field_comps = [
                 FieldComp(
-                    data_3d=compute_array_stats.compute_safe_log10(numpy.abs(field_comp.data_3d)),
+                    sarray_3d=compute_array_stats.compute_safe_log10(numpy.abs(field_comp.sarray_3d)),
                     label=rf"$\log_{{10}}({field_comp.label.strip('$')})$",
                     comp_axis=field_comp.comp_axis,
                 )
                 for field_comp in field_comps
-                if not numpy.all(field_comp.data_3d == 0)
+                if not numpy.all(field_comp.sarray_3d == 0)
             ]
             if not field_comps:
                 manage_log.log_hint(
