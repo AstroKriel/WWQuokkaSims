@@ -145,6 +145,7 @@ class RenderSpectra:
         *,
         snapshot_dirs: list[Path],
         snapshot_tag: str,
+        index_width: int,
         out_dir: Path,
         field_name: str,
         field_loader: Callable,
@@ -153,6 +154,7 @@ class RenderSpectra:
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
+        self.index_width = index_width
         self.out_dir = out_dir
         self.field_name = field_name
         self.field_loader = field_loader
@@ -231,7 +233,8 @@ class RenderSpectra:
         )
         output_dict = {}
         for spectra_data in field_spectra:
-            output_dict[str(spectra_data.step_index)] = {
+            padded_index = f"{spectra_data.step_index:0{self.index_width}d}"
+            output_dict[padded_index] = {
                 "step_time": spectra_data.step_time,
                 "k_bin_centers": spectra_data.k_bin_centers,
                 "log10_spectrum": spectra_data.log10_spectrum,
@@ -284,11 +287,14 @@ class RenderSpectra:
         )
         ## include step index in the filename if there is only one snapshot
         if len(field_spectra) == 1:
-            step_index_string = find_snapshots.get_step_index_string(
-                snapshot_dir=self.snapshot_dirs[0],
-                snapshot_tag=self.snapshot_tag,
+            step_index = int(
+                find_snapshots.get_step_index_string(
+                    snapshot_dir=self.snapshot_dirs[0],
+                    snapshot_tag=self.snapshot_tag,
+                ),
             )
-            fig_path = self.out_dir / f"{self.field_name}-spectrum-index={step_index_string}.png"
+            padded_index = f"{step_index:0{self.index_width}d}"
+            fig_path = self.out_dir / f"{self.field_name}-spectrum-index={padded_index}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}-spectra.png"
         manage_plots.save_figure(
@@ -341,12 +347,17 @@ class ScriptInterface:
             parents=True,
             exist_ok=True,
         )
+        index_width = find_snapshots.get_max_index_width(
+            snapshot_dirs=snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
+        )
         ## compute and render power spectra for each requested field
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderSpectra(
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
+                index_width=index_width,
                 out_dir=out_dir,
                 field_name=field_name,
                 field_loader=field_meta.loader,

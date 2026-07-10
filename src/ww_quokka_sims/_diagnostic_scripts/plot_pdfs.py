@@ -241,6 +241,7 @@ class RenderPDFs:
         *,
         snapshot_dirs: list[Path],
         snapshot_tag: str,
+        index_width: int,
         out_dir: Path,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
@@ -251,6 +252,7 @@ class RenderPDFs:
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
+        self.index_width = index_width
         self.out_dir = out_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
@@ -346,7 +348,8 @@ class RenderPDFs:
                     "bin_centers": bin_centers,
                     "log10_density": densities,
                 }
-            output_dict[str(pdf_data.step_index)] = snapshot_dict
+            padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
+            output_dict[padded_index] = snapshot_dict
         json_io.save_dict_to_json_file(
             file_path=out_dir / f"{self.field_name}-pdfs.json",
             input_dict=output_dict,
@@ -463,12 +466,17 @@ class ScriptInterface:
             parents=True,
             exist_ok=True,
         )
+        index_width = find_snapshots.get_max_index_width(
+            snapshot_dirs=snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
+        )
         ## compute and render PDFs for each requested field
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             renderer = RenderPDFs(
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
+                index_width=index_width,
                 out_dir=out_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,

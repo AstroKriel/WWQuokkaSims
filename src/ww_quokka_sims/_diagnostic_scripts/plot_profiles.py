@@ -483,11 +483,14 @@ class RenderCompProfiles:
         )
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         if num_snapshots == 1:
-            step_index_string = find_snapshots.get_step_index_string(
-                snapshot_dir=self.snapshot_dirs[0],
-                snapshot_tag=self.snapshot_tag,
+            step_index = int(
+                find_snapshots.get_step_index_string(
+                    snapshot_dir=self.snapshot_dirs[0],
+                    snapshot_tag=self.snapshot_tag,
+                ),
             )
-            fig_path = self.out_dir / f"{self.field_name}-profile-index={step_index_string}.png"
+            padded_index = f"{step_index:0{self.index_width}d}"
+            fig_path = self.out_dir / f"{self.field_name}-profile-index={padded_index}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}-profiles.png"
         manage_plots.save_figure(
