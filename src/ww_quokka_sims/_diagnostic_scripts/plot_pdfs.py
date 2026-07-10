@@ -48,8 +48,8 @@ from ww_quokka_sims.sim_io import (
 
 @dataclass(frozen=True)
 class PDFData:
-    sim_time: float
-    snapshot_index: int
+    step_time: float
+    step_index: int
     grouped_bin_centers: list[numpy.ndarray]
     grouped_densities: list[numpy.ndarray]
     comp_labels: list[str]
@@ -152,15 +152,15 @@ class ComputePDFs:
     def _compute_vfield_pdf(
         self,
         field: field_models.VectorField_3D,
-        snapshot_index: int,
+        step_index: int,
     ) -> PDFData:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
                 f"Vector field `{self.field_name}` requires at least one component to plot; none provided.",
             )
         field_models.ensure_3d_vfield(field)
-        sim_time = field.sim_time
-        assert sim_time is not None
+        step_time = field.sim_time
+        assert step_time is not None
         comp_names = sorted(self.comps_to_plot)
         comp_labels = [field_models.get_vcomp_label(field, comp_axis=comp_name) for comp_name in comp_names]
         grouped_bin_centers: list[numpy.ndarray] = []
@@ -174,8 +174,8 @@ class ComputePDFs:
             grouped_bin_centers.append(bin_centers)
             grouped_densities.append(densities)
         return PDFData(
-            sim_time=sim_time,
-            snapshot_index=snapshot_index,
+            step_time=step_time,
+            step_index=step_index,
             grouped_bin_centers=grouped_bin_centers,
             grouped_densities=grouped_densities,
             comp_labels=comp_labels,
@@ -184,18 +184,18 @@ class ComputePDFs:
     def _compute_sfield_pdf(
         self,
         field: field_models.ScalarField_3D,
-        snapshot_index: int,
+        step_index: int,
     ) -> PDFData:
         field_models.ensure_3d_sfield(field)
-        sim_time = field.sim_time
-        assert sim_time is not None
+        step_time = field.sim_time
+        assert step_time is not None
         bin_centers, densities = self._estimate_pdf(
             field_data=field.fdata.farray,
             num_bins=self.num_bins,
         )
         return PDFData(
-            sim_time=sim_time,
-            snapshot_index=snapshot_index,
+            step_time=step_time,
+            step_index=step_index,
             grouped_bin_centers=[bin_centers],
             grouped_densities=[densities],
             comp_labels=[field_models.get_label(field)],
@@ -206,8 +206,8 @@ class ComputePDFs:
     ) -> list[PDFData]:
         field_pdfs: list[PDFData] = []
         for snapshot_dir in self.snapshot_dirs:
-            snapshot_index = int(
-                find_snapshots.get_snapshot_index_string(
+            step_index = int(
+                find_snapshots.get_step_index_string(
                     snapshot_dir=snapshot_dir,
                     snapshot_tag=self.snapshot_tag,
                 ),
@@ -218,13 +218,13 @@ class ComputePDFs:
             ) as snapshot:
                 field = self.field_loader(snapshot)
             if isinstance(field, field_models.ScalarField_3D):
-                pdf = self._compute_sfield_pdf(field=field, snapshot_index=snapshot_index)
+                pdf = self._compute_sfield_pdf(field=field, step_index=step_index)
             elif isinstance(field, field_models.VectorField_3D):
-                pdf = self._compute_vfield_pdf(field=field, snapshot_index=snapshot_index)
+                pdf = self._compute_vfield_pdf(field=field, step_index=step_index)
             else:
                 raise ValueError(f"{self.field_name} is an unrecognised field type.")
             field_pdfs.append(pdf)
-        field_pdfs.sort(key=lambda pdf: pdf.sim_time)
+        field_pdfs.sort(key=lambda pdf: pdf.step_time)
         return field_pdfs
 
 
@@ -339,14 +339,14 @@ class RenderPDFs:
         )
         output_dict = {}
         for pdf_data in field_pdfs:
-            snapshot_dict: dict = {"time": pdf_data.sim_time}
+            snapshot_dict: dict = {"step_time": pdf_data.step_time}
             for comp_index, comp_label in enumerate(pdf_data.comp_labels):
                 bin_centers, densities = pdf_data.get_pdf(comp_index)
                 snapshot_dict[comp_label] = {
                     "bin_centers": bin_centers,
                     "log10_density": densities,
                 }
-            output_dict[str(pdf_data.snapshot_index)] = snapshot_dict
+            output_dict[str(pdf_data.step_index)] = snapshot_dict
         json_io.save_dict_to_json_file(
             file_path=out_dir / f"{self.field_name}-pdfs.json",
             input_dict=output_dict,

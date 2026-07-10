@@ -97,8 +97,8 @@ class ComponentArrays:
 @dataclass(frozen=True)
 class ScalarProfile:
     field_name: str
-    sim_time: float
-    snapshot_index: int
+    step_time: float
+    step_index: int
     profile_axis: str
     position: NDArray[numpy.floating]
     field_value: NDArray[numpy.floating]
@@ -108,13 +108,13 @@ class ScalarProfile:
     ) -> None:
         _ensure_field_name(self.field_name)
         validate_types.ensure_finite_float(
-            param=self.sim_time,
-            param_name="<sim_time>",
+            param=self.step_time,
+            param_name="<step_time>",
             allow_none=False,
         )
         validate_types.ensure_finite_int(
-            param=self.snapshot_index,
-            param_name="<snapshot_index>",
+            param=self.step_index,
+            param_name="<step_index>",
             allow_none=False,
         )
         _ensure_profile_axis(self.profile_axis)
@@ -131,8 +131,8 @@ class ScalarProfile:
             file_path=file_path,
             input_dict={
                 "field_name": self.field_name,
-                "sim_time": self.sim_time,
-                "snapshot_index": self.snapshot_index,
+                "step_time": self.step_time,
+                "step_index": self.step_index,
                 "profile_axis": self.profile_axis,
                 "position": self.position,
                 "field_value": self.field_value,
@@ -153,14 +153,14 @@ class ScalarProfile:
         validate_types.ensure_dict_has_keys(
             param=data,
             required_keys={
-                "field_name", "sim_time", "snapshot_index", "profile_axis", "position", "field_value"
+                "field_name", "step_time", "step_index", "profile_axis", "position", "field_value"
             },
             param_name="<ScalarProfile JSON>",
         )
         return cls(
             field_name=data["field_name"],
-            sim_time=float(data["sim_time"]),
-            snapshot_index=int(data["snapshot_index"]),
+            step_time=float(data["step_time"]),
+            step_index=int(data["step_index"]),
             profile_axis=data["profile_axis"],
             position=numpy.asarray(data["position"]),
             field_value=numpy.asarray(data["field_value"]),
@@ -175,8 +175,8 @@ class ScalarProfile:
 @dataclass(frozen=True)
 class VectorProfile:
     field_name: str
-    sim_time: float
-    snapshot_index: int
+    step_time: float
+    step_index: int
     profile_axis: str
     components: dict[str, ComponentArrays]
 
@@ -185,13 +185,13 @@ class VectorProfile:
     ) -> None:
         _ensure_field_name(self.field_name)
         validate_types.ensure_finite_float(
-            param=self.sim_time,
-            param_name="<sim_time>",
+            param=self.step_time,
+            param_name="<step_time>",
             allow_none=False,
         )
         validate_types.ensure_finite_int(
-            param=self.snapshot_index,
-            param_name="<snapshot_index>",
+            param=self.step_index,
+            param_name="<step_index>",
             allow_none=False,
         )
         _ensure_profile_axis(self.profile_axis)
@@ -212,8 +212,8 @@ class VectorProfile:
             file_path=file_path,
             input_dict={
                 "field_name": self.field_name,
-                "sim_time": self.sim_time,
-                "snapshot_index": self.snapshot_index,
+                "step_time": self.step_time,
+                "step_index": self.step_index,
                 "profile_axis": self.profile_axis,
                 "field_comps": {
                     comp_axis: {
@@ -238,7 +238,7 @@ class VectorProfile:
         )
         validate_types.ensure_dict_has_keys(
             param=data,
-            required_keys={"field_name", "sim_time", "snapshot_index", "profile_axis", "field_comps"},
+            required_keys={"field_name", "step_time", "step_index", "profile_axis", "field_comps"},
             param_name="<VectorProfile JSON>",
         )
         components = {
@@ -251,8 +251,8 @@ class VectorProfile:
         }
         return cls(
             field_name=data["field_name"],
-            sim_time=float(data["sim_time"]),
-            snapshot_index=int(data["snapshot_index"]),
+            step_time=float(data["step_time"]),
+            step_index=int(data["step_index"]),
             profile_axis=data["profile_axis"],
             components=components,
         )

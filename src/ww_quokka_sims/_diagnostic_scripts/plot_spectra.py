@@ -49,8 +49,8 @@ from ww_quokka_sims.sim_io import (
 
 @dataclass(frozen=True)
 class SpectraData:
-    sim_time: float
-    snapshot_index: int
+    step_time: float
+    step_index: int
     latex_label: str
     k_bin_centers: numpy.ndarray
     log10_spectrum: numpy.ndarray
@@ -94,8 +94,8 @@ class ComputeSpectra:
     ) -> list[SpectraData]:
         field_spectra: list[SpectraData] = []
         for snapshot_dir in self.snapshot_dirs:
-            snapshot_index = int(
-                find_snapshots.get_snapshot_index_string(
+            step_index = int(
+                find_snapshots.get_step_index_string(
                     snapshot_dir=snapshot_dir,
                     snapshot_tag=self.snapshot_tag,
                 ),
@@ -110,8 +110,8 @@ class ComputeSpectra:
                     f"`{self.field_name}` is not a scalar field; "
                     "power spectra are only supported for scalar fields.",
                 )
-            sim_time = field.sim_time
-            assert sim_time is not None
+            step_time = field.sim_time
+            assert step_time is not None
             spectrum = compute_spectra.compute_isotropic_power_spectrum_sfield(field)
             log10_spectrum = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
@@ -121,14 +121,14 @@ class ComputeSpectra:
             )
             field_spectra.append(
                 SpectraData(
-                    sim_time=sim_time,
-                    snapshot_index=snapshot_index,
+                    step_time=step_time,
+                    step_index=step_index,
                     latex_label=field.latex_label,
                     k_bin_centers=spectrum.k_bin_centers_1d,
                     log10_spectrum=log10_spectrum,
                 ),
             )
-        field_spectra.sort(key=lambda s: s.sim_time)
+        field_spectra.sort(key=lambda s: s.step_time)
         return field_spectra
 
 
@@ -231,8 +231,8 @@ class RenderSpectra:
         )
         output_dict = {}
         for spectra_data in field_spectra:
-            output_dict[str(spectra_data.snapshot_index)] = {
-                "sim_time": spectra_data.sim_time,
+            output_dict[str(spectra_data.step_index)] = {
+                "step_time": spectra_data.step_time,
                 "k_bin_centers": spectra_data.k_bin_centers,
                 "log10_spectrum": spectra_data.log10_spectrum,
             }
@@ -282,13 +282,13 @@ class RenderSpectra:
             ax=ax,
             latex_label=field_spectra[0].latex_label,
         )
-        ## include snapshot index in the filename if there is only one snapshot
+        ## include step index in the filename if there is only one snapshot
         if len(field_spectra) == 1:
-            snapshot_index = find_snapshots.get_snapshot_index_string(
+            step_index_string = find_snapshots.get_step_index_string(
                 snapshot_dir=self.snapshot_dirs[0],
                 snapshot_tag=self.snapshot_tag,
             )
-            fig_path = self.out_dir / f"{self.field_name}-spectrum-index={snapshot_index}.png"
+            fig_path = self.out_dir / f"{self.field_name}-spectrum-index={step_index_string}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}-spectra.png"
         manage_plots.save_figure(

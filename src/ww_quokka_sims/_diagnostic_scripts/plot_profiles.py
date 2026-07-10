@@ -48,8 +48,8 @@ from ww_quokka_sims.sim_io import (
 
 @dataclass(frozen=True)
 class CompProfile:
-    sim_time: float
-    snapshot_index: int
+    step_time: float
+    step_index: int
     comp_name: str
     comp_label: str
     axis_labels: list[cartesian_axes.AxisLike_3D]
@@ -144,11 +144,11 @@ class ComputeCompProfiles:
         *,
         field: field_models.ScalarField_3D,
         uniform_domain_3d: domain_models.UniformDomain_3D,
-        snapshot_index: int,
+        step_index: int,
     ) -> list[CompProfile]:
         field_models.ensure_3d_sfield(field)
-        sim_time = field.sim_time
-        assert sim_time is not None
+        step_time = field.sim_time
+        assert step_time is not None
         axis_labels = list(self.axes_to_slice)
         x_array_by_axis: list[numpy.ndarray] = []
         y_array_by_axis: list[numpy.ndarray] = []
@@ -165,8 +165,8 @@ class ComputeCompProfiles:
             y_array_by_axis.append(field_profile)
         return [
             CompProfile(
-                sim_time=sim_time,
-                snapshot_index=snapshot_index,
+                step_time=step_time,
+                step_index=step_index,
                 comp_name=self.field_name,
                 axis_labels=axis_labels,
                 comp_label=field_models.get_label(field),
@@ -180,15 +180,15 @@ class ComputeCompProfiles:
         *,
         field: field_models.VectorField_3D,
         uniform_domain_3d: domain_models.UniformDomain_3D,
-        snapshot_index: int,
+        step_index: int,
     ) -> list[CompProfile]:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
                 f"Vector field `{self.field_name}` requires at least one component to plot; none provided.",
             )
         field_models.ensure_3d_vfield(field)
-        sim_time = field.sim_time
-        assert sim_time is not None
+        step_time = field.sim_time
+        assert step_time is not None
         comp_names = sorted(self.comps_to_plot)
         axis_labels = list(self.axes_to_slice)
         comp_profiles: list[CompProfile] = []
@@ -211,8 +211,8 @@ class ComputeCompProfiles:
                 y_array_by_axis.append(comp_profile)
             comp_profiles.append(
                 CompProfile(
-                    sim_time=sim_time,
-                    snapshot_index=snapshot_index,
+                    step_time=step_time,
+                    step_index=step_index,
                     comp_name=cartesian_axes.get_axis_label(comp_name),
                     axis_labels=axis_labels,
                     comp_label=comp_label,
@@ -227,8 +227,8 @@ class ComputeCompProfiles:
     ) -> dict[str, list[CompProfile]]:
         comp_profiles_lookup: dict[str, list[CompProfile]] = {}
         for snapshot_dir in self.snapshot_dirs:
-            snapshot_index = int(
-                find_snapshots.get_snapshot_index_string(
+            step_index = int(
+                find_snapshots.get_step_index_string(
                     snapshot_dir=snapshot_dir,
                     snapshot_tag=self.snapshot_tag,
                 ),
@@ -243,13 +243,13 @@ class ComputeCompProfiles:
                 comp_profiles = self._compute_scalar_profiles(
                     field=field,
                     uniform_domain_3d=uniform_domain_3d,
-                    snapshot_index=snapshot_index,
+                    step_index=step_index,
                 )
             elif isinstance(field, field_models.VectorField_3D):
                 comp_profiles = self._compute_vector_profiles(
                     field=field,
                     uniform_domain_3d=uniform_domain_3d,
-                    snapshot_index=snapshot_index,
+                    step_index=step_index,
                 )
             else:
                 raise ValueError(f"{self.field_name} is an unrecognised field type.")
@@ -259,7 +259,7 @@ class ComputeCompProfiles:
                     comp_profiles_lookup[comp_label] = []
                 comp_profiles_lookup[comp_label].append(comp_profile)
         for comp_label in comp_profiles_lookup:
-            comp_profiles_lookup[comp_label].sort(key=lambda item: item.sim_time)
+            comp_profiles_lookup[comp_label].sort(key=lambda item: item.step_time)
         return comp_profiles_lookup
 
 
@@ -310,33 +310,33 @@ class RenderCompProfiles:
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         first_profile = comp_profiles_lookup[comp_labels[0]][0]
         is_scalar = first_profile.comp_name == self.field_name
-        for snapshot_index in range(num_snapshots):
-            any_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
-            sim_time = any_profile.sim_time
-            real_snapshot_index = any_profile.snapshot_index
-            index_tag = f"index={real_snapshot_index:0{self.index_width}d}"
+        for position_index in range(num_snapshots):
+            any_profile = comp_profiles_lookup[comp_labels[0]][position_index]
+            step_time = any_profile.step_time
+            step_index = any_profile.step_index
+            index_tag = f"index={step_index:0{self.index_width}d}"
             for axis_index, axis in enumerate(any_profile.axis_labels):
                 axis_label = cartesian_axes.get_axis_label(axis)
                 stem = f"{self.field_name}-axis={axis_label}-{index_tag}"
                 file_path = out_dir / f"{stem}.json"
                 if is_scalar:
-                    comp_profile = comp_profiles_lookup[comp_labels[0]][snapshot_index]
+                    comp_profile = comp_profiles_lookup[comp_labels[0]][position_index]
                     profile_models.ScalarProfile(
                         field_name=self.field_name,
-                        sim_time=sim_time,
-                        snapshot_index=real_snapshot_index,
+                        step_time=step_time,
+                        step_index=step_index,
                         profile_axis=axis_label,
                         position=comp_profile.get_domain(axis_index=axis_index),
                         field_value=comp_profile.get_values(axis_index=axis_index),
                     ).save_to_file(file_path)
                 else:
                     components = {
-                        comp_profiles_lookup[comp_label][snapshot_index].comp_name:
+                        comp_profiles_lookup[comp_label][position_index].comp_name:
                         profile_models.ComponentArrays(
-                            position=comp_profiles_lookup[comp_label][snapshot_index].get_domain(
+                            position=comp_profiles_lookup[comp_label][position_index].get_domain(
                                 axis_index=axis_index,
                             ),
-                            field_value=comp_profiles_lookup[comp_label][snapshot_index].get_values(
+                            field_value=comp_profiles_lookup[comp_label][position_index].get_values(
                                 axis_index=axis_index,
                             ),
                         )
@@ -344,8 +344,8 @@ class RenderCompProfiles:
                     }
                     profile_models.VectorProfile(
                         field_name=self.field_name,
-                        sim_time=sim_time,
-                        snapshot_index=real_snapshot_index,
+                        step_time=step_time,
+                        step_index=step_index,
                         profile_axis=axis_label,
                         components=components,
                     ).save_to_file(file_path)
@@ -483,11 +483,11 @@ class RenderCompProfiles:
         )
         num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
         if num_snapshots == 1:
-            snapshot_index = find_snapshots.get_snapshot_index_string(
+            step_index_string = find_snapshots.get_step_index_string(
                 snapshot_dir=self.snapshot_dirs[0],
                 snapshot_tag=self.snapshot_tag,
             )
-            fig_path = self.out_dir / f"{self.field_name}-profile-index={snapshot_index}.png"
+            fig_path = self.out_dir / f"{self.field_name}-profile-index={step_index_string}.png"
         else:
             fig_path = self.out_dir / f"{self.field_name}-profiles.png"
         manage_plots.save_figure(

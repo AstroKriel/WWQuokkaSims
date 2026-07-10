@@ -32,12 +32,12 @@ def looks_like_boxlib_dir(
     return has_header and has_level0
 
 
-def get_snapshot_index_string(
+def get_step_index_string(
     *,
     snapshot_dir: Path,
     snapshot_tag: str,
 ) -> str:
-    """Extract the index string from a snapshot directory named `<snapshot_tag><index_string>`."""
+    """Extract the step-index string from a snapshot directory named `<snapshot_tag><step_index_string>`."""
     snapshot_name = snapshot_dir.name
     if snapshot_tag not in snapshot_name:
         raise ValueError(f"snapshot tag `{snapshot_tag}` not found in snapshot name `{snapshot_name}`.")
@@ -55,14 +55,14 @@ def get_latest_snapshot_dirs(
     sim_dir: Path,
     snapshot_tag: str,
 ) -> list[Path]:
-    """Return all snapshot directories under `sim_dir` matching `snapshot_tag`; sorted by ascending index."""
+    """Return all snapshot directories under `sim_dir` matching `snapshot_tag`; sorted by ascending step index."""
     snapshot_dirs = [
         sub_dir for sub_dir in sim_dir.iterdir()
         if sub_dir.is_dir() and (snapshot_tag in sub_dir.name) and ("old" not in sub_dir.name)
     ]
     snapshot_dirs.sort(
         key=lambda snapshot_dir: int(
-            get_snapshot_index_string(
+            get_step_index_string(
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=snapshot_tag,
             ),
@@ -106,16 +106,16 @@ def get_max_index_width(
     snapshot_dirs: list[Path],
     snapshot_tag: str,
 ) -> int:
-    """Return the character width of the widest index string across `snapshot_dirs`."""
+    """Return the character width of the widest step-index string across `snapshot_dirs`."""
     if not snapshot_dirs:
         raise ValueError("`snapshot_dirs` must be non-empty.")
     index_widths: list[int] = []
     for snapshot_dir in snapshot_dirs:
-        snapshot_index_string = get_snapshot_index_string(
+        step_index_string = get_step_index_string(
             snapshot_dir=snapshot_dir,
             snapshot_tag=snapshot_tag,
         )
-        index_widths.append(len(snapshot_index_string))
+        index_widths.append(len(step_index_string))
     return max(index_widths)
 
 

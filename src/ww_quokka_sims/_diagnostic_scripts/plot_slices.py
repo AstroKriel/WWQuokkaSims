@@ -84,15 +84,15 @@ class SnapshotData:
     field: field_models.ScalarField_3D | field_models.VectorField_3D
 
     @property
-    def sim_time(
+    def step_time(
         self,
     ) -> float:
-        sim_time = self.field.sim_time
-        if (sim_time is None) or (not numpy.isfinite(sim_time)):
-            msg = f"Invalid sim_time for field: {sim_time!r}"
+        step_time = self.field.sim_time
+        if (step_time is None) or (not numpy.isfinite(step_time)):
+            msg = f"Invalid sim_time for field: {step_time!r}"
             manage_log.log_error(text=msg)
             raise RuntimeError(msg)
-        return float(sim_time)
+        return float(step_time)
 
 
 @dataclass(frozen=True)
@@ -217,7 +217,7 @@ class FieldPlotter:
     def plot_slice(
         *,
         ax: manage_plots.PlotAxis,
-        sim_time: float,
+        step_time: float,
         field_slice: SlicedField,
         label: str,
         cmap_name: str,
@@ -262,7 +262,7 @@ class FieldPlotter:
                 y_pos=0.5,
                 x_alignment="center",
                 y_alignment="center",
-                label=rf"$t = {sim_time:.2f}$",
+                label=rf"$t = {step_time:.2f}$",
                 text_size=16,
                 box_alpha=0.5,
             )
@@ -332,7 +332,7 @@ class FieldPlotter:
         axs_grid: manage_plots.PlotAxesGrid,
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
-        sim_time: float,
+        step_time: float,
     ) -> None:
         for row_index, field_comp in enumerate(field_comps):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
@@ -344,7 +344,7 @@ class FieldPlotter:
                 )
                 self.plot_slice(
                     ax=ax,
-                    sim_time=sim_time,
+                    step_time=step_time,
                     field_slice=field_slice,
                     label=field_comp.label,
                     cmap_name=self.field_args.cmap_name,
@@ -370,13 +370,13 @@ class FieldPlotter:
         *,
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
-        sim_time: float,
-        snapshot_index: int,
+        step_time: float,
+        step_index: int,
         index_width: int,
         out_dir: Path,
     ) -> None:
         field_name = self.field_args.field_name
-        padded_index = f"{snapshot_index:0{index_width}d}"
+        padded_index = f"{step_index:0{index_width}d}"
         for field_comp in field_comps:
             for axis_to_slice in self.axes_to_slice:
                 field_slice = slice_field(
@@ -389,8 +389,8 @@ class FieldPlotter:
                 numpy.savez(
                     out_dir / file_name,
                     data_2d=field_slice.data_2d,
-                    sim_time=sim_time,
-                    snapshot_index=snapshot_index,
+                    step_time=step_time,
+                    step_index=step_index,
                 )
 
     def plot_snapshot(
@@ -402,8 +402,8 @@ class FieldPlotter:
         verbose: bool,
     ) -> None:
         snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
-        snapshot_index = int(
-            find_snapshots.get_snapshot_index_string(
+        step_index = int(
+            find_snapshots.get_step_index_string(
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=self.snapshot_tag,
             ),
@@ -413,8 +413,8 @@ class FieldPlotter:
             self._save_slices(
                 field_comps=field_comps,
                 uniform_domain=snapshot_data.uniform_domain,
-                sim_time=snapshot_data.sim_time,
-                snapshot_index=snapshot_index,
+                step_time=snapshot_data.step_time,
+                step_index=step_index,
                 index_width=index_width,
                 out_dir=out_dir,
             )
@@ -431,7 +431,7 @@ class FieldPlotter:
             if not field_comps:
                 manage_log.log_hint(
                     text=(
-                        f"Skipping `{self.field_args.field_name}` at snapshot {snapshot_index}: "
+                        f"Skipping `{self.field_args.field_name}` at snapshot {step_index}: "
                         f"all components are exactly zero, so there is no data to safely log10."
                     ),
                 )
@@ -448,12 +448,12 @@ class FieldPlotter:
             axs_grid=axs_grid,
             field_comps=field_comps,
             uniform_domain=snapshot_data.uniform_domain,
-            sim_time=snapshot_data.sim_time,
+            step_time=snapshot_data.step_time,
         )
         self._label_axes(axs_grid=axs_grid)
         field_name = self.field_args.field_name
         plot_name = f"log10_{field_name}" if self.apply_log10 else field_name
-        padded_index = f"{snapshot_index:0{index_width}d}"
+        padded_index = f"{step_index:0{index_width}d}"
         fig_name = f"{plot_name}-slice-index={padded_index}.png"
         fig_path = out_dir / fig_name
         manage_plots.save_figure(
