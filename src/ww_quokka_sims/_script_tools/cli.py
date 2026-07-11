@@ -156,4 +156,23 @@ def base_parser(
     return parser
 
 
+##
+## === OUTPUT DIRECTORIES
+##
+
+
+def resolve_output_dir(
+    *,
+    output_dir: Path | None,
+    default_dir: Path,
+) -> Path:
+    """Resolve `output_dir` to `default_dir` if unset, creating it if needed."""
+    resolved_dir = output_dir if output_dir is not None else default_dir
+    resolved_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    return resolved_dir
+
+
 ## } MODULE

@@ -346,15 +346,13 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        extracted_dir = self.extracted_dir if self.extracted_dir is not None else snapshot_dirs[0].parent
-        figures_dir = self.figures_dir if self.figures_dir is not None else extracted_dir
-        extracted_dir.mkdir(
-            parents=True,
-            exist_ok=True,
+        extracted_dir = cli.resolve_output_dir(
+            output_dir=self.extracted_dir,
+            default_dir=snapshot_dirs[0].parent,
         )
-        figures_dir.mkdir(
-            parents=True,
-            exist_ok=True,
+        figures_dir = cli.resolve_output_dir(
+            output_dir=self.figures_dir,
+            default_dir=extracted_dir,
         )
         index_width = find_snapshots.get_max_index_width(
             snapshot_dirs=snapshot_dirs,
