@@ -38,11 +38,13 @@ class RenderDataSeries:
     def __init__(
         self,
         *,
-        out_dir: Path,
+        extracted_dir: Path,
+        figures_dir: Path,
         field_name: str,
         extract_data: bool,
     ):
-        self.out_dir = out_dir
+        self.extracted_dir = extracted_dir
+        self.figures_dir = figures_dir
         self.field_name = field_name
         self.extract_data = extract_data
 
@@ -50,15 +52,15 @@ class RenderDataSeries:
         self,
         *,
         vi_series: data_series.DataSeries,
-        out_dir: Path,
+        extracted_dir: Path,
     ) -> None:
-        out_dir.mkdir(
+        extracted_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
         time_array, values_array = vi_series.get_sorted_arrays()
         json_io.save_dict_to_json_file(
-            file_path=out_dir / f"{self.field_name}-vi_evolution.json",
+            file_path=extracted_dir / f"{self.field_name}-vi_evolution.json",
             input_dict={
                 "sim_times": time_array,
                 "vi_values": values_array,
@@ -76,7 +78,7 @@ class RenderDataSeries:
         if self.extract_data:
             self._save_series(
                 vi_series=vi_series,
-                out_dir=self.out_dir,
+                extracted_dir=self.extracted_dir,
             )
         fig, ax = manage_plots.create_figure()
         time_array, values_array = vi_series.get_sorted_arrays()
@@ -101,7 +103,7 @@ class RenderDataSeries:
         )
         ax.set_xlabel("time")
         ax.set_ylabel(f"${vi_series.latex_label}$")
-        fig_path = self.out_dir / f"{self.field_name}-time_evolution.png"
+        fig_path = self.figures_dir / f"{self.field_name}-time_evolution.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -124,7 +126,8 @@ class ScriptInterface:
         snapshot_tag: str,
         fields_to_plot: list[str],
         extract_data: bool,
-        out_dir: Path | None = None,
+        extracted_dir: Path | None = None,
+        figures_dir: Path | None = None,
         use_parallel: bool = True,
     ):
         validate_types.ensure_nonempty_string(
@@ -136,7 +139,8 @@ class ScriptInterface:
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = list(fields_to_plot)
         self.extract_data = extract_data
-        self.out_dir = Path(out_dir) if out_dir is not None else None
+        self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
+        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         self.use_parallel = bool(use_parallel)
 
     def run(
@@ -148,8 +152,13 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
-        out_dir.mkdir(
+        extracted_dir = self.extracted_dir if self.extracted_dir is not None else snapshot_dirs[0].parent
+        figures_dir = self.figures_dir if self.figures_dir is not None else extracted_dir
+        extracted_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        figures_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -163,7 +172,8 @@ class ScriptInterface:
             )
             vi_series = loader.run()
             render_data_series = RenderDataSeries(
-                out_dir=out_dir,
+                extracted_dir=extracted_dir,
+                figures_dir=figures_dir,
                 field_name=field_name,
                 extract_data=self.extract_data,
             )
@@ -193,7 +203,8 @@ def main():
         snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
         extract_data=user_args.save_data,
-        out_dir=user_args.out_dir,
+        extracted_dir=user_args.extracted_dir,
+        figures_dir=user_args.figures_dir,
         use_parallel=True,
     )
     script_interface.run()

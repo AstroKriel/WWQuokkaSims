@@ -41,7 +41,8 @@ class RenderComparisonPlot:
     def __init__(
         self,
         *,
-        out_dir: Path,
+        extracted_dir: Path,
+        figures_dir: Path,
         field_name: str,
         label_dir_1: str,
         label_dir_2: str,
@@ -49,7 +50,8 @@ class RenderComparisonPlot:
         marker_dir_1: str = "o",
         marker_dir_2: str = "s",
     ):
-        self.out_dir = out_dir
+        self.extracted_dir = extracted_dir
+        self.figures_dir = figures_dir
         self.field_name = field_name
         self.label_dir_1 = str(label_dir_1)
         self.label_dir_2 = str(label_dir_2)
@@ -63,12 +65,12 @@ class RenderComparisonPlot:
         t_array: numpy.ndarray,
         y_array: numpy.ndarray,
     ) -> None:
-        self.out_dir.mkdir(
+        self.extracted_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
         json_io.save_dict_to_json_file(
-            file_path=self.out_dir / f"{self.field_name}-time_comparison.json",
+            file_path=self.extracted_dir / f"{self.field_name}-time_comparison.json",
             input_dict={
                 "time": t_array,
                 "frac_diff": y_array,
@@ -175,7 +177,7 @@ class RenderComparisonPlot:
         )
         ax.set_xlabel("time")
         ax.set_ylabel(f"${vi_series_1.latex_label}$ (frac. diff.)")
-        fig_path = self.out_dir / f"{self.field_name}-time_comparison.png"
+        fig_path = self.figures_dir / f"{self.field_name}-time_comparison.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -198,7 +200,8 @@ class ScriptInterface:
         dir_2: Path,
         snapshot_tag: str,
         fields_to_plot: list[str],
-        out_dir: Path,
+        extracted_dir: Path,
+        figures_dir: Path | None,
         extract_data: bool,
     ):
         validate_types.ensure_nonempty_string(
@@ -209,11 +212,14 @@ class ScriptInterface:
             raise ValueError(f"dir_1 does not exist: {dir_1}")
         if not Path(dir_2).is_dir():
             raise ValueError(f"dir_2 does not exist: {dir_2}")
-        if not Path(out_dir).is_dir():
-            raise ValueError(f"out_dir does not exist: {out_dir}")
+        if not Path(extracted_dir).is_dir():
+            raise ValueError(f"extracted_dir does not exist: {extracted_dir}")
+        if (figures_dir is not None) and (not Path(figures_dir).is_dir()):
+            raise ValueError(f"figures_dir does not exist: {figures_dir}")
         self.dir_1 = Path(dir_1)
         self.dir_2 = Path(dir_2)
-        self.out_dir = Path(out_dir)
+        self.extracted_dir = Path(extracted_dir)
+        self.figures_dir = Path(figures_dir) if figures_dir is not None else self.extracted_dir
         valid_fields = set(
             field_registry.QUOKKA_FIELD_LOOKUP.keys(),
         )
@@ -265,7 +271,8 @@ class ScriptInterface:
             vi_series_1 = loader_1.run()
             vi_series_2 = loader_2.run()
             render_comparison_plot = RenderComparisonPlot(
-                out_dir=self.out_dir,
+                extracted_dir=self.extracted_dir,
+                figures_dir=self.figures_dir,
                 field_name=field_name,
                 label_dir_1=label_dir_1,
                 label_dir_2=label_dir_2,
@@ -302,7 +309,8 @@ def main():
         dir_2=user_args.input_dir_2,
         snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
-        out_dir=user_args.out_dir,
+        extracted_dir=user_args.extracted_dir,
+        figures_dir=user_args.figures_dir,
         extract_data=user_args.save_data,
     )
     script_interface.run()

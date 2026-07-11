@@ -242,7 +242,8 @@ class RenderPDFs:
         snapshot_dirs: list[Path],
         snapshot_tag: str,
         index_width: int,
-        out_dir: Path,
+        extracted_dir: Path,
+        figures_dir: Path,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         cmap_name: str,
@@ -253,7 +254,8 @@ class RenderPDFs:
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
         self.index_width = index_width
-        self.out_dir = out_dir
+        self.extracted_dir = extracted_dir
+        self.figures_dir = figures_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
         self.cmap_name = cmap_name
@@ -333,9 +335,9 @@ class RenderPDFs:
         self,
         *,
         field_pdfs: list[PDFData],
-        out_dir: Path,
+        extracted_dir: Path,
     ) -> None:
-        out_dir.mkdir(
+        extracted_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -351,7 +353,7 @@ class RenderPDFs:
             padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
             output_dict[padded_index] = snapshot_dict
         json_io.save_dict_to_json_file(
-            file_path=out_dir / f"{self.field_name}-pdfs.json",
+            file_path=extracted_dir / f"{self.field_name}-pdfs.json",
             input_dict=output_dict,
             overwrite=True,
             verbose=False,
@@ -376,7 +378,7 @@ class RenderPDFs:
         if self.extract_data:
             self._save_pdfs(
                 field_pdfs=field_pdfs,
-                out_dir=self.out_dir,
+                extracted_dir=self.extracted_dir,
             )
         ## figure layout: one col per field component; extra right margin for the colorbar if series
         num_cols = field_pdfs[0].num_comps
@@ -407,7 +409,7 @@ class RenderPDFs:
             comp_labels=field_pdfs[0].comp_labels,
         )
         suffix = "pdf" if len(field_pdfs) == 1 else "pdfs"
-        fig_path = self.out_dir / f"{self.field_name}-{suffix}.png"
+        fig_path = self.figures_dir / f"{self.field_name}-{suffix}.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -432,7 +434,8 @@ class ScriptInterface:
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
         extract_data: bool,
         num_bins: int = 15,
-        out_dir: Path | None = None,
+        extracted_dir: Path | None = None,
+        figures_dir: Path | None = None,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
@@ -449,7 +452,8 @@ class ScriptInterface:
         self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
         self.extract_data = extract_data
         self.num_bins = int(num_bins)
-        self.out_dir = Path(out_dir) if out_dir is not None else None
+        self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
+        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
 
     def run(
         self,
@@ -461,8 +465,13 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
-        out_dir.mkdir(
+        extracted_dir = self.extracted_dir if self.extracted_dir is not None else snapshot_dirs[0].parent
+        figures_dir = self.figures_dir if self.figures_dir is not None else extracted_dir
+        extracted_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        figures_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -477,7 +486,8 @@ class ScriptInterface:
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
                 index_width=index_width,
-                out_dir=out_dir,
+                extracted_dir=extracted_dir,
+                figures_dir=figures_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 cmap_name=field_meta.cmap,
@@ -514,7 +524,8 @@ def main():
         comps_to_plot=user_args.comps,
         extract_data=user_args.save_data,
         num_bins=15,
-        out_dir=user_args.out_dir,
+        extracted_dir=user_args.extracted_dir,
+        figures_dir=user_args.figures_dir,
     )
     script_interface.run()
 

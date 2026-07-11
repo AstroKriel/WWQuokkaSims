@@ -146,7 +146,8 @@ class RenderSpectra:
         snapshot_dirs: list[Path],
         snapshot_tag: str,
         index_width: int,
-        out_dir: Path,
+        extracted_dir: Path,
+        figures_dir: Path,
         field_name: str,
         field_loader: Callable,
         cmap_name: str,
@@ -155,7 +156,8 @@ class RenderSpectra:
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
         self.index_width = index_width
-        self.out_dir = out_dir
+        self.extracted_dir = extracted_dir
+        self.figures_dir = figures_dir
         self.field_name = field_name
         self.field_loader = field_loader
         self.cmap_name = cmap_name
@@ -225,9 +227,9 @@ class RenderSpectra:
         self,
         *,
         field_spectra: list[SpectraData],
-        out_dir: Path,
+        extracted_dir: Path,
     ) -> None:
-        out_dir.mkdir(
+        extracted_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -240,7 +242,7 @@ class RenderSpectra:
                 "log10_spectrum": spectra_data.log10_spectrum,
             }
         json_io.save_dict_to_json_file(
-            file_path=out_dir / f"{self.field_name}-spectra.json",
+            file_path=extracted_dir / f"{self.field_name}-spectra.json",
             input_dict=output_dict,
             overwrite=True,
             verbose=False,
@@ -263,7 +265,7 @@ class RenderSpectra:
         if self.extract_data:
             self._save_spectra(
                 field_spectra=field_spectra,
-                out_dir=self.out_dir,
+                extracted_dir=self.extracted_dir,
             )
         ## plot single snapshot in black, or a sequential color series across all snapshots
         fig, ax = manage_plots.create_figure()
@@ -294,9 +296,9 @@ class RenderSpectra:
                 ),
             )
             padded_index = f"{step_index:0{self.index_width}d}"
-            fig_path = self.out_dir / f"{self.field_name}-spectrum-index={padded_index}.png"
+            fig_path = self.figures_dir / f"{self.field_name}-spectrum-index={padded_index}.png"
         else:
-            fig_path = self.out_dir / f"{self.field_name}-spectra.png"
+            fig_path = self.figures_dir / f"{self.field_name}-spectra.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -319,7 +321,8 @@ class ScriptInterface:
         snapshot_tag: str,
         fields_to_plot: tuple[str, ...] | list[str] | None,
         extract_data: bool,
-        out_dir: Path | None = None,
+        extracted_dir: Path | None = None,
+        figures_dir: Path | None = None,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
@@ -330,7 +333,8 @@ class ScriptInterface:
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.extract_data = extract_data
-        self.out_dir = Path(out_dir) if out_dir is not None else None
+        self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
+        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
 
     def run(
         self,
@@ -342,8 +346,13 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
-        out_dir.mkdir(
+        extracted_dir = self.extracted_dir if self.extracted_dir is not None else snapshot_dirs[0].parent
+        figures_dir = self.figures_dir if self.figures_dir is not None else extracted_dir
+        extracted_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        figures_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -358,7 +367,8 @@ class ScriptInterface:
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
                 index_width=index_width,
-                out_dir=out_dir,
+                extracted_dir=extracted_dir,
+                figures_dir=figures_dir,
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 cmap_name=field_meta.cmap,
@@ -390,7 +400,8 @@ def main():
         snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
         extract_data=user_args.save_data,
-        out_dir=user_args.out_dir,
+        extracted_dir=user_args.extracted_dir,
+        figures_dir=user_args.figures_dir,
     )
     script_interface.run()
 

@@ -71,7 +71,8 @@ class WorkerArgs(NamedTuple):
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
     cmap_name: str
-    out_dir: str
+    extracted_dir: str
+    figures_dir: str
     index_width: int
     extract_data: bool
     hide_annotations: bool
@@ -373,7 +374,7 @@ class FieldPlotter:
         step_time: float,
         step_index: int,
         index_width: int,
-        out_dir: Path,
+        extracted_dir: Path,
     ) -> None:
         field_name = self.field_args.field_name
         padded_index = f"{step_index:0{index_width}d}"
@@ -387,7 +388,7 @@ class FieldPlotter:
                 comp_part = f"-comp={field_comp.comp_axis.axis_label}" if field_comp.comp_axis is not None else ""
                 file_name = f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_index}.npz"
                 numpy.savez(
-                    out_dir / file_name,
+                    extracted_dir / file_name,
                     sarray_2d=field_slice.sarray_2d,
                     step_time=step_time,
                     step_index=step_index,
@@ -397,7 +398,8 @@ class FieldPlotter:
         self,
         *,
         snapshot_dir: Path,
-        out_dir: Path,
+        extracted_dir: Path,
+        figures_dir: Path,
         index_width: int,
         verbose: bool,
     ) -> None:
@@ -416,7 +418,7 @@ class FieldPlotter:
                 step_time=snapshot_data.step_time,
                 step_index=step_index,
                 index_width=index_width,
-                out_dir=out_dir,
+                extracted_dir=extracted_dir,
             )
         if self.apply_log10:
             field_comps = [
@@ -455,7 +457,7 @@ class FieldPlotter:
         plot_name = f"log10_{field_name}" if self.apply_log10 else field_name
         padded_index = f"{step_index:0{index_width}d}"
         fig_name = f"{plot_name}-slice-index={padded_index}.png"
-        fig_path = out_dir / fig_name
+        fig_path = figures_dir / fig_name
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -470,7 +472,8 @@ def render_fields_in_serial(
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...],
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...],
     snapshot_dirs: list[Path],
-    out_dir: Path,
+    extracted_dir: Path,
+    figures_dir: Path,
     index_width: int,
     extract_data: bool,
     hide_annotations: bool = False,
@@ -495,7 +498,8 @@ def render_fields_in_serial(
         for snapshot_dir in snapshot_dirs:
             field_plotter.plot_snapshot(
                 snapshot_dir=snapshot_dir,
-                out_dir=out_dir,
+                extracted_dir=extracted_dir,
+                figures_dir=figures_dir,
                 index_width=index_width,
                 verbose=False,
             )
@@ -522,7 +526,8 @@ def _plot_snapshot_worker(
     )
     field_plotter.plot_snapshot(
         snapshot_dir=Path(worker_args.snapshot_dir),
-        out_dir=Path(worker_args.out_dir),
+        extracted_dir=Path(worker_args.extracted_dir),
+        figures_dir=Path(worker_args.figures_dir),
         index_width=int(worker_args.index_width),
         verbose=False,
     )
@@ -535,7 +540,8 @@ def render_fields_in_parallel(
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...],
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...],
     snapshot_dirs: list[Path],
-    out_dir: Path,
+    extracted_dir: Path,
+    figures_dir: Path,
     index_width: int,
     extract_data: bool,
     hide_annotations: bool = False,
@@ -554,7 +560,8 @@ def render_fields_in_parallel(
                     comps_to_plot=comps_to_plot,
                     axes_to_slice=axes_to_slice,
                     cmap_name=field_meta.cmap,
-                    out_dir=str(out_dir),
+                    extracted_dir=str(extracted_dir),
+                    figures_dir=str(figures_dir),
                     index_width=index_width,
                     extract_data=extract_data,
                     hide_annotations=hide_annotations,
@@ -587,7 +594,8 @@ class ScriptInterface:
         comps_to_plot: tuple[str, ...] | list[str] | None,
         axes_to_slice: tuple[str, ...] | list[str] | None,
         extract_data: bool,
-        out_dir: Path | None = None,
+        extracted_dir: Path | None = None,
+        figures_dir: Path | None = None,
         use_parallel: bool = True,
         animate_only: bool = False,
         hide_annotations: bool = False,
@@ -608,7 +616,8 @@ class ScriptInterface:
         self.comps_to_plot = _parse_axes(axes=comps_to_plot)
         self.axes_to_slice = _parse_axes(axes=axes_to_slice)
         self.extract_data = extract_data
-        self.out_dir = Path(out_dir) if out_dir is not None else None
+        self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
+        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         self.use_parallel = bool(use_parallel)
         self.animate_only = bool(animate_only)
         self.hide_annotations = bool(hide_annotations)
@@ -617,12 +626,12 @@ class ScriptInterface:
     def _animate_fields(
         self,
         *,
-        out_dir: Path,
+        figures_dir: Path,
     ) -> None:
         for field_name in self.fields_to_plot:
             plot_name = f"log10_{field_name}" if self.apply_log10 else field_name
             fig_paths = manage_io.filter_directory(
-                out_dir,
+                figures_dir,
                 prefix=f"{plot_name}-slice-index=",
                 suffix=".png",
                 include_folders=False,
@@ -635,9 +644,9 @@ class ScriptInterface:
                     ),
                 )
                 continue
-            mp4_path = out_dir / f"{plot_name}-slices.mp4"
+            mp4_path = figures_dir / f"{plot_name}-slices.mp4"
             manage_plots.animate_pngs_to_mp4(
-                frames_dir=out_dir,
+                frames_dir=figures_dir,
                 mp4_path=mp4_path,
                 pattern=f"{plot_name}-slice-index=*.png",
                 fps=60,
@@ -654,8 +663,13 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
-        out_dir.mkdir(
+        extracted_dir = self.extracted_dir if self.extracted_dir is not None else snapshot_dirs[0].parent
+        figures_dir = self.figures_dir if self.figures_dir is not None else extracted_dir
+        extracted_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        figures_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -671,7 +685,8 @@ class ScriptInterface:
                     comps_to_plot=self.comps_to_plot,
                     axes_to_slice=self.axes_to_slice,
                     snapshot_dirs=snapshot_dirs,
-                    out_dir=out_dir,
+                    extracted_dir=extracted_dir,
+                    figures_dir=figures_dir,
                     index_width=index_width,
                     extract_data=self.extract_data,
                     hide_annotations=self.hide_annotations,
@@ -684,14 +699,15 @@ class ScriptInterface:
                     comps_to_plot=self.comps_to_plot,
                     axes_to_slice=self.axes_to_slice,
                     snapshot_dirs=snapshot_dirs,
-                    out_dir=out_dir,
+                    extracted_dir=extracted_dir,
+                    figures_dir=figures_dir,
                     index_width=index_width,
                     extract_data=self.extract_data,
                     hide_annotations=self.hide_annotations,
                     apply_log10=self.apply_log10,
                 )
         ## stitch rendered PNGs into an MP4 animation (no-op if animate flag is not set)
-        self._animate_fields(out_dir=out_dir)
+        self._animate_fields(figures_dir=figures_dir)
 
 
 ##
@@ -736,7 +752,7 @@ def main():
         "--log10",
         action="store_true",
         default=False,
-        help="Apply log10(|field|) to the plotted data (does not affect saved NPY slices).",
+        help="Apply log10(|field|) to the plotted data (does not affect saved NPZ slices).",
     )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
@@ -746,7 +762,8 @@ def main():
         comps_to_plot=user_args.comps,
         axes_to_slice=user_args.axes,
         extract_data=user_args.save_data,
-        out_dir=user_args.out_dir,
+        extracted_dir=user_args.extracted_dir,
+        figures_dir=user_args.figures_dir,
         animate_only=user_args.animate_only,
         hide_annotations=user_args.no_annotations,
         use_parallel=not user_args.serial_plotting,

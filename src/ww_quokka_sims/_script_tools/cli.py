@@ -53,7 +53,7 @@ def base_parser(
         `True` adds `--axes` argument for selecting slice axes; default: `False`.
 
     - `produces_data`:
-        `True` adds arguments `--out-dir` and `--save-data`; default: `False`.
+        `True` adds arguments `--extracted-dir`, `--figures-dir`, and `--save-data`; default: `False`.
         Set to `False` for scripts that write no data or figures to disk.
 
     Example
@@ -83,11 +83,17 @@ def base_parser(
         )
         if produces_data:
             parser.add_argument(
-                "--out-dir",
+                "--extracted-dir",
                 type=lambda path: Path(path).expanduser().resolve(),
                 default=None,
                 help=
-                "Output directory for figures and extracted data; defaults to the snapshot's parent directory.",
+                "Output directory for extracted data (used with --save-data); defaults to the snapshot's parent directory.",
+            )
+            parser.add_argument(
+                "--figures-dir",
+                type=lambda path: Path(path).expanduser().resolve(),
+                default=None,
+                help="Output directory for figures; defaults to --extracted-dir.",
             )
     else:
         for dir_index in range(1, num_dirs + 1):
@@ -99,10 +105,16 @@ def base_parser(
             )
         if produces_data:
             parser.add_argument(
-                "--out-dir",
+                "--extracted-dir",
                 type=lambda path: Path(path).expanduser().resolve(),
                 required=True,
-                help="Output directory for figures and extracted data.",
+                help="Output directory for extracted data (used with --save-data).",
+            )
+            parser.add_argument(
+                "--figures-dir",
+                type=lambda path: Path(path).expanduser().resolve(),
+                default=None,
+                help="Output directory for figures; defaults to --extracted-dir.",
             )
     ## always-present arguments
     parser.add_argument(

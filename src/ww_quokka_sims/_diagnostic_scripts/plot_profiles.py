@@ -282,13 +282,15 @@ class RenderCompProfiles:
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
         field_loader: Callable,
         cmap_name: str,
-        out_dir: Path,
+        extracted_dir: Path,
+        figures_dir: Path,
         extract_data: bool,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
         self.index_width = index_width
-        self.out_dir = out_dir
+        self.extracted_dir = extracted_dir
+        self.figures_dir = figures_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
         self.axes_to_slice = axes_to_slice
@@ -300,9 +302,9 @@ class RenderCompProfiles:
         self,
         *,
         comp_profiles_lookup: dict[str, list[CompProfile]],
-        out_dir: Path,
+        extracted_dir: Path,
     ) -> None:
-        out_dir.mkdir(
+        extracted_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -318,7 +320,7 @@ class RenderCompProfiles:
             for axis_index, axis in enumerate(any_profile.axis_labels):
                 axis_label = cartesian_axes.get_axis_label(axis)
                 stem = f"{self.field_name}-axis={axis_label}-{index_tag}"
-                file_path = out_dir / f"{stem}.json"
+                file_path = extracted_dir / f"{stem}.json"
                 if is_scalar:
                     comp_profile = comp_profiles_lookup[comp_labels[0]][position_index]
                     profile_models.ScalarProfile(
@@ -473,7 +475,7 @@ class RenderCompProfiles:
         if self.extract_data:
             self._save_comp_profiles(
                 comp_profiles_lookup=comp_profiles_lookup,
-                out_dir=self.out_dir,
+                extracted_dir=self.extracted_dir,
             )
         ## label axes and save; include snapshot index in filename if there is only one snapshot
         RenderCompProfiles._style_axs(
@@ -490,9 +492,9 @@ class RenderCompProfiles:
                 ),
             )
             padded_index = f"{step_index:0{self.index_width}d}"
-            fig_path = self.out_dir / f"{self.field_name}-profile-index={padded_index}.png"
+            fig_path = self.figures_dir / f"{self.field_name}-profile-index={padded_index}.png"
         else:
-            fig_path = self.out_dir / f"{self.field_name}-profiles.png"
+            fig_path = self.figures_dir / f"{self.field_name}-profiles.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -517,7 +519,8 @@ class ScriptInterface:
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
         extract_data: bool,
-        out_dir: Path | None = None,
+        extracted_dir: Path | None = None,
+        figures_dir: Path | None = None,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
@@ -538,7 +541,8 @@ class ScriptInterface:
         self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
         self.axes_to_slice = validate_types.as_tuple(param=axes_to_slice)
         self.extract_data = extract_data
-        self.out_dir = Path(out_dir) if out_dir is not None else None
+        self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
+        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
 
     def run(
         self,
@@ -550,8 +554,13 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        out_dir = self.out_dir if self.out_dir is not None else snapshot_dirs[0].parent
-        out_dir.mkdir(
+        extracted_dir = self.extracted_dir if self.extracted_dir is not None else snapshot_dirs[0].parent
+        figures_dir = self.figures_dir if self.figures_dir is not None else extracted_dir
+        extracted_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        figures_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -566,7 +575,8 @@ class ScriptInterface:
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
                 index_width=index_width,
-                out_dir=out_dir,
+                extracted_dir=extracted_dir,
+                figures_dir=figures_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
@@ -603,7 +613,8 @@ def main():
         comps_to_plot=user_args.comps,
         axes_to_slice=user_args.axes,
         extract_data=user_args.save_data,
-        out_dir=user_args.out_dir,
+        extracted_dir=user_args.extracted_dir,
+        figures_dir=user_args.figures_dir,
     )
     script_interface.run()
 
