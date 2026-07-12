@@ -90,7 +90,7 @@ YT_SFIELD_KEYS: dict[str, dict[str, Any]] = {
     },
     "magnetic_divergence": {
         "key": ("boxlib", "magnetic_divergence"),
-        "description": "Magnetic divergence: div(b), on the native staggered mesh",
+        "description": "Magnetic divergence: div(b) computed on the code's native staggered mesh",
     },
 }
 

@@ -529,8 +529,8 @@ class QuokkaSnapshot(
         """
         Load magnetic field divergence: div(b).
 
-        Quokka's native, div-preserving stencil value is used, if present, otherwise a fallback estimate,
-        computed with a different stencil than the code's own, is calculated. The native value requires
+        Quokka's native value, computed on its div-preserving staggered mesh, is used when available.
+        Otherwise, a fallback estimate using a different stencil is calculated. The native value requires
         `derived_vars = "magnetic_divergence"` in the param TOML file.
         """
         cached_field = self._field_cache.get_cached_field("magnetic_divergence")
