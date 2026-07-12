@@ -102,7 +102,7 @@ class CompareFields:
         self,
     ) -> numpy.ndarray:
         """Return a boolean mask of cells that differ, including signed-zero mismatches."""
-        ## Note: NaNs are naturally different (NaN == NaN -> False)
+        ## note: NaNs are naturally different (NaN == NaN -> False)
         diff_value_mask = numpy.not_equal(self.sarray_in, self.sarray_ref)
         both_zero_mask = (self.sarray_in == 0.0) & (self.sarray_ref == 0.0)
         diff_sign_mask = numpy.signbit(self.sarray_in) ^ numpy.signbit(self.sarray_ref)
