@@ -85,7 +85,7 @@ class _DeriveMagneticFields:
         self: FieldsProtocol,
         grad_order: int = 2,
     ) -> field_models.ScalarField_3D:
-        """Approximate div(b) from the loaded B field; used as a fallback, see `load_3d_magnetic_divergence_sfield`."""
+        """Approximate div(b): `div[vec(b)]` (fallback for `load_3d_magnetic_divergence_sfield`)."""
         b_vfield_3d = self.load_3d_magnetic_vfield()
         return field_operators.compute_vfield_divergence(
             vfield_3d=b_vfield_3d,

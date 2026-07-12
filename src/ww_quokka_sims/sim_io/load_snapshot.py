@@ -527,10 +527,11 @@ class QuokkaSnapshot(
         self,
     ) -> field_models.ScalarField_3D:
         """
-        Load div(b), preferring Quokka's own `ComputeDerivedVar` (from face-centred B, per-level, at
-        plotfile-write time) when available. Requires `derived_vars = "magnetic_divergence"` in the
-        run's TOML; falls back to a Python-side approximation (from the loaded, covering-grid B field)
-        with a warning if that TOML setting was not used for this run.
+        Load magnetic field divergence: div(b).
+
+        Quokka's native, div-preserving stencil value is used, if present, otherwise a fallback estimate,
+        computed with a different stencil than the code's own, is calculated. The native value requires
+        `derived_vars = "magnetic_divergence"` in the param TOML file.
         """
         cached_field = self._field_cache.get_cached_field("magnetic_divergence")
         if isinstance(cached_field, field_models.ScalarField_3D):
@@ -545,9 +546,9 @@ class QuokkaSnapshot(
         else:
             manage_log.log_warning(
                 text=(
-                    f"native `magnetic_divergence` field not found in {self.snapshot_dir}; falling back "
-                    "to an approximate Python-side computation. Set derived_vars = \"magnetic_divergence\" "
-                    "in the run's TOML to get the more accurate, solver-native value instead."
+                    f"native `magnetic_divergence` field was not found in {self.snapshot_dir}; falling back "
+                    "to an estimated field instead. Set derived_vars = \"magnetic_divergence\" in the "
+                    "param TOML file to get the more accurate, solver-native value instead."
                 ),
             )
             div_b_sfield_3d = self.compute_div_b_sfield()
