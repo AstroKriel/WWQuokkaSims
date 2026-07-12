@@ -209,13 +209,13 @@ class ScriptInterface:
             param_name="snapshot_tag",
         )
         if not Path(dir_1).is_dir():
-            raise ValueError(f"dir_1 does not exist: {dir_1}")
+            raise ValueError(f"dir_1 does not exist: {dir_1}.")
         if not Path(dir_2).is_dir():
-            raise ValueError(f"dir_2 does not exist: {dir_2}")
+            raise ValueError(f"dir_2 does not exist: {dir_2}.")
         if not Path(extracted_dir).is_dir():
-            raise ValueError(f"extracted_dir does not exist: {extracted_dir}")
+            raise ValueError(f"extracted_dir does not exist: {extracted_dir}.")
         if (figures_dir is not None) and (not Path(figures_dir).is_dir()):
-            raise ValueError(f"figures_dir does not exist: {figures_dir}")
+            raise ValueError(f"figures_dir does not exist: {figures_dir}.")
         self.dir_1 = Path(dir_1)
         self.dir_2 = Path(dir_2)
         self.extracted_dir = Path(extracted_dir)
@@ -224,7 +224,7 @@ class ScriptInterface:
             field_registry.QUOKKA_FIELD_LOOKUP.keys(),
         )
         if (not fields_to_plot) or (not set(fields_to_plot).issubset(valid_fields)):
-            raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}")
+            raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}.")
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = list(fields_to_plot)
         self.extract_data = extract_data

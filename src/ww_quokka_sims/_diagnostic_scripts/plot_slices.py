@@ -148,7 +148,7 @@ def get_slice_bounds(
     uniform_domain: domain_models.UniformDomain_3D,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
 ) -> AxisBounds:
-    """Returns physical bounds of the two plane axes (i.e. those not being sliced)."""
+    """Return physical bounds of the two plane axes (i.e. those not being sliced)."""
     (x0_min, x0_max), (x1_min, x1_max), (x2_min, x2_max) = uniform_domain.domain_bounds
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X2:
         return ((x0_min, x0_max), (x1_min, x1_max))
@@ -609,7 +609,7 @@ class ScriptInterface:
             field_registry.QUOKKA_FIELD_LOOKUP.keys(),
         )
         if not fields_to_plot or not set(fields_to_plot).issubset(valid_fields):
-            raise ValueError(f"Provide one or more field to plot (via -f) from: {sorted(valid_fields)}")
+            raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}.")
         self.input_dir = Path(input_dir)
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)

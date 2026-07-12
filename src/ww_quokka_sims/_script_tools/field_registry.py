@@ -144,7 +144,7 @@ def validate_fields(
         QUOKKA_FIELD_LOOKUP.keys(),
     )
     if not field_names or not set(field_names).issubset(valid_field_names):
-        raise ValueError(f"Provide fields via --fields from: {sorted(valid_field_names)}")
+        raise ValueError(f"Provide fields via --fields from: {sorted(valid_field_names)}.")
 
 
 ## } MODULE

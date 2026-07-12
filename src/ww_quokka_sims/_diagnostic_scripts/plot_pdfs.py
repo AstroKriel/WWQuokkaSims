@@ -133,7 +133,7 @@ class ComputePDFs:
         field_data: numpy.ndarray,
         num_bins: int,
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        """Returns (bin_centers, log10_densities); zero and negative bins are masked."""
+        """Return (bin_centers, log10_densities); zero and negative bins are masked."""
         pdf = compute_array_stats.estimate_pdf(
             values=field_data.ravel(),
             num_bins=num_bins,

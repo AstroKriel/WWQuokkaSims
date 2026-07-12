@@ -115,11 +115,11 @@ class LoadDataSeries:
             sfield_3d = field_args.field_loader(snapshot)
         if not isinstance(sfield_3d, field_models.ScalarField_3D):
             raise TypeError(
-                f"Expected ScalarField_3D from `{field_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
+                f"expected ScalarField_3D from `{field_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
             )
         sim_time = sfield_3d.sim_time
         if (sim_time is None) or (not numpy.isfinite(sim_time)):
-            raise ValueError(f"Invalid sim_time for field: {sim_time!r}")
+            raise ValueError(f"invalid sim_time for field: {sim_time!r}.")
         vi_value = field_operators.compute_sfield_volume_integral(sfield_3d=sfield_3d)
         return DataPoint(
             sim_time=float(sim_time),
