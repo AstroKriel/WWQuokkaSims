@@ -90,7 +90,7 @@ class SnapshotData:
     ) -> float:
         step_time = self.field.sim_time
         if (step_time is None) or (not numpy.isfinite(step_time)):
-            msg = f"Invalid sim_time for field: {step_time!r}"
+            msg = f"Invalid sim_time for field: {step_time!r}."
             manage_log.log_error(text=msg)
             raise RuntimeError(msg)
         return float(step_time)
