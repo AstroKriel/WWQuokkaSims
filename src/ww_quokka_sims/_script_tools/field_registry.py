@@ -117,7 +117,7 @@ QUOKKA_FIELD_LOOKUP = {
     ),
     "magnetic_divergence":
     FieldEntry(
-        loader=load_snapshot.QuokkaSnapshot.compute_div_b_sfield,
+        loader=load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_sfield,
         cmap=DIVERGING_CMAP,
     ),
     "current_density_magnitude":
