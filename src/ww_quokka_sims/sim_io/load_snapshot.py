@@ -197,11 +197,11 @@ class QuokkaSnapshot(
         self._validate_amr_level(amr_level)
         if amr_level not in self._covering_grid_cache:
             refinement_ratio = int(self._yt_dataset.refine_by)
-            dims = self._yt_dataset.domain_dimensions * (refinement_ratio**amr_level)
+            num_cells = self._yt_dataset.domain_dimensions * (refinement_ratio**amr_level)
             self._covering_grid_cache[amr_level] = self._yt_dataset.covering_grid(
                 level=amr_level,
                 left_edge=self._yt_dataset.domain_left_edge,
-                dims=dims,
+                dims=num_cells,
             )
         return self._covering_grid_cache[amr_level]
 
@@ -502,7 +502,7 @@ class QuokkaSnapshot(
             amr_level=amr_level,
         )
         self._field_cache.cache_field(
-            field_name=cache_key,
+            cache_key=cache_key,
             field_data=rho_sfield_3d,
         )
         return rho_sfield_3d
@@ -525,7 +525,7 @@ class QuokkaSnapshot(
             amr_level=amr_level,
         )
         self._field_cache.cache_field(
-            field_name=cache_key,
+            cache_key=cache_key,
             field_data=mom_vfield_3d,
         )
         return mom_vfield_3d
@@ -548,7 +548,7 @@ class QuokkaSnapshot(
             amr_level=amr_level,
         )
         self._field_cache.cache_field(
-            field_name=cache_key,
+            cache_key=cache_key,
             field_data=b_vfield_3d,
         )
         return b_vfield_3d
@@ -571,7 +571,7 @@ class QuokkaSnapshot(
             amr_level=amr_level,
         )
         self._field_cache.cache_field(
-            field_name=cache_key,
+            cache_key=cache_key,
             field_data=E_tot_sfield_3d,
         )
         return E_tot_sfield_3d
@@ -606,7 +606,7 @@ class QuokkaSnapshot(
             )
             div_b_sfield_3d = self.compute_div_b_sfield()
         self._field_cache.cache_field(
-            field_name="magnetic_divergence",
+            cache_key="magnetic_divergence",
             field_data=div_b_sfield_3d,
         )
         return div_b_sfield_3d
