@@ -89,8 +89,8 @@ def base_parser(
                 type=lambda path: Path(path).expanduser().resolve(),
                 default=None,
                 help=(
-                    "Output directory for extracted data (used with --save-data); defaults to the snapshot's "
-                    "parent directory."
+                    "Output directory for extracted data (used with --save-data); defaults to the parent "
+                    "directory of the snapshot."
                 ),
             )
             parser.add_argument(
@@ -132,8 +132,7 @@ def base_parser(
         default=0,
         help=(
             "AMR level to read (composite of the finest data available up to and including this level); "
-            "default: 0 (base level, matches pre-AMR-aware behaviour). Errors if the snapshot does not "
-            "have this many levels."
+            "default: 0 (base level). Errors if the snapshot does not have this many levels."
         ),
     )
     if allow_fields:
