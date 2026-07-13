@@ -189,9 +189,8 @@ class QuokkaSnapshot(
         Return a covering grid spanning the whole domain at `amr_level`'s resolution.
 
         For `amr_level > 0`, this is the composite of the finest data available up to and
-        including `amr_level` (coarser regions are filled by interpolating from whatever level
-        does cover them); `amr_level=0` (the default) reproduces the pre-AMR-aware behaviour of
-        always reading the base level.
+        including `amr_level` (coarser regions are filled by interpolating from the highest
+        level that does cover them); `amr_level=0` (the default) always reads the base level.
         """
         self._open_if_needed()
         assert self._yt_dataset is not None
