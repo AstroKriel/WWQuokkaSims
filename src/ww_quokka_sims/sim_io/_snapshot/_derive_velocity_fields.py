@@ -123,7 +123,10 @@ class _DeriveVelocityFields:
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute vorticity magnitude: `|curl(vec(v))|`."""
-        omega_vfield_3d = self.compute_vorticity_vfield(grad_order=grad_order, amr_level=amr_level)
+        omega_vfield_3d = self.compute_vorticity_vfield(
+            grad_order=grad_order,
+            amr_level=amr_level,
+        )
         return field_operators.compute_vfield_magnitude(
             vfield_3d=omega_vfield_3d,
             field_name="vorticity_magnitude",
@@ -137,7 +140,10 @@ class _DeriveVelocityFields:
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute kinetic helicity density: `curl(vec(v)) dot vec(v)`."""
-        omega_vfield_3d = self.compute_vorticity_vfield(grad_order=grad_order, amr_level=amr_level)
+        omega_vfield_3d = self.compute_vorticity_vfield(
+            grad_order=grad_order,
+            amr_level=amr_level,
+        )
         v_vfield_3d = self.compute_velocity_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_dot_product(
             f_vfield_3d=omega_vfield_3d,

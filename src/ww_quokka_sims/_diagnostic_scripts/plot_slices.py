@@ -291,7 +291,10 @@ class FieldPlotter:
                 verbose=False,
         ) as snapshot:
             uniform_domain = snapshot.load_3d_uniform_domain(amr_level=amr_level)
-            field = self.field_args.field_loader(snapshot, amr_level=amr_level)  # ScalarField_3D or VectorField_3D
+            field = self.field_args.field_loader(
+                snapshot,
+                amr_level=amr_level,
+            )  # ScalarField_3D or VectorField_3D
         return SnapshotData(
             uniform_domain=uniform_domain,
             field=field,

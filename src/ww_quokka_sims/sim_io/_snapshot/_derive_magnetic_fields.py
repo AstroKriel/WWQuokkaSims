@@ -122,7 +122,10 @@ class _DeriveMagneticFields:
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute current magnitude: `|curl[vec(b)]|`."""
-        j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order, amr_level=amr_level)
+        j_vfield_3d = self.compute_current_density_vfield(
+            grad_order=grad_order,
+            amr_level=amr_level,
+        )
         return field_operators.compute_vfield_magnitude(
             vfield_3d=j_vfield_3d,
             field_name="current_density_magnitude",
@@ -136,7 +139,10 @@ class _DeriveMagneticFields:
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute current helicity density: `curl[vec(b)] cdot vec(b)`."""
-        j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order, amr_level=amr_level)
+        j_vfield_3d = self.compute_current_density_vfield(
+            grad_order=grad_order,
+            amr_level=amr_level,
+        )
         b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_dot_product(
             f_vfield_3d=j_vfield_3d,
@@ -160,7 +166,10 @@ class _DeriveMagneticFields:
             allow_zero=False,
         )
         energy_prefactor = 0.5
-        e_mag_sfield_3d = self.compute_magnetic_energy_sfield(energy_prefactor=energy_prefactor, amr_level=amr_level)
+        e_mag_sfield_3d = self.compute_magnetic_energy_sfield(
+            energy_prefactor=energy_prefactor,
+            amr_level=amr_level,
+        )
         p_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=self.compute_pressure_sfield(
                 gamma=gamma,

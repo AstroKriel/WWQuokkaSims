@@ -48,7 +48,10 @@ class _DeriveMHDFields:
         amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Compute Lorentz force: `curl[vec(b)] x vec(b)`."""
-        j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order, amr_level=amr_level)
+        j_vfield_3d = self.compute_current_density_vfield(
+            grad_order=grad_order,
+            amr_level=amr_level,
+        )
         b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_cross_product(
             f_vfield_3d=j_vfield_3d,
@@ -64,7 +67,10 @@ class _DeriveMHDFields:
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute Lorentz force magnitude: `| curl[vec(b)] x vec(b) |`."""
-        lorentz_force_vfield_3d = self.compute_lorentz_force_vfield(grad_order=grad_order, amr_level=amr_level)
+        lorentz_force_vfield_3d = self.compute_lorentz_force_vfield(
+            grad_order=grad_order,
+            amr_level=amr_level,
+        )
         return field_operators.compute_vfield_magnitude(
             vfield_3d=lorentz_force_vfield_3d,
             field_name="lorentz_force_magnitude",
@@ -79,7 +85,10 @@ class _DeriveMHDFields:
     ) -> field_models.ScalarField_3D:
         """Compute magnetic-to-kinetic energy ratio: `e_mag / e_kin`."""
         E_mag_sarray_3d = field_models.extract_3d_sarray(
-            sfield_3d=self.compute_magnetic_energy_sfield(energy_prefactor=energy_prefactor, amr_level=amr_level),
+            sfield_3d=self.compute_magnetic_energy_sfield(
+                energy_prefactor=energy_prefactor,
+                amr_level=amr_level,
+            ),
             param_name="<E_mag_sfield_3d>",
         )
         E_kin_sarray_3d = field_models.extract_3d_sarray(
