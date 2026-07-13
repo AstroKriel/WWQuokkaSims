@@ -31,14 +31,16 @@ class _DeriveVelocityFields:
 
     def compute_velocity_vfield(
         self: FieldsProtocol,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Compute velocity field: `vec(v) = vec(m) / rho`."""
-        rho_sfield_3d = self.load_3d_density_sfield()
+        rho_sfield_3d = self.load_3d_density_sfield(amr_level=amr_level)
         rho_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=rho_sfield_3d,
             param_name="<rho_sfield_3d>",
         )
-        mom_vfield_3d = self.load_3d_momentum_vfield()
+        mom_vfield_3d = self.load_3d_momentum_vfield(amr_level=amr_level)
         mom_varray_3d = field_models.extract_3d_varray(
             vfield_3d=mom_vfield_3d,
             param_name="<mom_vfield_3d>",
@@ -62,7 +64,7 @@ class _DeriveVelocityFields:
             zero_posinf=True,
             zero_neginf=True,
         )
-        uniform_domain_3d = self.load_3d_uniform_domain()
+        uniform_domain_3d = self.load_3d_uniform_domain(amr_level=amr_level)
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=v_varray,
             uniform_domain_3d=uniform_domain_3d,
@@ -73,9 +75,11 @@ class _DeriveVelocityFields:
 
     def compute_velocity_magnitude_sfield(
         self: FieldsProtocol,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute velocity magnitude: `|vec(v)|`."""
-        v_vfield_3d = self.compute_velocity_vfield()
+        v_vfield_3d = self.compute_velocity_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=v_vfield_3d,
             field_name="velocity_magnitude",
@@ -85,9 +89,11 @@ class _DeriveVelocityFields:
     def compute_div_v_sfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute velocity divergence `nabla cdot vec(v)`; `grad_order` controls stencil accuracy."""
-        v_vfield_3d = self.compute_velocity_vfield()
+        v_vfield_3d = self.compute_velocity_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_divergence(
             vfield_3d=v_vfield_3d,
             field_name="div_velocity",
@@ -98,9 +104,11 @@ class _DeriveVelocityFields:
     def compute_vorticity_vfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Compute vorticity vector `curl(vec(v))`; `grad_order` controls stencil accuracy."""
-        v_vfield_3d = self.compute_velocity_vfield()
+        v_vfield_3d = self.compute_velocity_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_curl(
             vfield_3d=v_vfield_3d,
             grad_order=grad_order,
@@ -111,9 +119,11 @@ class _DeriveVelocityFields:
     def compute_vorticity_sfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute vorticity magnitude: `|curl(vec(v))|`."""
-        omega_vfield_3d = self.compute_vorticity_vfield(grad_order=grad_order)
+        omega_vfield_3d = self.compute_vorticity_vfield(grad_order=grad_order, amr_level=amr_level)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=omega_vfield_3d,
             field_name="vorticity_magnitude",
@@ -123,10 +133,12 @@ class _DeriveVelocityFields:
     def compute_kinetic_helicity_sfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute kinetic helicity density: `curl(vec(v)) dot vec(v)`."""
-        omega_vfield_3d = self.compute_vorticity_vfield(grad_order=grad_order)
-        v_vfield_3d = self.compute_velocity_vfield()
+        omega_vfield_3d = self.compute_vorticity_vfield(grad_order=grad_order, amr_level=amr_level)
+        v_vfield_3d = self.compute_velocity_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_dot_product(
             f_vfield_3d=omega_vfield_3d,
             g_vfield_3d=v_vfield_3d,

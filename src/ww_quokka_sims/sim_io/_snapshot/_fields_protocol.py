@@ -45,26 +45,35 @@ class FieldsProtocol(Protocol):
         self,
         *,
         force_periodicity: bool = True,
+        amr_level: int = 0,
     ) -> domain_models.UniformDomain_3D:
         ...
 
     def load_3d_density_sfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         ...
 
     def load_3d_momentum_vfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         ...
 
     def load_3d_magnetic_vfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         ...
 
     def load_3d_total_energy_sfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         ...
 
@@ -80,12 +89,16 @@ class FieldsProtocol(Protocol):
 
     def compute_velocity_vfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         ...
 
     def compute_vorticity_vfield(
         self,
         grad_order: int,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         ...
 
@@ -95,28 +108,40 @@ class FieldsProtocol(Protocol):
 
     def compute_kinetic_energy_sfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         ...
 
     def compute_magnetic_energy_sfield(
         self,
         energy_prefactor: float = 0.5,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         ...
 
     def compute_internal_energy_sfield(
         self,
+        magnetic_energy_sfield_3d: field_models.ScalarField_3D | None = None,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         ...
 
     def compute_pressure_sfield(
         self,
-        gamma: float,
+        gamma: float = 5.0 / 3.0,
+        magnetic_energy_sfield_3d: field_models.ScalarField_3D | None = None,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         ...
 
     def compute_helmholtz_kinetic_energy(
         self,
+        *,
+        amr_level: int = 0,
     ) -> HelmholtzKineticEnergy:
         ...
 
@@ -126,12 +151,16 @@ class FieldsProtocol(Protocol):
 
     def compute_alfven_speed_vfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         ...
 
     def compute_current_density_vfield(
         self,
         grad_order: int,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         ...
 
@@ -142,6 +171,8 @@ class FieldsProtocol(Protocol):
     def compute_lorentz_force_vfield(
         self,
         grad_order: int,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         ...
 

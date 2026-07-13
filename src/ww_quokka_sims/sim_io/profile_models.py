@@ -102,6 +102,7 @@ class ScalarProfile:
     profile_axis: str
     position: NDArray[numpy.floating]
     field_value: NDArray[numpy.floating]
+    amr_level: int = 0
 
     def __post_init__(
         self,
@@ -122,6 +123,13 @@ class ScalarProfile:
             position=self.position,
             field_value=self.field_value,
         )
+        validate_types.ensure_finite_int(
+            param=self.amr_level,
+            param_name="<amr_level>",
+            allow_none=False,
+            require_positive=True,
+            allow_zero=True,
+        )
 
     def save_to_file(
         self,
@@ -136,6 +144,7 @@ class ScalarProfile:
                 "profile_axis": self.profile_axis,
                 "position": self.position,
                 "field_value": self.field_value,
+                "amr_level": self.amr_level,
             },
             overwrite=True,
             verbose=False,
@@ -159,6 +168,7 @@ class ScalarProfile:
                 "profile_axis",
                 "position",
                 "field_value",
+                "amr_level",
             },
             param_name="<ScalarProfile JSON>",
         )
@@ -169,6 +179,7 @@ class ScalarProfile:
             profile_axis=data["profile_axis"],
             position=numpy.asarray(data["position"]),
             field_value=numpy.asarray(data["field_value"]),
+            amr_level=int(data["amr_level"]),
         )
 
 
@@ -184,6 +195,7 @@ class VectorProfile:
     step_index: int
     profile_axis: str
     components: dict[str, ComponentArrays]
+    amr_level: int = 0
 
     def __post_init__(
         self,
@@ -208,6 +220,13 @@ class VectorProfile:
                 raise ValueError(
                     f"`<components>` key must be one of {valid}, got: {key!r}",
                 )
+        validate_types.ensure_finite_int(
+            param=self.amr_level,
+            param_name="<amr_level>",
+            allow_none=False,
+            require_positive=True,
+            allow_zero=True,
+        )
 
     def save_to_file(
         self,
@@ -227,6 +246,7 @@ class VectorProfile:
                     }
                     for comp_axis, comp in self.components.items()
                 },
+                "amr_level": self.amr_level,
             },
             overwrite=True,
             verbose=False,
@@ -243,7 +263,14 @@ class VectorProfile:
         )
         validate_types.ensure_dict_has_keys(
             param=data,
-            required_keys={"field_name", "step_time", "step_index", "profile_axis", "field_comps"},
+            required_keys={
+                "field_name",
+                "step_time",
+                "step_index",
+                "profile_axis",
+                "field_comps",
+                "amr_level",
+            },
             param_name="<VectorProfile JSON>",
         )
         components = {
@@ -260,6 +287,7 @@ class VectorProfile:
             step_index=int(data["step_index"]),
             profile_axis=data["profile_axis"],
             components=components,
+            amr_level=int(data["amr_level"]),
         )
 
 

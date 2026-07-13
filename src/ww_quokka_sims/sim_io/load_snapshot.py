@@ -587,6 +587,8 @@ class QuokkaSnapshot(
 
     def load_3d_magnetic_divergence_sfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """
         Load magnetic field divergence: div(b).
@@ -595,7 +597,7 @@ class QuokkaSnapshot(
         Otherwise, a fallback estimate using a different stencil is calculated. The native value
         requires `derived_vars = "magnetic_divergence"` in the param TOML file.
         """
-        cache_key = self._field_cache_key("magnetic_divergence", amr_level=0)
+        cache_key = self._field_cache_key("magnetic_divergence", amr_level=amr_level)
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
@@ -605,6 +607,7 @@ class QuokkaSnapshot(
                 field_key=div_b_key,
                 field_name="magnetic_divergence",
                 latex_label=r"\nabla\cdot\vec{b}",
+                amr_level=amr_level,
             )
         else:
             manage_log.log_warning(
@@ -614,7 +617,7 @@ class QuokkaSnapshot(
                     "param TOML file to get the more accurate, solver-native value instead."
                 ),
             )
-            div_b_sfield_3d = self.compute_div_b_sfield()
+            div_b_sfield_3d = self.compute_div_b_sfield(amr_level=amr_level)
         self._field_cache.cache_field(
             cache_key=cache_key,
             field_data=div_b_sfield_3d,

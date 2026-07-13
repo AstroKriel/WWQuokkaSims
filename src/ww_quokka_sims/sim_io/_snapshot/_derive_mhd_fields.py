@@ -28,10 +28,12 @@ class _DeriveMHDFields:
 
     def compute_cross_helicity_sfield(
         self: FieldsProtocol,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute cross helicity density: `vec(v) cdot vec(b)`."""
-        v_vfield_3d = self.compute_velocity_vfield()
-        b_vfield_3d = self.load_3d_magnetic_vfield()
+        v_vfield_3d = self.compute_velocity_vfield(amr_level=amr_level)
+        b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_dot_product(
             f_vfield_3d=v_vfield_3d,
             g_vfield_3d=b_vfield_3d,
@@ -42,10 +44,12 @@ class _DeriveMHDFields:
     def compute_lorentz_force_vfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Compute Lorentz force: `curl[vec(b)] x vec(b)`."""
-        j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order)
-        b_vfield_3d = self.load_3d_magnetic_vfield()
+        j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order, amr_level=amr_level)
+        b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_cross_product(
             f_vfield_3d=j_vfield_3d,
             g_vfield_3d=b_vfield_3d,
@@ -56,9 +60,11 @@ class _DeriveMHDFields:
     def compute_lorentz_force_sfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute Lorentz force magnitude: `| curl[vec(b)] x vec(b) |`."""
-        lorentz_force_vfield_3d = self.compute_lorentz_force_vfield(grad_order=grad_order)
+        lorentz_force_vfield_3d = self.compute_lorentz_force_vfield(grad_order=grad_order, amr_level=amr_level)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=lorentz_force_vfield_3d,
             field_name="lorentz_force_magnitude",
@@ -68,14 +74,16 @@ class _DeriveMHDFields:
     def compute_energy_ratio_sfield(
         self: FieldsProtocol,
         energy_prefactor: float = 0.5,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute magnetic-to-kinetic energy ratio: `e_mag / e_kin`."""
         E_mag_sarray_3d = field_models.extract_3d_sarray(
-            sfield_3d=self.compute_magnetic_energy_sfield(energy_prefactor=energy_prefactor),
+            sfield_3d=self.compute_magnetic_energy_sfield(energy_prefactor=energy_prefactor, amr_level=amr_level),
             param_name="<E_mag_sfield_3d>",
         )
         E_kin_sarray_3d = field_models.extract_3d_sarray(
-            sfield_3d=self.compute_kinetic_energy_sfield(),
+            sfield_3d=self.compute_kinetic_energy_sfield(amr_level=amr_level),
             param_name="<E_kin_sfield_3d>",
         )
         E_kin_has_zeros = compute_array_stats.check_no_zero_values(
@@ -99,7 +107,7 @@ class _DeriveMHDFields:
         )
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=energy_ratio_sarray_3d,
-            uniform_domain_3d=self.load_3d_uniform_domain(),
+            uniform_domain_3d=self.load_3d_uniform_domain(amr_level=amr_level),
             field_name="energy_ratio",
             latex_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
             sim_time=self.sim_time,
@@ -107,10 +115,12 @@ class _DeriveMHDFields:
 
     def compute_poynting_flux_vfield(
         self: FieldsProtocol,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Compute Poynting-flux-like vector: `vec(b) x [vec(v) x vec(b)]`."""
-        v_vfield_3d = self.compute_velocity_vfield()
-        b_vfield_3d = self.load_3d_magnetic_vfield()
+        v_vfield_3d = self.compute_velocity_vfield(amr_level=amr_level)
+        b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
         vxb_vfield_3d = field_operators.compute_vfield_cross_product(
             f_vfield_3d=v_vfield_3d,
             g_vfield_3d=b_vfield_3d,

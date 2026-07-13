@@ -32,14 +32,16 @@ class _DeriveMagneticFields:
 
     def compute_alfven_speed_vfield(
         self: FieldsProtocol,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Compute Alfven speed: `vec(v_A) = vec(b) / sqrt(rho)`."""
         b_varray_3d = field_models.extract_3d_varray(
-            vfield_3d=self.load_3d_magnetic_vfield(),
+            vfield_3d=self.load_3d_magnetic_vfield(amr_level=amr_level),
             param_name="<b_vfield_3d>",
         )
         rho_sarray_3d = field_models.extract_3d_sarray(
-            sfield_3d=self.load_3d_density_sfield(),
+            sfield_3d=self.load_3d_density_sfield(amr_level=amr_level),
             param_name="<rho_sfield_3d>",
         )
         rho_has_zeros = compute_array_stats.check_no_zero_values(
@@ -64,7 +66,7 @@ class _DeriveMagneticFields:
         )
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=v_A_varray_3d,
-            uniform_domain_3d=self.load_3d_uniform_domain(),
+            uniform_domain_3d=self.load_3d_uniform_domain(amr_level=amr_level),
             field_name="alfven_velocity",
             latex_label=r"\vec{v}_A",
             sim_time=self.sim_time,
@@ -72,9 +74,11 @@ class _DeriveMagneticFields:
 
     def compute_alfven_speed_sfield(
         self: FieldsProtocol,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute Alfven speed magnitude: `|vec(v_A)|`."""
-        v_A_vfield_3d = self.compute_alfven_speed_vfield()
+        v_A_vfield_3d = self.compute_alfven_speed_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=v_A_vfield_3d,
             field_name="alfven_speed",
@@ -84,9 +88,11 @@ class _DeriveMagneticFields:
     def compute_div_b_sfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Approximate magnetic divergence: `div[vec(b)]` (fallback for `load_3d_magnetic_divergence_sfield`)."""
-        b_vfield_3d = self.load_3d_magnetic_vfield()
+        b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_divergence(
             vfield_3d=b_vfield_3d,
             field_name="magnetic_divergence",
@@ -97,9 +103,11 @@ class _DeriveMagneticFields:
     def compute_current_density_vfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Compute current density: `curl[vec(b)]`."""
-        b_vfield_3d = self.load_3d_magnetic_vfield()
+        b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_curl(
             vfield_3d=b_vfield_3d,
             field_name="current_density",
@@ -110,9 +118,11 @@ class _DeriveMagneticFields:
     def compute_current_density_sfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute current magnitude: `|curl[vec(b)]|`."""
-        j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order)
+        j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order, amr_level=amr_level)
         return field_operators.compute_vfield_magnitude(
             vfield_3d=j_vfield_3d,
             field_name="current_density_magnitude",
@@ -122,10 +132,12 @@ class _DeriveMagneticFields:
     def compute_current_helicity_sfield(
         self: FieldsProtocol,
         grad_order: int = 2,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute current helicity density: `curl[vec(b)] cdot vec(b)`."""
-        j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order)
-        b_vfield_3d = self.load_3d_magnetic_vfield()
+        j_vfield_3d = self.compute_current_density_vfield(grad_order=grad_order, amr_level=amr_level)
+        b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
         return field_operators.compute_vfield_dot_product(
             f_vfield_3d=j_vfield_3d,
             g_vfield_3d=b_vfield_3d,
@@ -136,6 +148,8 @@ class _DeriveMagneticFields:
     def compute_plasma_beta_sfield(
         self: FieldsProtocol,
         gamma: float = 5.0 / 3.0,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute plasma beta: `beta = 2 p / |vec(b)|^2`."""
         validate_types.ensure_finite_float(
@@ -146,11 +160,12 @@ class _DeriveMagneticFields:
             allow_zero=False,
         )
         energy_prefactor = 0.5
-        e_mag_sfield_3d = self.compute_magnetic_energy_sfield(energy_prefactor=energy_prefactor)
+        e_mag_sfield_3d = self.compute_magnetic_energy_sfield(energy_prefactor=energy_prefactor, amr_level=amr_level)
         p_sarray_3d = field_models.extract_3d_sarray(
             sfield_3d=self.compute_pressure_sfield(
                 gamma=gamma,
                 magnetic_energy_sfield_3d=e_mag_sfield_3d,
+                amr_level=amr_level,
             ),
             param_name="<p_sfield_3d>",
         )
@@ -181,7 +196,7 @@ class _DeriveMagneticFields:
         )
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=beta_sarray_3d,
-            uniform_domain_3d=self.load_3d_uniform_domain(),
+            uniform_domain_3d=self.load_3d_uniform_domain(amr_level=amr_level),
             field_name="plasma_beta",
             latex_label=r"\beta",
             sim_time=self.sim_time,
