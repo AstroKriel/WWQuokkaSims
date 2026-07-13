@@ -88,6 +88,10 @@ YT_SFIELD_KEYS: dict[str, dict[str, Any]] = {
         "key": ("boxlib", "gasEnergy"),
         "description": "Total energy density: e_tot = e_int + e_kin + e_mag",
     },
+    "magnetic_divergence": {
+        "key": ("boxlib", "magnetic_divergence"),
+        "description": "Magnetic divergence: div(b) computed on the code's native staggered mesh",
+    },
 }
 
 ##

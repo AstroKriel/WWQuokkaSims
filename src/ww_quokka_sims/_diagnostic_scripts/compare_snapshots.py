@@ -101,8 +101,8 @@ class CompareFields:
     def _get_diff_mask(
         self,
     ) -> numpy.ndarray:
-        """Returns a boolean mask of cells that differ, including signed-zero mismatches."""
-        ## Note: NaNs are naturally different (NaN == NaN -> False)
+        """Return a boolean mask of cells that differ, including signed-zero mismatches."""
+        ## note: NaNs are naturally different (NaN == NaN -> False)
         diff_value_mask = numpy.not_equal(self.sarray_in, self.sarray_ref)
         both_zero_mask = (self.sarray_in == 0.0) & (self.sarray_ref == 0.0)
         diff_sign_mask = numpy.signbit(self.sarray_in) ^ numpy.signbit(self.sarray_ref)
@@ -200,7 +200,7 @@ class CompareSnapshots:
     def get_shared_field_keys(
         self,
     ) -> list[load_snapshot.FieldKey]:
-        """Returns keys present in both snapshots; exits with code 4 if no keys overlap."""
+        """Return keys present in both snapshots; exits with code 4 if no keys overlap."""
         field_keys_in = self.snapshot_view_in.get_field_keys()
         field_keys_ref = self.snapshot_view_ref.get_field_keys()
         keys_missing_from_in = sorted(field_keys_ref - field_keys_in)
@@ -333,9 +333,9 @@ class ScriptInterface:
         validate_types.ensure_finite_int(param=self.preview_limit)
         assert self.preview_limit > 0
         if not find_snapshots.looks_like_boxlib_dir(snapshot_dir=self.snapshot_dir_in):
-            raise ValueError(f"dir-1 does not look like a BoxLib directory: {self.snapshot_dir_in}")
+            raise ValueError(f"dir-1 does not look like a BoxLib directory: {self.snapshot_dir_in}.")
         if not find_snapshots.looks_like_boxlib_dir(snapshot_dir=self.snapshot_dir_ref):
-            raise ValueError(f"dir-2 does not look like a BoxLib directory: {self.snapshot_dir_ref}")
+            raise ValueError(f"dir-2 does not look like a BoxLib directory: {self.snapshot_dir_ref}.")
 
     def run(
         self,

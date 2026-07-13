@@ -577,5 +577,40 @@ class QuokkaSnapshot(
         )
         return E_tot_sfield_3d
 
+    def load_3d_magnetic_divergence_sfield(
+        self,
+    ) -> field_models.ScalarField_3D:
+        """
+        Load magnetic field divergence: div(b).
+
+        Quokka's native value, computed on its div-preserving staggered mesh, is used when available.
+        Otherwise, a fallback estimate using a different stencil is calculated. The native value
+        requires `derived_vars = "magnetic_divergence"` in the param TOML file.
+        """
+        cached_field = self._field_cache.get_cached_field("magnetic_divergence")
+        if isinstance(cached_field, field_models.ScalarField_3D):
+            return cached_field
+        div_b_key = self._resolve_sfield_key("magnetic_divergence")
+        if self.is_field_key_available(field_key=div_b_key):
+            div_b_sfield_3d = self.load_3d_sfield(
+                field_key=div_b_key,
+                field_name="magnetic_divergence",
+                latex_label=r"\nabla\cdot\vec{b}",
+            )
+        else:
+            manage_log.log_warning(
+                text=(
+                    f"native `magnetic_divergence` field was not found in {self.snapshot_dir}; falling back "
+                    "to an estimated field instead. Set derived_vars = \"magnetic_divergence\" in the "
+                    "param TOML file to get the more accurate, solver-native value instead."
+                ),
+            )
+            div_b_sfield_3d = self.compute_div_b_sfield()
+        self._field_cache.cache_field(
+            field_name="magnetic_divergence",
+            field_data=div_b_sfield_3d,
+        )
+        return div_b_sfield_3d
+
 
 ## } MODULE

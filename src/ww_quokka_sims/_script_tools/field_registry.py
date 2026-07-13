@@ -117,7 +117,7 @@ QUOKKA_FIELD_LOOKUP = {
     ),
     "magnetic_divergence":
     FieldEntry(
-        loader=load_snapshot.QuokkaSnapshot.compute_div_b_sfield,
+        loader=load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_sfield,
         cmap=DIVERGING_CMAP,
     ),
     "current_density_magnitude":
@@ -144,7 +144,7 @@ def validate_fields(
         QUOKKA_FIELD_LOOKUP.keys(),
     )
     if not field_names or not set(field_names).issubset(valid_field_names):
-        raise ValueError(f"Provide fields via --fields from: {sorted(valid_field_names)}")
+        raise ValueError(f"Provide fields via --fields from: {sorted(valid_field_names)}.")
 
 
 ## } MODULE
