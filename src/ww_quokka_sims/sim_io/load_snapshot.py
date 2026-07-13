@@ -81,8 +81,8 @@ class QuokkaSnapshot(
         self._sim_time = None
         self._covering_grid_cache = {}
         self._uniform_domain_3d_cache = {}
-        ## the following fields are cached: rho_sfield_3d, mom_vfield_3d, v_vfield_3d, and b_vfield_3d
-        self._field_cache = LRUCache(max_size=4)
+        ## cached fields: density, momentum, magnetic, total_energy, and magnetic_divergence, each per amr_level
+        self._field_cache = LRUCache(max_size=10)
 
     def __enter__(
         self,
