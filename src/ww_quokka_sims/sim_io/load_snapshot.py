@@ -196,8 +196,8 @@ class QuokkaSnapshot(
         assert self._yt_dataset is not None
         self._validate_amr_level(amr_level)
         if amr_level not in self._covering_grid_cache:
-            refine_by = int(self._yt_dataset.refine_by)
-            dims = self._yt_dataset.domain_dimensions * (refine_by**amr_level)
+            refinement_ratio = int(self._yt_dataset.refine_by)
+            dims = self._yt_dataset.domain_dimensions * (refinement_ratio**amr_level)
             self._covering_grid_cache[amr_level] = self._yt_dataset.covering_grid(
                 level=amr_level,
                 left_edge=self._yt_dataset.domain_left_edge,
@@ -447,7 +447,7 @@ class QuokkaSnapshot(
         """
         Return uniform domain metadata: bounds, resolution, and periodicity; result is cached per `amr_level`.
 
-        `resolution` is the base-level `domain_dimensions` scaled by `refine_by**amr_level`, matching the
+        `resolution` is the base-level `domain_dimensions` scaled by `refinement_ratio**amr_level`, matching the
         resolution `_get_covering_grid(amr_level=...)` actually returns, so the two stay consistent.
         `force_periodicity` only takes effect on the first call for a given `amr_level`; yt cannot read
         periodicity reliably.
@@ -464,9 +464,9 @@ class QuokkaSnapshot(
             return self._uniform_domain_3d_cache[amr_level]
         x_min, y_min, z_min = (float(value) for value in self._yt_dataset.domain_left_edge)
         x_max, y_max, z_max = (float(value) for value in self._yt_dataset.domain_right_edge)
-        refine_by = int(self._yt_dataset.refine_by)
+        refinement_ratio = int(self._yt_dataset.refine_by)
         num_cells_x, num_cells_y, num_cells_z = (
-            int(num_cells) * (refine_by**amr_level) for num_cells in self._yt_dataset.domain_dimensions
+            int(num_cells) * (refinement_ratio**amr_level) for num_cells in self._yt_dataset.domain_dimensions
         )
         is_periodic_x, is_periodic_y, is_periodic_z = (
             (bool(is_periodic) or force_periodicity) for is_periodic in self._yt_dataset.periodicity
