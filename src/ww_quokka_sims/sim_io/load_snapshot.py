@@ -484,13 +484,22 @@ class QuokkaSnapshot(
     ## --- BASIC FIELDS
     ##
 
+    def _field_cache_key(
+        self,
+        field_name: str,
+        *,
+        amr_level: int | None = None,
+    ) -> str:
+        """Build the `_field_cache` key for `field_name`; `amr_level=None` for loaders that don't support AMR levels."""
+        return field_name if amr_level is None else f"{field_name}:{amr_level}"
+
     def load_3d_density_sfield(
         self,
         *,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Load gas density: `rho`."""
-        cache_key = f"density:{amr_level}"
+        cache_key = self._field_cache_key("density", amr_level=amr_level)
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
@@ -513,7 +522,7 @@ class QuokkaSnapshot(
         amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Load momentum field: `vec(m) = rho vec(v)`."""
-        cache_key = f"momentum:{amr_level}"
+        cache_key = self._field_cache_key("momentum", amr_level=amr_level)
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.VectorField_3D):
             return cached_field
@@ -536,7 +545,7 @@ class QuokkaSnapshot(
         amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Load magnetic field: `vec(b)`."""
-        cache_key = f"magnetic:{amr_level}"
+        cache_key = self._field_cache_key("magnetic", amr_level=amr_level)
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.VectorField_3D):
             return cached_field
@@ -559,7 +568,7 @@ class QuokkaSnapshot(
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Load total energy: `e_tot = e_int + e_kin + e_mag` (code units)."""
-        cache_key = f"total_energy:{amr_level}"
+        cache_key = self._field_cache_key("total_energy", amr_level=amr_level)
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
@@ -586,7 +595,8 @@ class QuokkaSnapshot(
         Otherwise, a fallback estimate using a different stencil is calculated. The native value
         requires `derived_vars = "magnetic_divergence"` in the param TOML file.
         """
-        cached_field = self._field_cache.get_cached_field("magnetic_divergence")
+        cache_key = self._field_cache_key("magnetic_divergence")
+        cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
         div_b_key = self._resolve_sfield_key("magnetic_divergence")
@@ -606,7 +616,7 @@ class QuokkaSnapshot(
             )
             div_b_sfield_3d = self.compute_div_b_sfield()
         self._field_cache.cache_field(
-            cache_key="magnetic_divergence",
+            cache_key=cache_key,
             field_data=div_b_sfield_3d,
         )
         return div_b_sfield_3d
