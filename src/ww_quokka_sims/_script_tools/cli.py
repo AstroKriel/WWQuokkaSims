@@ -79,16 +79,19 @@ def base_parser(
             "--input-dir",
             type=lambda path: Path(path).expanduser().resolve(),
             default=None,
-            help=
-            "Path to a directory containing snapshot dirs (matched by --tag), or to a single snapshot dir.",
+            help=(
+                "Path to a directory containing snapshot dirs (matched by --tag), or to a single snapshot dir."
+            ),
         )
         if produces_data:
             parser.add_argument(
                 "--extracted-dir",
                 type=lambda path: Path(path).expanduser().resolve(),
                 default=None,
-                help=
-                "Output directory for extracted data (used with --save-data); defaults to the snapshot's parent directory.",
+                help=(
+                    "Output directory for extracted data (used with --save-data); defaults to the snapshot's "
+                    "parent directory."
+                ),
             )
             parser.add_argument(
                 "--figures-dir",

@@ -743,8 +743,10 @@ def main():
         "--serial-plotting",
         action="store_true",
         default=False,
-        help=
-        "Render snapshots serially instead of in parallel. Use for large datasets where forked workers crash (e.g. on GPU nodes with CUDA context issues).",
+        help=(
+            "Render snapshots serially instead of in parallel. Use for large datasets where forked "
+            "workers crash (e.g. on GPU nodes with CUDA context issues)."
+        ),
     )
     parser.add_argument(
         "--log10",
