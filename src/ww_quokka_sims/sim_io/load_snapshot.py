@@ -488,10 +488,10 @@ class QuokkaSnapshot(
         self,
         field_name: str,
         *,
-        amr_level: int | None = None,
+        amr_level: int,
     ) -> str:
-        """Build the `_field_cache` key for `field_name`; `amr_level=None` for loaders that don't support AMR levels."""
-        return field_name if amr_level is None else f"{field_name}:level-{amr_level}"
+        """Build the `_field_cache` key for `field_name` at `amr_level`."""
+        return f"{field_name}:level-{amr_level}"
 
     def load_3d_density_sfield(
         self,
@@ -595,7 +595,7 @@ class QuokkaSnapshot(
         Otherwise, a fallback estimate using a different stencil is calculated. The native value
         requires `derived_vars = "magnetic_divergence"` in the param TOML file.
         """
-        cache_key = self._field_cache_key("magnetic_divergence")
+        cache_key = self._field_cache_key("magnetic_divergence", amr_level=0)
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
