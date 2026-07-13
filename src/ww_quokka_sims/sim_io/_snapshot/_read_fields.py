@@ -100,7 +100,7 @@ YT_SFIELD_KEYS: dict[str, dict[str, Any]] = {
 
 
 class LRUCache:
-    """LRU cache for field objects, keyed by field name."""
+    """LRU cache for field objects, keyed by cache key."""
 
     _cache_lookup: OrderedDict[str, field_models.ScalarField_3D | field_models.VectorField_3D]
     _max_size: int
@@ -121,22 +121,22 @@ class LRUCache:
 
     def get_cached_field(
         self,
-        field_name: str,
+        cache_key: str,
     ):
-        """Return cached value for `field_name`, or None if not found."""
-        cached_field = self._cache_lookup.get(field_name)
+        """Return cached value for `cache_key`, or None if not found."""
+        cached_field = self._cache_lookup.get(cache_key)
         if cached_field is not None:
-            self._cache_lookup.move_to_end(field_name)
+            self._cache_lookup.move_to_end(cache_key)
         return cached_field
 
     def cache_field(
         self,
-        field_name: str,
+        cache_key: str,
         field_data: field_models.ScalarField_3D | field_models.VectorField_3D,
     ) -> None:
-        """Store `field_data` under `field_name`; evict the LRU entry if at capacity."""
-        self._cache_lookup[field_name] = field_data
-        self._cache_lookup.move_to_end(field_name)
+        """Store `field_data` under `cache_key`; evict the LRU entry if at capacity."""
+        self._cache_lookup[cache_key] = field_data
+        self._cache_lookup.move_to_end(cache_key)
         while len(self._cache_lookup) > self._max_size:
             self._cache_lookup.popitem(last=False)
 

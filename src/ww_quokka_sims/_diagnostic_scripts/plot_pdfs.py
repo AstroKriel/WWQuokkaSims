@@ -218,9 +218,15 @@ class ComputePDFs:
             ) as snapshot:
                 field = self.field_loader(snapshot)
             if isinstance(field, field_models.ScalarField_3D):
-                pdf = self._compute_sfield_pdf(field=field, step_index=step_index)
+                pdf = self._compute_sfield_pdf(
+                    field=field,
+                    step_index=step_index,
+                )
             elif isinstance(field, field_models.VectorField_3D):
-                pdf = self._compute_vfield_pdf(field=field, step_index=step_index)
+                pdf = self._compute_vfield_pdf(
+                    field=field,
+                    step_index=step_index,
+                )
             else:
                 raise ValueError(f"{self.field_name} is an unrecognised field type.")
             field_pdfs.append(pdf)

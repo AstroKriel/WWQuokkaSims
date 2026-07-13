@@ -55,8 +55,8 @@ class QuokkaSnapshot(
     _yt_dataset: Any | None
     _in_context: bool
     _sim_time: float | None
-    _covering_grid: Any | None
-    _uniform_domain_3d: domain_models.UniformDomain_3D | None
+    _covering_grid_cache: dict[int, Any]
+    _uniform_domain_3d_cache: dict[int, domain_models.UniformDomain_3D]
     _field_cache: LRUCache
 
     ##
@@ -79,10 +79,10 @@ class QuokkaSnapshot(
         self._yt_dataset = None
         self._in_context = False
         self._sim_time = None
-        self._covering_grid = None
-        self._uniform_domain_3d = None
-        ## the following fields are cached: rho_sfield_3d, mom_vfield_3d, v_vfield_3d, and b_vfield_3d
-        self._field_cache = LRUCache(max_size=4)
+        self._covering_grid_cache = {}
+        self._uniform_domain_3d_cache = {}
+        ## cached fields: density, momentum, magnetic, total_energy, and magnetic_divergence, each per amr_level
+        self._field_cache = LRUCache(max_size=10)
 
     def __enter__(
         self,
@@ -129,8 +129,8 @@ class QuokkaSnapshot(
         if self._yt_dataset is not None:
             self._yt_dataset.close()
             self._yt_dataset = None
-            self._covering_grid = None
-            self._uniform_domain_3d = None
+            self._covering_grid_cache = {}
+            self._uniform_domain_3d_cache = {}
             self._field_cache.clear_cache()
 
     @property
@@ -165,19 +165,45 @@ class QuokkaSnapshot(
             raise RuntimeError(msg)
         return float(sim_time)
 
+    def _validate_amr_level(
+        self,
+        amr_level: int,
+    ) -> None:
+        """Raise if `amr_level` exceeds the finest level actually present in this snapshot."""
+        assert self._yt_dataset is not None
+        max_level = int(self._yt_dataset.index.max_level)
+        if not (0 <= amr_level <= max_level):
+            msg = (
+                f"requested AMR level {amr_level} but {self.snapshot_dir} only has "
+                f"levels 0-{max_level} (max_level={max_level})."
+            )
+            manage_log.log_error(text=msg)
+            raise ValueError(msg)
+
     def _get_covering_grid(
         self,
+        *,
+        amr_level: int = 0,
     ) -> Any:
-        """Return the coarsest (level 0) covering grid spanning the whole domain."""
+        """
+        Return a covering grid spanning the whole domain at `amr_level`'s resolution.
+
+        For `amr_level > 0`, this is the composite of the finest data available up to and
+        including `amr_level` (coarser regions are filled by interpolating from the highest
+        level that does cover them); `amr_level=0` (the default) always reads the base level.
+        """
         self._open_if_needed()
         assert self._yt_dataset is not None
-        if self._covering_grid is None:
-            self._covering_grid = self._yt_dataset.covering_grid(
-                level=0,
+        self._validate_amr_level(amr_level)
+        if amr_level not in self._covering_grid_cache:
+            refinement_ratio = int(self._yt_dataset.refine_by)
+            num_cells = self._yt_dataset.domain_dimensions * (refinement_ratio**amr_level)
+            self._covering_grid_cache[amr_level] = self._yt_dataset.covering_grid(
+                level=amr_level,
                 left_edge=self._yt_dataset.domain_left_edge,
-                dims=self._yt_dataset.domain_dimensions,
+                dims=num_cells,
             )
-        return self._covering_grid
+        return self._covering_grid_cache[amr_level]
 
     def _get_available_field_keys(
         self,
@@ -286,11 +312,13 @@ class QuokkaSnapshot(
     def _load_3d_sarray(
         self,
         field_key: FieldKey,
+        *,
+        amr_level: int = 0,
     ) -> numpy.ndarray:
         """Load a scalar field from the covering grid as a 3D `ndarray`."""
         self._open_if_needed()
         assert self._yt_dataset is not None
-        covering_grid = self._get_covering_grid()
+        covering_grid = self._get_covering_grid(amr_level=amr_level)
         if field_key not in self._yt_dataset.field_list:
             self._close_if_needed()
             raise KeyError(f"field {field_key} not found; searched in {self.snapshot_dir}.")
@@ -333,6 +361,7 @@ class QuokkaSnapshot(
         field_key: FieldKey,
         field_name: str,
         latex_label: str,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Wrap a scalar array as `ScalarField_3D` with a `field_name`, `latex_label`, and `sim_time`."""
         validate_types.ensure_nonempty_string(
@@ -343,8 +372,8 @@ class QuokkaSnapshot(
             param=latex_label,
             param_name="latex_label",
         )
-        sarray_3d = self._load_3d_sarray(field_key)
-        uniform_domain_3d = self.load_3d_uniform_domain()
+        sarray_3d = self._load_3d_sarray(field_key, amr_level=amr_level)
+        uniform_domain_3d = self.load_3d_uniform_domain(amr_level=amr_level)
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=sarray_3d,
             uniform_domain_3d=uniform_domain_3d,
@@ -359,6 +388,7 @@ class QuokkaSnapshot(
         vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, FieldKey],
         field_name: str,
         latex_label: str,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Load and stack 3 components into a `VectorField_3D` with a `field_name`, `latex_label`, and `sim_time`."""
         if set(vfield_key_lookup) != set(cartesian_axes.DEFAULT_3D_AXES_ORDER):
@@ -377,7 +407,7 @@ class QuokkaSnapshot(
         )
         self._open_if_needed()
         assert self._yt_dataset is not None
-        covering_grid = self._get_covering_grid()
+        covering_grid = self._get_covering_grid(amr_level=amr_level)
         grouped_sarrays: dict[cartesian_axes.CartesianAxis_3D, numpy.ndarray] = {}
         for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER:
             comp_key = vfield_key_lookup[comp_axis]
@@ -395,7 +425,7 @@ class QuokkaSnapshot(
             [grouped_sarrays[comp_axis] for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER],
             axis=0,
         )
-        uniform_domain_3d = self.load_3d_uniform_domain()
+        uniform_domain_3d = self.load_3d_uniform_domain(amr_level=amr_level)
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=varray_3d,
             uniform_domain_3d=uniform_domain_3d,
@@ -412,24 +442,31 @@ class QuokkaSnapshot(
         self,
         *,
         force_periodicity: bool = True,
+        amr_level: int = 0,
     ) -> domain_models.UniformDomain_3D:
         """
-        Return uniform domain metadata: bounds, resolution, and periodicity; result is cached.
+        Return uniform domain metadata: bounds, resolution, and periodicity; result is cached per `amr_level`.
 
-        `force_periodicity` only takes effect on the first call; yt cannot read periodicity reliably.
+        `resolution` is the base-level `domain_dimensions` scaled by `refinement_ratio**amr_level`, matching the
+        resolution `_get_covering_grid(amr_level=...)` actually returns, so the two stay consistent.
+        `force_periodicity` only takes effect on the first call for a given `amr_level`; yt cannot read
+        periodicity reliably.
         """
         validate_types.ensure_bool(
             param=force_periodicity,
             param_name="force_periodicity",
         )
-        if self._uniform_domain_3d is not None:
-            return self._uniform_domain_3d
         self._open_if_needed()
         assert self._yt_dataset is not None
+        self._validate_amr_level(amr_level)
+        if amr_level in self._uniform_domain_3d_cache:
+            self._close_if_needed()
+            return self._uniform_domain_3d_cache[amr_level]
         x_min, y_min, z_min = (float(value) for value in self._yt_dataset.domain_left_edge)
         x_max, y_max, z_max = (float(value) for value in self._yt_dataset.domain_right_edge)
+        refinement_ratio = int(self._yt_dataset.refine_by)
         num_cells_x, num_cells_y, num_cells_z = (
-            int(num_cells) for num_cells in self._yt_dataset.domain_dimensions
+            int(num_cells) * (refinement_ratio**amr_level) for num_cells in self._yt_dataset.domain_dimensions
         )
         is_periodic_x, is_periodic_y, is_periodic_z = (
             (bool(is_periodic) or force_periodicity) for is_periodic in self._yt_dataset.periodicity
@@ -440,18 +477,30 @@ class QuokkaSnapshot(
             resolution=(num_cells_x, num_cells_y, num_cells_z),
             domain_bounds=((x_min, x_max), (y_min, y_max), (z_min, z_max)),
         )
-        self._uniform_domain_3d = uniform_domain_3d
+        self._uniform_domain_3d_cache[amr_level] = uniform_domain_3d
         return uniform_domain_3d
 
     ##
     ## --- BASIC FIELDS
     ##
 
+    def _field_cache_key(
+        self,
+        field_name: str,
+        *,
+        amr_level: int,
+    ) -> str:
+        """Build the `_field_cache` key for `field_name` at `amr_level`."""
+        return f"{field_name}:level-{amr_level}"
+
     def load_3d_density_sfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Load gas density: `rho`."""
-        cached_field = self._field_cache.get_cached_field("density")
+        cache_key = self._field_cache_key("density", amr_level=amr_level)
+        cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
         rho_key = self._get_sfield_key("density")
@@ -459,18 +508,22 @@ class QuokkaSnapshot(
             field_key=rho_key,
             field_name="density",
             latex_label=r"\rho",
+            amr_level=amr_level,
         )
         self._field_cache.cache_field(
-            field_name="density",
+            cache_key=cache_key,
             field_data=rho_sfield_3d,
         )
         return rho_sfield_3d
 
     def load_3d_momentum_vfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Load momentum field: `vec(m) = rho vec(v)`."""
-        cached_field = self._field_cache.get_cached_field("momentum")
+        cache_key = self._field_cache_key("momentum", amr_level=amr_level)
+        cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.VectorField_3D):
             return cached_field
         mom_key_lookup = self._get_vfield_key_lookup("momentum")
@@ -478,18 +531,22 @@ class QuokkaSnapshot(
             vfield_key_lookup=mom_key_lookup,
             field_name="momentum",
             latex_label=r"\rho \,\vec{v}",
+            amr_level=amr_level,
         )
         self._field_cache.cache_field(
-            field_name="momentum",
+            cache_key=cache_key,
             field_data=mom_vfield_3d,
         )
         return mom_vfield_3d
 
     def load_3d_magnetic_vfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Load magnetic field: `vec(b)`."""
-        cached_field = self._field_cache.get_cached_field("magnetic")
+        cache_key = self._field_cache_key("magnetic", amr_level=amr_level)
+        cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.VectorField_3D):
             return cached_field
         b_key_lookup = self._get_vfield_key_lookup("magnetic")
@@ -497,18 +554,22 @@ class QuokkaSnapshot(
             vfield_key_lookup=b_key_lookup,
             field_name="magnetic",
             latex_label=r"\vec{b}",
+            amr_level=amr_level,
         )
         self._field_cache.cache_field(
-            field_name="magnetic",
+            cache_key=cache_key,
             field_data=b_vfield_3d,
         )
         return b_vfield_3d
 
     def load_3d_total_energy_sfield(
         self,
+        *,
+        amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Load total energy: `e_tot = e_int + e_kin + e_mag` (code units)."""
-        cached_field = self._field_cache.get_cached_field("total_energy")
+        cache_key = self._field_cache_key("total_energy", amr_level=amr_level)
+        cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
         E_tot_key = self._get_sfield_key("total_energy")
@@ -516,9 +577,10 @@ class QuokkaSnapshot(
             field_key=E_tot_key,
             field_name="total_energy",
             latex_label=r"E_\mathrm{tot}",
+            amr_level=amr_level,
         )
         self._field_cache.cache_field(
-            field_name="total_energy",
+            cache_key=cache_key,
             field_data=E_tot_sfield_3d,
         )
         return E_tot_sfield_3d
@@ -533,7 +595,8 @@ class QuokkaSnapshot(
         Otherwise, a fallback estimate using a different stencil is calculated. The native value
         requires `derived_vars = "magnetic_divergence"` in the param TOML file.
         """
-        cached_field = self._field_cache.get_cached_field("magnetic_divergence")
+        cache_key = self._field_cache_key("magnetic_divergence", amr_level=0)
+        cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
         div_b_key = self._resolve_sfield_key("magnetic_divergence")
@@ -553,7 +616,7 @@ class QuokkaSnapshot(
             )
             div_b_sfield_3d = self.compute_div_b_sfield()
         self._field_cache.cache_field(
-            field_name="magnetic_divergence",
+            cache_key=cache_key,
             field_data=div_b_sfield_3d,
         )
         return div_b_sfield_3d

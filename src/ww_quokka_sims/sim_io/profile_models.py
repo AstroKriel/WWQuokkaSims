@@ -153,7 +153,12 @@ class ScalarProfile:
         validate_types.ensure_dict_has_keys(
             param=data,
             required_keys={
-                "field_name", "step_time", "step_index", "profile_axis", "position", "field_value"
+                "field_name",
+                "step_time",
+                "step_index",
+                "profile_axis",
+                "position",
+                "field_value",
             },
             param_name="<ScalarProfile JSON>",
         )
