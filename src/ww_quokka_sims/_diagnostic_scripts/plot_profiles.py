@@ -94,6 +94,8 @@ class ComputeCompProfiles:
         field_loader: Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
+        amr_level: int = 0,
+        field_supports_amr_level: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -101,6 +103,8 @@ class ComputeCompProfiles:
         self.field_loader = field_loader
         self.comps_to_plot = comps_to_plot
         self.axes_to_slice = axes_to_slice
+        self.amr_level = amr_level
+        self.field_supports_amr_level = field_supports_amr_level
 
     @staticmethod
     def _compute_cell_centers(
@@ -237,8 +241,12 @@ class ComputeCompProfiles:
                     snapshot_dir=snapshot_dir,
                     verbose=False,
             ) as snapshot:
-                uniform_domain_3d = snapshot.load_3d_uniform_domain()
-                field = self.field_loader(snapshot)  # ScalarField or VectorField
+                uniform_domain_3d = snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
+                field = (
+                    self.field_loader(snapshot, amr_level=self.amr_level)
+                    if self.field_supports_amr_level
+                    else self.field_loader(snapshot)
+                )  # ScalarField or VectorField
             if isinstance(field, field_models.ScalarField_3D):
                 comp_profiles = self._compute_scalar_profiles(
                     field=field,
@@ -285,6 +293,8 @@ class RenderCompProfiles:
         extracted_dir: Path,
         figures_dir: Path,
         extract_data: bool,
+        amr_level: int = 0,
+        field_supports_amr_level: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -297,6 +307,8 @@ class RenderCompProfiles:
         self.field_loader = field_loader
         self.cmap_name = cmap_name
         self.extract_data = extract_data
+        self.amr_level = amr_level
+        self.field_supports_amr_level = field_supports_amr_level
 
     def _save_comp_profiles(
         self,
@@ -319,7 +331,7 @@ class RenderCompProfiles:
             index_tag = f"index={step_index:0{self.index_width}d}"
             for axis_index, axis in enumerate(any_profile.axis_labels):
                 axis_label = cartesian_axes.get_axis_label(axis)
-                stem = f"{self.field_name}-axis={axis_label}-{index_tag}"
+                stem = f"{self.field_name}-axis={axis_label}-{index_tag}-amr_level={self.amr_level}"
                 file_path = extracted_dir / f"{stem}.json"
                 if is_scalar:
                     comp_profile = comp_profiles_lookup[comp_labels[0]][position_index]
@@ -330,6 +342,7 @@ class RenderCompProfiles:
                         profile_axis=axis_label,
                         position=comp_profile.get_domain(axis_index=axis_index),
                         field_value=comp_profile.get_values(axis_index=axis_index),
+                        amr_level=self.amr_level,
                     ).save_to_file(file_path)
                 else:
                     components = {
@@ -350,6 +363,7 @@ class RenderCompProfiles:
                         step_index=step_index,
                         profile_axis=axis_label,
                         components=components,
+                        amr_level=self.amr_level,
                     ).save_to_file(file_path)
 
     @staticmethod
@@ -440,6 +454,8 @@ class RenderCompProfiles:
             field_loader=self.field_loader,
             comps_to_plot=self.comps_to_plot,
             axes_to_slice=self.axes_to_slice,
+            amr_level=self.amr_level,
+            field_supports_amr_level=self.field_supports_amr_level,
         )
         comp_profiles_lookup = compute_comp_profiles.run()
         if not comp_profiles_lookup:
@@ -521,12 +537,14 @@ class ScriptInterface:
         extract_data: bool,
         extracted_dir: Path | None = None,
         figures_dir: Path | None = None,
+        amr_level: int = 0,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
             param_name="snapshot_tag",
         )
         field_registry.validate_fields(field_names=fields_to_plot)
+        field_registry.validate_amr_level_support(fields_to_plot, amr_level=amr_level)
         if comps_to_plot is None:
             comps_to_plot = cartesian_axes.DEFAULT_3D_AXES_ORDER
         elif not set(comps_to_plot).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):
@@ -543,6 +561,7 @@ class ScriptInterface:
         self.extract_data = extract_data
         self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
+        self.amr_level = amr_level
 
     def run(
         self,
@@ -581,6 +600,8 @@ class ScriptInterface:
                 field_loader=field_meta.loader,
                 cmap_name=field_meta.cmap,
                 extract_data=self.extract_data,
+                amr_level=self.amr_level,
+                field_supports_amr_level=field_meta.supports_amr_level,
             )
             render_comp_profiles.run()
 
@@ -613,6 +634,7 @@ def main():
         extract_data=user_args.save_data,
         extracted_dir=user_args.extracted_dir,
         figures_dir=user_args.figures_dir,
+        amr_level=user_args.amr_level,
     )
     script_interface.run()
 

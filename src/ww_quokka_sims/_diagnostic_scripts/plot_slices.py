@@ -59,6 +59,8 @@ class FieldArgs:
     field_name: str
     field_loader: Callable
     cmap_name: str
+    amr_level: int = 0
+    supports_amr_level: bool = False
 
 
 class WorkerArgs(NamedTuple):
@@ -76,6 +78,8 @@ class WorkerArgs(NamedTuple):
     index_width: int
     extract_data: bool
     hide_annotations: bool
+    amr_level: int = 0
+    supports_amr_level: bool = False
     apply_log10: bool = False
 
 
@@ -283,12 +287,17 @@ class FieldPlotter:
         *,
         snapshot_dir: Path,
     ) -> SnapshotData:
+        amr_level = self.field_args.amr_level
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
                 verbose=False,
         ) as snapshot:
-            uniform_domain = snapshot.load_3d_uniform_domain()
-            field = self.field_args.field_loader(snapshot)  # ScalarField_3D or VectorField_3D
+            uniform_domain = snapshot.load_3d_uniform_domain(amr_level=amr_level)
+            field = (
+                self.field_args.field_loader(snapshot, amr_level=amr_level)
+                if self.field_args.supports_amr_level
+                else self.field_args.field_loader(snapshot)
+            )  # ScalarField_3D or VectorField_3D
         return SnapshotData(
             uniform_domain=uniform_domain,
             field=field,
@@ -386,12 +395,16 @@ class FieldPlotter:
                     uniform_domain=uniform_domain,
                 )
                 comp_part = f"-comp={field_comp.comp_axis.axis_label}" if field_comp.comp_axis is not None else ""
-                file_name = f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_index}.npz"
+                file_name = (
+                    f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_index}"
+                    f"-amr_level={self.field_args.amr_level}.npz"
+                )
                 numpy.savez(
                     extracted_dir / file_name,
                     sarray_2d=field_slice.sarray_2d,
                     step_time=step_time,
                     step_index=step_index,
+                    amr_level=self.field_args.amr_level,
                 )
 
     def plot_snapshot(
@@ -478,6 +491,7 @@ def render_fields_in_serial(
     extract_data: bool,
     hide_annotations: bool = False,
     apply_log10: bool = False,
+    amr_level: int = 0,
 ) -> None:
     for field_name in fields_to_plot:
         field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
@@ -485,6 +499,8 @@ def render_fields_in_serial(
             field_name=field_name,
             field_loader=field_meta.loader,
             cmap_name=field_meta.cmap,
+            amr_level=amr_level,
+            supports_amr_level=field_meta.supports_amr_level,
         )
         field_plotter = FieldPlotter(
             snapshot_tag=snapshot_tag,
@@ -514,6 +530,8 @@ def _plot_snapshot_worker(
         field_name=worker_args.field_name,
         field_loader=worker_args.field_loader,
         cmap_name=worker_args.cmap_name,
+        amr_level=worker_args.amr_level,
+        supports_amr_level=worker_args.supports_amr_level,
     )
     field_plotter = FieldPlotter(
         snapshot_tag=worker_args.snapshot_tag,
@@ -546,6 +564,7 @@ def render_fields_in_parallel(
     extract_data: bool,
     hide_annotations: bool = False,
     apply_log10: bool = False,
+    amr_level: int = 0,
 ) -> None:
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_plot:
@@ -565,6 +584,8 @@ def render_fields_in_parallel(
                     index_width=index_width,
                     extract_data=extract_data,
                     hide_annotations=hide_annotations,
+                    amr_level=amr_level,
+                    supports_amr_level=field_meta.supports_amr_level,
                     apply_log10=apply_log10,
                 ),
             )
@@ -600,6 +621,7 @@ class ScriptInterface:
         animate_only: bool = False,
         hide_annotations: bool = False,
         apply_log10: bool = False,
+        amr_level: int = 0,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
@@ -610,12 +632,14 @@ class ScriptInterface:
         )
         if not fields_to_plot or not set(fields_to_plot).issubset(valid_fields):
             raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}.")
+        field_registry.validate_amr_level_support(fields_to_plot, amr_level=amr_level)
         self.input_dir = Path(input_dir)
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.comps_to_plot = _parse_axes(axes=comps_to_plot)
         self.axes_to_slice = _parse_axes(axes=axes_to_slice)
         self.extract_data = extract_data
+        self.amr_level = amr_level
         self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         self.use_parallel = bool(use_parallel)
@@ -689,6 +713,7 @@ class ScriptInterface:
                     extract_data=self.extract_data,
                     hide_annotations=self.hide_annotations,
                     apply_log10=self.apply_log10,
+                    amr_level=self.amr_level,
                 )
             else:
                 render_fields_in_serial(
@@ -703,6 +728,7 @@ class ScriptInterface:
                     extract_data=self.extract_data,
                     hide_annotations=self.hide_annotations,
                     apply_log10=self.apply_log10,
+                    amr_level=self.amr_level,
                 )
         ## stitch rendered PNGs into an MP4 animation (no-op if animate flag is not set)
         self._animate_fields(figures_dir=figures_dir)
@@ -765,6 +791,7 @@ def main():
         hide_annotations=user_args.no_annotations,
         use_parallel=not user_args.serial_plotting,
         apply_log10=user_args.log10,
+        amr_level=user_args.amr_level,
     )
     script_interface.run()
 

@@ -27,6 +27,7 @@ DIVERGING_CMAP = "cmr.iceburn"
 class FieldEntry:
     loader: Callable
     cmap: str
+    supports_amr_level: bool = False
 
 
 QUOKKA_FIELD_LOOKUP = {
@@ -34,6 +35,7 @@ QUOKKA_FIELD_LOOKUP = {
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.load_3d_density_sfield,
         cmap=SEQUENTIAL_CMAP,
+        supports_amr_level=True,
     ),
     "velocity":
     FieldEntry(
@@ -49,11 +51,13 @@ QUOKKA_FIELD_LOOKUP = {
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.load_3d_magnetic_vfield,
         cmap=SEQUENTIAL_CMAP,
+        supports_amr_level=True,
     ),
     "total_energy":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.load_3d_total_energy_sfield,
         cmap=SEQUENTIAL_CMAP,
+        supports_amr_level=True,
     ),
     "internal_energy":
     FieldEntry(
@@ -145,6 +149,24 @@ def validate_fields(
     )
     if not field_names or not set(field_names).issubset(valid_field_names):
         raise ValueError(f"Provide fields via --fields from: {sorted(valid_field_names)}.")
+
+
+def validate_amr_level_support(
+    field_names: list[str] | tuple[str, ...],
+    *,
+    amr_level: int,
+) -> None:
+    """Raise if `amr_level > 0` is requested for a field whose loader does not support AMR levels."""
+    if amr_level == 0:
+        return
+    unsupported_field_names = sorted(
+        field_name for field_name in field_names if not QUOKKA_FIELD_LOOKUP[field_name].supports_amr_level
+    )
+    if unsupported_field_names:
+        raise ValueError(
+            f"--amr-level {amr_level} was requested, but these fields do not support AMR levels: "
+            f"{unsupported_field_names}.",
+        )
 
 
 ## } MODULE
