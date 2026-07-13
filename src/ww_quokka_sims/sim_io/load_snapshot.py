@@ -491,7 +491,7 @@ class QuokkaSnapshot(
         amr_level: int | None = None,
     ) -> str:
         """Build the `_field_cache` key for `field_name`; `amr_level=None` for loaders that don't support AMR levels."""
-        return field_name if amr_level is None else f"{field_name}:{amr_level}"
+        return field_name if amr_level is None else f"{field_name}:level-{amr_level}"
 
     def load_3d_density_sfield(
         self,
