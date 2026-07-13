@@ -95,7 +95,6 @@ class ComputeCompProfiles:
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
         amr_level: int = 0,
-        field_supports_amr_level: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -104,7 +103,6 @@ class ComputeCompProfiles:
         self.comps_to_plot = comps_to_plot
         self.axes_to_slice = axes_to_slice
         self.amr_level = amr_level
-        self.field_supports_amr_level = field_supports_amr_level
 
     @staticmethod
     def _compute_cell_centers(
@@ -242,11 +240,7 @@ class ComputeCompProfiles:
                     verbose=False,
             ) as snapshot:
                 uniform_domain_3d = snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
-                field = (
-                    self.field_loader(snapshot, amr_level=self.amr_level)
-                    if self.field_supports_amr_level
-                    else self.field_loader(snapshot)
-                )  # ScalarField or VectorField
+                field = self.field_loader(snapshot, amr_level=self.amr_level)  # ScalarField or VectorField
             if isinstance(field, field_models.ScalarField_3D):
                 comp_profiles = self._compute_scalar_profiles(
                     field=field,
@@ -294,7 +288,6 @@ class RenderCompProfiles:
         figures_dir: Path,
         extract_data: bool,
         amr_level: int = 0,
-        field_supports_amr_level: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -308,7 +301,6 @@ class RenderCompProfiles:
         self.cmap_name = cmap_name
         self.extract_data = extract_data
         self.amr_level = amr_level
-        self.field_supports_amr_level = field_supports_amr_level
 
     def _save_comp_profiles(
         self,
@@ -455,7 +447,6 @@ class RenderCompProfiles:
             comps_to_plot=self.comps_to_plot,
             axes_to_slice=self.axes_to_slice,
             amr_level=self.amr_level,
-            field_supports_amr_level=self.field_supports_amr_level,
         )
         comp_profiles_lookup = compute_comp_profiles.run()
         if not comp_profiles_lookup:
@@ -544,7 +535,6 @@ class ScriptInterface:
             param_name="snapshot_tag",
         )
         field_registry.validate_fields(field_names=fields_to_plot)
-        field_registry.validate_amr_level_support(fields_to_plot, amr_level=amr_level)
         if comps_to_plot is None:
             comps_to_plot = cartesian_axes.DEFAULT_3D_AXES_ORDER
         elif not set(comps_to_plot).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):
@@ -601,7 +591,6 @@ class ScriptInterface:
                 cmap_name=field_meta.cmap,
                 extract_data=self.extract_data,
                 amr_level=self.amr_level,
-                field_supports_amr_level=field_meta.supports_amr_level,
             )
             render_comp_profiles.run()
 

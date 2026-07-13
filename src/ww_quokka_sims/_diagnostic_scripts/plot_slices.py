@@ -60,7 +60,6 @@ class FieldArgs:
     field_loader: Callable
     cmap_name: str
     amr_level: int = 0
-    supports_amr_level: bool = False
 
 
 class WorkerArgs(NamedTuple):
@@ -79,7 +78,6 @@ class WorkerArgs(NamedTuple):
     extract_data: bool
     hide_annotations: bool
     amr_level: int = 0
-    supports_amr_level: bool = False
     apply_log10: bool = False
 
 
@@ -293,11 +291,7 @@ class FieldPlotter:
                 verbose=False,
         ) as snapshot:
             uniform_domain = snapshot.load_3d_uniform_domain(amr_level=amr_level)
-            field = (
-                self.field_args.field_loader(snapshot, amr_level=amr_level)
-                if self.field_args.supports_amr_level
-                else self.field_args.field_loader(snapshot)
-            )  # ScalarField_3D or VectorField_3D
+            field = self.field_args.field_loader(snapshot, amr_level=amr_level)  # ScalarField_3D or VectorField_3D
         return SnapshotData(
             uniform_domain=uniform_domain,
             field=field,
@@ -500,7 +494,6 @@ def render_fields_in_serial(
             field_loader=field_meta.loader,
             cmap_name=field_meta.cmap,
             amr_level=amr_level,
-            supports_amr_level=field_meta.supports_amr_level,
         )
         field_plotter = FieldPlotter(
             snapshot_tag=snapshot_tag,
@@ -531,7 +524,6 @@ def _plot_snapshot_worker(
         field_loader=worker_args.field_loader,
         cmap_name=worker_args.cmap_name,
         amr_level=worker_args.amr_level,
-        supports_amr_level=worker_args.supports_amr_level,
     )
     field_plotter = FieldPlotter(
         snapshot_tag=worker_args.snapshot_tag,
@@ -585,7 +577,6 @@ def render_fields_in_parallel(
                     extract_data=extract_data,
                     hide_annotations=hide_annotations,
                     amr_level=amr_level,
-                    supports_amr_level=field_meta.supports_amr_level,
                     apply_log10=apply_log10,
                 ),
             )
@@ -632,7 +623,6 @@ class ScriptInterface:
         )
         if not fields_to_plot or not set(fields_to_plot).issubset(valid_fields):
             raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}.")
-        field_registry.validate_amr_level_support(fields_to_plot, amr_level=amr_level)
         self.input_dir = Path(input_dir)
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
