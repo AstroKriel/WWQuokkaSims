@@ -219,7 +219,17 @@ class ComputePDFs:
 
     def run(
         self,
+        *,
+        on_computed: Callable[[PDFData], None] | None = None,
     ) -> list[PDFData]:
+        """Compute the PDF for every snapshot, sorted by time.
+
+        `on_computed`, if given, is invoked immediately after each snapshot's PDF is computed
+        (before moving on to the next snapshot) -- eg. to save it to disk right away, so a job
+        that dies partway through (walltime, pre-emption, a bad plotfile) still leaves every
+        already-computed snapshot on disk, rather than losing everything since nothing is
+        written until this method returns.
+        """
         field_pdfs: list[PDFData] = []
         for snapshot_dir in self.snapshot_dirs:
             step_index = int(
@@ -246,6 +256,8 @@ class ComputePDFs:
             else:
                 raise ValueError(f"{self.field_name} is an unrecognised field type.")
             field_pdfs.append(pdf)
+            if on_computed is not None:
+                on_computed(pdf)
         field_pdfs.sort(key=lambda pdf: pdf.step_time)
         return field_pdfs
 
@@ -357,29 +369,35 @@ class RenderPDFs:
             label=r"snapshot index",
         )
 
-    def _save_pdfs(
+    def _save_pdf(
         self,
         *,
-        field_pdfs: list[PDFData],
+        pdf_data: PDFData,
         extracted_dir: Path,
     ) -> None:
+        """Save one snapshot's PDF to its own file, mirroring `plot_slices.py`'s one-file-per-
+        snapshot convention (rather than one file aggregating every snapshot) -- each file is
+        self-contained (carries its own `step_time`/`log10_binning`), so results already on disk
+        are immediately usable even if a later snapshot in the run fails or the job is cut off.
+        """
         extracted_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
-        output_dict: dict = {"log10_binning": self.log10_binning}
-        for pdf_data in field_pdfs:
-            snapshot_dict: dict = {"step_time": pdf_data.step_time}
-            for comp_index, comp_label in enumerate(pdf_data.comp_labels):
-                bin_centers, densities = pdf_data.get_pdf(comp_index)
-                snapshot_dict[comp_label] = {
-                    "bin_centers": bin_centers,
-                    "log10_density": densities,
-                }
-            padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
-            output_dict[padded_index] = snapshot_dict
+        output_dict: dict = {
+            "step_time": pdf_data.step_time,
+            "step_index": pdf_data.step_index,
+            "log10_binning": self.log10_binning,
+        }
+        for comp_index, comp_label in enumerate(pdf_data.comp_labels):
+            bin_centers, densities = pdf_data.get_pdf(comp_index)
+            output_dict[comp_label] = {
+                "bin_centers": bin_centers,
+                "log10_density": densities,
+            }
+        padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
         json_io.save_dict_to_json_file(
-            file_path=extracted_dir / f"{self.field_name}-pdfs.json",
+            file_path=extracted_dir / f"{self.field_name}-pdf-index={padded_index}.json",
             input_dict=output_dict,
             overwrite=True,
             verbose=False,
@@ -398,15 +416,18 @@ class RenderPDFs:
             num_bins=self.num_bins,
             log10_binning=self.log10_binning,
         )
-        field_pdfs = compute_pdfs.run()
+        ## save each snapshot's PDF to disk as soon as it's computed, not batched at the end, so
+        ## a job that dies partway through doesn't lose every already-computed snapshot with it
+        on_computed = None
+        if self.extract_data:
+            def on_computed(pdf_data: PDFData) -> None:
+                self._save_pdf(
+                    pdf_data=pdf_data,
+                    extracted_dir=self.extracted_dir,
+                )
+        field_pdfs = compute_pdfs.run(on_computed=on_computed)
         if not field_pdfs:
             return
-        ## optionally write extracted PDF data to JSON
-        if self.extract_data:
-            self._save_pdfs(
-                field_pdfs=field_pdfs,
-                extracted_dir=self.extracted_dir,
-            )
         ## figure layout: one col per field component; extra right margin for the colorbar if series
         num_cols = field_pdfs[0].num_comps
         add_cbar_space = len(field_pdfs) > 1
