@@ -119,6 +119,7 @@ class ComputePDFs:
         field_loader: Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         num_bins: int,
+        log10_binning: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -126,16 +127,29 @@ class ComputePDFs:
         self.field_loader = field_loader
         self.comps_to_plot = comps_to_plot
         self.num_bins = num_bins
+        self.log10_binning = log10_binning
 
     @staticmethod
     def _estimate_pdf(
         *,
         field_data: numpy.ndarray,
         num_bins: int,
+        log10_binning: bool,
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        """Return (bin_centers, log10_densities); zero and negative bins are masked."""
+        """Return (bin_centers, log10_densities); zero and negative bins are masked.
+
+        When `log10_binning` is set, bins are placed in log10-space of the field itself (not
+        just the density axis), since fields spanning orders of magnitude (eg. current density)
+        get almost all of their linearly-spaced bins wasted on the rare, large-valued tail,
+        leaving the bulk of the distribution unresolved in a single bin.
+        """
+        values = field_data.ravel()
+        if log10_binning:
+            ## non-positive entries become NaN (no divide-by-zero/invalid-value warning), and are
+            ## then dropped by `estimate_pdf`'s own finite-value mask below
+            values = compute_array_stats.compute_safe_log10(values)
         pdf = compute_array_stats.estimate_pdf(
-            values=field_data.ravel(),
+            values=values,
             num_bins=num_bins,
         )
         log10_densities = numpy.ma.log10(
@@ -170,6 +184,7 @@ class ComputePDFs:
             bin_centers, densities = self._estimate_pdf(
                 field_data=comp_data,
                 num_bins=self.num_bins,
+                log10_binning=self.log10_binning,
             )
             grouped_bin_centers.append(bin_centers)
             grouped_densities.append(densities)
@@ -192,6 +207,7 @@ class ComputePDFs:
         bin_centers, densities = self._estimate_pdf(
             field_data=field.fdata.farray,
             num_bins=self.num_bins,
+            log10_binning=self.log10_binning,
         )
         return PDFData(
             step_time=step_time,
@@ -256,6 +272,7 @@ class RenderPDFs:
         field_loader: Callable,
         num_bins: int,
         extract_data: bool,
+        log10_binning: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -268,16 +285,19 @@ class RenderPDFs:
         self.field_loader = field_loader
         self.num_bins = int(num_bins)
         self.extract_data = extract_data
+        self.log10_binning = log10_binning
 
     @staticmethod
     def _style_axs(
         *,
         axs_grid: manage_plots.PlotAxesGrid,
         comp_labels: list[str],
+        log10_binning: bool,
     ) -> None:
         for comp_index, label in enumerate(comp_labels):
             ax = axs_grid[0][comp_index]
-            ax.set_xlabel(rf"$x \equiv$ {label}")
+            x_label = rf"$\log_{{10}}($ {label} $)$" if log10_binning else rf"$x \equiv$ {label}"
+            ax.set_xlabel(x_label)
             if comp_index == 0:
                 ax.set_ylabel(r"$\log_{10}\big(p(x)\big)$")
 
@@ -347,7 +367,7 @@ class RenderPDFs:
             parents=True,
             exist_ok=True,
         )
-        output_dict = {}
+        output_dict: dict = {"log10_binning": self.log10_binning}
         for pdf_data in field_pdfs:
             snapshot_dict: dict = {"step_time": pdf_data.step_time}
             for comp_index, comp_label in enumerate(pdf_data.comp_labels):
@@ -376,6 +396,7 @@ class RenderPDFs:
             field_loader=self.field_loader,
             comps_to_plot=self.comps_to_plot,
             num_bins=self.num_bins,
+            log10_binning=self.log10_binning,
         )
         field_pdfs = compute_pdfs.run()
         if not field_pdfs:
@@ -413,6 +434,7 @@ class RenderPDFs:
         self._style_axs(
             axs_grid=axs_grid,
             comp_labels=field_pdfs[0].comp_labels,
+            log10_binning=self.log10_binning,
         )
         suffix = "pdf" if len(field_pdfs) == 1 else "pdfs"
         fig_path = self.figures_dir / f"{self.field_name}-{suffix}.png"
@@ -440,6 +462,7 @@ class ScriptInterface:
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
         extract_data: bool,
         num_bins: int = 15,
+        log10_binning: bool = False,
         extracted_dir: Path | None = None,
         figures_dir: Path | None = None,
     ):
@@ -458,6 +481,7 @@ class ScriptInterface:
         self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
         self.extract_data = extract_data
         self.num_bins = int(num_bins)
+        self.log10_binning = log10_binning
         self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
 
@@ -498,6 +522,7 @@ class ScriptInterface:
                 field_loader=field_meta.loader,
                 num_bins=self.num_bins,
                 extract_data=self.extract_data,
+                log10_binning=self.log10_binning,
             )
             renderer.run()
 
@@ -527,6 +552,18 @@ def main():
         default=15,
         help="Number of histogram bins for the PDF estimate; default: 15.",
     )
+    parser.add_argument(
+        "--log10-data",
+        action="store_true",
+        default=False,
+        help=(
+            "Take log10 of the field values themselves before binning, rather than binning the "
+            "raw values on a linear scale; default: False. Recommended for fields spanning orders "
+            "of magnitude (eg. current density), where linear bins waste most of their resolution "
+            "on the rare, large-valued tail and leave the bulk of the distribution unresolved in "
+            "a single bin."
+        ),
+    )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.input_dir,
@@ -535,6 +572,7 @@ def main():
         comps_to_plot=user_args.comps,
         extract_data=user_args.save_data,
         num_bins=user_args.num_bins,
+        log10_binning=user_args.log10_data,
         extracted_dir=user_args.extracted_dir,
         figures_dir=user_args.figures_dir,
     )
