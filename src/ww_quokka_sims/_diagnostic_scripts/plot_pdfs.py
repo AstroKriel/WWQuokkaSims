@@ -510,7 +510,7 @@ class ScriptInterface:
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_plots.set_theme()
-    user_args = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="Plot PDFs of Quokka field components.",
         parents=[
             cli.base_parser(
@@ -520,14 +520,21 @@ def main():
                 produces_data=True,
             ),
         ],
-    ).parse_args()
+    )
+    parser.add_argument(
+        "--num-bins",
+        type=int,
+        default=15,
+        help="Number of histogram bins for the PDF estimate; default: 15.",
+    )
+    user_args = parser.parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.input_dir,
         snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
         comps_to_plot=user_args.comps,
         extract_data=user_args.save_data,
-        num_bins=15,
+        num_bins=user_args.num_bins,
         extracted_dir=user_args.extracted_dir,
         figures_dir=user_args.figures_dir,
     )
