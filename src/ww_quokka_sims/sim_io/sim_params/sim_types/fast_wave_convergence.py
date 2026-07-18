@@ -72,14 +72,14 @@ def build_combo(
             use_tracers=1,
         ),
         hydro=HydroParams(
-            time_integrator_order=2,
+            integrator_order=2,
             interpolation_order=interpolation_order,
             use_dual_energy=0,
         ),
         mhd=MHDParams(
             emf_compute_scheme=emf_compute_scheme_by_key(compute_scheme_key).value,
             emf_averaging_scheme=emf_averaging_scheme_by_key(averaging_scheme_key).value,
-            emf_interpolation_order=interpolation_order,
+            interpolation_order=interpolation_order,
         ),
         setup=SetupParams(
             group_title="wave setup",

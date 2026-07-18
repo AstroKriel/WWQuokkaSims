@@ -281,7 +281,7 @@ class TimeIntegrationParams:
 ## === HYDRO
 ##
 
-## pcm=1, plm=2, ppm=3, ppm_ep=5; shared with `MHDParams.emf_interpolation_order` below,
+## pcm=1, plm=2, ppm=3, ppm_ep=5; shared with `MHDParams.interpolation_order` below,
 ## since both select from the same set of interpolation schemes
 VALID_INTERPOLATION_ORDERS = (1, 2, 3, 5)
 
@@ -293,7 +293,7 @@ class HydroParams:
 
     Fields
     ---
-    - `time_integrator_order`:
+    - `integrator_order`:
         Runge-Kutta time-integrator order.
 
     - `interpolation_order`:
@@ -303,7 +303,7 @@ class HydroParams:
         `1` to enable the dual-energy formalism, `0` to disable; omit for Quokka's default.
     """
 
-    time_integrator_order: int
+    integrator_order: int
     interpolation_order: int
     use_dual_energy: int | None = None
 
@@ -338,7 +338,7 @@ class MHDParams:
     - `emf_averaging_scheme`:
         EMF averaging scheme name; must be one of `VALID_EMF_AVERAGING_SCHEMES`.
 
-    - `emf_interpolation_order`:
+    - `interpolation_order`:
         Spatial reconstruction order for the EMF; must be one of `VALID_INTERPOLATION_ORDERS`.
 
     - `resistivity`:
@@ -347,7 +347,7 @@ class MHDParams:
 
     emf_compute_scheme: str
     emf_averaging_scheme: str
-    emf_interpolation_order: int
+    interpolation_order: int
     resistivity: float | None = None
 
     def __post_init__(
@@ -361,10 +361,10 @@ class MHDParams:
             raise ValueError(
                 f"`<emf_averaging_scheme>` must be one of {VALID_EMF_AVERAGING_SCHEMES}; got {self.emf_averaging_scheme!r}.",
             )
-        if self.emf_interpolation_order not in VALID_INTERPOLATION_ORDERS:
+        if self.interpolation_order not in VALID_INTERPOLATION_ORDERS:
             raise ValueError(
-                f"`<emf_interpolation_order>` must be one of {VALID_INTERPOLATION_ORDERS}; "
-                f"got {self.emf_interpolation_order}.",
+                f"`<interpolation_order>` must be one of {VALID_INTERPOLATION_ORDERS}; "
+                f"got {self.interpolation_order}.",
             )
 
 

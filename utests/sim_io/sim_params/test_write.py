@@ -222,7 +222,7 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            HydroParams(time_integrator_order=2, interpolation_order=4)
+            HydroParams(integrator_order=2, interpolation_order=4)
 
     def test_time_integration_rejects_cfl_out_of_bounds(
         self,
@@ -236,19 +236,19 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            MHDParams(emf_compute_scheme="NotAScheme", emf_averaging_scheme="Balsara2025", emf_interpolation_order=5)
+            MHDParams(emf_compute_scheme="NotAScheme", emf_averaging_scheme="Balsara2025", interpolation_order=5)
 
     def test_mhd_rejects_invalid_emf_averaging_scheme(
         self,
     ):
         with self.assertRaises(ValueError):
-            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="NotAScheme", emf_interpolation_order=5)
+            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="NotAScheme", interpolation_order=5)
 
-    def test_mhd_rejects_invalid_emf_interpolation_order(
+    def test_mhd_rejects_invalid_interpolation_order(
         self,
     ):
         with self.assertRaises(ValueError):
-            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", emf_interpolation_order=4)
+            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", interpolation_order=4)
 
     def test_setup_rejects_empty_param_values(
         self,
@@ -299,8 +299,8 @@ class GuardrailTests(unittest.TestCase):
             "resolution": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
             "output": OutputParams(snapshot_index_interval=-1),
             "time_integration": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro": HydroParams(time_integrator_order=2, interpolation_order=5),
-            "mhd": MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", emf_interpolation_order=5),
+            "hydro": HydroParams(integrator_order=2, interpolation_order=5),
+            "mhd": MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", interpolation_order=5),
             "verbose": False,
         }
         kwargs.update(overrides)
@@ -314,7 +314,7 @@ class GuardrailTests(unittest.TestCase):
             mhd=MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
-                emf_interpolation_order=5,
+                interpolation_order=5,
                 resistivity=0.001,
             ),
         )
@@ -328,7 +328,7 @@ class GuardrailTests(unittest.TestCase):
             mhd=MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
-                emf_interpolation_order=5,
+                interpolation_order=5,
                 resistivity=0.001,
             ),
             problem_type="FastWaveConvergence",
@@ -391,8 +391,8 @@ class WriteContentTests(unittest.TestCase):
             "resolution": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
             "output": OutputParams(snapshot_index_interval=-1),
             "time_integration": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro": HydroParams(time_integrator_order=2, interpolation_order=5),
-            "mhd": MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", emf_interpolation_order=5),
+            "hydro": HydroParams(integrator_order=2, interpolation_order=5),
+            "mhd": MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", interpolation_order=5),
             "verbose": False,
         }
         kwargs.update(overrides)

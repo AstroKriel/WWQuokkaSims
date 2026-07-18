@@ -227,7 +227,7 @@ def _build_hydro_lines(
     hydro: HydroParams,
 ) -> list[str]:
     assignment_lines = [
-        _render.render_key_value(key="hydro.rk_integrator_order", value=hydro.time_integrator_order),
+        _render.render_key_value(key="hydro.rk_integrator_order", value=hydro.integrator_order),
         _render.render_key_value(key="hydro.reconstruction_order", value=hydro.interpolation_order),
     ]
     if hydro.use_dual_energy is not None:
@@ -243,7 +243,7 @@ def _build_mhd_lines(
     assignment_lines = [
         _render.render_key_value(key="mhd.emf_compute_scheme", value=mhd.emf_compute_scheme),
         _render.render_key_value(key="mhd.emf_averaging_scheme", value=mhd.emf_averaging_scheme),
-        _render.render_key_value(key="mhd.emf_reconstruction_order", value=mhd.emf_interpolation_order),
+        _render.render_key_value(key="mhd.emf_reconstruction_order", value=mhd.interpolation_order),
     ]
     if mhd.resistivity is not None:
         assignment_lines.append(_render.render_key_value(key="mhd.resistivity", value=mhd.resistivity))
