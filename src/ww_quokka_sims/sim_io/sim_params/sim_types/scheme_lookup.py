@@ -22,7 +22,7 @@ from jormi.ww_validation import validate_enums
 ##
 
 
-class Interpolation(int, Enum):
+class InterpolationScheme(int, Enum):
     """`hydro.reconstruction_order` / `mhd.emf_reconstruction_order` by interpolation letter."""
 
     PCM = 1
@@ -53,10 +53,10 @@ class EMFAveragingScheme(str, Enum):
 
 def interpolation_by_letter(
     letter: str,
-) -> Interpolation:
+) -> InterpolationScheme:
     return cast(
-        Interpolation,
-        validate_enums.resolve_member(member=letter, valid_enums=Interpolation),
+        InterpolationScheme,
+        validate_enums.resolve_member(member=letter, valid_enums=InterpolationScheme),
     )
 
 
