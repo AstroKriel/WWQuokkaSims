@@ -23,7 +23,6 @@ from .models import (
     SetupParams,
     TimeIntegrationParams,
 )
-from .problem_names import ProblemName
 
 ##
 ## === PARAMETER BUNDLE
@@ -46,9 +45,6 @@ class SimParams:
 
     - `setup_params`:
         Problem-specific parameters; omit for problem types with none.
-
-    - `problem_name`:
-        The Quokka C++ problem-generator class name; used only to enforce the resistivity guardrail.
     """
 
     geometry_params: GeometryParams
@@ -58,7 +54,6 @@ class SimParams:
     hydro_params: HydroParams
     mhd_params: MHDParams
     setup_params: SetupParams | None = None
-    problem_name: ProblemName | None = None
 
     def write(
         self,
@@ -76,28 +71,20 @@ class SimParams:
             hydro_params=self.hydro_params,
             mhd_params=self.mhd_params,
             setup_params=self.setup_params,
-            problem_name=self.problem_name,
             overwrite=overwrite,
             verbose=verbose,
         )
 
 
 ##
-## === CONSTANTS
-##
-
-## problem classes with no meaningful physical resistivity: see `mhd.resistivity` guardrail below.
-## References `ProblemName` members directly (not restated strings), so a renamed/misspelled
-## member is a NameError at import time, not a silent runtime string mismatch.
-_RESISTIVITY_DISALLOWED_PROBLEM_NAMES = frozenset({
-    ProblemName.FAST_WAVE_CONVERGENCE,
-})
-
-##
 ## === GUARDRAILS
-## Simulation-code correctness rules that hold across every problem type; encoded here
-## (rather than left to each caller) so they cannot silently regress the way the bare
-## `amr.blocking_factor` fallback key did.
+## Simulation-code correctness rules that hold across every problem type, independent of which
+## specific problem is being written; encoded here (rather than left to each caller) so they
+## cannot silently regress the way the bare `amr.blocking_factor` fallback key did. Constraints
+## that depend on which *specific* problem is being written (e.g. "resistivity isn't physically
+## meaningful for FastWaveConvergence") belong in that problem's own `sim_types/` profile instead
+## -- `write.py` sits below `sim_types/` in the import graph and correctly has no way to know
+## which problem it's writing for.
 ##
 
 
@@ -105,16 +92,11 @@ def _ensure_guardrails(
     *,
     time_integration_params: TimeIntegrationParams,
     mhd_params: MHDParams,
-    problem_name: ProblemName | None,
 ) -> None:
     if (mhd_params.resistivity is not None) and (time_integration_params.use_subcycle != 0):
         raise ValueError(
             "`<mhd.resistivity>` requires `<use_subcycle>` = 0, got "
             f"resistivity={mhd_params.resistivity!r}, use_subcycle={time_integration_params.use_subcycle!r}.",
-        )
-    if ((mhd_params.resistivity is not None) and (problem_name in _RESISTIVITY_DISALLOWED_PROBLEM_NAMES)):
-        raise ValueError(
-            f"`<mhd.resistivity>` is not physically meaningful for problem_name={problem_name!r}.",
         )
 
 
@@ -283,7 +265,6 @@ def write_sim_params_toml(
     hydro_params: HydroParams,
     mhd_params: MHDParams,
     setup_params: SetupParams | None = None,
-    problem_name: ProblemName | None = None,
     overwrite: bool = False,
     verbose: bool = True,
 ) -> Path:
@@ -297,9 +278,6 @@ def write_sim_params_toml(
 
     Parameters
     ---
-    - `problem_name`:
-        The Quokka C++ problem-generator class name, used only to enforce the resistivity
-        guardrail below. Optional, but required for that guardrail to catch anything.
     - `overwrite`:
         Raise if `output_path` already exists and this is `False`.
     """
@@ -311,7 +289,6 @@ def write_sim_params_toml(
     _ensure_guardrails(
         time_integration_params=time_integration_params,
         mhd_params=mhd_params,
-        problem_name=problem_name,
     )
 
     param_groups: list[tuple[str, list[str]]] = [

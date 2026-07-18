@@ -23,7 +23,6 @@ from ww_quokka_sims.sim_io.sim_params.models import (
     SetupParams,
     TimeIntegrationParams,
 )
-from ww_quokka_sims.sim_io.sim_params.problem_names import ProblemName
 from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 
 ##
@@ -326,21 +325,6 @@ class GuardrailTests(unittest.TestCase):
                 interpolation_order=5,
                 resistivity=0.001,
             ),
-        )
-        with self.assertRaises(ValueError):
-            write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
-
-    def test_resistivity_disallowed_for_fast_wave_convergence(
-        self,
-    ):
-        kwargs = self._base_kwargs(
-            mhd_params=MHDParams(
-                emf_compute_scheme="Quokka2026",
-                emf_averaging_scheme="Balsara2025",
-                interpolation_order=5,
-                resistivity=0.001,
-            ),
-            problem_name=ProblemName.FAST_WAVE_CONVERGENCE,
         )
         with self.assertRaises(ValueError):
             write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]

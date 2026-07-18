@@ -14,7 +14,6 @@ from ..models import (
     SetupParams,
     TimeIntegrationParams,
 )
-from ..problem_names import ProblemName
 from ..write import SimParams
 ## importing names directly from the sibling module (not `from . import scheme_lookup`) avoids
 ## a `sim_types/__init__.py` import cycle, since that would require the package's `__init__`
@@ -28,6 +27,8 @@ from .scheme_lookup import (
 ##
 ## === CONSTANTS
 ##
+
+PROBLEM_NAME = "FastWaveConvergence"
 
 ## fixed for every combo of this problem type: only the EMF/reconstruction scheme varies
 ## across a sweep (see `build_combo`); everything below is boilerplate the Quokka problem
@@ -75,6 +76,9 @@ def build_combo(
             interpolation_order=interpolation_order,
             use_dual_energy=0,
         ),
+        ## `resistivity` is deliberately left at its `None` default: this is a convergence test
+        ## for the ideal-MHD wave, so a resistive term has no meaningful role here and this
+        ## combo does not expose a way to set one
         mhd_params=MHDParams(
             emf_compute_scheme=emf_compute_scheme_by_key(compute_scheme_key).value,
             emf_averaging_scheme=emf_averaging_scheme_by_key(averaging_scheme_key).value,
@@ -91,7 +95,6 @@ def build_combo(
                 "nx_max": _NX_MAX,
             },
         ),
-        problem_name=ProblemName.FAST_WAVE_CONVERGENCE,
     )
 
 
