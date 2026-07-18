@@ -14,7 +14,7 @@ from jormi.ww_validation import validate_types
 
 ## local
 from . import _sim_params
-from .sim_params_models import (
+from .param_models import (
     GeometryParams,
     HydroParams,
     MHDParams,
