@@ -33,7 +33,7 @@ PROBLEM_TYPE = "FastWaveConvergence"
 ## fixed for every combo of this problem type: only the EMF/reconstruction scheme varies
 ## across a sweep (see `build_combo`); everything below is boilerplate the Quokka problem
 ## generator itself reads, unrelated to which scheme is under test
-_BASE_N_CELL = (128, 8, 8)
+_BASE_NUM_CELLS = (128, 8, 8)
 _NX_MAX = 2048
 
 ##
@@ -53,12 +53,12 @@ def build_combo(
     reconstruction_order = interpolation_by_key(interpolation).value
     return SimParamsBundle(
         geometry=GeometryParams(
-            prob_lo=(0.0, 0.0, 0.0),
-            prob_hi=(1.0, 1.0, 1.0),
+            domain_lo=(0.0, 0.0, 0.0),
+            domain_hi=(1.0, 1.0, 1.0),
             is_periodic=(1, 1, 1),
         ),
         resolution=ResolutionParams(
-            n_cell=_BASE_N_CELL,
+            num_cells=_BASE_NUM_CELLS,
             blocking_factor=(16, 8, 8),
             max_grid_size=128,
         ),

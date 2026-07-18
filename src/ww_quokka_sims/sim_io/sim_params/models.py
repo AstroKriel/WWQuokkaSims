@@ -54,38 +54,39 @@ class GeometryParams:
     """
     Domain bounds and boundary conditions.
 
-    Exactly one of `is_periodic` or `bc` must be set: `is_periodic` for a fully
-    periodic domain, `bc` (rendered as `quokka.bc`) when any boundary is `ext_dir`.
+    Exactly one of `is_periodic` or `boundary_conditions` must be set: `is_periodic` for
+    a fully periodic domain, `boundary_conditions` (rendered as `quokka.bc`) when any
+    boundary is `ext_dir`.
 
     Fields
     ---
-    - `prob_lo`:
+    - `domain_lo`:
         Lower domain corner, `(x, y, z)`.
 
-    - `prob_hi`:
+    - `domain_hi`:
         Upper domain corner, `(x, y, z)`.
 
     - `is_periodic`:
-        Per-axis periodicity flags; mutually exclusive with `bc`.
+        Per-axis periodicity flags; mutually exclusive with `boundary_conditions`.
 
-    - `bc`:
+    - `boundary_conditions`:
         Per-axis boundary condition names (e.g. `"ext_dir"`, `"periodic"`); mutually exclusive with `is_periodic`.
     """
 
-    prob_lo: tuple[float, float, float]
-    prob_hi: tuple[float, float, float]
+    domain_lo: tuple[float, float, float]
+    domain_hi: tuple[float, float, float]
     is_periodic: tuple[int, int, int] | None = None
-    bc: tuple[str, str, str] | None = None
+    boundary_conditions: tuple[str, str, str] | None = None
 
     def __post_init__(
         self,
     ) -> None:
-        _ensure_axis_triple(self.prob_lo, param_name="<prob_lo>")
-        _ensure_axis_triple(self.prob_hi, param_name="<prob_hi>")
-        if (self.is_periodic is None) == (self.bc is None):
+        _ensure_axis_triple(self.domain_lo, param_name="<domain_lo>")
+        _ensure_axis_triple(self.domain_hi, param_name="<domain_hi>")
+        if (self.is_periodic is None) == (self.boundary_conditions is None):
             raise ValueError(
-                "exactly one of `<is_periodic>` or `<bc>` must be set, "
-                f"got is_periodic={self.is_periodic!r}, bc={self.bc!r}.",
+                "exactly one of `<is_periodic>` or `<boundary_conditions>` must be set, "
+                f"got is_periodic={self.is_periodic!r}, boundary_conditions={self.boundary_conditions!r}.",
             )
         if self.is_periodic is not None:
             validate_types.ensure_tuple_of_ints(
@@ -93,10 +94,10 @@ class GeometryParams:
                 param_name="<is_periodic>",
                 seq_length=3,
             )
-        if self.bc is not None:
+        if self.boundary_conditions is not None:
             validate_types.ensure_tuple_of_strings(
-                param=self.bc,
-                param_name="<bc>",
+                param=self.boundary_conditions,
+                param_name="<boundary_conditions>",
                 seq_length=3,
             )
 
@@ -119,7 +120,7 @@ class ResolutionParams:
 
     Fields
     ---
-    - `n_cell`:
+    - `num_cells`:
         Base-level cell count per axis; each entry must be >= 8.
 
     - `blocking_factor`:
@@ -131,28 +132,28 @@ class ResolutionParams:
     - `max_level`:
         Number of AMR refinement levels above the base grid; `0` disables AMR.
 
-    - `n_error_buf`:
-        Refinement buffer cell count; only valid when `max_level` > 0.
+    - `num_refinement_buffer_cells`:
+        Cells to pad around AMR-tagged regions before refining; only valid when `max_level` > 0.
     """
 
-    n_cell: tuple[int, int, int]
+    num_cells: tuple[int, int, int]
     blocking_factor: int | tuple[int, int, int]
     max_grid_size: int | tuple[int, int, int]
     max_level: int = 0
-    n_error_buf: int | None = None
+    num_refinement_buffer_cells: int | None = None
 
     def __post_init__(
         self,
     ) -> None:
         validate_types.ensure_tuple_of_ints(
-            param=self.n_cell,
-            param_name="<n_cell>",
+            param=self.num_cells,
+            param_name="<num_cells>",
             seq_length=3,
         )
-        for value in self.n_cell:
+        for value in self.num_cells:
             if value < 8:
                 raise ValueError(
-                    f"`<n_cell>` entries must be >= 8 (AMReX minimum under periodic BCs), got {self.n_cell}.",
+                    f"`<num_cells>` entries must be >= 8 (AMReX minimum under periodic BCs), got {self.num_cells}.",
                 )
         _ensure_scalar_or_axis_triple(self.blocking_factor, param_name="<blocking_factor>")
         _ensure_scalar_or_axis_triple(self.max_grid_size, param_name="<max_grid_size>")
@@ -162,9 +163,9 @@ class ResolutionParams:
             require_positive=True,
             allow_zero=True,
         )
-        if (self.n_error_buf is not None) and (self.max_level == 0):
+        if (self.num_refinement_buffer_cells is not None) and (self.max_level == 0):
             raise ValueError(
-                "`<n_error_buf>` only applies when `<max_level>` > 0 (AMR refinement enabled).",
+                "`<num_refinement_buffer_cells>` only applies when `<max_level>` > 0 (AMR refinement enabled).",
             )
 
 

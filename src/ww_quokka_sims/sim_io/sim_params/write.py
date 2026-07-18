@@ -146,8 +146,8 @@ def _build_geometry_lines(
     geometry: GeometryParams,
 ) -> list[str]:
     assignment_lines = [
-        _render.render_key_value(key="geometry.prob_lo", value=list(geometry.prob_lo)),
-        _render.render_key_value(key="geometry.prob_hi", value=list(geometry.prob_hi)),
+        _render.render_key_value(key="geometry.prob_lo", value=list(geometry.domain_lo)),
+        _render.render_key_value(key="geometry.prob_hi", value=list(geometry.domain_hi)),
     ]
     if geometry.is_periodic is not None:
         assignment_lines.append(
@@ -155,7 +155,10 @@ def _build_geometry_lines(
         )
     else:
         assignment_lines.append(
-            _render.render_key_value(key="quokka.bc", value=list(geometry.bc)),  # pyright: ignore[reportArgumentType]
+            _render.render_key_value(
+                key="quokka.bc",
+                value=list(geometry.boundary_conditions),  # pyright: ignore[reportArgumentType]
+            ),
         )
     return assignment_lines
 
@@ -164,13 +167,15 @@ def _build_resolution_lines(
     resolution: ResolutionParams,
 ) -> list[str]:
     assignment_lines = [
-        _render.render_key_value(key="amr.n_cell", value=list(resolution.n_cell)),
+        _render.render_key_value(key="amr.n_cell", value=list(resolution.num_cells)),
         _render.render_key_value(key="amr.max_level", value=resolution.max_level),
         *_render.expand_per_axis(resolution.blocking_factor, key_prefix="amr.blocking_factor"),
         *_render.expand_per_axis(resolution.max_grid_size, key_prefix="amr.max_grid_size"),
     ]
-    if resolution.n_error_buf is not None:
-        assignment_lines.append(_render.render_key_value(key="amr.n_error_buf", value=resolution.n_error_buf))
+    if resolution.num_refinement_buffer_cells is not None:
+        assignment_lines.append(
+            _render.render_key_value(key="amr.n_error_buf", value=resolution.num_refinement_buffer_cells),
+        )
     return assignment_lines
 
 

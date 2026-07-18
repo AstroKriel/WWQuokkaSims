@@ -181,29 +181,35 @@ class SchemaConsistencyTests(unittest.TestCase):
 
 class ModelValidationTests(unittest.TestCase):
 
-    def test_resolution_rejects_ncell_below_minimum(
+    def test_resolution_rejects_num_cells_below_minimum(
         self,
     ):
         with self.assertRaises(ValueError):
-            ResolutionParams(n_cell=(4, 8, 8), blocking_factor=8, max_grid_size=128)
+            ResolutionParams(num_cells=(4, 8, 8), blocking_factor=8, max_grid_size=128)
 
-    def test_resolution_rejects_n_error_buf_without_amr(
+    def test_resolution_rejects_num_refinement_buffer_cells_without_amr(
         self,
     ):
         with self.assertRaises(ValueError):
-            ResolutionParams(n_cell=(128, 8, 8), blocking_factor=8, max_grid_size=128, max_level=0, n_error_buf=1)
+            ResolutionParams(
+                num_cells=(128, 8, 8),
+                blocking_factor=8,
+                max_grid_size=128,
+                max_level=0,
+                num_refinement_buffer_cells=1,
+            )
 
-    def test_geometry_requires_exactly_one_bc_style(
+    def test_geometry_requires_exactly_one_boundary_condition_style(
         self,
     ):
         with self.assertRaises(ValueError):
-            GeometryParams(prob_lo=(0.0, 0.0, 0.0), prob_hi=(1.0, 1.0, 1.0))  # neither set
+            GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0))  # neither set
         with self.assertRaises(ValueError):
             GeometryParams(
-                prob_lo=(0.0, 0.0, 0.0),
-                prob_hi=(1.0, 1.0, 1.0),
+                domain_lo=(0.0, 0.0, 0.0),
+                domain_hi=(1.0, 1.0, 1.0),
                 is_periodic=(1, 1, 1),
-                bc=("ext_dir", "periodic", "periodic"),
+                boundary_conditions=("ext_dir", "periodic", "periodic"),
             )  # both set
 
     def test_output_requires_exactly_one_interval_style(
@@ -289,8 +295,8 @@ class GuardrailTests(unittest.TestCase):
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
             "output_path": self.test_file_path,
-            "geometry": GeometryParams(prob_lo=(0.0, 0.0, 0.0), prob_hi=(1.0, 1.0, 1.0), is_periodic=(1, 1, 1)),
-            "resolution": ResolutionParams(n_cell=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
+            "geometry": GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0), is_periodic=(1, 1, 1)),
+            "resolution": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
             "output": OutputParams(plotfile_interval=-1),
             "time_integration": TimeIntegrationParams(cfl=0.3, do_subcycle=0),
             "hydro": HydroParams(rk_integrator_order=2, reconstruction_order=5),
@@ -381,8 +387,8 @@ class WriteContentTests(unittest.TestCase):
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
             "output_path": self.test_file_path,
-            "geometry": GeometryParams(prob_lo=(0.0, 0.0, 0.0), prob_hi=(1.0, 1.0, 1.0), is_periodic=(1, 1, 1)),
-            "resolution": ResolutionParams(n_cell=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
+            "geometry": GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0), is_periodic=(1, 1, 1)),
+            "resolution": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
             "output": OutputParams(plotfile_interval=-1),
             "time_integration": TimeIntegrationParams(cfl=0.3, do_subcycle=0),
             "hydro": HydroParams(rk_integrator_order=2, reconstruction_order=5),
@@ -397,9 +403,9 @@ class WriteContentTests(unittest.TestCase):
     ):
         kwargs = self._base_kwargs(
             geometry=GeometryParams(
-                prob_lo=(0.0, 0.0, 0.0),
-                prob_hi=(1.0, 1.0, 1.0),
-                bc=("ext_dir", "periodic", "periodic"),
+                domain_lo=(0.0, 0.0, 0.0),
+                domain_hi=(1.0, 1.0, 1.0),
+                boundary_conditions=("ext_dir", "periodic", "periodic"),
             ),
         )
         path = write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
@@ -429,11 +435,11 @@ class WriteContentTests(unittest.TestCase):
     ):
         kwargs = self._base_kwargs(
             resolution=ResolutionParams(
-                n_cell=(128, 8, 8),
+                num_cells=(128, 8, 8),
                 blocking_factor=(16, 8, 8),
                 max_grid_size=128,
                 max_level=1,
-                n_error_buf=2,
+                num_refinement_buffer_cells=2,
             ),
         )
         path = write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
