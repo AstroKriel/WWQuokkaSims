@@ -23,6 +23,7 @@ from .models import (
     SetupParams,
     TimeIntegrationParams,
 )
+from .problem_names import ProblemName
 
 ##
 ## === PARAMETER BUNDLE
@@ -57,7 +58,7 @@ class SimParams:
     hydro_params: HydroParams
     mhd_params: MHDParams
     setup_params: SetupParams | None = None
-    problem_name: str | None = None
+    problem_name: ProblemName | None = None
 
     def write(
         self,
@@ -86,11 +87,10 @@ class SimParams:
 ##
 
 ## problem classes with no meaningful physical resistivity: see `mhd.resistivity` guardrail below.
-## Kept in sync with `sim_types`' registered profile names by `ProblemNameConsistencyTests`
-## (in `test_write.py`, not here, since `write.py` cannot import `sim_types` without a cycle:
-## `sim_types/__init__.py` -> `fast_wave_convergence.py` -> `write.py`).
+## References `ProblemName` members directly (not restated strings), so a renamed/misspelled
+## member is a NameError at import time, not a silent runtime string mismatch.
 _RESISTIVITY_DISALLOWED_PROBLEM_NAMES = frozenset({
-    "FastWaveConvergence",
+    ProblemName.FAST_WAVE_CONVERGENCE,
 })
 
 ##
@@ -105,7 +105,7 @@ def _ensure_guardrails(
     *,
     time_integration_params: TimeIntegrationParams,
     mhd_params: MHDParams,
-    problem_name: str | None,
+    problem_name: ProblemName | None,
 ) -> None:
     if (mhd_params.resistivity is not None) and (time_integration_params.use_subcycle != 0):
         raise ValueError(
@@ -283,7 +283,7 @@ def write_sim_params_toml(
     hydro_params: HydroParams,
     mhd_params: MHDParams,
     setup_params: SetupParams | None = None,
-    problem_name: str | None = None,
+    problem_name: ProblemName | None = None,
     overwrite: bool = False,
     verbose: bool = True,
 ) -> Path:
@@ -298,9 +298,8 @@ def write_sim_params_toml(
     Parameters
     ---
     - `problem_name`:
-        The Quokka C++ problem-generator class name (e.g. `"FastWaveConvergence"`,
-        `"MHDQuirk"`), used only to enforce the resistivity guardrail below. Optional,
-        but required for that guardrail to catch anything.
+        The Quokka C++ problem-generator class name, used only to enforce the resistivity
+        guardrail below. Optional, but required for that guardrail to catch anything.
     - `overwrite`:
         Raise if `output_path` already exists and this is `False`.
     """

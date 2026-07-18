@@ -14,6 +14,7 @@ from ..models import (
     SetupParams,
     TimeIntegrationParams,
 )
+from ..problem_names import ProblemName
 from ..write import SimParams
 ## importing names directly from the sibling module (not `from . import scheme_lookup`) avoids
 ## a `sim_types/__init__.py` import cycle, since that would require the package's `__init__`
@@ -27,8 +28,6 @@ from .scheme_lookup import (
 ##
 ## === CONSTANTS
 ##
-
-PROBLEM_NAME = "FastWaveConvergence"
 
 ## fixed for every combo of this problem type: only the EMF/reconstruction scheme varies
 ## across a sweep (see `build_combo`); everything below is boilerplate the Quokka problem
@@ -92,7 +91,7 @@ def build_combo(
                 "nx_max": _NX_MAX,
             },
         ),
-        problem_name=PROBLEM_NAME,
+        problem_name=ProblemName.FAST_WAVE_CONVERGENCE,
     )
 
 
