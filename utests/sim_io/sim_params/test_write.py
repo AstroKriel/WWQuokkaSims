@@ -76,6 +76,22 @@ class RenderTests(unittest.TestCase):
             self.assertTrue(all("_x" in line or "_y" in line or "_z" in line for line in lines))
             self.assertFalse(any(line.startswith("amr.blocking_factor =") for line in lines))
 
+    def test_expand_per_axis_rejects_wrong_length_tuple(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            _render.expand_per_axis((16, 8), key_prefix="amr.blocking_factor")  # pyright: ignore[reportArgumentType]
+        with self.assertRaises(ValueError):
+            _render.expand_per_axis((16, 8, 8, 4), key_prefix="amr.blocking_factor")  # pyright: ignore[reportArgumentType]
+
+    def test_expand_per_axis_rejects_non_positive_scalar(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            _render.expand_per_axis(0, key_prefix="amr.blocking_factor")
+        with self.assertRaises(ValueError):
+            _render.expand_per_axis(-1, key_prefix="amr.blocking_factor")
+
     def test_format_value_list_of_floats(
         self,
     ):

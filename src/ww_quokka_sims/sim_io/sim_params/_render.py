@@ -65,8 +65,19 @@ def expand_per_axis(
     grid decomposition at any level other than 0.
     """
     if isinstance(value, tuple):
+        validate_types.ensure_tuple_of_ints(
+            param=value,
+            param_name="<value>",
+            seq_length=3,
+        )
         per_axis = value
     else:
+        validate_types.ensure_finite_int(
+            param=value,
+            param_name="<value>",
+            require_positive=True,
+            allow_zero=False,
+        )
         per_axis = (value, value, value)
     return [
         render_key_value(key=f"{key_prefix}_{axis}", value=per_axis[axis_index])
