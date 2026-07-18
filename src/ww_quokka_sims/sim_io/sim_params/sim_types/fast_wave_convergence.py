@@ -19,9 +19,9 @@ from ..write import SimParamsBundle
 ## a `sim_types/__init__.py` import cycle, since that would require the package's `__init__`
 ## to finish executing before this module (which it imports) can run
 from .scheme_lookup import (
-    emf_averaging_scheme_by_letter,
-    emf_compute_scheme_by_letter,
-    interpolation_by_letter,
+    emf_averaging_scheme_by_key,
+    emf_compute_scheme_by_key,
+    interpolation_by_key,
 )
 
 ##
@@ -43,14 +43,14 @@ _NX_MAX = 2048
 
 def build_combo(
     *,
-    compute_scheme_letter: str,
-    averaging_scheme_letter: str,
+    compute_scheme_key: str,
+    averaging_scheme_key: str,
     interpolation: str,
 ) -> SimParamsBundle:
     """Build the full parameter set for one `FastWaveConvergence` scheme combo (e.g. `q26-b25-ppm_ep`)."""
     ## `.value` unwraps the Enum to the plain int/str `sim_params.models` dataclasses declare;
     ## an Enum member's `str()`/f-string form is `"ClassName.MEMBER"`, not its underlying value
-    reconstruction_order = interpolation_by_letter(interpolation).value
+    reconstruction_order = interpolation_by_key(interpolation).value
     return SimParamsBundle(
         geometry=GeometryParams(
             prob_lo=(0.0, 0.0, 0.0),
@@ -77,8 +77,8 @@ def build_combo(
             use_dual_energy=0,
         ),
         mhd=MHDParams(
-            emf_compute_scheme=emf_compute_scheme_by_letter(compute_scheme_letter).value,
-            emf_averaging_scheme=emf_averaging_scheme_by_letter(averaging_scheme_letter).value,
+            emf_compute_scheme=emf_compute_scheme_by_key(compute_scheme_key).value,
+            emf_averaging_scheme=emf_averaging_scheme_by_key(averaging_scheme_key).value,
             emf_reconstruction_order=reconstruction_order,
         ),
         setup=SetupParams(

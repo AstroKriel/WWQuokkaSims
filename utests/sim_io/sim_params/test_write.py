@@ -97,24 +97,24 @@ class RenderTests(unittest.TestCase):
 
 class SchemeLookupTests(unittest.TestCase):
 
-    def test_interpolation_resolves_by_letter(
+    def test_interpolation_resolves_by_key(
         self,
     ):
-        self.assertEqual(scheme_lookup.interpolation_by_letter("ppm_ep").value, 5)
-        self.assertEqual(scheme_lookup.interpolation_by_letter("pcm").value, 1)
+        self.assertEqual(scheme_lookup.interpolation_by_key("ppm_ep").value, 5)
+        self.assertEqual(scheme_lookup.interpolation_by_key("pcm").value, 1)
 
-    def test_emf_compute_scheme_resolves_by_letter(
+    def test_emf_compute_scheme_resolves_by_key(
         self,
     ):
-        self.assertEqual(scheme_lookup.emf_compute_scheme_by_letter("q26").value, "Quokka2026")
+        self.assertEqual(scheme_lookup.emf_compute_scheme_by_key("q26").value, "Quokka2026")
 
-    def test_invalid_letter_raises_with_valid_options_listed(
+    def test_invalid_key_raises_with_valid_options_listed(
         self,
     ):
-        ## the whole point of Enum + resolve_member over a plain dict: an invalid letter is a
+        ## the whole point of Enum + resolve_member over a plain dict: an invalid key is a
         ## clear ValueError naming the valid options, not a bare KeyError
         with self.assertRaises(ValueError) as ctx:
-            scheme_lookup.interpolation_by_letter("pmm")  # typo: transposed letters
+            scheme_lookup.interpolation_by_key("pmm")  # typo: transposed letters
         self.assertIn("PPM", str(ctx.exception))
 
 
@@ -279,8 +279,8 @@ class RoundTripTests(unittest.TestCase):
         self,
     ):
         bundle = sim_types.fast_wave_convergence.build_combo(
-            compute_scheme_letter="q26",
-            averaging_scheme_letter="b25",
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
             interpolation="ppm_ep",
         )
         bundle.write(
