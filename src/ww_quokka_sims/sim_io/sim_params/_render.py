@@ -82,17 +82,19 @@ def expand_per_axis(
 def render_section(
     *,
     title: str,
-    lines: list[str],
+    assignment_lines: list[str],
 ) -> str:
-    """Render one `## <title>` section from already-formatted `key = value` lines."""
-    return "\n".join([f"## {title}", *lines])
+    """Render one `## <title>` section from already-formatted `key = value` assignment lines."""
+    return "\n".join([f"## {title}", *assignment_lines])
 
 
 def render_sections(
     sections: list[tuple[str, list[str]]],
 ) -> str:
-    """Join `(title, lines)` sections in order, blank-line separated, trailing newline."""
-    rendered = [render_section(title=title, lines=lines) for title, lines in sections]
+    """Join `(title, assignment_lines)` sections in order, blank-line separated, trailing newline."""
+    rendered = [
+        render_section(title=title, assignment_lines=assignment_lines) for title, assignment_lines in sections
+    ]
     return "\n\n".join(rendered) + "\n"
 
 

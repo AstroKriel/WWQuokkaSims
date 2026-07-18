@@ -145,52 +145,66 @@ def _ensure_path_is_valid(
 def _build_geometry_lines(
     geometry: GeometryParams,
 ) -> list[str]:
-    lines = [
+    assignment_lines = [
         _render.render_key_value(key="geometry.prob_lo", value=list(geometry.prob_lo)),
         _render.render_key_value(key="geometry.prob_hi", value=list(geometry.prob_hi)),
     ]
     if geometry.is_periodic is not None:
-        lines.append(_render.render_key_value(key="geometry.is_periodic", value=list(geometry.is_periodic)))
+        assignment_lines.append(
+            _render.render_key_value(key="geometry.is_periodic", value=list(geometry.is_periodic)),
+        )
     else:
-        lines.append(_render.render_key_value(key="quokka.bc", value=list(geometry.bc)))  # pyright: ignore[reportArgumentType]
-    return lines
+        assignment_lines.append(
+            _render.render_key_value(key="quokka.bc", value=list(geometry.bc)),  # pyright: ignore[reportArgumentType]
+        )
+    return assignment_lines
 
 
 def _build_resolution_lines(
     resolution: ResolutionParams,
 ) -> list[str]:
-    lines = [
+    assignment_lines = [
         _render.render_key_value(key="amr.n_cell", value=list(resolution.n_cell)),
         _render.render_key_value(key="amr.max_level", value=resolution.max_level),
         *_render.expand_per_axis(resolution.blocking_factor, key_prefix="amr.blocking_factor"),
         *_render.expand_per_axis(resolution.max_grid_size, key_prefix="amr.max_grid_size"),
     ]
     if resolution.n_error_buf is not None:
-        lines.append(_render.render_key_value(key="amr.n_error_buf", value=resolution.n_error_buf))
-    return lines
+        assignment_lines.append(_render.render_key_value(key="amr.n_error_buf", value=resolution.n_error_buf))
+    return assignment_lines
 
 
 def _build_output_lines(
     output: OutputParams,
 ) -> list[str]:
-    lines: list[str] = []
+    assignment_lines: list[str] = []
     if output.checkpoint_interval is not None:
-        lines.append(_render.render_key_value(key="checkpoint_interval", value=output.checkpoint_interval))
+        assignment_lines.append(
+            _render.render_key_value(key="checkpoint_interval", value=output.checkpoint_interval),
+        )
     if output.checkpoint_prefix is not None:
-        lines.append(_render.render_key_value(key="checkpoint_prefix", value=output.checkpoint_prefix))
+        assignment_lines.append(
+            _render.render_key_value(key="checkpoint_prefix", value=output.checkpoint_prefix),
+        )
     if output.plotfile_interval is not None:
-        lines.append(_render.render_key_value(key="plotfile_interval", value=output.plotfile_interval))
+        assignment_lines.append(
+            _render.render_key_value(key="plotfile_interval", value=output.plotfile_interval),
+        )
     else:
-        lines.append(_render.render_key_value(key="plottime_interval", value=output.plottime_interval))
+        assignment_lines.append(
+            _render.render_key_value(key="plottime_interval", value=output.plottime_interval),
+        )
     if output.plotfile_prefix is not None:
-        lines.append(_render.render_key_value(key="plotfile_prefix", value=output.plotfile_prefix))
-    return lines
+        assignment_lines.append(
+            _render.render_key_value(key="plotfile_prefix", value=output.plotfile_prefix),
+        )
+    return assignment_lines
 
 
 def _build_time_integration_lines(
     time_integration: TimeIntegrationParams,
 ) -> list[str]:
-    lines = [_render.render_key_value(key="cfl", value=time_integration.cfl)]
+    assignment_lines = [_render.render_key_value(key="cfl", value=time_integration.cfl)]
     optional_keys = (
         ("do_reflux", time_integration.do_reflux),
         ("do_subcycle", time_integration.do_subcycle),
@@ -200,33 +214,35 @@ def _build_time_integration_lines(
     )
     for key, value in optional_keys:
         if value is not None:
-            lines.append(_render.render_key_value(key=key, value=value))
-    return lines
+            assignment_lines.append(_render.render_key_value(key=key, value=value))
+    return assignment_lines
 
 
 def _build_hydro_lines(
     hydro: HydroParams,
 ) -> list[str]:
-    lines = [
+    assignment_lines = [
         _render.render_key_value(key="hydro.rk_integrator_order", value=hydro.rk_integrator_order),
         _render.render_key_value(key="hydro.reconstruction_order", value=hydro.reconstruction_order),
     ]
     if hydro.use_dual_energy is not None:
-        lines.append(_render.render_key_value(key="hydro.use_dual_energy", value=hydro.use_dual_energy))
-    return lines
+        assignment_lines.append(
+            _render.render_key_value(key="hydro.use_dual_energy", value=hydro.use_dual_energy),
+        )
+    return assignment_lines
 
 
 def _build_mhd_lines(
     mhd: MHDParams,
 ) -> list[str]:
-    lines = [
+    assignment_lines = [
         _render.render_key_value(key="mhd.emf_compute_scheme", value=mhd.emf_compute_scheme),
         _render.render_key_value(key="mhd.emf_averaging_scheme", value=mhd.emf_averaging_scheme),
         _render.render_key_value(key="mhd.emf_reconstruction_order", value=mhd.emf_reconstruction_order),
     ]
     if mhd.resistivity is not None:
-        lines.append(_render.render_key_value(key="mhd.resistivity", value=mhd.resistivity))
-    return lines
+        assignment_lines.append(_render.render_key_value(key="mhd.resistivity", value=mhd.resistivity))
+    return assignment_lines
 
 
 def _build_setup_lines(
