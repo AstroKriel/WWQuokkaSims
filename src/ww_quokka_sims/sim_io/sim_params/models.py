@@ -56,6 +56,20 @@ class GeometryParams:
 
     Exactly one of `is_periodic` or `bc` must be set: `is_periodic` for a fully
     periodic domain, `bc` (rendered as `quokka.bc`) when any boundary is `ext_dir`.
+
+    Fields
+    ---
+    - `prob_lo`:
+        Lower domain corner, `(x, y, z)`.
+
+    - `prob_hi`:
+        Upper domain corner, `(x, y, z)`.
+
+    - `is_periodic`:
+        Per-axis periodicity flags; mutually exclusive with `bc`.
+
+    - `bc`:
+        Per-axis boundary condition names (e.g. `"ext_dir"`, `"periodic"`); mutually exclusive with `is_periodic`.
     """
 
     prob_lo: tuple[float, float, float]
@@ -102,6 +116,23 @@ class ResolutionParams:
     these explicitly per axis (`amr.blocking_factor_x/_y/_z`), never as a bare
     fallback key, since AMReX interprets a bare `amr.blocking_factor = ...` array
     as one value per AMR *level*, not per axis.
+
+    Fields
+    ---
+    - `n_cell`:
+        Base-level cell count per axis; each entry must be >= 8.
+
+    - `blocking_factor`:
+        Minimum grid tile size; scalar (applied to all axes) or per-axis.
+
+    - `max_grid_size`:
+        Maximum grid tile size; scalar (applied to all axes) or per-axis.
+
+    - `max_level`:
+        Number of AMR refinement levels above the base grid; `0` disables AMR.
+
+    - `n_error_buf`:
+        Refinement buffer cell count; only valid when `max_level` > 0.
     """
 
     n_cell: tuple[int, int, int]
@@ -121,7 +152,7 @@ class ResolutionParams:
         for value in self.n_cell:
             if value < 8:
                 raise ValueError(
-                    f"`<n_cell>` entries must be >= 8 (AMReX minimum under periodic BCs), got: {self.n_cell}.",
+                    f"`<n_cell>` entries must be >= 8 (AMReX minimum under periodic BCs), got {self.n_cell}.",
                 )
         _ensure_scalar_or_axis_triple(self.blocking_factor, param_name="<blocking_factor>")
         _ensure_scalar_or_axis_triple(self.max_grid_size, param_name="<max_grid_size>")
@@ -144,7 +175,26 @@ class ResolutionParams:
 
 @dataclass(frozen=True)
 class OutputParams:
-    """Checkpoint and plotfile cadence. Exactly one of `plotfile_interval` or `plottime_interval` must be set."""
+    """
+    Checkpoint and plotfile cadence. Exactly one of `plotfile_interval` or `plottime_interval` must be set.
+
+    Fields
+    ---
+    - `plotfile_prefix`:
+        Directory/filename prefix for plotfiles; omit to use Quokka's default.
+
+    - `plotfile_interval`:
+        Emit a plotfile every N steps; mutually exclusive with `plottime_interval`.
+
+    - `plottime_interval`:
+        Emit a plotfile every `plottime_interval` of simulation time; mutually exclusive with `plotfile_interval`.
+
+    - `checkpoint_interval`:
+        Emit a checkpoint every N steps; omit to disable checkpointing.
+
+    - `checkpoint_prefix`:
+        Directory/filename prefix for checkpoints; omit to use Quokka's default.
+    """
 
     plotfile_prefix: str | None = None
     plotfile_interval: int | None = None
@@ -179,7 +229,29 @@ class OutputParams:
 
 @dataclass(frozen=True)
 class TimeIntegrationParams:
-    """CFL and stop-condition parameters."""
+    """
+    CFL and stop-condition parameters.
+
+    Fields
+    ---
+    - `cfl`:
+        Courant number, in `[0.0, 1.0]`.
+
+    - `do_reflux`:
+        `1` to reflux at coarse-fine boundaries, `0` to disable; omit for Quokka's default.
+
+    - `do_subcycle`:
+        `1` to subcycle in time across AMR levels, `0` to disable; omit for Quokka's default.
+
+    - `do_tracers`:
+        `1` to advect tracer particles, `0` to disable; omit for Quokka's default.
+
+    - `stop_time`:
+        Simulation time at which to stop; omit to run until `max_timesteps`.
+
+    - `max_timesteps`:
+        Maximum number of timesteps to run; omit to run until `stop_time`.
+    """
 
     cfl: float
     do_reflux: int | None = None
@@ -206,7 +278,20 @@ class TimeIntegrationParams:
 
 @dataclass(frozen=True)
 class HydroParams:
-    """Reconstruction scheme: pcm=1, plm=2, ppm=3, ppm_ep=5."""
+    """
+    Reconstruction scheme: pcm=1, plm=2, ppm=3, ppm_ep=5.
+
+    Fields
+    ---
+    - `rk_integrator_order`:
+        Runge-Kutta time-integrator order.
+
+    - `reconstruction_order`:
+        Spatial reconstruction order; must be one of `(1, 2, 3, 5)`.
+
+    - `use_dual_energy`:
+        `1` to enable the dual-energy formalism, `0` to disable; omit for Quokka's default.
+    """
 
     rk_integrator_order: int
     reconstruction_order: int
@@ -217,7 +302,7 @@ class HydroParams:
     ) -> None:
         if self.reconstruction_order not in (1, 2, 3, 5):
             raise ValueError(
-                f"`<reconstruction_order>` must be one of (1, 2, 3, 5), got: {self.reconstruction_order}.",
+                f"`<reconstruction_order>` must be one of (1, 2, 3, 5); got {self.reconstruction_order}.",
             )
 
 
@@ -231,7 +316,23 @@ VALID_EMF_AVERAGING_SCHEMES = ("Balsara2025", "LondrilloDelZanna2004")
 
 @dataclass(frozen=True)
 class MHDParams:
-    """EMF reconstruction and averaging scheme; `resistivity` is only set for resistive-correctness runs."""
+    """
+    EMF reconstruction and averaging scheme; `resistivity` is only set for resistive-correctness runs.
+
+    Fields
+    ---
+    - `emf_compute_scheme`:
+        EMF compute scheme name; must be one of `VALID_EMF_COMPUTE_SCHEMES`.
+
+    - `emf_averaging_scheme`:
+        EMF averaging scheme name; must be one of `VALID_EMF_AVERAGING_SCHEMES`.
+
+    - `emf_reconstruction_order`:
+        Spatial reconstruction order for the EMF; must be one of `(1, 2, 3, 5)`.
+
+    - `resistivity`:
+        Physical resistivity; omit for ideal MHD. See `write_sim_params_toml`'s guardrails for when this is disallowed.
+    """
 
     emf_compute_scheme: str
     emf_averaging_scheme: str
@@ -243,15 +344,15 @@ class MHDParams:
     ) -> None:
         if self.emf_compute_scheme not in VALID_EMF_COMPUTE_SCHEMES:
             raise ValueError(
-                f"`<emf_compute_scheme>` must be one of {VALID_EMF_COMPUTE_SCHEMES}, got: {self.emf_compute_scheme!r}.",
+                f"`<emf_compute_scheme>` must be one of {VALID_EMF_COMPUTE_SCHEMES}; got {self.emf_compute_scheme!r}.",
             )
         if self.emf_averaging_scheme not in VALID_EMF_AVERAGING_SCHEMES:
             raise ValueError(
-                f"`<emf_averaging_scheme>` must be one of {VALID_EMF_AVERAGING_SCHEMES}, got: {self.emf_averaging_scheme!r}.",
+                f"`<emf_averaging_scheme>` must be one of {VALID_EMF_AVERAGING_SCHEMES}; got {self.emf_averaging_scheme!r}.",
             )
         if self.emf_reconstruction_order not in (1, 2, 3, 5):
             raise ValueError(
-                f"`<emf_reconstruction_order>` must be one of (1, 2, 3, 5), got: {self.emf_reconstruction_order}.",
+                f"`<emf_reconstruction_order>` must be one of (1, 2, 3, 5); got {self.emf_reconstruction_order}.",
             )
 
 
@@ -267,6 +368,17 @@ class SetupParams:
     (e.g. `"wave setup"`, `"problem setup"`), matching the two titles seen in the corpus.
     Keys are rendered under a caller-chosen prefix (default `"setup"`); at least one
     known problem (field-loop) uses its own prefix instead of `"setup"`.
+
+    Fields
+    ---
+    - `values`:
+        Problem-specific key/value pairs; must be non-empty.
+
+    - `title`:
+        Section header text this block is rendered under.
+
+    - `key_prefix`:
+        Prefix each key in `values` is rendered under, e.g. `"setup"` -> `setup.<key>`.
     """
 
     values: dict[str, Any] = field(default_factory=dict)

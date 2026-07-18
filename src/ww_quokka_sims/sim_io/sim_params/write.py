@@ -34,6 +34,21 @@ from .models import (
 
 @dataclass(frozen=True)
 class SimParamsBundle:
+    """
+    One full `write_sim_params_toml` call's worth of dataclasses, plus a `write` convenience method.
+
+    Fields
+    ---
+    - `geometry`, `resolution`, `output`, `time_integration`, `hydro`, `mhd`:
+        See the matching dataclass in `sim_params.models`.
+
+    - `setup`:
+        Problem-specific parameters; omit for problem types with none.
+
+    - `problem_type`:
+        The Quokka C++ problem-generator class name; used only to enforce the resistivity guardrail.
+    """
+
     geometry: GeometryParams
     resolution: ResolutionParams
     output: OutputParams
@@ -91,7 +106,7 @@ def _ensure_guardrails(
 ) -> None:
     if (mhd.resistivity is not None) and (time_integration.do_subcycle != 0):
         raise ValueError(
-            "`<mhd.resistivity>` requires `<do_subcycle>` = 0, got: "
+            "`<mhd.resistivity>` requires `<do_subcycle>` = 0, got "
             f"resistivity={mhd.resistivity!r}, do_subcycle={time_integration.do_subcycle!r}.",
         )
     if ((mhd.resistivity is not None) and (problem_type in _RESISTIVITY_DISALLOWED_PROBLEM_TYPES)):
@@ -117,7 +132,7 @@ def _ensure_path_is_valid(
     if output_path.name != "sim_params.toml":
         raise ValueError(
             f"file must be named `sim_params.toml` (matches `tools/run_sim.sh`'s bare-filename convention), "
-            f"got: {output_path}.",
+            f"got {output_path}.",
         )
     return output_path
 
@@ -262,7 +277,7 @@ def write_sim_params_toml(
     validate_types.ensure_bool(param=verbose, param_name="verbose")
     output_path = _ensure_path_is_valid(output_path)
     if output_path.is_file() and not overwrite:
-        raise FileExistsError(f"sim_params.toml already exists (pass overwrite=True to replace it): {output_path}")
+        raise FileExistsError(f"sim_params.toml already exists (pass `overwrite=True` to replace it): {output_path}.")
     _ensure_guardrails(
         time_integration=time_integration,
         mhd=mhd,
