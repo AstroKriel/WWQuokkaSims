@@ -52,36 +52,36 @@ def build_combo(
     ## an Enum member's `str()`/f-string form is `"ClassName.MEMBER"`, not its underlying value
     interpolation_order = interpolation_by_key(interpolation).value
     return SimParamsBundle(
-        geometry=GeometryParams(
+        geometry_params=GeometryParams(
             domain_lo=(0.0, 0.0, 0.0),
             domain_hi=(1.0, 1.0, 1.0),
             is_boundary_periodic=(1, 1, 1),
         ),
-        resolution=ResolutionParams(
+        resolution_params=ResolutionParams(
             num_cells=_BASE_NUM_CELLS,
             blocking_factor=(16, 8, 8),
             max_grid_size=128,
         ),
-        output=OutputParams(
+        output_params=OutputParams(
             snapshot_index_interval=-1,
         ),
-        time_integration=TimeIntegrationParams(
+        time_integration_params=TimeIntegrationParams(
             cfl=0.3,
             use_reflux=0,
             use_subcycle=0,
             use_tracers=1,
         ),
-        hydro=HydroParams(
+        hydro_params=HydroParams(
             integrator_order=2,
             interpolation_order=interpolation_order,
             use_dual_energy=0,
         ),
-        mhd=MHDParams(
+        mhd_params=MHDParams(
             emf_compute_scheme=emf_compute_scheme_by_key(compute_scheme_key).value,
             emf_averaging_scheme=emf_averaging_scheme_by_key(averaging_scheme_key).value,
             interpolation_order=interpolation_order,
         ),
-        setup=SetupParams(
+        setup_params=SetupParams(
             group_title="wave setup",
             param_values={
                 "num_modes_x": 1,

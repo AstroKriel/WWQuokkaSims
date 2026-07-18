@@ -295,12 +295,20 @@ class GuardrailTests(unittest.TestCase):
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
             "output_path": self.test_file_path,
-            "geometry": GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0), is_boundary_periodic=(1, 1, 1)),
-            "resolution": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
-            "output": OutputParams(snapshot_index_interval=-1),
-            "time_integration": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro": HydroParams(integrator_order=2, interpolation_order=5),
-            "mhd": MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", interpolation_order=5),
+            "geometry_params": GeometryParams(
+                domain_lo=(0.0, 0.0, 0.0),
+                domain_hi=(1.0, 1.0, 1.0),
+                is_boundary_periodic=(1, 1, 1),
+            ),
+            "resolution_params": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
+            "output_params": OutputParams(snapshot_index_interval=-1),
+            "time_integration_params": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
+            "hydro_params": HydroParams(integrator_order=2, interpolation_order=5),
+            "mhd_params": MHDParams(
+                emf_compute_scheme="Quokka2026",
+                emf_averaging_scheme="Balsara2025",
+                interpolation_order=5,
+            ),
             "verbose": False,
         }
         kwargs.update(overrides)
@@ -310,8 +318,8 @@ class GuardrailTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            time_integration=TimeIntegrationParams(cfl=0.3, use_subcycle=1),
-            mhd=MHDParams(
+            time_integration_params=TimeIntegrationParams(cfl=0.3, use_subcycle=1),
+            mhd_params=MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
                 interpolation_order=5,
@@ -325,7 +333,7 @@ class GuardrailTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            mhd=MHDParams(
+            mhd_params=MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
                 interpolation_order=5,
@@ -387,12 +395,20 @@ class WriteContentTests(unittest.TestCase):
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
             "output_path": self.test_file_path,
-            "geometry": GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0), is_boundary_periodic=(1, 1, 1)),
-            "resolution": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
-            "output": OutputParams(snapshot_index_interval=-1),
-            "time_integration": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro": HydroParams(integrator_order=2, interpolation_order=5),
-            "mhd": MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", interpolation_order=5),
+            "geometry_params": GeometryParams(
+                domain_lo=(0.0, 0.0, 0.0),
+                domain_hi=(1.0, 1.0, 1.0),
+                is_boundary_periodic=(1, 1, 1),
+            ),
+            "resolution_params": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
+            "output_params": OutputParams(snapshot_index_interval=-1),
+            "time_integration_params": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
+            "hydro_params": HydroParams(integrator_order=2, interpolation_order=5),
+            "mhd_params": MHDParams(
+                emf_compute_scheme="Quokka2026",
+                emf_averaging_scheme="Balsara2025",
+                interpolation_order=5,
+            ),
             "verbose": False,
         }
         kwargs.update(overrides)
@@ -402,7 +418,7 @@ class WriteContentTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            geometry=GeometryParams(
+            geometry_params=GeometryParams(
                 domain_lo=(0.0, 0.0, 0.0),
                 domain_hi=(1.0, 1.0, 1.0),
                 boundary_conditions=("ext_dir", "periodic", "periodic"),
@@ -417,7 +433,7 @@ class WriteContentTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            output=OutputParams(
+            output_params=OutputParams(
                 snapshot_time_interval=0.5,
                 checkpoint_index_interval=100,
                 checkpoint_prefix="checkpoints/chk",
@@ -434,7 +450,7 @@ class WriteContentTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            resolution=ResolutionParams(
+            resolution_params=ResolutionParams(
                 num_cells=(128, 8, 8),
                 blocking_factor=(16, 8, 8),
                 max_grid_size=128,
