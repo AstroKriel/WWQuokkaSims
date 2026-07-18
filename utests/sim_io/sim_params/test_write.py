@@ -10,9 +10,8 @@ import unittest
 from pathlib import Path
 
 ## local
-from ww_quokka_sims.sim_io import sim_types, write_params
-from ww_quokka_sims.sim_io._sim_params import _render
-from ww_quokka_sims.sim_io.param_models import (
+from ww_quokka_sims.sim_io.sim_params import _render, sim_types, write
+from ww_quokka_sims.sim_io.sim_params.models import (
     GeometryParams,
     HydroParams,
     MHDParams,
@@ -20,7 +19,7 @@ from ww_quokka_sims.sim_io.param_models import (
     ResolutionParams,
     TimeIntegrationParams,
 )
-from ww_quokka_sims.sim_io.sim_types import scheme_lookup
+from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 
 ##
 ## === REFERENCE FILE
@@ -120,7 +119,7 @@ class SchemeLookupTests(unittest.TestCase):
 
 
 ##
-## === TEST SUITE: param_models validation
+## === TEST SUITE: sim_params.models validation
 ##
 
 
@@ -214,7 +213,7 @@ class GuardrailTests(unittest.TestCase):
             ),
         )
         with self.assertRaises(ValueError):
-            write_params.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+            write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
 
     def test_resistivity_disallowed_for_fast_wave_convergence(
         self,
@@ -229,26 +228,26 @@ class GuardrailTests(unittest.TestCase):
             problem_type="FastWaveConvergence",
         )
         with self.assertRaises(ValueError):
-            write_params.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+            write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
 
     def test_refuses_to_overwrite_by_default(
         self,
     ):
-        write_params.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
+        write.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
         with self.assertRaises(FileExistsError):
-            write_params.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
+            write.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
 
     def test_rejects_non_sim_params_filename(
         self,
     ):
         kwargs = self._base_kwargs(output_path=Path("not_sim_params.toml"))
         with self.assertRaises(ValueError):
-            write_params.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+            write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
 
     def test_section_order_and_setup_last(
         self,
     ):
-        path = write_params.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
+        path = write.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
         headers = [line for line in path.read_text().splitlines() if line.startswith("##")]
         self.assertEqual(
             headers,

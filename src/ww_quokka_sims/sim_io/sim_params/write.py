@@ -13,8 +13,8 @@ from jormi.ww_io import manage_log
 from jormi.ww_validation import validate_types
 
 ## local
-from . import _sim_params
-from .param_models import (
+from . import _render
+from .models import (
     GeometryParams,
     HydroParams,
     MHDParams,
@@ -131,13 +131,13 @@ def _build_geometry_lines(
     geometry: GeometryParams,
 ) -> list[str]:
     lines = [
-        _sim_params.render_key_value(key="geometry.prob_lo", value=list(geometry.prob_lo)),
-        _sim_params.render_key_value(key="geometry.prob_hi", value=list(geometry.prob_hi)),
+        _render.render_key_value(key="geometry.prob_lo", value=list(geometry.prob_lo)),
+        _render.render_key_value(key="geometry.prob_hi", value=list(geometry.prob_hi)),
     ]
     if geometry.is_periodic is not None:
-        lines.append(_sim_params.render_key_value(key="geometry.is_periodic", value=list(geometry.is_periodic)))
+        lines.append(_render.render_key_value(key="geometry.is_periodic", value=list(geometry.is_periodic)))
     else:
-        lines.append(_sim_params.render_key_value(key="quokka.bc", value=list(geometry.bc)))  # pyright: ignore[reportArgumentType]
+        lines.append(_render.render_key_value(key="quokka.bc", value=list(geometry.bc)))  # pyright: ignore[reportArgumentType]
     return lines
 
 
@@ -145,13 +145,13 @@ def _build_resolution_lines(
     resolution: ResolutionParams,
 ) -> list[str]:
     lines = [
-        _sim_params.render_key_value(key="amr.n_cell", value=list(resolution.n_cell)),
-        _sim_params.render_key_value(key="amr.max_level", value=resolution.max_level),
-        *_sim_params.expand_per_axis(resolution.blocking_factor, key_prefix="amr.blocking_factor"),
-        *_sim_params.expand_per_axis(resolution.max_grid_size, key_prefix="amr.max_grid_size"),
+        _render.render_key_value(key="amr.n_cell", value=list(resolution.n_cell)),
+        _render.render_key_value(key="amr.max_level", value=resolution.max_level),
+        *_render.expand_per_axis(resolution.blocking_factor, key_prefix="amr.blocking_factor"),
+        *_render.expand_per_axis(resolution.max_grid_size, key_prefix="amr.max_grid_size"),
     ]
     if resolution.n_error_buf is not None:
-        lines.append(_sim_params.render_key_value(key="amr.n_error_buf", value=resolution.n_error_buf))
+        lines.append(_render.render_key_value(key="amr.n_error_buf", value=resolution.n_error_buf))
     return lines
 
 
@@ -160,22 +160,22 @@ def _build_output_lines(
 ) -> list[str]:
     lines: list[str] = []
     if output.checkpoint_interval is not None:
-        lines.append(_sim_params.render_key_value(key="checkpoint_interval", value=output.checkpoint_interval))
+        lines.append(_render.render_key_value(key="checkpoint_interval", value=output.checkpoint_interval))
     if output.checkpoint_prefix is not None:
-        lines.append(_sim_params.render_key_value(key="checkpoint_prefix", value=output.checkpoint_prefix))
+        lines.append(_render.render_key_value(key="checkpoint_prefix", value=output.checkpoint_prefix))
     if output.plotfile_interval is not None:
-        lines.append(_sim_params.render_key_value(key="plotfile_interval", value=output.plotfile_interval))
+        lines.append(_render.render_key_value(key="plotfile_interval", value=output.plotfile_interval))
     else:
-        lines.append(_sim_params.render_key_value(key="plottime_interval", value=output.plottime_interval))
+        lines.append(_render.render_key_value(key="plottime_interval", value=output.plottime_interval))
     if output.plotfile_prefix is not None:
-        lines.append(_sim_params.render_key_value(key="plotfile_prefix", value=output.plotfile_prefix))
+        lines.append(_render.render_key_value(key="plotfile_prefix", value=output.plotfile_prefix))
     return lines
 
 
 def _build_time_integration_lines(
     time_integration: TimeIntegrationParams,
 ) -> list[str]:
-    lines = [_sim_params.render_key_value(key="cfl", value=time_integration.cfl)]
+    lines = [_render.render_key_value(key="cfl", value=time_integration.cfl)]
     optional_keys = (
         ("do_reflux", time_integration.do_reflux),
         ("do_subcycle", time_integration.do_subcycle),
@@ -185,7 +185,7 @@ def _build_time_integration_lines(
     )
     for key, value in optional_keys:
         if value is not None:
-            lines.append(_sim_params.render_key_value(key=key, value=value))
+            lines.append(_render.render_key_value(key=key, value=value))
     return lines
 
 
@@ -193,11 +193,11 @@ def _build_hydro_lines(
     hydro: HydroParams,
 ) -> list[str]:
     lines = [
-        _sim_params.render_key_value(key="hydro.rk_integrator_order", value=hydro.rk_integrator_order),
-        _sim_params.render_key_value(key="hydro.reconstruction_order", value=hydro.reconstruction_order),
+        _render.render_key_value(key="hydro.rk_integrator_order", value=hydro.rk_integrator_order),
+        _render.render_key_value(key="hydro.reconstruction_order", value=hydro.reconstruction_order),
     ]
     if hydro.use_dual_energy is not None:
-        lines.append(_sim_params.render_key_value(key="hydro.use_dual_energy", value=hydro.use_dual_energy))
+        lines.append(_render.render_key_value(key="hydro.use_dual_energy", value=hydro.use_dual_energy))
     return lines
 
 
@@ -205,12 +205,12 @@ def _build_mhd_lines(
     mhd: MHDParams,
 ) -> list[str]:
     lines = [
-        _sim_params.render_key_value(key="mhd.emf_compute_scheme", value=mhd.emf_compute_scheme),
-        _sim_params.render_key_value(key="mhd.emf_averaging_scheme", value=mhd.emf_averaging_scheme),
-        _sim_params.render_key_value(key="mhd.emf_reconstruction_order", value=mhd.emf_reconstruction_order),
+        _render.render_key_value(key="mhd.emf_compute_scheme", value=mhd.emf_compute_scheme),
+        _render.render_key_value(key="mhd.emf_averaging_scheme", value=mhd.emf_averaging_scheme),
+        _render.render_key_value(key="mhd.emf_reconstruction_order", value=mhd.emf_reconstruction_order),
     ]
     if mhd.resistivity is not None:
-        lines.append(_sim_params.render_key_value(key="mhd.resistivity", value=mhd.resistivity))
+        lines.append(_render.render_key_value(key="mhd.resistivity", value=mhd.resistivity))
     return lines
 
 
@@ -218,7 +218,7 @@ def _build_setup_lines(
     setup: SetupParams,
 ) -> list[str]:
     return [
-        _sim_params.render_key_value(key=f"{setup.key_prefix}.{key}", value=value)
+        _render.render_key_value(key=f"{setup.key_prefix}.{key}", value=value)
         for key, value in setup.values.items()
     ]
 
@@ -272,7 +272,7 @@ def write_sim_params_toml(
     sections: list[tuple[str, list[str]]] = [
         ("geometry", _build_geometry_lines(geometry)),
         ("resolution", _build_resolution_lines(resolution)),
-        ("verbosity", [_sim_params.render_key_value(key="amr.v", value=1)]),
+        ("verbosity", [_render.render_key_value(key="amr.v", value=1)]),
         ("output", _build_output_lines(output)),
         ("time integration", _build_time_integration_lines(time_integration)),
         ("hydro", _build_hydro_lines(hydro)),
@@ -282,7 +282,7 @@ def write_sim_params_toml(
         sections.append((setup.title, _build_setup_lines(setup)))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(_sim_params.render_sections(sections))
+    output_path.write_text(_render.render_sections(sections))
     if verbose:
         manage_log.log_action(
             title="Write sim_params.toml",
