@@ -208,7 +208,7 @@ class ModelValidationTests(unittest.TestCase):
             GeometryParams(
                 domain_lo=(0.0, 0.0, 0.0),
                 domain_hi=(1.0, 1.0, 1.0),
-                is_periodic=(1, 1, 1),
+                is_boundary_periodic=(1, 1, 1),
                 boundary_conditions=("ext_dir", "periodic", "periodic"),
             )  # both set
 
@@ -295,7 +295,7 @@ class GuardrailTests(unittest.TestCase):
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
             "output_path": self.test_file_path,
-            "geometry": GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0), is_periodic=(1, 1, 1)),
+            "geometry": GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0), is_boundary_periodic=(1, 1, 1)),
             "resolution": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
             "output": OutputParams(plotfile_interval=-1),
             "time_integration": TimeIntegrationParams(cfl=0.3, do_subcycle=0),
@@ -387,7 +387,7 @@ class WriteContentTests(unittest.TestCase):
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
             "output_path": self.test_file_path,
-            "geometry": GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0), is_periodic=(1, 1, 1)),
+            "geometry": GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0), is_boundary_periodic=(1, 1, 1)),
             "resolution": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
             "output": OutputParams(plotfile_interval=-1),
             "time_integration": TimeIntegrationParams(cfl=0.3, do_subcycle=0),

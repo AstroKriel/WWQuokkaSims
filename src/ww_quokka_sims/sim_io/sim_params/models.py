@@ -54,9 +54,9 @@ class GeometryParams:
     """
     Domain bounds and boundary conditions.
 
-    Exactly one of `is_periodic` or `boundary_conditions` must be set: `is_periodic` for
-    a fully periodic domain, `boundary_conditions` (rendered as `quokka.bc`) when any
-    boundary is `ext_dir`.
+    Exactly one of `is_boundary_periodic` or `boundary_conditions` must be set:
+    `is_boundary_periodic` for a fully periodic domain, `boundary_conditions`
+    (rendered as `quokka.bc`) when any boundary is `ext_dir`.
 
     Fields
     ---
@@ -66,16 +66,17 @@ class GeometryParams:
     - `domain_hi`:
         Upper domain corner, `(x, y, z)`.
 
-    - `is_periodic`:
+    - `is_boundary_periodic`:
         Per-axis periodicity flags; mutually exclusive with `boundary_conditions`.
 
     - `boundary_conditions`:
-        Per-axis boundary condition names (e.g. `"ext_dir"`, `"periodic"`); mutually exclusive with `is_periodic`.
+        Per-axis boundary condition names (e.g. `"ext_dir"`, `"periodic"`); mutually exclusive with
+        `is_boundary_periodic`.
     """
 
     domain_lo: tuple[float, float, float]
     domain_hi: tuple[float, float, float]
-    is_periodic: tuple[int, int, int] | None = None
+    is_boundary_periodic: tuple[int, int, int] | None = None
     boundary_conditions: tuple[str, str, str] | None = None
 
     def __post_init__(
@@ -83,15 +84,16 @@ class GeometryParams:
     ) -> None:
         _ensure_axis_triple(self.domain_lo, param_name="<domain_lo>")
         _ensure_axis_triple(self.domain_hi, param_name="<domain_hi>")
-        if (self.is_periodic is None) == (self.boundary_conditions is None):
+        if (self.is_boundary_periodic is None) == (self.boundary_conditions is None):
             raise ValueError(
-                "exactly one of `<is_periodic>` or `<boundary_conditions>` must be set, "
-                f"got is_periodic={self.is_periodic!r}, boundary_conditions={self.boundary_conditions!r}.",
+                "exactly one of `<is_boundary_periodic>` or `<boundary_conditions>` must be set, "
+                f"got is_boundary_periodic={self.is_boundary_periodic!r}, "
+                f"boundary_conditions={self.boundary_conditions!r}.",
             )
-        if self.is_periodic is not None:
+        if self.is_boundary_periodic is not None:
             validate_types.ensure_tuple_of_ints(
-                param=self.is_periodic,
-                param_name="<is_periodic>",
+                param=self.is_boundary_periodic,
+                param_name="<is_boundary_periodic>",
                 seq_length=3,
             )
         if self.boundary_conditions is not None:

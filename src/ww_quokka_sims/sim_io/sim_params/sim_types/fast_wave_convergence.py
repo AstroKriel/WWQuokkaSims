@@ -55,7 +55,7 @@ def build_combo(
         geometry=GeometryParams(
             domain_lo=(0.0, 0.0, 0.0),
             domain_hi=(1.0, 1.0, 1.0),
-            is_periodic=(1, 1, 1),
+            is_boundary_periodic=(1, 1, 1),
         ),
         resolution=ResolutionParams(
             num_cells=_BASE_NUM_CELLS,

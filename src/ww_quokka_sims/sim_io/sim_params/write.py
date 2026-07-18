@@ -149,9 +149,9 @@ def _build_geometry_lines(
         _render.render_key_value(key="geometry.prob_lo", value=list(geometry.domain_lo)),
         _render.render_key_value(key="geometry.prob_hi", value=list(geometry.domain_hi)),
     ]
-    if geometry.is_periodic is not None:
+    if geometry.is_boundary_periodic is not None:
         assignment_lines.append(
-            _render.render_key_value(key="geometry.is_periodic", value=list(geometry.is_periodic)),
+            _render.render_key_value(key="geometry.is_periodic", value=list(geometry.is_boundary_periodic)),
         )
     else:
         assignment_lines.append(
