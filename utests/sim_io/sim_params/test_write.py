@@ -234,11 +234,11 @@ class ModelValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             SetupParams(values={})
 
-    def test_setup_rejects_empty_title(
+    def test_setup_rejects_empty_group_title(
         self,
     ):
         with self.assertRaises(ValueError):
-            SetupParams(values={"nx_max": 128}, title="")
+            SetupParams(values={"nx_max": 128}, group_title="")
 
     def test_setup_rejects_empty_key_prefix(
         self,
@@ -328,7 +328,7 @@ class GuardrailTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
 
-    def test_section_order_and_setup_last(
+    def test_param_group_order_and_setup_last(
         self,
     ):
         path = write.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]

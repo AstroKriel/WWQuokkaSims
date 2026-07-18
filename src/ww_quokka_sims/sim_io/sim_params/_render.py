@@ -75,25 +75,26 @@ def expand_per_axis(
 
 
 ##
-## === SECTION RENDERING
+## === PARAM GROUP RENDERING
 ##
 
 
-def render_section(
+def render_param_group(
     *,
-    title: str,
+    group_title: str,
     assignment_lines: list[str],
 ) -> str:
-    """Render one `## <title>` section from already-formatted `key = value` assignment lines."""
-    return "\n".join([f"## {title}", *assignment_lines])
+    """Render one `## <group_title>` param group from already-formatted `key = value` assignment lines."""
+    return "\n".join([f"## {group_title}", *assignment_lines])
 
 
-def render_sections(
-    sections: list[tuple[str, list[str]]],
+def render_param_groups(
+    param_groups: list[tuple[str, list[str]]],
 ) -> str:
-    """Join `(title, assignment_lines)` sections in order, blank-line separated, trailing newline."""
+    """Join `(group_title, assignment_lines)` param groups in order, blank-line separated, trailing newline."""
     rendered = [
-        render_section(title=title, assignment_lines=assignment_lines) for title, assignment_lines in sections
+        render_param_group(group_title=group_title, assignment_lines=assignment_lines)
+        for group_title, assignment_lines in param_groups
     ]
     return "\n\n".join(rendered) + "\n"
 

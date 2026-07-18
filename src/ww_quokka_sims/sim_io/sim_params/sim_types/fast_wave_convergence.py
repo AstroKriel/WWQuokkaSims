@@ -82,7 +82,7 @@ def build_combo(
             emf_reconstruction_order=reconstruction_order,
         ),
         setup=SetupParams(
-            title="wave setup",
+            group_title="wave setup",
             values={
                 "num_modes_x": 1,
                 "num_modes_y": 0,

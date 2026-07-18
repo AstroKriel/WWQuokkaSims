@@ -277,8 +277,9 @@ def write_sim_params_toml(
     Write a Quokka `sim_params.toml` file.
 
     Not real nested TOML: it is AMReX ParmParse-style flat dotted keys grouped under
-    `## <section>` comments, in a fixed section order (`geometry, resolution, verbosity,
-    output, time integration, hydro, mhd`, with an optional `setup` section always last).
+    `## <group_title>` comments, in a fixed param group order (`geometry, resolution,
+    verbosity, output, time integration, hydro, mhd`, with an optional `setup` param
+    group always last).
 
     Parameters
     ---
@@ -300,7 +301,7 @@ def write_sim_params_toml(
         problem_type=problem_type,
     )
 
-    sections: list[tuple[str, list[str]]] = [
+    param_groups: list[tuple[str, list[str]]] = [
         ("geometry", _build_geometry_lines(geometry)),
         ("resolution", _build_resolution_lines(resolution)),
         ("verbosity", [_render.render_key_value(key="amr.v", value=1)]),
@@ -310,10 +311,10 @@ def write_sim_params_toml(
         ("mhd", _build_mhd_lines(mhd)),
     ]
     if setup is not None:
-        sections.append((setup.title, _build_setup_lines(setup)))
+        param_groups.append((setup.group_title, _build_setup_lines(setup)))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(_render.render_sections(sections))
+    output_path.write_text(_render.render_param_groups(param_groups))
     if verbose:
         manage_log.log_action(
             title="Write sim_params.toml",

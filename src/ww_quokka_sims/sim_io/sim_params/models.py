@@ -370,7 +370,7 @@ class MHDParams:
 @dataclass(frozen=True)
 class SetupParams:
     """
-    Problem-specific parameters, rendered last under a caller-chosen section title
+    Problem-specific parameters, rendered last under a caller-chosen param group title
     (e.g. `"wave setup"`, `"problem setup"`), matching the two titles seen in the corpus.
     Keys are rendered under a caller-chosen prefix (default `"setup"`); at least one
     known problem (field-loop) uses its own prefix instead of `"setup"`.
@@ -380,15 +380,15 @@ class SetupParams:
     - `values`:
         Problem-specific key/value pairs; must be non-empty.
 
-    - `title`:
-        Section header text this block is rendered under.
+    - `group_title`:
+        Param group header text this block is rendered under.
 
     - `key_prefix`:
         Prefix each key in `values` is rendered under, e.g. `"setup"` -> `setup.<key>`.
     """
 
     values: dict[str, Any] = field(default_factory=dict)
-    title: str = "problem setup"
+    group_title: str = "problem setup"
     key_prefix: str = "setup"
 
     def __post_init__(
@@ -401,8 +401,8 @@ class SetupParams:
         if not self.values:
             raise ValueError("`<values>` must be non-empty; omit `setup` entirely instead of passing an empty one.")
         validate_types.ensure_nonempty_string(
-            param=self.title,
-            param_name="<title>",
+            param=self.group_title,
+            param_name="<group_title>",
         )
         validate_types.ensure_nonempty_string(
             param=self.key_prefix,
