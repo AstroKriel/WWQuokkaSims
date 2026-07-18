@@ -1,10 +1,18 @@
 ## { MODULE
 
 ##
+## === DEPENDENCIES
+##
+
+## personal
+from jormi.ww_validation import validate_types
+
+##
 ## === CONSTANTS
 ##
 
 _AXES = ("x", "y", "z")
+_RENDERABLE_TYPES = (bool, str, int, float, list, tuple)
 
 ##
 ## === VALUE FORMATTING
@@ -15,6 +23,11 @@ def format_value(
     value: object,
 ) -> str:
     """Render one scalar/list/tuple value the way AMReX's `sim_params.toml` files are hand-written."""
+    validate_types.ensure_type(
+        param=value,
+        param_name="<value>",
+        valid_types=_RENDERABLE_TYPES,
+    )
     if isinstance(value, bool):
         ## AMReX booleans are written as bare 0/1, never Python's True/False
         return "1" if value else "0"

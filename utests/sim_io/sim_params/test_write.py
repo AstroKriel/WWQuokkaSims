@@ -12,6 +12,9 @@ from pathlib import Path
 ## local
 from ww_quokka_sims.sim_io.sim_params import _render, sim_types, write
 from ww_quokka_sims.sim_io.sim_params.models import (
+    VALID_EMF_AVERAGING_SCHEMES,
+    VALID_EMF_COMPUTE_SCHEMES,
+    VALID_RECONSTRUCTION_ORDERS,
     GeometryParams,
     HydroParams,
     MHDParams,
@@ -117,6 +120,42 @@ class SchemeLookupTests(unittest.TestCase):
         with self.assertRaises(ValueError) as ctx:
             scheme_lookup.interpolation_by_key("pmm")  # typo: transposed letters
         self.assertIn("PPM", str(ctx.exception))
+
+
+##
+## === TEST SUITE: models/scheme_lookup consistency
+## `models.py` validates against its own literal value sets, independent of `scheme_lookup.py`'s
+## enums, since a model must reject an invalid Quokka value even when constructed directly,
+## bypassing `scheme_lookup` entirely. That independence means the two can silently drift; these
+## tests catch it.
+##
+
+
+class SchemaConsistencyTests(unittest.TestCase):
+
+    def test_emf_compute_scheme_values_match_enum(
+        self,
+    ):
+        self.assertEqual(
+            set(VALID_EMF_COMPUTE_SCHEMES),
+            {member.value for member in scheme_lookup.EMFComputeScheme},
+        )
+
+    def test_emf_averaging_scheme_values_match_enum(
+        self,
+    ):
+        self.assertEqual(
+            set(VALID_EMF_AVERAGING_SCHEMES),
+            {member.value for member in scheme_lookup.EMFAveragingScheme},
+        )
+
+    def test_reconstruction_order_values_match_enum(
+        self,
+    ):
+        self.assertEqual(
+            set(VALID_RECONSTRUCTION_ORDERS),
+            {member.value for member in scheme_lookup.InterpolationScheme},
+        )
 
 
 ##

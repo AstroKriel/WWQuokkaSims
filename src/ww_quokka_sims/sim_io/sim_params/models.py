@@ -275,6 +275,10 @@ class TimeIntegrationParams:
 ## === HYDRO
 ##
 
+## pcm=1, plm=2, ppm=3, ppm_ep=5; shared with `MHDParams.emf_reconstruction_order` below,
+## since both select from the same set of interpolation schemes
+VALID_RECONSTRUCTION_ORDERS = (1, 2, 3, 5)
+
 
 @dataclass(frozen=True)
 class HydroParams:
@@ -287,7 +291,7 @@ class HydroParams:
         Runge-Kutta time-integrator order.
 
     - `reconstruction_order`:
-        Spatial reconstruction order; must be one of `(1, 2, 3, 5)`.
+        Spatial reconstruction order; must be one of `VALID_RECONSTRUCTION_ORDERS`.
 
     - `use_dual_energy`:
         `1` to enable the dual-energy formalism, `0` to disable; omit for Quokka's default.
@@ -300,9 +304,10 @@ class HydroParams:
     def __post_init__(
         self,
     ) -> None:
-        if self.reconstruction_order not in (1, 2, 3, 5):
+        if self.reconstruction_order not in VALID_RECONSTRUCTION_ORDERS:
             raise ValueError(
-                f"`<reconstruction_order>` must be one of (1, 2, 3, 5); got {self.reconstruction_order}.",
+                f"`<reconstruction_order>` must be one of {VALID_RECONSTRUCTION_ORDERS}; "
+                f"got {self.reconstruction_order}.",
             )
 
 
@@ -328,7 +333,7 @@ class MHDParams:
         EMF averaging scheme name; must be one of `VALID_EMF_AVERAGING_SCHEMES`.
 
     - `emf_reconstruction_order`:
-        Spatial reconstruction order for the EMF; must be one of `(1, 2, 3, 5)`.
+        Spatial reconstruction order for the EMF; must be one of `VALID_RECONSTRUCTION_ORDERS`.
 
     - `resistivity`:
         Physical resistivity; omit for ideal MHD. See `write_sim_params_toml`'s guardrails for when this is disallowed.
@@ -350,9 +355,10 @@ class MHDParams:
             raise ValueError(
                 f"`<emf_averaging_scheme>` must be one of {VALID_EMF_AVERAGING_SCHEMES}; got {self.emf_averaging_scheme!r}.",
             )
-        if self.emf_reconstruction_order not in (1, 2, 3, 5):
+        if self.emf_reconstruction_order not in VALID_RECONSTRUCTION_ORDERS:
             raise ValueError(
-                f"`<emf_reconstruction_order>` must be one of (1, 2, 3, 5); got {self.emf_reconstruction_order}.",
+                f"`<emf_reconstruction_order>` must be one of {VALID_RECONSTRUCTION_ORDERS}; "
+                f"got {self.emf_reconstruction_order}.",
             )
 
 
