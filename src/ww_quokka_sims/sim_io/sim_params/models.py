@@ -131,17 +131,17 @@ class ResolutionParams:
     - `max_grid_size`:
         Maximum grid tile size; scalar (applied to all axes) or per-axis.
 
-    - `max_level`:
+    - `max_amr_levels`:
         Number of AMR refinement levels above the base grid; `0` disables AMR.
 
     - `num_refinement_buffer_cells`:
-        Cells to pad around AMR-tagged regions before refining; only valid when `max_level` > 0.
+        Cells to pad around AMR-tagged regions before refining; only valid when `max_amr_levels` > 0.
     """
 
     num_cells: tuple[int, int, int]
     blocking_factor: int | tuple[int, int, int]
     max_grid_size: int | tuple[int, int, int]
-    max_level: int = 0
+    max_amr_levels: int = 0
     num_refinement_buffer_cells: int | None = None
 
     def __post_init__(
@@ -160,14 +160,14 @@ class ResolutionParams:
         _ensure_scalar_or_axis_triple(self.blocking_factor, param_name="<blocking_factor>")
         _ensure_scalar_or_axis_triple(self.max_grid_size, param_name="<max_grid_size>")
         validate_types.ensure_finite_int(
-            param=self.max_level,
-            param_name="<max_level>",
+            param=self.max_amr_levels,
+            param_name="<max_amr_levels>",
             require_positive=True,
             allow_zero=True,
         )
-        if (self.num_refinement_buffer_cells is not None) and (self.max_level == 0):
+        if (self.num_refinement_buffer_cells is not None) and (self.max_amr_levels == 0):
             raise ValueError(
-                "`<num_refinement_buffer_cells>` only applies when `<max_level>` > 0 (AMR refinement enabled).",
+                "`<num_refinement_buffer_cells>` only applies when `<max_amr_levels>` > 0 (AMR refinement enabled).",
             )
 
 
@@ -179,49 +179,52 @@ class ResolutionParams:
 @dataclass(frozen=True)
 class OutputParams:
     """
-    Checkpoint and plotfile cadence. Exactly one of `plotfile_interval` or `plottime_interval` must be set.
+    Checkpoint and plotfile cadence. Exactly one of `snapshot_index_interval` or `snapshot_time_interval`
+    must be set.
 
     Fields
     ---
-    - `plotfile_prefix`:
+    - `snapshot_prefix`:
         Directory/filename prefix for plotfiles; omit to use Quokka's default.
 
-    - `plotfile_interval`:
-        Emit a plotfile every N steps; mutually exclusive with `plottime_interval`.
+    - `snapshot_index_interval`:
+        Emit a plotfile every N steps; mutually exclusive with `snapshot_time_interval`.
 
-    - `plottime_interval`:
-        Emit a plotfile every `plottime_interval` of simulation time; mutually exclusive with `plotfile_interval`.
+    - `snapshot_time_interval`:
+        Emit a plotfile every `snapshot_time_interval` of simulation time; mutually exclusive with
+        `snapshot_index_interval`.
 
-    - `checkpoint_interval`:
+    - `checkpoint_index_interval`:
         Emit a checkpoint every N steps; omit to disable checkpointing.
 
     - `checkpoint_prefix`:
         Directory/filename prefix for checkpoints; omit to use Quokka's default.
     """
 
-    plotfile_prefix: str | None = None
-    plotfile_interval: int | None = None
-    plottime_interval: float | None = None
-    checkpoint_interval: int | None = None
+    snapshot_prefix: str | None = None
+    snapshot_index_interval: int | None = None
+    snapshot_time_interval: float | None = None
+    checkpoint_index_interval: int | None = None
     checkpoint_prefix: str | None = None
 
     def __post_init__(
         self,
     ) -> None:
-        if (self.plotfile_interval is None) == (self.plottime_interval is None):
+        if (self.snapshot_index_interval is None) == (self.snapshot_time_interval is None):
             raise ValueError(
-                "exactly one of `<plotfile_interval>` or `<plottime_interval>` must be set, got "
-                f"plotfile_interval={self.plotfile_interval!r}, plottime_interval={self.plottime_interval!r}.",
+                "exactly one of `<snapshot_index_interval>` or `<snapshot_time_interval>` must be set, got "
+                f"snapshot_index_interval={self.snapshot_index_interval!r}, "
+                f"snapshot_time_interval={self.snapshot_time_interval!r}.",
             )
-        if self.plotfile_prefix is not None:
+        if self.snapshot_prefix is not None:
             validate_types.ensure_nonempty_string(
-                param=self.plotfile_prefix,
-                param_name="<plotfile_prefix>",
+                param=self.snapshot_prefix,
+                param_name="<snapshot_prefix>",
             )
-        if self.checkpoint_interval is not None:
+        if self.checkpoint_index_interval is not None:
             validate_types.ensure_finite_int(
-                param=self.checkpoint_interval,
-                param_name="<checkpoint_interval>",
+                param=self.checkpoint_index_interval,
+                param_name="<checkpoint_index_interval>",
             )
 
 
@@ -240,28 +243,28 @@ class TimeIntegrationParams:
     - `cfl`:
         Courant number, in `[0.0, 1.0]`.
 
-    - `do_reflux`:
+    - `use_reflux`:
         `1` to reflux at coarse-fine boundaries, `0` to disable; omit for Quokka's default.
 
-    - `do_subcycle`:
+    - `use_subcycle`:
         `1` to subcycle in time across AMR levels, `0` to disable; omit for Quokka's default.
 
-    - `do_tracers`:
+    - `use_tracers`:
         `1` to advect tracer particles, `0` to disable; omit for Quokka's default.
 
     - `stop_time`:
-        Simulation time at which to stop; omit to run until `max_timesteps`.
+        Simulation time at which to stop; omit to run until `max_time_steps`.
 
-    - `max_timesteps`:
+    - `max_time_steps`:
         Maximum number of timesteps to run; omit to run until `stop_time`.
     """
 
     cfl: float
-    do_reflux: int | None = None
-    do_subcycle: int | None = None
-    do_tracers: int | None = None
+    use_reflux: int | None = None
+    use_subcycle: int | None = None
+    use_tracers: int | None = None
     stop_time: float | None = None
-    max_timesteps: int | None = None
+    max_time_steps: int | None = None
 
     def __post_init__(
         self,
@@ -278,9 +281,9 @@ class TimeIntegrationParams:
 ## === HYDRO
 ##
 
-## pcm=1, plm=2, ppm=3, ppm_ep=5; shared with `MHDParams.emf_reconstruction_order` below,
+## pcm=1, plm=2, ppm=3, ppm_ep=5; shared with `MHDParams.emf_interpolation_order` below,
 ## since both select from the same set of interpolation schemes
-VALID_RECONSTRUCTION_ORDERS = (1, 2, 3, 5)
+VALID_INTERPOLATION_ORDERS = (1, 2, 3, 5)
 
 
 @dataclass(frozen=True)
@@ -290,27 +293,27 @@ class HydroParams:
 
     Fields
     ---
-    - `rk_integrator_order`:
+    - `time_integrator_order`:
         Runge-Kutta time-integrator order.
 
-    - `reconstruction_order`:
-        Spatial reconstruction order; must be one of `VALID_RECONSTRUCTION_ORDERS`.
+    - `interpolation_order`:
+        Spatial reconstruction order; must be one of `VALID_INTERPOLATION_ORDERS`.
 
     - `use_dual_energy`:
         `1` to enable the dual-energy formalism, `0` to disable; omit for Quokka's default.
     """
 
-    rk_integrator_order: int
-    reconstruction_order: int
+    time_integrator_order: int
+    interpolation_order: int
     use_dual_energy: int | None = None
 
     def __post_init__(
         self,
     ) -> None:
-        if self.reconstruction_order not in VALID_RECONSTRUCTION_ORDERS:
+        if self.interpolation_order not in VALID_INTERPOLATION_ORDERS:
             raise ValueError(
-                f"`<reconstruction_order>` must be one of {VALID_RECONSTRUCTION_ORDERS}; "
-                f"got {self.reconstruction_order}.",
+                f"`<interpolation_order>` must be one of {VALID_INTERPOLATION_ORDERS}; "
+                f"got {self.interpolation_order}.",
             )
 
 
@@ -335,8 +338,8 @@ class MHDParams:
     - `emf_averaging_scheme`:
         EMF averaging scheme name; must be one of `VALID_EMF_AVERAGING_SCHEMES`.
 
-    - `emf_reconstruction_order`:
-        Spatial reconstruction order for the EMF; must be one of `VALID_RECONSTRUCTION_ORDERS`.
+    - `emf_interpolation_order`:
+        Spatial reconstruction order for the EMF; must be one of `VALID_INTERPOLATION_ORDERS`.
 
     - `resistivity`:
         Physical resistivity; omit for ideal MHD. See `write_sim_params_toml`'s guardrails for when this is disallowed.
@@ -344,7 +347,7 @@ class MHDParams:
 
     emf_compute_scheme: str
     emf_averaging_scheme: str
-    emf_reconstruction_order: int
+    emf_interpolation_order: int
     resistivity: float | None = None
 
     def __post_init__(
@@ -358,10 +361,10 @@ class MHDParams:
             raise ValueError(
                 f"`<emf_averaging_scheme>` must be one of {VALID_EMF_AVERAGING_SCHEMES}; got {self.emf_averaging_scheme!r}.",
             )
-        if self.emf_reconstruction_order not in VALID_RECONSTRUCTION_ORDERS:
+        if self.emf_interpolation_order not in VALID_INTERPOLATION_ORDERS:
             raise ValueError(
-                f"`<emf_reconstruction_order>` must be one of {VALID_RECONSTRUCTION_ORDERS}; "
-                f"got {self.emf_reconstruction_order}.",
+                f"`<emf_interpolation_order>` must be one of {VALID_INTERPOLATION_ORDERS}; "
+                f"got {self.emf_interpolation_order}.",
             )
 
 
@@ -380,17 +383,17 @@ class SetupParams:
 
     Fields
     ---
-    - `values`:
+    - `param_values`:
         Problem-specific key/value pairs; must be non-empty.
 
     - `group_title`:
         Param group header text this block is rendered under.
 
     - `key_prefix`:
-        Prefix each key in `values` is rendered under, e.g. `"setup"` -> `setup.<key>`.
+        Prefix each key in `param_values` is rendered under, e.g. `"setup"` -> `setup.<key>`.
     """
 
-    values: dict[str, Any] = field(default_factory=dict)
+    param_values: dict[str, Any] = field(default_factory=dict)
     group_title: str = "problem setup"
     key_prefix: str = "setup"
 
@@ -398,11 +401,13 @@ class SetupParams:
         self,
     ) -> None:
         validate_types.ensure_dict(
-            param=self.values,
-            param_name="<values>",
+            param=self.param_values,
+            param_name="<param_values>",
         )
-        if not self.values:
-            raise ValueError("`<values>` must be non-empty; omit `setup` entirely instead of passing an empty one.")
+        if not self.param_values:
+            raise ValueError(
+                "`<param_values>` must be non-empty; omit `setup` entirely instead of passing an empty one.",
+            )
         validate_types.ensure_nonempty_string(
             param=self.group_title,
             param_name="<group_title>",

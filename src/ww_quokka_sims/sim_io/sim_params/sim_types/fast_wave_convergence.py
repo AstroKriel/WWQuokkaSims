@@ -50,7 +50,7 @@ def build_combo(
     """Build the full parameter set for one `FastWaveConvergence` scheme combo (e.g. `q26-b25-ppm_ep`)."""
     ## `.value` unwraps the Enum to the plain int/str `sim_params.models` dataclasses declare;
     ## an Enum member's `str()`/f-string form is `"ClassName.MEMBER"`, not its underlying value
-    reconstruction_order = interpolation_by_key(interpolation).value
+    interpolation_order = interpolation_by_key(interpolation).value
     return SimParamsBundle(
         geometry=GeometryParams(
             domain_lo=(0.0, 0.0, 0.0),
@@ -63,27 +63,27 @@ def build_combo(
             max_grid_size=128,
         ),
         output=OutputParams(
-            plotfile_interval=-1,
+            snapshot_index_interval=-1,
         ),
         time_integration=TimeIntegrationParams(
             cfl=0.3,
-            do_reflux=0,
-            do_subcycle=0,
-            do_tracers=1,
+            use_reflux=0,
+            use_subcycle=0,
+            use_tracers=1,
         ),
         hydro=HydroParams(
-            rk_integrator_order=2,
-            reconstruction_order=reconstruction_order,
+            time_integrator_order=2,
+            interpolation_order=interpolation_order,
             use_dual_energy=0,
         ),
         mhd=MHDParams(
             emf_compute_scheme=emf_compute_scheme_by_key(compute_scheme_key).value,
             emf_averaging_scheme=emf_averaging_scheme_by_key(averaging_scheme_key).value,
-            emf_reconstruction_order=reconstruction_order,
+            emf_interpolation_order=interpolation_order,
         ),
         setup=SetupParams(
             group_title="wave setup",
-            values={
+            param_values={
                 "num_modes_x": 1,
                 "num_modes_y": 0,
                 "num_modes_z": 0,

@@ -104,10 +104,10 @@ def _ensure_guardrails(
     mhd: MHDParams,
     problem_type: str | None,
 ) -> None:
-    if (mhd.resistivity is not None) and (time_integration.do_subcycle != 0):
+    if (mhd.resistivity is not None) and (time_integration.use_subcycle != 0):
         raise ValueError(
-            "`<mhd.resistivity>` requires `<do_subcycle>` = 0, got "
-            f"resistivity={mhd.resistivity!r}, do_subcycle={time_integration.do_subcycle!r}.",
+            "`<mhd.resistivity>` requires `<use_subcycle>` = 0, got "
+            f"resistivity={mhd.resistivity!r}, use_subcycle={time_integration.use_subcycle!r}.",
         )
     if ((mhd.resistivity is not None) and (problem_type in _RESISTIVITY_DISALLOWED_PROBLEM_TYPES)):
         raise ValueError(
@@ -168,7 +168,7 @@ def _build_resolution_lines(
 ) -> list[str]:
     assignment_lines = [
         _render.render_key_value(key="amr.n_cell", value=list(resolution.num_cells)),
-        _render.render_key_value(key="amr.max_level", value=resolution.max_level),
+        _render.render_key_value(key="amr.max_level", value=resolution.max_amr_levels),
         *_render.expand_per_axis(resolution.blocking_factor, key_prefix="amr.blocking_factor"),
         *_render.expand_per_axis(resolution.max_grid_size, key_prefix="amr.max_grid_size"),
     ]
@@ -183,25 +183,25 @@ def _build_output_lines(
     output: OutputParams,
 ) -> list[str]:
     assignment_lines: list[str] = []
-    if output.checkpoint_interval is not None:
+    if output.checkpoint_index_interval is not None:
         assignment_lines.append(
-            _render.render_key_value(key="checkpoint_interval", value=output.checkpoint_interval),
+            _render.render_key_value(key="checkpoint_interval", value=output.checkpoint_index_interval),
         )
     if output.checkpoint_prefix is not None:
         assignment_lines.append(
             _render.render_key_value(key="checkpoint_prefix", value=output.checkpoint_prefix),
         )
-    if output.plotfile_interval is not None:
+    if output.snapshot_index_interval is not None:
         assignment_lines.append(
-            _render.render_key_value(key="plotfile_interval", value=output.plotfile_interval),
+            _render.render_key_value(key="plotfile_interval", value=output.snapshot_index_interval),
         )
     else:
         assignment_lines.append(
-            _render.render_key_value(key="plottime_interval", value=output.plottime_interval),
+            _render.render_key_value(key="plottime_interval", value=output.snapshot_time_interval),
         )
-    if output.plotfile_prefix is not None:
+    if output.snapshot_prefix is not None:
         assignment_lines.append(
-            _render.render_key_value(key="plotfile_prefix", value=output.plotfile_prefix),
+            _render.render_key_value(key="plotfile_prefix", value=output.snapshot_prefix),
         )
     return assignment_lines
 
@@ -211,11 +211,11 @@ def _build_time_integration_lines(
 ) -> list[str]:
     assignment_lines = [_render.render_key_value(key="cfl", value=time_integration.cfl)]
     optional_keys = (
-        ("do_reflux", time_integration.do_reflux),
-        ("do_subcycle", time_integration.do_subcycle),
-        ("do_tracers", time_integration.do_tracers),
+        ("do_reflux", time_integration.use_reflux),
+        ("do_subcycle", time_integration.use_subcycle),
+        ("do_tracers", time_integration.use_tracers),
         ("stop_time", time_integration.stop_time),
-        ("max_timesteps", time_integration.max_timesteps),
+        ("max_timesteps", time_integration.max_time_steps),
     )
     for key, value in optional_keys:
         if value is not None:
@@ -227,8 +227,8 @@ def _build_hydro_lines(
     hydro: HydroParams,
 ) -> list[str]:
     assignment_lines = [
-        _render.render_key_value(key="hydro.rk_integrator_order", value=hydro.rk_integrator_order),
-        _render.render_key_value(key="hydro.reconstruction_order", value=hydro.reconstruction_order),
+        _render.render_key_value(key="hydro.rk_integrator_order", value=hydro.time_integrator_order),
+        _render.render_key_value(key="hydro.reconstruction_order", value=hydro.interpolation_order),
     ]
     if hydro.use_dual_energy is not None:
         assignment_lines.append(
@@ -243,7 +243,7 @@ def _build_mhd_lines(
     assignment_lines = [
         _render.render_key_value(key="mhd.emf_compute_scheme", value=mhd.emf_compute_scheme),
         _render.render_key_value(key="mhd.emf_averaging_scheme", value=mhd.emf_averaging_scheme),
-        _render.render_key_value(key="mhd.emf_reconstruction_order", value=mhd.emf_reconstruction_order),
+        _render.render_key_value(key="mhd.emf_reconstruction_order", value=mhd.emf_interpolation_order),
     ]
     if mhd.resistivity is not None:
         assignment_lines.append(_render.render_key_value(key="mhd.resistivity", value=mhd.resistivity))
@@ -255,7 +255,7 @@ def _build_setup_lines(
 ) -> list[str]:
     return [
         _render.render_key_value(key=f"{setup.key_prefix}.{key}", value=value)
-        for key, value in setup.values.items()
+        for key, value in setup.param_values.items()
     ]
 
 
