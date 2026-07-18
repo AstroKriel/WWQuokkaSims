@@ -85,10 +85,12 @@ class SimParams:
 ## === CONSTANTS
 ##
 
-## problem classes with no meaningful physical resistivity: see `mhd.resistivity` guardrail below
+## problem classes with no meaningful physical resistivity: see `mhd.resistivity` guardrail below.
+## Kept in sync with `sim_types`' registered profile names by `ProblemNameConsistencyTests`
+## (in `test_write.py`, not here, since `write.py` cannot import `sim_types` without a cycle:
+## `sim_types/__init__.py` -> `fast_wave_convergence.py` -> `write.py`).
 _RESISTIVITY_DISALLOWED_PROBLEM_NAMES = frozenset({
     "FastWaveConvergence",
-    "SlowWaveConvergence",
 })
 
 ##

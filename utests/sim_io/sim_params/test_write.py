@@ -370,6 +370,25 @@ class GuardrailTests(unittest.TestCase):
 
 
 ##
+## === TEST SUITE: write.py guardrail data vs sim_types registry consistency
+## `write.py` cannot import `sim_types` directly (would cycle: `sim_types/__init__.py` ->
+## `fast_wave_convergence.py` -> `write.py`), so `_RESISTIVITY_DISALLOWED_PROBLEM_NAMES` is a
+## hand-maintained constant, not derived from the registry. This test is the next best thing:
+## it lives above both modules in the import graph and catches drift between them.
+##
+
+
+class ProblemNameConsistencyTests(unittest.TestCase):
+
+    def test_resistivity_disallowed_names_are_registered_profiles(
+        self,
+    ):
+        self.assertTrue(
+            write._RESISTIVITY_DISALLOWED_PROBLEM_NAMES.issubset(sim_types.PROFILES_BY_PROBLEM_NAME.keys()),  # pyright: ignore[reportPrivateUsage]
+        )
+
+
+##
 ## === TEST SUITE: write_sim_params_toml render paths not covered by the FastWaveConvergence fixture
 ##
 
