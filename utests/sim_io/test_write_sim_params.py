@@ -20,6 +20,7 @@ from ww_quokka_sims.sim_io.sim_params_models import (
     ResolutionParams,
     TimeIntegrationParams,
 )
+from ww_quokka_sims.sim_io.sim_types import scheme_lookup
 
 ##
 ## === REFERENCE FILE
@@ -89,6 +90,34 @@ class RenderTests(unittest.TestCase):
         ## AMReX booleans are bare 0/1, never Python's True/False
         self.assertEqual(_render.format_value(True), "1")
         self.assertEqual(_render.format_value(0), "0")
+
+
+##
+## === TEST SUITE: scheme_lookup
+##
+
+
+class SchemeLookupTests(unittest.TestCase):
+
+    def test_interpolation_resolves_by_letter(
+        self,
+    ):
+        self.assertEqual(scheme_lookup.interpolation_by_letter("ppm_ep").value, 5)
+        self.assertEqual(scheme_lookup.interpolation_by_letter("pcm").value, 1)
+
+    def test_emf_compute_scheme_resolves_by_letter(
+        self,
+    ):
+        self.assertEqual(scheme_lookup.emf_compute_scheme_by_letter("q26").value, "Quokka2026")
+
+    def test_invalid_letter_raises_with_valid_options_listed(
+        self,
+    ):
+        ## the whole point of Enum + resolve_member over a plain dict: an invalid letter is a
+        ## clear ValueError naming the valid options, not a bare KeyError
+        with self.assertRaises(ValueError) as ctx:
+            scheme_lookup.interpolation_by_letter("pmm")  # typo: transposed letters
+        self.assertIn("PPM", str(ctx.exception))
 
 
 ##
@@ -253,15 +282,14 @@ class RoundTripTests(unittest.TestCase):
     def test_fast_wave_convergence_matches_real_file(
         self,
     ):
-        build_kwargs = sim_types.fast_wave_convergence.build_combo(
+        bundle = sim_types.fast_wave_convergence.build_combo(
             compute_scheme_letter="q26",
             averaging_scheme_letter="b25",
             interpolation="ppm_ep",
         )
-        write_sim_params.write_sim_params_toml(
+        bundle.write(
             output_path=self.test_file_path,
             verbose=False,
-            **build_kwargs,  # pyright: ignore[reportArgumentType]
         )
         with open(self.test_file_path, "rb") as file_pointer:
             generated = tomllib.load(file_pointer)

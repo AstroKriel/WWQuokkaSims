@@ -5,6 +5,7 @@
 ##
 
 ## stdlib
+from dataclasses import dataclass
 from pathlib import Path
 
 ## personal
@@ -22,6 +23,47 @@ from .sim_params_models import (
     SetupParams,
     TimeIntegrationParams,
 )
+
+##
+## === PARAMETER BUNDLE
+## Ties together one full `write_sim_params_toml` call's worth of dataclasses. Profiles under
+## `sim_types/` return this instead of a stringly-typed dict, so a renamed/misspelled field is
+## caught at type-check time, not by a `**kwargs`-splat runtime error.
+##
+
+
+@dataclass(frozen=True)
+class SimParamsBundle:
+    geometry: GeometryParams
+    resolution: ResolutionParams
+    output: OutputParams
+    time_integration: TimeIntegrationParams
+    hydro: HydroParams
+    mhd: MHDParams
+    setup: SetupParams | None = None
+    problem_type: str | None = None
+
+    def write(
+        self,
+        *,
+        output_path: str | Path,
+        overwrite: bool = False,
+        verbose: bool = True,
+    ) -> Path:
+        return write_sim_params_toml(
+            output_path=output_path,
+            geometry=self.geometry,
+            resolution=self.resolution,
+            output=self.output,
+            time_integration=self.time_integration,
+            hydro=self.hydro,
+            mhd=self.mhd,
+            setup=self.setup,
+            problem_type=self.problem_type,
+            overwrite=overwrite,
+            verbose=verbose,
+        )
+
 
 ##
 ## === CONSTANTS
