@@ -17,6 +17,7 @@ from ww_quokka_sims.sim_io.sim_params.models import (
     MHDParams,
     OutputParams,
     ResolutionParams,
+    SetupParams,
     TimeIntegrationParams,
 )
 from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
@@ -162,6 +163,50 @@ class ModelValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             HydroParams(rk_integrator_order=2, reconstruction_order=4)
 
+    def test_time_integration_rejects_cfl_out_of_bounds(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            TimeIntegrationParams(cfl=1.5)
+        with self.assertRaises(ValueError):
+            TimeIntegrationParams(cfl=-0.1)
+
+    def test_mhd_rejects_invalid_emf_compute_scheme(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            MHDParams(emf_compute_scheme="NotAScheme", emf_averaging_scheme="Balsara2025", emf_reconstruction_order=5)
+
+    def test_mhd_rejects_invalid_emf_averaging_scheme(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="NotAScheme", emf_reconstruction_order=5)
+
+    def test_mhd_rejects_invalid_emf_reconstruction_order(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", emf_reconstruction_order=4)
+
+    def test_setup_rejects_empty_values(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            SetupParams(values={})
+
+    def test_setup_rejects_empty_title(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            SetupParams(values={"nx_max": 128}, title="")
+
+    def test_setup_rejects_empty_key_prefix(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            SetupParams(values={"nx_max": 128}, key_prefix="")
+
 
 ##
 ## === TEST SUITE: write_sim_params_toml guardrails
@@ -253,6 +298,93 @@ class GuardrailTests(unittest.TestCase):
             headers,
             ["## geometry", "## resolution", "## verbosity", "## output", "## time integration", "## hydro", "## mhd"],
         )
+
+
+##
+## === TEST SUITE: write_sim_params_toml render paths not covered by the FastWaveConvergence fixture
+##
+
+
+class WriteContentTests(unittest.TestCase):
+
+    def setUp(
+        self,
+    ):
+        self.test_file_path = Path("sim_params.toml")
+        if self.test_file_path.exists():
+            self.test_file_path.unlink()
+
+    def tearDown(
+        self,
+    ):
+        if self.test_file_path.exists():
+            self.test_file_path.unlink()
+
+    def _base_kwargs(
+        self,
+        **overrides: object,
+    ) -> dict[str, object]:
+        kwargs: dict[str, object] = {
+            "output_path": self.test_file_path,
+            "geometry": GeometryParams(prob_lo=(0.0, 0.0, 0.0), prob_hi=(1.0, 1.0, 1.0), is_periodic=(1, 1, 1)),
+            "resolution": ResolutionParams(n_cell=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
+            "output": OutputParams(plotfile_interval=-1),
+            "time_integration": TimeIntegrationParams(cfl=0.3, do_subcycle=0),
+            "hydro": HydroParams(rk_integrator_order=2, reconstruction_order=5),
+            "mhd": MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", emf_reconstruction_order=5),
+            "verbose": False,
+        }
+        kwargs.update(overrides)
+        return kwargs
+
+    def test_writes_ext_dir_boundary_conditions(
+        self,
+    ):
+        kwargs = self._base_kwargs(
+            geometry=GeometryParams(
+                prob_lo=(0.0, 0.0, 0.0),
+                prob_hi=(1.0, 1.0, 1.0),
+                bc=("ext_dir", "periodic", "periodic"),
+            ),
+        )
+        path = write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+        content = path.read_text()
+        self.assertIn('quokka.bc = ["ext_dir", "periodic", "periodic"]', content)
+        self.assertNotIn("geometry.is_periodic", content)
+
+    def test_writes_checkpoint_and_plottime_settings(
+        self,
+    ):
+        kwargs = self._base_kwargs(
+            output=OutputParams(
+                plottime_interval=0.5,
+                checkpoint_interval=100,
+                checkpoint_prefix="checkpoints/chk",
+            ),
+        )
+        path = write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+        content = path.read_text()
+        self.assertIn("plottime_interval = 0.5", content)
+        self.assertIn("checkpoint_interval = 100", content)
+        self.assertIn('checkpoint_prefix = "checkpoints/chk"', content)
+        self.assertNotIn("plotfile_interval", content)
+
+    def test_writes_amr_refinement_settings(
+        self,
+    ):
+        kwargs = self._base_kwargs(
+            resolution=ResolutionParams(
+                n_cell=(128, 8, 8),
+                blocking_factor=(16, 8, 8),
+                max_grid_size=128,
+                max_level=1,
+                n_error_buf=2,
+            ),
+        )
+        path = write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+        content = path.read_text()
+        self.assertIn("amr.max_level = 1", content)
+        self.assertIn("amr.n_error_buf = 2", content)
 
 
 ##
