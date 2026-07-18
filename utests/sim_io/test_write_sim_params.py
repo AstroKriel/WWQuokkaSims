@@ -24,14 +24,13 @@ from ww_quokka_sims.sim_io.sim_types import scheme_lookup
 
 ##
 ## === REFERENCE FILE
-## a real, already-audited `sim_params.toml` from the downstream paper repo, used to validate
-## that `FastWaveConvergence`'s profile reproduces a known-good file's parameter values exactly.
+## a frozen copy of a real, already-audited `sim_params.toml` from the downstream paper repo
+## (kriel-quokka-mhd), used to validate that `FastWaveConvergence`'s profile reproduces a
+## known-good file's parameter values exactly. Copied in as a fixture (not read from that repo
+## on disk) so this test is portable: it must pass for anyone who clones `ww-quokka-sims` alone.
 ##
 
-_REFERENCE_FILE = (
-    Path.home() / "repos/Asgard/mimir/kriel-quokka-mhd/datasets/problems/fast-wave/convergence"
-    "/nx=1-ny=0-nz=0/q26-b25-ppm_ep/sim_params.toml"
-)
+_REFERENCE_FILE = Path(__file__).parent / "fixtures" / "fast_wave_convergence_reference.toml"
 
 ##
 ## === TEST SUITE: _render internals
@@ -267,8 +266,6 @@ class RoundTripTests(unittest.TestCase):
     def setUp(
         self,
     ):
-        if not _REFERENCE_FILE.is_file():
-            self.skipTest(f"reference file not found (kriel-quokka-mhd not checked out here?): {_REFERENCE_FILE}")
         self.test_file_path = Path("sim_params.toml")
         if self.test_file_path.exists():
             self.test_file_path.unlink()
