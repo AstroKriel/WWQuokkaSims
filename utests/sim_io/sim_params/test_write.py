@@ -18,7 +18,7 @@ from ww_quokka_sims.sim_io.sim_params.models import (
     GeometryParams,
     HydroParams,
     MHDParams,
-    OutputParams,
+    OutputFileParams,
     ResolutionParams,
     SetupParams,
     TimeIntegrationParams,
@@ -216,7 +216,7 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            OutputParams()  # neither snapshot_index_interval nor snapshot_time_interval
+            OutputFileParams()  # neither snapshot_index_interval nor snapshot_time_interval
 
     def test_hydro_rejects_invalid_interpolation_order(
         self,
@@ -301,7 +301,7 @@ class GuardrailTests(unittest.TestCase):
                 is_boundary_periodic=(1, 1, 1),
             ),
             "resolution_params": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
-            "output_params": OutputParams(snapshot_index_interval=-1),
+            "output_file_params": OutputFileParams(snapshot_index_interval=-1),
             "time_integration_params": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
             "hydro_params": HydroParams(integrator_order=2, interpolation_order=5),
             "mhd_params": MHDParams(
@@ -339,7 +339,7 @@ class GuardrailTests(unittest.TestCase):
                 interpolation_order=5,
                 resistivity=0.001,
             ),
-            problem_type="FastWaveConvergence",
+            problem_name="FastWaveConvergence",
         )
         with self.assertRaises(ValueError):
             write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
@@ -401,7 +401,7 @@ class WriteContentTests(unittest.TestCase):
                 is_boundary_periodic=(1, 1, 1),
             ),
             "resolution_params": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
-            "output_params": OutputParams(snapshot_index_interval=-1),
+            "output_file_params": OutputFileParams(snapshot_index_interval=-1),
             "time_integration_params": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
             "hydro_params": HydroParams(integrator_order=2, interpolation_order=5),
             "mhd_params": MHDParams(
@@ -433,7 +433,7 @@ class WriteContentTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            output_params=OutputParams(
+            output_file_params=OutputFileParams(
                 snapshot_time_interval=0.5,
                 checkpoint_index_interval=100,
                 checkpoint_prefix="checkpoints/chk",

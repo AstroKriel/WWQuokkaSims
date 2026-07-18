@@ -18,7 +18,7 @@ from .models import (
     GeometryParams,
     HydroParams,
     MHDParams,
-    OutputParams,
+    OutputFileParams,
     ResolutionParams,
     SetupParams,
     TimeIntegrationParams,
@@ -33,31 +33,31 @@ from .models import (
 
 
 @dataclass(frozen=True)
-class SimParamsBundle:
+class SimParams:
     """
     One full `write_sim_params_toml` call's worth of dataclasses, plus a `write` convenience method.
 
     Fields
     ---
-    - `geometry_params`, `resolution_params`, `output_params`, `time_integration_params`, `hydro_params`,
-      `mhd_params`:
+    - `geometry_params`, `resolution_params`, `output_file_params`, `time_integration_params`,
+      `hydro_params`, `mhd_params`:
         See the matching dataclass in `sim_params.models`.
 
     - `setup_params`:
         Problem-specific parameters; omit for problem types with none.
 
-    - `problem_type`:
+    - `problem_name`:
         The Quokka C++ problem-generator class name; used only to enforce the resistivity guardrail.
     """
 
     geometry_params: GeometryParams
     resolution_params: ResolutionParams
-    output_params: OutputParams
+    output_file_params: OutputFileParams
     time_integration_params: TimeIntegrationParams
     hydro_params: HydroParams
     mhd_params: MHDParams
     setup_params: SetupParams | None = None
-    problem_type: str | None = None
+    problem_name: str | None = None
 
     def write(
         self,
@@ -70,12 +70,12 @@ class SimParamsBundle:
             output_path=output_path,
             geometry_params=self.geometry_params,
             resolution_params=self.resolution_params,
-            output_params=self.output_params,
+            output_file_params=self.output_file_params,
             time_integration_params=self.time_integration_params,
             hydro_params=self.hydro_params,
             mhd_params=self.mhd_params,
             setup_params=self.setup_params,
-            problem_type=self.problem_type,
+            problem_name=self.problem_name,
             overwrite=overwrite,
             verbose=verbose,
         )
@@ -86,7 +86,7 @@ class SimParamsBundle:
 ##
 
 ## problem classes with no meaningful physical resistivity: see `mhd.resistivity` guardrail below
-_RESISTIVITY_DISALLOWED_PROBLEM_TYPES = frozenset({
+_RESISTIVITY_DISALLOWED_PROBLEM_NAMES = frozenset({
     "FastWaveConvergence",
     "SlowWaveConvergence",
 })
@@ -103,16 +103,16 @@ def _ensure_guardrails(
     *,
     time_integration_params: TimeIntegrationParams,
     mhd_params: MHDParams,
-    problem_type: str | None,
+    problem_name: str | None,
 ) -> None:
     if (mhd_params.resistivity is not None) and (time_integration_params.use_subcycle != 0):
         raise ValueError(
             "`<mhd.resistivity>` requires `<use_subcycle>` = 0, got "
             f"resistivity={mhd_params.resistivity!r}, use_subcycle={time_integration_params.use_subcycle!r}.",
         )
-    if ((mhd_params.resistivity is not None) and (problem_type in _RESISTIVITY_DISALLOWED_PROBLEM_TYPES)):
+    if ((mhd_params.resistivity is not None) and (problem_name in _RESISTIVITY_DISALLOWED_PROBLEM_NAMES)):
         raise ValueError(
-            f"`<mhd.resistivity>` is not physically meaningful for problem_type={problem_type!r}.",
+            f"`<mhd.resistivity>` is not physically meaningful for problem_name={problem_name!r}.",
         )
 
 
@@ -187,28 +187,28 @@ def _build_resolution_lines(
 
 
 def _build_output_lines(
-    output_params: OutputParams,
+    output_file_params: OutputFileParams,
 ) -> list[str]:
     assignment_lines: list[str] = []
-    if output_params.checkpoint_index_interval is not None:
+    if output_file_params.checkpoint_index_interval is not None:
         assignment_lines.append(
-            _render.render_key_value(key="checkpoint_interval", value=output_params.checkpoint_index_interval),
+            _render.render_key_value(key="checkpoint_interval", value=output_file_params.checkpoint_index_interval),
         )
-    if output_params.checkpoint_prefix is not None:
+    if output_file_params.checkpoint_prefix is not None:
         assignment_lines.append(
-            _render.render_key_value(key="checkpoint_prefix", value=output_params.checkpoint_prefix),
+            _render.render_key_value(key="checkpoint_prefix", value=output_file_params.checkpoint_prefix),
         )
-    if output_params.snapshot_index_interval is not None:
+    if output_file_params.snapshot_index_interval is not None:
         assignment_lines.append(
-            _render.render_key_value(key="plotfile_interval", value=output_params.snapshot_index_interval),
+            _render.render_key_value(key="plotfile_interval", value=output_file_params.snapshot_index_interval),
         )
     else:
         assignment_lines.append(
-            _render.render_key_value(key="plottime_interval", value=output_params.snapshot_time_interval),
+            _render.render_key_value(key="plottime_interval", value=output_file_params.snapshot_time_interval),
         )
-    if output_params.snapshot_prefix is not None:
+    if output_file_params.snapshot_prefix is not None:
         assignment_lines.append(
-            _render.render_key_value(key="plotfile_prefix", value=output_params.snapshot_prefix),
+            _render.render_key_value(key="plotfile_prefix", value=output_file_params.snapshot_prefix),
         )
     return assignment_lines
 
@@ -276,12 +276,12 @@ def write_sim_params_toml(
     output_path: str | Path,
     geometry_params: GeometryParams,
     resolution_params: ResolutionParams,
-    output_params: OutputParams,
+    output_file_params: OutputFileParams,
     time_integration_params: TimeIntegrationParams,
     hydro_params: HydroParams,
     mhd_params: MHDParams,
     setup_params: SetupParams | None = None,
-    problem_type: str | None = None,
+    problem_name: str | None = None,
     overwrite: bool = False,
     verbose: bool = True,
 ) -> Path:
@@ -295,7 +295,7 @@ def write_sim_params_toml(
 
     Parameters
     ---
-    - `problem_type`:
+    - `problem_name`:
         The Quokka C++ problem-generator class name (e.g. `"FastWaveConvergence"`,
         `"MHDQuirk"`), used only to enforce the resistivity guardrail below. Optional,
         but required for that guardrail to catch anything.
@@ -310,14 +310,14 @@ def write_sim_params_toml(
     _ensure_guardrails(
         time_integration_params=time_integration_params,
         mhd_params=mhd_params,
-        problem_type=problem_type,
+        problem_name=problem_name,
     )
 
     param_groups: list[tuple[str, list[str]]] = [
         ("geometry", _build_geometry_lines(geometry_params)),
         ("resolution", _build_resolution_lines(resolution_params)),
         ("verbosity", [_render.render_key_value(key="amr.v", value=1)]),
-        ("output", _build_output_lines(output_params)),
+        ("output", _build_output_lines(output_file_params)),
         ("time integration", _build_time_integration_lines(time_integration_params)),
         ("hydro", _build_hydro_lines(hydro_params)),
         ("mhd", _build_mhd_lines(mhd_params)),

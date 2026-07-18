@@ -9,12 +9,12 @@ from ..models import (
     GeometryParams,
     HydroParams,
     MHDParams,
-    OutputParams,
+    OutputFileParams,
     ResolutionParams,
     SetupParams,
     TimeIntegrationParams,
 )
-from ..write import SimParamsBundle
+from ..write import SimParams
 ## importing names directly from the sibling module (not `from . import scheme_lookup`) avoids
 ## a `sim_types/__init__.py` import cycle, since that would require the package's `__init__`
 ## to finish executing before this module (which it imports) can run
@@ -28,7 +28,7 @@ from .scheme_lookup import (
 ## === CONSTANTS
 ##
 
-PROBLEM_TYPE = "FastWaveConvergence"
+PROBLEM_NAME = "FastWaveConvergence"
 
 ## fixed for every combo of this problem type: only the EMF/reconstruction scheme varies
 ## across a sweep (see `build_combo`); everything below is boilerplate the Quokka problem
@@ -46,12 +46,12 @@ def build_combo(
     compute_scheme_key: str,
     averaging_scheme_key: str,
     interpolation: str,
-) -> SimParamsBundle:
+) -> SimParams:
     """Build the full parameter set for one `FastWaveConvergence` scheme combo (e.g. `q26-b25-ppm_ep`)."""
     ## `.value` unwraps the Enum to the plain int/str `sim_params.models` dataclasses declare;
     ## an Enum member's `str()`/f-string form is `"ClassName.MEMBER"`, not its underlying value
     interpolation_order = interpolation_by_key(interpolation).value
-    return SimParamsBundle(
+    return SimParams(
         geometry_params=GeometryParams(
             domain_lo=(0.0, 0.0, 0.0),
             domain_hi=(1.0, 1.0, 1.0),
@@ -62,7 +62,7 @@ def build_combo(
             blocking_factor=(16, 8, 8),
             max_grid_size=128,
         ),
-        output_params=OutputParams(
+        output_file_params=OutputFileParams(
             snapshot_index_interval=-1,
         ),
         time_integration_params=TimeIntegrationParams(
@@ -92,7 +92,7 @@ def build_combo(
                 "nx_max": _NX_MAX,
             },
         ),
-        problem_type=PROBLEM_TYPE,
+        problem_name=PROBLEM_NAME,
     )
 
 

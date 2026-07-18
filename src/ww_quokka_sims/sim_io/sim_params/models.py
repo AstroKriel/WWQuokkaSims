@@ -177,7 +177,7 @@ class ResolutionParams:
 
 
 @dataclass(frozen=True)
-class OutputParams:
+class OutputFileParams:
     """
     Checkpoint and plotfile cadence. Exactly one of `snapshot_index_interval` or `snapshot_time_interval`
     must be set.
