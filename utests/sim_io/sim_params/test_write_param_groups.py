@@ -478,7 +478,7 @@ class RoundTripTests(unittest.TestCase):
     def test_fast_wave_convergence_matches_real_file(
         self,
     ):
-        bundle = sim_types.fast_wave_convergence.build_combo(
+        bundle = sim_types.fast_wave_convergence.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction="ppm_ep",

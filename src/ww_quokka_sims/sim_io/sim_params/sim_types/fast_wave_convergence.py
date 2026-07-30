@@ -36,7 +36,7 @@ _NX_MAX = 2048
 ##
 
 
-def build_combo(
+def build_sim_params(
     *,
     compute_scheme_key: str,
     averaging_scheme_key: str,
