@@ -20,10 +20,8 @@ from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 
 ##
 ## === REFERENCE FILE
-## a frozen copy of a real, already-audited `sim_params.toml` from the downstream paper repo
-## (kriel-quokka-mhd), used to validate that `FastWaveConvergence`'s profile reproduces a
-## known-good file's parameter values exactly. Copied in as a fixture (not read from that repo
-## on disk) so this test is portable: it must pass for anyone who clones `ww-quokka-sims` alone.
+## frozen copy of a real, audited `sim_params.toml` (kriel-quokka-mhd); copied in, not read from
+## that repo, so this test stays portable for a standalone `ww-quokka-sims` clone
 ##
 
 _REFERENCE_FILE = Path(__file__).parent / "fixtures" / "fast_wave_convergence_reference.toml"
@@ -133,10 +131,8 @@ class SchemeLookupTests(unittest.TestCase):
 
 ##
 ## === TEST SUITE: param_groups/scheme_lookup consistency
-## `param_groups.py` validates against its own literal value sets, independent of `scheme_lookup.py`'s
-## enums, since a model must reject an invalid Quokka value even when constructed directly,
-## bypassing `scheme_lookup` entirely. That independence means the two can silently drift; these
-## tests catch it.
+## `param_groups.py` validates independently of `scheme_lookup.py`'s enums, so the two can
+## silently drift; these tests catch it
 ##
 
 
