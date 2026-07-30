@@ -123,6 +123,26 @@ def _ensure_path_is_valid(
 
 
 ##
+## === PARAM GROUP TITLES
+## Plain string constants, not an Enum: `_render.render_param_group` renders `group_title`
+## directly into an f-string, and an Enum member's f-string form is `"ClassName.MEMBER"`,
+## not its underlying value (the exact bug already found once this session in
+## `fast_wave_convergence.py`). `setup`'s title is excluded: it is dynamic, supplied by the
+## caller via `setup_params.group_title`, not one of these fixed values.
+##
+
+
+class _ParamGroupTitle:
+    GEOMETRY: str = "geometry"
+    RESOLUTION: str = "resolution"
+    VERBOSITY: str = "verbosity"
+    OUTPUT: str = "output"
+    TIME_INTEGRATION: str = "time integration"
+    HYDRO: str = "hydro"
+    MHD: str = "mhd"
+
+
+##
 ## === SECTION BUILDERS
 ##
 
@@ -292,13 +312,13 @@ def write_sim_params_toml(
     )
 
     param_groups: list[tuple[str, list[str]]] = [
-        ("geometry", _build_geometry_lines(geometry_params)),
-        ("resolution", _build_resolution_lines(resolution_params)),
-        ("verbosity", [_render.render_key_value(key="amr.v", value=1)]),
-        ("output", _build_output_lines(output_file_params)),
-        ("time integration", _build_time_integration_lines(time_integration_params)),
-        ("hydro", _build_hydro_lines(hydro_params)),
-        ("mhd", _build_mhd_lines(mhd_params)),
+        (_ParamGroupTitle.GEOMETRY, _build_geometry_lines(geometry_params)),
+        (_ParamGroupTitle.RESOLUTION, _build_resolution_lines(resolution_params)),
+        (_ParamGroupTitle.VERBOSITY, [_render.render_key_value(key="amr.v", value=1)]),
+        (_ParamGroupTitle.OUTPUT, _build_output_lines(output_file_params)),
+        (_ParamGroupTitle.TIME_INTEGRATION, _build_time_integration_lines(time_integration_params)),
+        (_ParamGroupTitle.HYDRO, _build_hydro_lines(hydro_params)),
+        (_ParamGroupTitle.MHD, _build_mhd_lines(mhd_params)),
     ]
     if setup_params is not None:
         param_groups.append((setup_params.group_title, _build_setup_lines(setup_params)))

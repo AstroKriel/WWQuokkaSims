@@ -348,10 +348,16 @@ class GuardrailTests(unittest.TestCase):
     ):
         path = write.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
         headers = [line for line in path.read_text().splitlines() if line.startswith("##")]
-        self.assertEqual(
-            headers,
-            ["## geometry", "## resolution", "## verbosity", "## output", "## time integration", "## hydro", "## mhd"],
+        expected_titles = (
+            write._ParamGroupTitle.GEOMETRY,
+            write._ParamGroupTitle.RESOLUTION,
+            write._ParamGroupTitle.VERBOSITY,
+            write._ParamGroupTitle.OUTPUT,
+            write._ParamGroupTitle.TIME_INTEGRATION,
+            write._ParamGroupTitle.HYDRO,
+            write._ParamGroupTitle.MHD,
         )
+        self.assertEqual(headers, [f"## {title}" for title in expected_titles])
 
 
 ##
