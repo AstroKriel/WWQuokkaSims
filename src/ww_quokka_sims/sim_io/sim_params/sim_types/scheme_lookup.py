@@ -45,7 +45,7 @@ class EMFAveragingScheme(str, Enum):
 ##
 
 
-def interpolation_by_key(
+def resolve_interpolation_scheme(
     key: str,
 ) -> InterpolationScheme:
     """Resolve `key` (a name, value, or shorthand combo-name key) to an `InterpolationScheme` member."""
@@ -55,7 +55,7 @@ def interpolation_by_key(
     )
 
 
-def emf_compute_scheme_by_key(
+def resolve_emf_compute_scheme(
     key: str,
 ) -> EMFComputeScheme:
     """Resolve `key` (a name, value, or shorthand combo-name key) to an `EMFComputeScheme` member."""
@@ -65,7 +65,7 @@ def emf_compute_scheme_by_key(
     )
 
 
-def emf_averaging_scheme_by_key(
+def resolve_emf_averaging_scheme(
     key: str,
 ) -> EMFAveragingScheme:
     """Resolve `key` (a name, value, or shorthand combo-name key) to an `EMFAveragingScheme` member."""

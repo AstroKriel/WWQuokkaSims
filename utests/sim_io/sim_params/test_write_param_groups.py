@@ -120,13 +120,13 @@ class SchemeLookupTests(unittest.TestCase):
     def test_interpolation_resolves_by_key(
         self,
     ):
-        self.assertEqual(scheme_lookup.interpolation_by_key("ppm_ep").value, 5)
-        self.assertEqual(scheme_lookup.interpolation_by_key("pcm").value, 1)
+        self.assertEqual(scheme_lookup.resolve_interpolation_scheme("ppm_ep").value, 5)
+        self.assertEqual(scheme_lookup.resolve_interpolation_scheme("pcm").value, 1)
 
     def test_emf_compute_scheme_resolves_by_key(
         self,
     ):
-        self.assertEqual(scheme_lookup.emf_compute_scheme_by_key("q26").value, "Quokka2026")
+        self.assertEqual(scheme_lookup.resolve_emf_compute_scheme("q26").value, "Quokka2026")
 
     def test_invalid_key_raises_with_valid_options_listed(
         self,
@@ -134,7 +134,7 @@ class SchemeLookupTests(unittest.TestCase):
         ## the whole point of Enum + resolve_member over a plain dict: an invalid key is a
         ## clear ValueError naming the valid options, not a bare KeyError
         with self.assertRaises(ValueError) as ctx:
-            scheme_lookup.interpolation_by_key("pmm")  # typo: transposed letters
+            scheme_lookup.resolve_interpolation_scheme("pmm")  # typo: transposed letters
         self.assertIn("PPM", str(ctx.exception))
 
 

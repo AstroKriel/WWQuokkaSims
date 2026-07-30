@@ -17,9 +17,9 @@ from ..param_groups import (
 from ..write_param_groups import SimParams
 ## direct names, not `from . import scheme_lookup`: avoids a `sim_types/__init__.py` import cycle
 from .scheme_lookup import (
-    emf_averaging_scheme_by_key,
-    emf_compute_scheme_by_key,
-    interpolation_by_key,
+    resolve_emf_averaging_scheme,
+    resolve_emf_compute_scheme,
+    resolve_interpolation_scheme,
 )
 
 ##
@@ -45,7 +45,7 @@ def build_combo(
     """Build the full parameter set for one `FastWaveConvergence` scheme combo (e.g. `q26-b25-ppm_ep`)."""
     ## `.value` unwraps the Enum to the plain int/str `sim_params.param_groups` dataclasses declare;
     ## an Enum member's `str()`/f-string form is `"ClassName.MEMBER"`, not its underlying value
-    interpolation_order = interpolation_by_key(interpolation).value
+    interpolation_order = resolve_interpolation_scheme(interpolation).value
     return SimParams(
         geometry_params=GeometryParams(
             domain_lo=(0.0, 0.0, 0.0),
@@ -73,8 +73,8 @@ def build_combo(
         ),
         ## no `resistivity`: not physically meaningful for this ideal-MHD wave test
         mhd_params=MHDParams(
-            emf_compute_scheme=emf_compute_scheme_by_key(compute_scheme_key).value,
-            emf_averaging_scheme=emf_averaging_scheme_by_key(averaging_scheme_key).value,
+            emf_compute_scheme=resolve_emf_compute_scheme(compute_scheme_key).value,
+            emf_averaging_scheme=resolve_emf_averaging_scheme(averaging_scheme_key).value,
             interpolation_order=interpolation_order,
         ),
         setup_params=SetupParams(
