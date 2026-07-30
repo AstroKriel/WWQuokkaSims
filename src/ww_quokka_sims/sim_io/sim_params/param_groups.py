@@ -281,8 +281,7 @@ class TimeIntegrationParams:
 ## === HYDRO
 ##
 
-## pcm=1, plm=2, ppm=3, ppm_ep=5; shared with `MHDParams.interpolation_order` below,
-## since both select from the same set of interpolation schemes
+## shared with `MHDParams.interpolation_order` below
 VALID_INTERPOLATION_ORDERS = (1, 2, 3, 5)
 
 

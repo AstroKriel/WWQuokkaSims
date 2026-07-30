@@ -13,12 +13,6 @@ from jormi.ww_validation import validate_enums
 
 ##
 ## === SCHEME ENUMS
-## Shorthand scheme keys, as used in dataset directory/combo names (e.g. `q26-b25-ppm_ep`),
-## mapped to the values Quokka's MHD implementation actually expects. Shared across every
-## problem-type profile in `sim_types/`, since these mappings are universal, not per-problem.
-##
-## Enum members over plain dicts: an invalid key (e.g. a typo) is caught by
-## `resolve_member` with a clear error listing valid names, rather than a bare `KeyError`.
 ##
 
 
