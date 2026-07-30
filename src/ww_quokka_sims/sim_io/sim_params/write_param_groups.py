@@ -224,7 +224,7 @@ def _build_hydro_lines(
 ) -> list[str]:
     assignment_lines = [
         _render_param_groups.render_key_value(key="hydro.rk_integrator_order", value=hydro_params.integrator_order),
-        _render_param_groups.render_key_value(key="hydro.reconstruction_order", value=hydro_params.interpolation_order),
+        _render_param_groups.render_key_value(key="hydro.reconstruction_order", value=hydro_params.reconstruction_order),
     ]
     if hydro_params.use_dual_energy is not None:
         assignment_lines.append(
@@ -239,7 +239,7 @@ def _build_mhd_lines(
     assignment_lines = [
         _render_param_groups.render_key_value(key="mhd.emf_compute_scheme", value=mhd_params.emf_compute_scheme),
         _render_param_groups.render_key_value(key="mhd.emf_averaging_scheme", value=mhd_params.emf_averaging_scheme),
-        _render_param_groups.render_key_value(key="mhd.emf_reconstruction_order", value=mhd_params.interpolation_order),
+        _render_param_groups.render_key_value(key="mhd.emf_reconstruction_order", value=mhd_params.reconstruction_order),
     ]
     if mhd_params.resistivity is not None:
         assignment_lines.append(_render_param_groups.render_key_value(key="mhd.resistivity", value=mhd_params.resistivity))

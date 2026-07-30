@@ -14,7 +14,7 @@ from ww_quokka_sims.sim_io.sim_params import _render_param_groups, sim_types, wr
 from ww_quokka_sims.sim_io.sim_params.param_groups import (
     VALID_EMF_AVERAGING_SCHEMES,
     VALID_EMF_COMPUTE_SCHEMES,
-    VALID_INTERPOLATION_ORDERS,
+    VALID_RECONSTRUCTION_ORDERS,
     GeometryParams,
     HydroParams,
     MHDParams,
@@ -117,11 +117,11 @@ class RenderTests(unittest.TestCase):
 
 class SchemeLookupTests(unittest.TestCase):
 
-    def test_interpolation_resolves_by_key(
+    def test_reconstruction_resolves_by_key(
         self,
     ):
-        self.assertEqual(scheme_lookup.resolve_interpolation_scheme("ppm_ep").value, 5)
-        self.assertEqual(scheme_lookup.resolve_interpolation_scheme("pcm").value, 1)
+        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme("ppm_ep").value, 5)
+        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme("pcm").value, 1)
 
     def test_emf_compute_scheme_resolves_by_key(
         self,
@@ -134,7 +134,7 @@ class SchemeLookupTests(unittest.TestCase):
         ## the whole point of Enum + resolve_member over a plain dict: an invalid key is a
         ## clear ValueError naming the valid options, not a bare KeyError
         with self.assertRaises(ValueError) as ctx:
-            scheme_lookup.resolve_interpolation_scheme("pmm")  # typo: transposed letters
+            scheme_lookup.resolve_reconstruction_scheme("pmm")  # typo: transposed letters
         self.assertIn("PPM", str(ctx.exception))
 
 
@@ -165,12 +165,12 @@ class SchemaConsistencyTests(unittest.TestCase):
             {member.value for member in scheme_lookup.EMFAveragingScheme},
         )
 
-    def test_interpolation_order_values_match_enum(
+    def test_reconstruction_order_values_match_enum(
         self,
     ):
         self.assertEqual(
-            set(VALID_INTERPOLATION_ORDERS),
-            {member.value for member in scheme_lookup.InterpolationScheme},
+            set(VALID_RECONSTRUCTION_ORDERS),
+            {member.value for member in scheme_lookup.ReconstructionScheme},
         )
 
 
@@ -218,11 +218,11 @@ class ModelValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             OutputFileParams()  # neither snapshot_index_interval nor snapshot_time_interval
 
-    def test_hydro_rejects_invalid_interpolation_order(
+    def test_hydro_rejects_invalid_reconstruction_order(
         self,
     ):
         with self.assertRaises(ValueError):
-            HydroParams(integrator_order=2, interpolation_order=4)
+            HydroParams(integrator_order=2, reconstruction_order=4)
 
     def test_time_integration_rejects_cfl_out_of_bounds(
         self,
@@ -236,19 +236,19 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            MHDParams(emf_compute_scheme="NotAScheme", emf_averaging_scheme="Balsara2025", interpolation_order=5)
+            MHDParams(emf_compute_scheme="NotAScheme", emf_averaging_scheme="Balsara2025", reconstruction_order=5)
 
     def test_mhd_rejects_invalid_emf_averaging_scheme(
         self,
     ):
         with self.assertRaises(ValueError):
-            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="NotAScheme", interpolation_order=5)
+            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="NotAScheme", reconstruction_order=5)
 
-    def test_mhd_rejects_invalid_interpolation_order(
+    def test_mhd_rejects_invalid_reconstruction_order(
         self,
     ):
         with self.assertRaises(ValueError):
-            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", interpolation_order=4)
+            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", reconstruction_order=4)
 
     def test_setup_rejects_empty_param_values(
         self,
@@ -303,11 +303,11 @@ class GuardrailTests(unittest.TestCase):
             "resolution_params": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
             "output_file_params": OutputFileParams(snapshot_index_interval=-1),
             "time_integration_params": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro_params": HydroParams(integrator_order=2, interpolation_order=5),
+            "hydro_params": HydroParams(integrator_order=2, reconstruction_order=5),
             "mhd_params": MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
-                interpolation_order=5,
+                reconstruction_order=5,
             ),
             "verbose": False,
         }
@@ -322,7 +322,7 @@ class GuardrailTests(unittest.TestCase):
             mhd_params=MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
-                interpolation_order=5,
+                reconstruction_order=5,
                 resistivity=0.001,
             ),
         )
@@ -394,11 +394,11 @@ class WriteContentTests(unittest.TestCase):
             "resolution_params": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
             "output_file_params": OutputFileParams(snapshot_index_interval=-1),
             "time_integration_params": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro_params": HydroParams(integrator_order=2, interpolation_order=5),
+            "hydro_params": HydroParams(integrator_order=2, reconstruction_order=5),
             "mhd_params": MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
-                interpolation_order=5,
+                reconstruction_order=5,
             ),
             "verbose": False,
         }
@@ -481,7 +481,7 @@ class RoundTripTests(unittest.TestCase):
         bundle = sim_types.fast_wave_convergence.build_combo(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
-            interpolation="ppm_ep",
+            reconstruction="ppm_ep",
         )
         bundle.write(
             output_path=self.test_file_path,

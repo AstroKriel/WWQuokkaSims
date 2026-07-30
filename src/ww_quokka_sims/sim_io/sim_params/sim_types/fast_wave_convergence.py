@@ -19,7 +19,7 @@ from ..write_param_groups import SimParams
 from .scheme_lookup import (
     resolve_emf_averaging_scheme,
     resolve_emf_compute_scheme,
-    resolve_interpolation_scheme,
+    resolve_reconstruction_scheme,
 )
 
 ##
@@ -40,12 +40,12 @@ def build_combo(
     *,
     compute_scheme_key: str,
     averaging_scheme_key: str,
-    interpolation: str,
+    reconstruction: str,
 ) -> SimParams:
     """Build the full parameter set for one `FastWaveConvergence` scheme combo (e.g. `q26-b25-ppm_ep`)."""
     ## `.value` unwraps the Enum to the plain int/str `sim_params.param_groups` dataclasses declare;
     ## an Enum member's `str()`/f-string form is `"ClassName.MEMBER"`, not its underlying value
-    interpolation_order = resolve_interpolation_scheme(interpolation).value
+    reconstruction_order = resolve_reconstruction_scheme(reconstruction).value
     return SimParams(
         geometry_params=GeometryParams(
             domain_lo=(0.0, 0.0, 0.0),
@@ -68,14 +68,14 @@ def build_combo(
         ),
         hydro_params=HydroParams(
             integrator_order=2,
-            interpolation_order=interpolation_order,
+            reconstruction_order=reconstruction_order,
             use_dual_energy=0,
         ),
         ## no `resistivity`: not physically meaningful for this ideal-MHD wave test
         mhd_params=MHDParams(
             emf_compute_scheme=resolve_emf_compute_scheme(compute_scheme_key).value,
             emf_averaging_scheme=resolve_emf_averaging_scheme(averaging_scheme_key).value,
-            interpolation_order=interpolation_order,
+            reconstruction_order=reconstruction_order,
         ),
         setup_params=SetupParams(
             group_title="wave setup",

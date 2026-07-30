@@ -281,8 +281,8 @@ class TimeIntegrationParams:
 ## === HYDRO
 ##
 
-## shared with `MHDParams.interpolation_order` below
-VALID_INTERPOLATION_ORDERS = (1, 2, 3, 5)
+## shared with `MHDParams.reconstruction_order` below
+VALID_RECONSTRUCTION_ORDERS = (1, 2, 3, 5)
 
 
 @dataclass(frozen=True)
@@ -295,24 +295,24 @@ class HydroParams:
     - `integrator_order`:
         Runge-Kutta time-integrator order.
 
-    - `interpolation_order`:
-        Spatial reconstruction order; must be one of `VALID_INTERPOLATION_ORDERS`.
+    - `reconstruction_order`:
+        Spatial reconstruction order; must be one of `VALID_RECONSTRUCTION_ORDERS`.
 
     - `use_dual_energy`:
         `1` to enable the dual-energy formalism, `0` to disable; omit for Quokka's default.
     """
 
     integrator_order: int
-    interpolation_order: int
+    reconstruction_order: int
     use_dual_energy: int | None = None
 
     def __post_init__(
         self,
     ) -> None:
-        if self.interpolation_order not in VALID_INTERPOLATION_ORDERS:
+        if self.reconstruction_order not in VALID_RECONSTRUCTION_ORDERS:
             raise ValueError(
-                f"`<interpolation_order>` must be one of {VALID_INTERPOLATION_ORDERS}; "
-                f"got {self.interpolation_order}.",
+                f"`<reconstruction_order>` must be one of {VALID_RECONSTRUCTION_ORDERS}; "
+                f"got {self.reconstruction_order}.",
             )
 
 
@@ -337,8 +337,8 @@ class MHDParams:
     - `emf_averaging_scheme`:
         EMF averaging scheme name; must be one of `VALID_EMF_AVERAGING_SCHEMES`.
 
-    - `interpolation_order`:
-        Spatial reconstruction order for the EMF; must be one of `VALID_INTERPOLATION_ORDERS`.
+    - `reconstruction_order`:
+        Spatial reconstruction order for the EMF; must be one of `VALID_RECONSTRUCTION_ORDERS`.
 
     - `resistivity`:
         Physical resistivity; omit for ideal MHD. See `write_sim_params_toml`'s guardrails for when this is disallowed.
@@ -346,7 +346,7 @@ class MHDParams:
 
     emf_compute_scheme: str
     emf_averaging_scheme: str
-    interpolation_order: int
+    reconstruction_order: int
     resistivity: float | None = None
 
     def __post_init__(
@@ -360,10 +360,10 @@ class MHDParams:
             raise ValueError(
                 f"`<emf_averaging_scheme>` must be one of {VALID_EMF_AVERAGING_SCHEMES}; got {self.emf_averaging_scheme!r}.",
             )
-        if self.interpolation_order not in VALID_INTERPOLATION_ORDERS:
+        if self.reconstruction_order not in VALID_RECONSTRUCTION_ORDERS:
             raise ValueError(
-                f"`<interpolation_order>` must be one of {VALID_INTERPOLATION_ORDERS}; "
-                f"got {self.interpolation_order}.",
+                f"`<reconstruction_order>` must be one of {VALID_RECONSTRUCTION_ORDERS}; "
+                f"got {self.reconstruction_order}.",
             )
 
 

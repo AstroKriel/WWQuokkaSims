@@ -16,8 +16,8 @@ from jormi.ww_validation import validate_enums
 ##
 
 
-class InterpolationScheme(int, Enum):
-    """`hydro.reconstruction_order` / `mhd.emf_reconstruction_order` by interpolation key."""
+class ReconstructionScheme(int, Enum):
+    """`hydro.reconstruction_order` / `mhd.emf_reconstruction_order` by reconstruction key."""
 
     PCM = 1
     PLM = 2
@@ -45,13 +45,13 @@ class EMFAveragingScheme(str, Enum):
 ##
 
 
-def resolve_interpolation_scheme(
+def resolve_reconstruction_scheme(
     key: str,
-) -> InterpolationScheme:
-    """Resolve `key` (a name, value, or shorthand combo-name key) to an `InterpolationScheme` member."""
+) -> ReconstructionScheme:
+    """Resolve `key` (a name, value, or shorthand combo-name key) to a `ReconstructionScheme` member."""
     return cast(
-        InterpolationScheme,
-        validate_enums.resolve_member(member=key, valid_enums=InterpolationScheme),
+        ReconstructionScheme,
+        validate_enums.resolve_member(member=key, valid_enums=ReconstructionScheme),
     )
 
 
