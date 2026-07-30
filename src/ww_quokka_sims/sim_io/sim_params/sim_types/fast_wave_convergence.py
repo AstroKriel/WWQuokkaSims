@@ -5,7 +5,7 @@
 ##
 
 ## local
-from ..models import (
+from ..param_groups import (
     GeometryParams,
     HydroParams,
     MHDParams,
@@ -14,7 +14,7 @@ from ..models import (
     SetupParams,
     TimeIntegrationParams,
 )
-from ..write import SimParams
+from ..write_param_groups import SimParams
 ## importing names directly from the sibling module (not `from . import scheme_lookup`) avoids
 ## a `sim_types/__init__.py` import cycle, since that would require the package's `__init__`
 ## to finish executing before this module (which it imports) can run
@@ -48,7 +48,7 @@ def build_combo(
     interpolation: str,
 ) -> SimParams:
     """Build the full parameter set for one `FastWaveConvergence` scheme combo (e.g. `q26-b25-ppm_ep`)."""
-    ## `.value` unwraps the Enum to the plain int/str `sim_params.models` dataclasses declare;
+    ## `.value` unwraps the Enum to the plain int/str `sim_params.param_groups` dataclasses declare;
     ## an Enum member's `str()`/f-string form is `"ClassName.MEMBER"`, not its underlying value
     interpolation_order = interpolation_by_key(interpolation).value
     return SimParams(

@@ -10,8 +10,8 @@ import unittest
 from pathlib import Path
 
 ## local
-from ww_quokka_sims.sim_io.sim_params import _render, sim_types, write
-from ww_quokka_sims.sim_io.sim_params.models import (
+from ww_quokka_sims.sim_io.sim_params import _render, sim_types, write_param_groups
+from ww_quokka_sims.sim_io.sim_params.param_groups import (
     VALID_EMF_AVERAGING_SCHEMES,
     VALID_EMF_COMPUTE_SCHEMES,
     VALID_INTERPOLATION_ORDERS,
@@ -140,7 +140,7 @@ class SchemeLookupTests(unittest.TestCase):
 
 ##
 ## === TEST SUITE: models/scheme_lookup consistency
-## `models.py` validates against its own literal value sets, independent of `scheme_lookup.py`'s
+## `param_groups.py` validates against its own literal value sets, independent of `scheme_lookup.py`'s
 ## enums, since a model must reject an invalid Quokka value even when constructed directly,
 ## bypassing `scheme_lookup` entirely. That independence means the two can silently drift; these
 ## tests catch it.
@@ -175,7 +175,7 @@ class SchemaConsistencyTests(unittest.TestCase):
 
 
 ##
-## === TEST SUITE: sim_params.models validation
+## === TEST SUITE: sim_params.param_groups validation
 ##
 
 
@@ -327,35 +327,35 @@ class GuardrailTests(unittest.TestCase):
             ),
         )
         with self.assertRaises(ValueError):
-            write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+            write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
 
     def test_refuses_to_overwrite_by_default(
         self,
     ):
-        write.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
+        write_param_groups.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
         with self.assertRaises(FileExistsError):
-            write.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
+            write_param_groups.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
 
     def test_rejects_non_sim_params_filename(
         self,
     ):
         kwargs = self._base_kwargs(output_path=Path("not_sim_params.toml"))
         with self.assertRaises(ValueError):
-            write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+            write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
 
     def test_param_group_order_and_setup_last(
         self,
     ):
-        path = write.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
+        path = write_param_groups.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
         headers = [line for line in path.read_text().splitlines() if line.startswith("##")]
         expected_titles = (
-            write._ParamGroupTitle.GEOMETRY,
-            write._ParamGroupTitle.RESOLUTION,
-            write._ParamGroupTitle.VERBOSITY,
-            write._ParamGroupTitle.OUTPUT,
-            write._ParamGroupTitle.TIME_INTEGRATION,
-            write._ParamGroupTitle.HYDRO,
-            write._ParamGroupTitle.MHD,
+            write_param_groups._ParamGroupTitle.GEOMETRY,
+            write_param_groups._ParamGroupTitle.RESOLUTION,
+            write_param_groups._ParamGroupTitle.VERBOSITY,
+            write_param_groups._ParamGroupTitle.OUTPUT,
+            write_param_groups._ParamGroupTitle.TIME_INTEGRATION,
+            write_param_groups._ParamGroupTitle.HYDRO,
+            write_param_groups._ParamGroupTitle.MHD,
         )
         self.assertEqual(headers, [f"## {title}" for title in expected_titles])
 
@@ -415,7 +415,7 @@ class WriteContentTests(unittest.TestCase):
                 boundary_conditions=("ext_dir", "periodic", "periodic"),
             ),
         )
-        path = write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
         content = path.read_text()
         self.assertIn('quokka.bc = ["ext_dir", "periodic", "periodic"]', content)
         self.assertNotIn("geometry.is_periodic", content)
@@ -430,7 +430,7 @@ class WriteContentTests(unittest.TestCase):
                 checkpoint_prefix="checkpoints/chk",
             ),
         )
-        path = write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
         content = path.read_text()
         self.assertIn("plottime_interval = 0.5", content)
         self.assertIn("checkpoint_interval = 100", content)
@@ -449,7 +449,7 @@ class WriteContentTests(unittest.TestCase):
                 num_refinement_buffer_cells=2,
             ),
         )
-        path = write.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
         content = path.read_text()
         self.assertIn("amr.max_level = 1", content)
         self.assertIn("amr.n_error_buf = 2", content)

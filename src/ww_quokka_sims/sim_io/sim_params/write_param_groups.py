@@ -14,7 +14,7 @@ from jormi.ww_validation import validate_types
 
 ## local
 from . import _render
-from .models import (
+from .param_groups import (
     GeometryParams,
     HydroParams,
     MHDParams,
@@ -38,7 +38,7 @@ class SimParams:
     ---
     - `geometry_params`, `resolution_params`, `output_file_params`, `time_integration_params`,
       `hydro_params`, `mhd_params`:
-        See the matching dataclass in `sim_params.models`.
+        See the matching dataclass in `sim_params.param_groups`.
 
     - `setup_params`:
         Problem-specific parameters; omit for problem types with none.
