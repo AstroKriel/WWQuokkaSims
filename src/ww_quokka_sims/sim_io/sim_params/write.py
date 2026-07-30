@@ -124,11 +124,8 @@ def _ensure_path_is_valid(
 
 ##
 ## === PARAM GROUP TITLES
-## Plain string constants, not an Enum: `_render.render_param_group` renders `group_title`
-## directly into an f-string, and an Enum member's f-string form is `"ClassName.MEMBER"`,
-## not its underlying value (the exact bug already found once this session in
-## `fast_wave_convergence.py`). `setup`'s title is excluded: it is dynamic, supplied by the
-## caller via `setup_params.group_title`, not one of these fixed values.
+## Plain strings, not an Enum: an Enum's f-string form is `"ClassName.MEMBER"`, not its value.
+## Excludes `setup`; its title is dynamic, from the caller's `setup_params.group_title`.
 ##
 
 
