@@ -78,13 +78,6 @@ class SimParams:
 
 ##
 ## === GUARDRAILS
-## Simulation-code correctness rules that hold across every problem type, independent of which
-## specific problem is being written; encoded here (rather than left to each caller) so they
-## cannot silently regress the way the bare `amr.blocking_factor` fallback key did. Constraints
-## that depend on which *specific* problem is being written (e.g. "resistivity isn't physically
-## meaningful for FastWaveConvergence") belong in that problem's own `sim_types/` profile instead
-## -- `write.py` sits below `sim_types/` in the import graph and correctly has no way to know
-## which problem it's writing for.
 ##
 
 
@@ -124,8 +117,6 @@ def _ensure_path_is_valid(
 
 ##
 ## === PARAM GROUP TITLES
-## Plain strings, not an Enum: an Enum's f-string form is `"ClassName.MEMBER"`, not its value.
-## Excludes `setup`; its title is dynamic, from the caller's `setup_params.group_title`.
 ##
 
 
