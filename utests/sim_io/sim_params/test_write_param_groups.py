@@ -10,18 +10,11 @@ import unittest
 from pathlib import Path
 
 ## local
-from ww_quokka_sims.sim_io.sim_params import _render_param_groups, sim_types, write_param_groups
-from ww_quokka_sims.sim_io.sim_params.param_groups import (
-    VALID_EMF_AVERAGING_SCHEMES,
-    VALID_EMF_COMPUTE_SCHEMES,
-    VALID_RECONSTRUCTION_ORDERS,
-    GeometryParams,
-    HydroParams,
-    MHDParams,
-    OutputFileParams,
-    ResolutionParams,
-    SetupParams,
-    TimeIntegrationParams,
+from ww_quokka_sims.sim_io.sim_params import (
+    _render_param_groups,
+    param_groups,
+    sim_types,
+    write_param_groups,
 )
 from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 
@@ -153,7 +146,7 @@ class SchemaConsistencyTests(unittest.TestCase):
         self,
     ):
         self.assertEqual(
-            set(VALID_EMF_COMPUTE_SCHEMES),
+            set(param_groups.VALID_EMF_COMPUTE_SCHEMES),
             {member.value for member in scheme_lookup.EMFComputeScheme},
         )
 
@@ -161,7 +154,7 @@ class SchemaConsistencyTests(unittest.TestCase):
         self,
     ):
         self.assertEqual(
-            set(VALID_EMF_AVERAGING_SCHEMES),
+            set(param_groups.VALID_EMF_AVERAGING_SCHEMES),
             {member.value for member in scheme_lookup.EMFAveragingScheme},
         )
 
@@ -169,7 +162,7 @@ class SchemaConsistencyTests(unittest.TestCase):
         self,
     ):
         self.assertEqual(
-            set(VALID_RECONSTRUCTION_ORDERS),
+            set(param_groups.VALID_RECONSTRUCTION_ORDERS),
             {member.value for member in scheme_lookup.ReconstructionScheme},
         )
 
@@ -185,13 +178,13 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            ResolutionParams(num_cells=(4, 8, 8), blocking_factor=8, max_grid_size=128)
+            param_groups.ResolutionParams(num_cells=(4, 8, 8), blocking_factor=8, max_grid_size=128)
 
     def test_resolution_rejects_num_refinement_buffer_cells_without_amr(
         self,
     ):
         with self.assertRaises(ValueError):
-            ResolutionParams(
+            param_groups.ResolutionParams(
                 num_cells=(128, 8, 8),
                 blocking_factor=8,
                 max_grid_size=128,
@@ -203,9 +196,9 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0))  # neither set
+            param_groups.GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0))  # neither set
         with self.assertRaises(ValueError):
-            GeometryParams(
+            param_groups.GeometryParams(
                 domain_lo=(0.0, 0.0, 0.0),
                 domain_hi=(1.0, 1.0, 1.0),
                 is_boundary_periodic=(1, 1, 1),
@@ -216,57 +209,57 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            OutputFileParams()  # neither snapshot_index_interval nor snapshot_time_interval
+            param_groups.OutputFileParams()  # neither snapshot_index_interval nor snapshot_time_interval
 
     def test_hydro_rejects_invalid_reconstruction_order(
         self,
     ):
         with self.assertRaises(ValueError):
-            HydroParams(integrator_order=2, reconstruction_order=4)
+            param_groups.HydroParams(integrator_order=2, reconstruction_order=4)
 
     def test_time_integration_rejects_cfl_out_of_bounds(
         self,
     ):
         with self.assertRaises(ValueError):
-            TimeIntegrationParams(cfl=1.5)
+            param_groups.TimeIntegrationParams(cfl=1.5)
         with self.assertRaises(ValueError):
-            TimeIntegrationParams(cfl=-0.1)
+            param_groups.TimeIntegrationParams(cfl=-0.1)
 
     def test_mhd_rejects_invalid_emf_compute_scheme(
         self,
     ):
         with self.assertRaises(ValueError):
-            MHDParams(emf_compute_scheme="NotAScheme", emf_averaging_scheme="Balsara2025", reconstruction_order=5)
+            param_groups.MHDParams(emf_compute_scheme="NotAScheme", emf_averaging_scheme="Balsara2025", reconstruction_order=5)
 
     def test_mhd_rejects_invalid_emf_averaging_scheme(
         self,
     ):
         with self.assertRaises(ValueError):
-            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="NotAScheme", reconstruction_order=5)
+            param_groups.MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="NotAScheme", reconstruction_order=5)
 
     def test_mhd_rejects_invalid_reconstruction_order(
         self,
     ):
         with self.assertRaises(ValueError):
-            MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", reconstruction_order=4)
+            param_groups.MHDParams(emf_compute_scheme="Quokka2026", emf_averaging_scheme="Balsara2025", reconstruction_order=4)
 
     def test_setup_rejects_empty_param_values(
         self,
     ):
         with self.assertRaises(ValueError):
-            SetupParams(param_values={})
+            param_groups.SetupParams(param_values={})
 
     def test_setup_rejects_empty_group_title(
         self,
     ):
         with self.assertRaises(ValueError):
-            SetupParams(param_values={"nx_max": 128}, group_title="")
+            param_groups.SetupParams(param_values={"nx_max": 128}, group_title="")
 
     def test_setup_rejects_empty_key_prefix(
         self,
     ):
         with self.assertRaises(ValueError):
-            SetupParams(param_values={"nx_max": 128}, key_prefix="")
+            param_groups.SetupParams(param_values={"nx_max": 128}, key_prefix="")
 
 
 ##
@@ -295,16 +288,16 @@ class GuardrailTests(unittest.TestCase):
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
             "output_path": self.test_file_path,
-            "geometry_params": GeometryParams(
+            "geometry_params": param_groups.GeometryParams(
                 domain_lo=(0.0, 0.0, 0.0),
                 domain_hi=(1.0, 1.0, 1.0),
                 is_boundary_periodic=(1, 1, 1),
             ),
-            "resolution_params": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
-            "output_file_params": OutputFileParams(snapshot_index_interval=-1),
-            "time_integration_params": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro_params": HydroParams(integrator_order=2, reconstruction_order=5),
-            "mhd_params": MHDParams(
+            "resolution_params": param_groups.ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
+            "output_file_params": param_groups.OutputFileParams(snapshot_index_interval=-1),
+            "time_integration_params": param_groups.TimeIntegrationParams(cfl=0.3, use_subcycle=0),
+            "hydro_params": param_groups.HydroParams(integrator_order=2, reconstruction_order=5),
+            "mhd_params": param_groups.MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
                 reconstruction_order=5,
@@ -318,8 +311,8 @@ class GuardrailTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            time_integration_params=TimeIntegrationParams(cfl=0.3, use_subcycle=1),
-            mhd_params=MHDParams(
+            time_integration_params=param_groups.TimeIntegrationParams(cfl=0.3, use_subcycle=1),
+            mhd_params=param_groups.MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
                 reconstruction_order=5,
@@ -386,16 +379,16 @@ class WriteContentTests(unittest.TestCase):
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
             "output_path": self.test_file_path,
-            "geometry_params": GeometryParams(
+            "geometry_params": param_groups.GeometryParams(
                 domain_lo=(0.0, 0.0, 0.0),
                 domain_hi=(1.0, 1.0, 1.0),
                 is_boundary_periodic=(1, 1, 1),
             ),
-            "resolution_params": ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
-            "output_file_params": OutputFileParams(snapshot_index_interval=-1),
-            "time_integration_params": TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro_params": HydroParams(integrator_order=2, reconstruction_order=5),
-            "mhd_params": MHDParams(
+            "resolution_params": param_groups.ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
+            "output_file_params": param_groups.OutputFileParams(snapshot_index_interval=-1),
+            "time_integration_params": param_groups.TimeIntegrationParams(cfl=0.3, use_subcycle=0),
+            "hydro_params": param_groups.HydroParams(integrator_order=2, reconstruction_order=5),
+            "mhd_params": param_groups.MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
                 reconstruction_order=5,
@@ -409,7 +402,7 @@ class WriteContentTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            geometry_params=GeometryParams(
+            geometry_params=param_groups.GeometryParams(
                 domain_lo=(0.0, 0.0, 0.0),
                 domain_hi=(1.0, 1.0, 1.0),
                 boundary_conditions=("ext_dir", "periodic", "periodic"),
@@ -424,7 +417,7 @@ class WriteContentTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            output_file_params=OutputFileParams(
+            output_file_params=param_groups.OutputFileParams(
                 snapshot_time_interval=0.5,
                 checkpoint_index_interval=100,
                 checkpoint_prefix="checkpoints/chk",
@@ -441,7 +434,7 @@ class WriteContentTests(unittest.TestCase):
         self,
     ):
         kwargs = self._base_kwargs(
-            resolution_params=ResolutionParams(
+            resolution_params=param_groups.ResolutionParams(
                 num_cells=(128, 8, 8),
                 blocking_factor=(16, 8, 8),
                 max_grid_size=128,

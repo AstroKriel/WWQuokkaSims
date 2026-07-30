@@ -5,22 +5,12 @@
 ##
 
 ## local
-from ..param_groups import (
-    GeometryParams,
-    HydroParams,
-    MHDParams,
-    OutputFileParams,
-    ResolutionParams,
-    SetupParams,
-    TimeIntegrationParams,
-)
-from ..write_param_groups import SimParams
-## direct names, not `from . import scheme_lookup`: avoids a `sim_types/__init__.py` import cycle
-from .scheme_lookup import (
-    resolve_emf_averaging_scheme,
-    resolve_emf_compute_scheme,
-    resolve_reconstruction_scheme,
-)
+from .. import param_groups
+from .. import write_param_groups
+
+## fully-dotted, not `from . import scheme_lookup`: that form triggers `reportImportCycles`,
+## since `sim_types/__init__.py` imports this module before `scheme_lookup` resolves
+import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 ##
 ## === CONSTANTS
@@ -41,43 +31,43 @@ def build_sim_params(
     compute_scheme_key: str,
     averaging_scheme_key: str,
     reconstruction: str,
-) -> SimParams:
+) -> write_param_groups.SimParams:
     """Build the full parameter set for one `FastWaveConvergence` scheme combo (e.g. `q26-b25-ppm_ep`)."""
     ## `.value` unwraps the Enum to the plain int/str `sim_params.param_groups` dataclasses declare;
     ## an Enum member's `str()`/f-string form is `"ClassName.MEMBER"`, not its underlying value
-    reconstruction_order = resolve_reconstruction_scheme(reconstruction).value
-    return SimParams(
-        geometry_params=GeometryParams(
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
+    return write_param_groups.SimParams(
+        geometry_params=param_groups.GeometryParams(
             domain_lo=(0.0, 0.0, 0.0),
             domain_hi=(1.0, 1.0, 1.0),
             is_boundary_periodic=(1, 1, 1),
         ),
-        resolution_params=ResolutionParams(
+        resolution_params=param_groups.ResolutionParams(
             num_cells=_BASE_NUM_CELLS,
             blocking_factor=(16, 8, 8),
             max_grid_size=128,
         ),
-        output_file_params=OutputFileParams(
+        output_file_params=param_groups.OutputFileParams(
             snapshot_index_interval=-1,
         ),
-        time_integration_params=TimeIntegrationParams(
+        time_integration_params=param_groups.TimeIntegrationParams(
             cfl=0.3,
             use_reflux=0,
             use_subcycle=0,
             use_tracers=1,
         ),
-        hydro_params=HydroParams(
+        hydro_params=param_groups.HydroParams(
             integrator_order=2,
             reconstruction_order=reconstruction_order,
             use_dual_energy=0,
         ),
         ## no `resistivity`: not physically meaningful for this ideal-MHD wave test
-        mhd_params=MHDParams(
-            emf_compute_scheme=resolve_emf_compute_scheme(compute_scheme_key).value,
-            emf_averaging_scheme=resolve_emf_averaging_scheme(averaging_scheme_key).value,
+        mhd_params=param_groups.MHDParams(
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value,
             reconstruction_order=reconstruction_order,
         ),
-        setup_params=SetupParams(
+        setup_params=param_groups.SetupParams(
             group_title="wave setup",
             param_values={
                 "num_modes_x": 1,

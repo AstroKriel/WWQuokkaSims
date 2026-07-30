@@ -14,15 +14,7 @@ from jormi.ww_validation import validate_types
 
 ## local
 from . import _render_param_groups
-from .param_groups import (
-    GeometryParams,
-    HydroParams,
-    MHDParams,
-    OutputFileParams,
-    ResolutionParams,
-    SetupParams,
-    TimeIntegrationParams,
-)
+from . import param_groups
 
 ##
 ## === PARAMETER BUNDLE
@@ -44,13 +36,13 @@ class SimParams:
         Problem-specific parameters; omit for problem types with none.
     """
 
-    geometry_params: GeometryParams
-    resolution_params: ResolutionParams
-    output_file_params: OutputFileParams
-    time_integration_params: TimeIntegrationParams
-    hydro_params: HydroParams
-    mhd_params: MHDParams
-    setup_params: SetupParams | None = None
+    geometry_params: param_groups.GeometryParams
+    resolution_params: param_groups.ResolutionParams
+    output_file_params: param_groups.OutputFileParams
+    time_integration_params: param_groups.TimeIntegrationParams
+    hydro_params: param_groups.HydroParams
+    mhd_params: param_groups.MHDParams
+    setup_params: param_groups.SetupParams | None = None
 
     def write(
         self,
@@ -80,8 +72,8 @@ class SimParams:
 
 def _ensure_guardrails(
     *,
-    time_integration_params: TimeIntegrationParams,
-    mhd_params: MHDParams,
+    time_integration_params: param_groups.TimeIntegrationParams,
+    mhd_params: param_groups.MHDParams,
 ) -> None:
     if (mhd_params.resistivity is not None) and (time_integration_params.use_subcycle != 0):
         raise ValueError(
@@ -133,7 +125,7 @@ class _ParamGroupTitle:
 
 
 def _build_geometry_lines(
-    geometry_params: GeometryParams,
+    geometry_params: param_groups.GeometryParams,
 ) -> list[str]:
     assignment_lines = [
         _render_param_groups.render_key_value(key="geometry.prob_lo", value=list(geometry_params.domain_lo)),
@@ -157,7 +149,7 @@ def _build_geometry_lines(
 
 
 def _build_resolution_lines(
-    resolution_params: ResolutionParams,
+    resolution_params: param_groups.ResolutionParams,
 ) -> list[str]:
     assignment_lines = [
         _render_param_groups.render_key_value(key="amr.n_cell", value=list(resolution_params.num_cells)),
@@ -176,7 +168,7 @@ def _build_resolution_lines(
 
 
 def _build_output_lines(
-    output_file_params: OutputFileParams,
+    output_file_params: param_groups.OutputFileParams,
 ) -> list[str]:
     assignment_lines: list[str] = []
     if output_file_params.checkpoint_index_interval is not None:
@@ -203,7 +195,7 @@ def _build_output_lines(
 
 
 def _build_time_integration_lines(
-    time_integration_params: TimeIntegrationParams,
+    time_integration_params: param_groups.TimeIntegrationParams,
 ) -> list[str]:
     assignment_lines = [_render_param_groups.render_key_value(key="cfl", value=time_integration_params.cfl)]
     optional_keys = (
@@ -220,7 +212,7 @@ def _build_time_integration_lines(
 
 
 def _build_hydro_lines(
-    hydro_params: HydroParams,
+    hydro_params: param_groups.HydroParams,
 ) -> list[str]:
     assignment_lines = [
         _render_param_groups.render_key_value(key="hydro.rk_integrator_order", value=hydro_params.integrator_order),
@@ -234,7 +226,7 @@ def _build_hydro_lines(
 
 
 def _build_mhd_lines(
-    mhd_params: MHDParams,
+    mhd_params: param_groups.MHDParams,
 ) -> list[str]:
     assignment_lines = [
         _render_param_groups.render_key_value(key="mhd.emf_compute_scheme", value=mhd_params.emf_compute_scheme),
@@ -247,7 +239,7 @@ def _build_mhd_lines(
 
 
 def _build_setup_lines(
-    setup_params: SetupParams,
+    setup_params: param_groups.SetupParams,
 ) -> list[str]:
     return [
         _render_param_groups.render_key_value(key=f"{setup_params.key_prefix}.{key}", value=value)
@@ -263,13 +255,13 @@ def _build_setup_lines(
 def write_sim_params_toml(
     *,
     output_path: str | Path,
-    geometry_params: GeometryParams,
-    resolution_params: ResolutionParams,
-    output_file_params: OutputFileParams,
-    time_integration_params: TimeIntegrationParams,
-    hydro_params: HydroParams,
-    mhd_params: MHDParams,
-    setup_params: SetupParams | None = None,
+    geometry_params: param_groups.GeometryParams,
+    resolution_params: param_groups.ResolutionParams,
+    output_file_params: param_groups.OutputFileParams,
+    time_integration_params: param_groups.TimeIntegrationParams,
+    hydro_params: param_groups.HydroParams,
+    mhd_params: param_groups.MHDParams,
+    setup_params: param_groups.SetupParams | None = None,
     overwrite: bool = False,
     verbose: bool = True,
 ) -> Path:
@@ -296,7 +288,7 @@ def write_sim_params_toml(
         mhd_params=mhd_params,
     )
 
-    param_groups: list[tuple[str, list[str]]] = [
+    param_group_entries: list[tuple[str, list[str]]] = [
         (_ParamGroupTitle.GEOMETRY, _build_geometry_lines(geometry_params)),
         (_ParamGroupTitle.RESOLUTION, _build_resolution_lines(resolution_params)),
         (_ParamGroupTitle.VERBOSITY, [_render_param_groups.render_key_value(key="amr.v", value=1)]),
@@ -306,10 +298,10 @@ def write_sim_params_toml(
         (_ParamGroupTitle.MHD, _build_mhd_lines(mhd_params)),
     ]
     if setup_params is not None:
-        param_groups.append((setup_params.group_title, _build_setup_lines(setup_params)))
+        param_group_entries.append((setup_params.group_title, _build_setup_lines(setup_params)))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(_render_param_groups.render_param_groups(param_groups))
+    output_path.write_text(_render_param_groups.render_param_groups(param_group_entries))
     if verbose:
         manage_log.log_action(
             title="Write sim_params.toml",
