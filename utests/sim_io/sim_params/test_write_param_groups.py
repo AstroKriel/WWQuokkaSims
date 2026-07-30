@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 
 ## local
-from ww_quokka_sims.sim_io.sim_params import _render, sim_types, write_param_groups
+from ww_quokka_sims.sim_io.sim_params import _render_param_groups, sim_types, write_param_groups
 from ww_quokka_sims.sim_io.sim_params.param_groups import (
     VALID_EMF_AVERAGING_SCHEMES,
     VALID_EMF_COMPUTE_SCHEMES,
@@ -36,7 +36,7 @@ from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 _REFERENCE_FILE = Path(__file__).parent / "fixtures" / "fast_wave_convergence_reference.toml"
 
 ##
-## === TEST SUITE: _render internals
+## === TEST SUITE: _render_param_groups internals
 ##
 
 
@@ -45,7 +45,7 @@ class RenderTests(unittest.TestCase):
     def test_expand_per_axis_scalar(
         self,
     ):
-        lines = _render.expand_per_axis(16, key_prefix="amr.blocking_factor")
+        lines = _render_param_groups.expand_per_axis(16, key_prefix="amr.blocking_factor")
         self.assertEqual(
             lines,
             [
@@ -58,7 +58,7 @@ class RenderTests(unittest.TestCase):
     def test_expand_per_axis_tuple(
         self,
     ):
-        lines = _render.expand_per_axis((16, 8, 8), key_prefix="amr.blocking_factor")
+        lines = _render_param_groups.expand_per_axis((16, 8, 8), key_prefix="amr.blocking_factor")
         self.assertEqual(
             lines,
             [
@@ -72,7 +72,7 @@ class RenderTests(unittest.TestCase):
         self,
     ):
         for value in (16, (16, 8, 8)):
-            lines = _render.expand_per_axis(value, key_prefix="amr.blocking_factor")
+            lines = _render_param_groups.expand_per_axis(value, key_prefix="amr.blocking_factor")
             self.assertTrue(all("_x" in line or "_y" in line or "_z" in line for line in lines))
             self.assertFalse(any(line.startswith("amr.blocking_factor =") for line in lines))
 
@@ -80,34 +80,34 @@ class RenderTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            _render.expand_per_axis((16, 8), key_prefix="amr.blocking_factor")  # pyright: ignore[reportArgumentType]
+            _render_param_groups.expand_per_axis((16, 8), key_prefix="amr.blocking_factor")  # pyright: ignore[reportArgumentType]
         with self.assertRaises(ValueError):
-            _render.expand_per_axis((16, 8, 8, 4), key_prefix="amr.blocking_factor")  # pyright: ignore[reportArgumentType]
+            _render_param_groups.expand_per_axis((16, 8, 8, 4), key_prefix="amr.blocking_factor")  # pyright: ignore[reportArgumentType]
 
     def test_expand_per_axis_rejects_non_positive_scalar(
         self,
     ):
         with self.assertRaises(ValueError):
-            _render.expand_per_axis(0, key_prefix="amr.blocking_factor")
+            _render_param_groups.expand_per_axis(0, key_prefix="amr.blocking_factor")
         with self.assertRaises(ValueError):
-            _render.expand_per_axis(-1, key_prefix="amr.blocking_factor")
+            _render_param_groups.expand_per_axis(-1, key_prefix="amr.blocking_factor")
 
     def test_format_value_list_of_floats(
         self,
     ):
-        self.assertEqual(_render.format_value([0.0, 1.0, 1.0]), "[0.0, 1.0, 1.0]")
+        self.assertEqual(_render_param_groups.format_value([0.0, 1.0, 1.0]), "[0.0, 1.0, 1.0]")
 
     def test_format_value_string(
         self,
     ):
-        self.assertEqual(_render.format_value("Quokka2026"), '"Quokka2026"')
+        self.assertEqual(_render_param_groups.format_value("Quokka2026"), '"Quokka2026"')
 
     def test_format_value_int_not_python_bool(
         self,
     ):
         ## AMReX booleans are bare 0/1, never Python's True/False
-        self.assertEqual(_render.format_value(True), "1")
-        self.assertEqual(_render.format_value(0), "0")
+        self.assertEqual(_render_param_groups.format_value(True), "1")
+        self.assertEqual(_render_param_groups.format_value(0), "0")
 
 
 ##
@@ -139,7 +139,7 @@ class SchemeLookupTests(unittest.TestCase):
 
 
 ##
-## === TEST SUITE: models/scheme_lookup consistency
+## === TEST SUITE: param_groups/scheme_lookup consistency
 ## `param_groups.py` validates against its own literal value sets, independent of `scheme_lookup.py`'s
 ## enums, since a model must reject an invalid Quokka value even when constructed directly,
 ## bypassing `scheme_lookup` entirely. That independence means the two can silently drift; these
