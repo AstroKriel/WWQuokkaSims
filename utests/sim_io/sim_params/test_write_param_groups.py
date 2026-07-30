@@ -20,8 +20,7 @@ from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 
 ##
 ## === REFERENCE FILE
-## frozen copy of a real, audited `sim_params.toml` (kriel-quokka-mhd); copied in, not read from
-## that repo, so this test stays portable for a standalone `ww-quokka-sims` clone
+## a hand-audited, known-good `sim_params.toml`, frozen here as a fixture
 ##
 
 _REFERENCE_FILE = Path(__file__).parent / "fixtures" / "fast_wave_convergence_reference.toml"
@@ -445,7 +444,7 @@ class WriteContentTests(unittest.TestCase):
 
 
 ##
-## === TEST SUITE: round-trip against a real, already-audited kriel-quokka-mhd file
+## === TEST SUITE: round-trip against a real, already-audited reference file
 ##
 
 
