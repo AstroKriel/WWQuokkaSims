@@ -26,9 +26,6 @@ from .models import (
 
 ##
 ## === PARAMETER BUNDLE
-## Ties together one full `write_sim_params_toml` call's worth of dataclasses. Profiles under
-## `sim_types/` return this instead of a stringly-typed dict, so a renamed/misspelled field is
-## caught at type-check time, not by a `**kwargs`-splat runtime error.
 ##
 
 
