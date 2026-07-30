@@ -5,7 +5,7 @@ from . import fast_wave_convergence as fast_wave_convergence
 from . import scheme_lookup as scheme_lookup
 
 ## add one entry per new file added under `sim_types/`
-_SIM_PARAMS_BUILDER_BY_PROBLEM_NAME = {
+_SIM_PARAMS_BUILDER_LOOKUP = {
     fast_wave_convergence.PROBLEM_NAME: fast_wave_convergence.build_sim_params,
 }
 
@@ -14,9 +14,9 @@ def resolve_sim_params_builder(
     problem_name: str,
 ) -> Callable[..., SimParams]:
     """Resolve `problem_name` to its profile's `build_sim_params` function."""
-    if problem_name not in _SIM_PARAMS_BUILDER_BY_PROBLEM_NAME:
+    if problem_name not in _SIM_PARAMS_BUILDER_LOOKUP:
         raise ValueError(
             f"unknown problem_name {problem_name!r}; expected one of "
-            f"{sorted(_SIM_PARAMS_BUILDER_BY_PROBLEM_NAME)}.",
+            f"{sorted(_SIM_PARAMS_BUILDER_LOOKUP)}.",
         )
-    return _SIM_PARAMS_BUILDER_BY_PROBLEM_NAME[problem_name]
+    return _SIM_PARAMS_BUILDER_LOOKUP[problem_name]
