@@ -29,6 +29,7 @@ _BLAST_WAVE_NCELLS128_REFERENCE_FILE = _FIXTURES_DIR / "blast_wave-ncells=128.to
 _BLAST_WAVE_NCELLS1024_REFERENCE_FILE = _FIXTURES_DIR / "blast_wave-ncells=1024.toml"
 _BRIO_WU_SHOCK_TUBE_NCELLS256_REFERENCE_FILE = _FIXTURES_DIR / "brio_wu_shock_tube-ncells=256.toml"
 _BRIO_WU_SHOCK_TUBE_NCELLS8192_REFERENCE_FILE = _FIXTURES_DIR / "brio_wu_shock_tube-ncells=8192.toml"
+_CURRENT_SHEET_REFERENCE_FILE = _FIXTURES_DIR / "current_sheet.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -551,6 +552,16 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             checkpoint_index_interval=-1,
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_BRIO_WU_SHOCK_TUBE_NCELLS8192_REFERENCE_FILE)
+
+    def test_current_sheet_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.current_sheet.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm",
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_CURRENT_SHEET_REFERENCE_FILE)
 
 
 ##

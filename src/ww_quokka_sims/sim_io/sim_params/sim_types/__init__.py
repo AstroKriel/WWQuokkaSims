@@ -3,6 +3,7 @@ from collections.abc import Callable
 from .. import write_param_groups
 from . import blast_wave as blast_wave
 from . import brio_wu_shock_tube as brio_wu_shock_tube
+from . import current_sheet as current_sheet
 from . import fast_wave_convergence as fast_wave_convergence
 from . import scheme_lookup as scheme_lookup
 
@@ -10,6 +11,7 @@ from . import scheme_lookup as scheme_lookup
 _SIM_PARAMS_BUILDER_LOOKUP = {
     blast_wave.PROBLEM_NAME: blast_wave.build_sim_params,
     brio_wu_shock_tube.PROBLEM_NAME: brio_wu_shock_tube.build_sim_params,
+    current_sheet.PROBLEM_NAME: current_sheet.build_sim_params,
     fast_wave_convergence.PROBLEM_NAME: fast_wave_convergence.build_sim_params,
 }
 

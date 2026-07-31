@@ -1,0 +1,39 @@
+## geometry
+geometry.prob_lo = [-0.5, -0.5, -0.5]
+geometry.prob_hi = [0.5, 0.5, 0.5]
+quokka.bc = ["periodic", "periodic", "periodic"]
+
+## resolution
+amr.n_cell = [1024, 1024, 8]
+amr.max_level = 0
+amr.max_grid_size_x = 128
+amr.max_grid_size_y = 128
+amr.max_grid_size_z = 128
+amr.blocking_factor_x = 16
+amr.blocking_factor_y = 16
+amr.blocking_factor_z = 8
+
+## verbosity
+amr.v = 1
+do_reflux = 0
+do_subcycle = 0
+
+## output
+checkpoint_prefix = "chk"
+checkpointtime_interval = 1.0
+plotfile_prefix = "snapshots/plt"
+plottime_interval = 0.5
+
+## time integration
+cfl = 0.2
+stop_time = 10.0
+max_timesteps = 1000000
+
+## hydro
+hydro.rk_integrator_order = 2
+hydro.reconstruction_order = 3
+
+## mhd
+mhd.emf_compute_scheme = "Quokka2026"
+mhd.emf_averaging_scheme = "Balsara2025"
+mhd.emf_reconstruction_order = 3
