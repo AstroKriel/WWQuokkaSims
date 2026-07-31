@@ -34,6 +34,9 @@ class SimParams:
 
     - `setup_params`:
         Problem-specific parameters; omit for problem types with none.
+
+    - `amr_verbosity`:
+        AMReX's own `amr.v` logging verbosity; omit for Quokka's default.
     """
 
     geometry_params: param_groups.GeometryParams
@@ -43,6 +46,7 @@ class SimParams:
     hydro_params: param_groups.HydroParams
     mhd_params: param_groups.MHDParams
     setup_params: param_groups.SetupParams | None = None
+    amr_verbosity: int = 1
 
     def write(
         self,
@@ -60,6 +64,7 @@ class SimParams:
             hydro_params=self.hydro_params,
             mhd_params=self.mhd_params,
             setup_params=self.setup_params,
+            amr_verbosity=self.amr_verbosity,
             overwrite=overwrite,
             verbose=verbose,
         )
@@ -270,6 +275,7 @@ def write_sim_params_toml(
     hydro_params: param_groups.HydroParams,
     mhd_params: param_groups.MHDParams,
     setup_params: param_groups.SetupParams | None = None,
+    amr_verbosity: int = 1,
     overwrite: bool = False,
     verbose: bool = True,
 ) -> Path:
@@ -283,9 +289,13 @@ def write_sim_params_toml(
 
     Parameters
     ---
+    - `amr_verbosity`:
+        AMReX's own `amr.v` logging verbosity.
+
     - `overwrite`:
         Raise if `output_path` already exists and this is `False`.
     """
+    validate_types.ensure_finite_int(param=amr_verbosity, param_name="amr_verbosity")
     validate_types.ensure_bool(param=overwrite, param_name="overwrite")
     validate_types.ensure_bool(param=verbose, param_name="verbose")
     output_path = _ensure_path_is_valid(output_path)
@@ -299,7 +309,7 @@ def write_sim_params_toml(
     param_group_entries: list[tuple[str, list[str]]] = [
         (_ParamGroupTitle.GEOMETRY, _build_geometry_lines(geometry_params)),
         (_ParamGroupTitle.RESOLUTION, _build_resolution_lines(resolution_params)),
-        (_ParamGroupTitle.VERBOSITY, [_render_param_groups.render_key_value(key="amr.v", value=1)]),
+        (_ParamGroupTitle.VERBOSITY, [_render_param_groups.render_key_value(key="amr.v", value=amr_verbosity)]),
         (_ParamGroupTitle.OUTPUT, _build_output_lines(output_file_params)),
         (_ParamGroupTitle.TIME_INTEGRATION, _build_time_integration_lines(time_integration_params)),
         (_ParamGroupTitle.HYDRO, _build_hydro_lines(hydro_params)),

@@ -460,6 +460,14 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
         self.assertIn("amr.max_level = 1", content)
         self.assertIn("amr.n_error_buf = 2", content)
 
+    def test_writes_amr_verbosity(
+        self,
+    ):
+        kwargs = self._base_kwargs(amr_verbosity=0)
+        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+        content = path.read_text()
+        self.assertIn("amr.v = 0", content)
+
 
 ##
 ## === TEST SUITE: round-trip against a real, already-audited reference file
