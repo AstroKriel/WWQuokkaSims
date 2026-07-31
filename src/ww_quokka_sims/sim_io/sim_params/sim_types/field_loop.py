@@ -20,6 +20,10 @@ PROBLEM_NAME = "FieldLoop"
 
 VALID_REFINE_BASED_ON = ("Region", "MagneticEnergy")
 
+## `stop_time`'s default is tuned for one full domain-diagonal crossing at the default
+## `domain_lo`/`domain_hi`/`advection_angle_deg`; overriding any of those without also
+## reconsidering `stop_time` still runs fine, just no longer completes exactly one crossing.
+
 ##
 ## === PROGRAM MAIN
 ##
@@ -30,25 +34,25 @@ def build_sim_params(
     compute_scheme_key: str,
     averaging_scheme_key: str,
     reconstruction: str,
-    domain_lo: tuple[float, float, float],
-    domain_hi: tuple[float, float, float],
-    num_cells: tuple[int, int, int],
-    blocking_factor: int | tuple[int, int, int],
-    max_grid_size: int | tuple[int, int, int],
-    max_time_steps: int,
-    stop_time: float,
-    loop_radius: float,
-    loop_center_x: float,
-    loop_center_y: float,
-    advection_vz: float,
-    advection_angle_deg: float,
-    refine_based_on: str,
-    region_lo_x: float,
-    region_hi_x: float,
-    region_lo_y: float,
-    region_hi_y: float,
-    region_lo_z: float,
-    region_hi_z: float,
+    domain_lo: tuple[float, float, float] = (-1.5, -1.0, -0.5),
+    domain_hi: tuple[float, float, float] = (1.5, 1.0, 0.5),
+    num_cells: tuple[int, int, int] = (96, 64, 32),
+    blocking_factor: int | tuple[int, int, int] = 16,
+    max_grid_size: int | tuple[int, int, int] = 32,
+    max_time_steps: int = 5000,
+    stop_time: float = 3.6055512755,
+    loop_radius: float = 0.5,
+    loop_center_x: float = 0.0,
+    loop_center_y: float = 0.0,
+    advection_vz: float = 0.2773500981126146,
+    advection_angle_deg: float = 56.309932474020215,
+    refine_based_on: str = "Region",
+    region_lo_x: float = -1.25,
+    region_hi_x: float = -0.75,
+    region_lo_y: float = -0.75,
+    region_hi_y: float = 0.75,
+    region_lo_z: float = -0.25,
+    region_hi_z: float = 0.25,
     max_amr_levels: int = 1,
     cfl: float = 0.2,
     use_reflux: int = 1,

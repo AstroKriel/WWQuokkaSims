@@ -662,6 +662,16 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_FIELD_LOOP_REFERENCE_FILE)
 
+    def test_field_loop_minimal_call_uses_defaults(
+        self,
+    ):
+        bundle = sim_types.field_loop.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm_ep",
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_FIELD_LOOP_REFERENCE_FILE)
+
     def test_balsara_vortex_ncells64_matches_real_file(
         self,
     ):
