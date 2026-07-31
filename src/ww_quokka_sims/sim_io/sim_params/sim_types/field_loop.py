@@ -1,0 +1,137 @@
+## { MODULE
+
+##
+## === DEPENDENCIES
+##
+
+## local
+from .. import param_groups
+from .. import write_param_groups
+
+## fully-dotted, not `from . import scheme_lookup`: that form triggers `reportImportCycles`,
+## since `sim_types/__init__.py` imports this module before `scheme_lookup` resolves
+import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
+
+##
+## === CONSTANTS
+##
+
+PROBLEM_NAME = "FieldLoop"
+
+VALID_REFINE_BASED_ON = ("Region", "MagneticEnergy")
+
+##
+## === PROGRAM MAIN
+##
+
+
+def build_sim_params(
+    *,
+    compute_scheme_key: str,
+    averaging_scheme_key: str,
+    reconstruction: str,
+    domain_lo: tuple[float, float, float],
+    domain_hi: tuple[float, float, float],
+    num_cells: tuple[int, int, int],
+    blocking_factor: int | tuple[int, int, int],
+    max_grid_size: int | tuple[int, int, int],
+    max_time_steps: int,
+    stop_time: float,
+    loop_radius: float,
+    loop_center_x: float,
+    loop_center_y: float,
+    advection_vz: float,
+    advection_angle_deg: float,
+    refine_based_on: str,
+    region_lo_x: float,
+    region_hi_x: float,
+    region_lo_y: float,
+    region_hi_y: float,
+    region_lo_z: float,
+    region_hi_z: float,
+    max_amr_levels: int = 1,
+    cfl: float = 0.2,
+    use_reflux: int = 1,
+    use_subcycle: int = 0,
+    use_dual_energy: int | None = 0,
+    snapshot_prefix: str = "snapshots/plt",
+    snapshot_index_interval: int | None = 100,
+    snapshot_time_interval: float | None = None,
+    checkpoint_index_interval: int | None = 500,
+    checkpoint_time_interval: float | None = None,
+    checkpoint_prefix: str | None = "checkpoints/chk",
+    derived_vars: tuple[str, ...] | None = ("magnetic_divergence",),
+) -> write_param_groups.SimParams:
+    """Build the full parameter set for one `FieldLoop` run."""
+    if loop_radius <= 0.0:
+        raise ValueError(f"`<loop_radius>` must be > 0, got {loop_radius!r}.")
+    if region_lo_x >= region_hi_x or region_lo_y >= region_hi_y or region_lo_z >= region_hi_z:
+        raise ValueError(
+            "`<region_lo_*>` must be < `<region_hi_*>` on every axis, got "
+            f"x=({region_lo_x!r}, {region_hi_x!r}), y=({region_lo_y!r}, {region_hi_y!r}), "
+            f"z=({region_lo_z!r}, {region_hi_z!r}).",
+        )
+    if refine_based_on not in VALID_REFINE_BASED_ON:
+        raise ValueError(f"`<refine_based_on>` must be one of {VALID_REFINE_BASED_ON}; got {refine_based_on!r}.")
+
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
+    return write_param_groups.SimParams(
+        geometry_params=param_groups.GeometryParams(
+            domain_lo=domain_lo,
+            domain_hi=domain_hi,
+            boundary_conditions=("periodic", "periodic", "periodic"),
+        ),
+        resolution_params=param_groups.ResolutionParams(
+            num_cells=num_cells,
+            blocking_factor=blocking_factor,
+            max_grid_size=max_grid_size,
+            max_amr_levels=max_amr_levels,
+        ),
+        output_file_params=param_groups.OutputFileParams(
+            snapshot_prefix=snapshot_prefix,
+            snapshot_index_interval=snapshot_index_interval,
+            snapshot_time_interval=snapshot_time_interval,
+            checkpoint_index_interval=checkpoint_index_interval,
+            checkpoint_time_interval=checkpoint_time_interval,
+            checkpoint_prefix=checkpoint_prefix,
+            derived_vars=derived_vars,
+        ),
+        time_integration_params=param_groups.TimeIntegrationParams(
+            cfl=cfl,
+            use_reflux=use_reflux,
+            use_subcycle=use_subcycle,
+            stop_time=stop_time,
+            max_time_steps=max_time_steps,
+        ),
+        hydro_params=param_groups.HydroParams(
+            integrator_order=2,
+            reconstruction_order=reconstruction_order,
+            use_dual_energy=use_dual_energy,
+        ),
+        ## no `resistivity`: `FieldLoop` doesn't opt into resistive physics (default `ResistivityModel::none`)
+        mhd_params=param_groups.MHDParams(
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value,
+            reconstruction_order=reconstruction_order,
+        ),
+        setup_params=param_groups.SetupParams(
+            group_title="Field loop setup",
+            param_values={
+                "loop_radius": loop_radius,
+                "loop_center_x": loop_center_x,
+                "loop_center_y": loop_center_y,
+                "advection_vz": advection_vz,
+                "advection_angle_deg": advection_angle_deg,
+                "refine_based_on": refine_based_on,
+                "region_lo_x": region_lo_x,
+                "region_hi_x": region_hi_x,
+                "region_lo_y": region_lo_y,
+                "region_hi_y": region_hi_y,
+                "region_lo_z": region_lo_z,
+                "region_hi_z": region_hi_z,
+            },
+        ),
+    )
+
+
+## } MODULE

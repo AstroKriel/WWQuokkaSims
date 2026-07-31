@@ -5,6 +5,7 @@ from . import blast_wave as blast_wave
 from . import brio_wu_shock_tube as brio_wu_shock_tube
 from . import current_sheet as current_sheet
 from . import fast_wave_convergence as fast_wave_convergence
+from . import field_loop as field_loop
 from . import mhd_quirk as mhd_quirk
 from . import orszag_tang as orszag_tang
 from . import ryu_jones_2a_shock_tube as ryu_jones_2a_shock_tube
@@ -16,6 +17,7 @@ _SIM_PARAMS_BUILDER_LOOKUP = {
     brio_wu_shock_tube.PROBLEM_NAME: brio_wu_shock_tube.build_sim_params,
     current_sheet.PROBLEM_NAME: current_sheet.build_sim_params,
     fast_wave_convergence.PROBLEM_NAME: fast_wave_convergence.build_sim_params,
+    field_loop.PROBLEM_NAME: field_loop.build_sim_params,
     mhd_quirk.PROBLEM_NAME: mhd_quirk.build_sim_params,
     orszag_tang.PROBLEM_NAME: orszag_tang.build_sim_params,
     ryu_jones_2a_shock_tube.PROBLEM_NAME: ryu_jones_2a_shock_tube.build_sim_params,

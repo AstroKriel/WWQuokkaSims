@@ -34,6 +34,7 @@ _ORSZAG_TANG_NCELLS1024_REFERENCE_FILE = _FIXTURES_DIR / "orszag_tang-ncells=102
 _ORSZAG_TANG_NCELLS8192_REFERENCE_FILE = _FIXTURES_DIR / "orszag_tang-ncells=8192.toml"
 _MHD_QUIRK_REFERENCE_FILE = _FIXTURES_DIR / "mhd_quirk.toml"
 _RYU_JONES_2A_SHOCK_TUBE_REFERENCE_FILE = _FIXTURES_DIR / "ryu_jones_2a_shock_tube.toml"
+_FIELD_LOOP_REFERENCE_FILE = _FIXTURES_DIR / "field_loop.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -616,6 +617,35 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             reconstruction="ppm_ep",
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_RYU_JONES_2A_SHOCK_TUBE_REFERENCE_FILE)
+
+    def test_field_loop_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.field_loop.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm_ep",
+            domain_lo=(-1.5, -1.0, -0.5),
+            domain_hi=(1.5, 1.0, 0.5),
+            num_cells=(96, 64, 32),
+            blocking_factor=16,
+            max_grid_size=32,
+            max_time_steps=5000,
+            stop_time=3.6055512755,
+            loop_radius=0.5,
+            loop_center_x=0.0,
+            loop_center_y=0.0,
+            advection_vz=0.2773500981126146,
+            advection_angle_deg=56.309932474020215,
+            refine_based_on="Region",
+            region_lo_x=-1.25,
+            region_hi_x=-0.75,
+            region_lo_y=-0.75,
+            region_hi_y=0.75,
+            region_lo_z=-0.25,
+            region_hi_z=0.25,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_FIELD_LOOP_REFERENCE_FILE)
 
 
 ##
