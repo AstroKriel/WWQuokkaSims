@@ -745,6 +745,32 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_ALFVEN_WAVE_LINEAR_RESISTIVE_REFERENCE_FILE)
 
+    def test_alfven_wave_linear_writes_error_tol_when_set(
+        self,
+    ):
+        bundle = sim_types.alfven_wave_linear.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm",
+            num_modes_x=1,
+            num_modes_y=0,
+            num_modes_z=0,
+            angle_between_k_b0=0,
+            run_sim=True,
+            error_tol=0.01,
+            domain_lo=(0.0, 0.0, 0.0),
+            domain_hi=(1.0, 1.0, 1.0),
+            num_cells=(256, 8, 8),
+            blocking_factor=(256, 8, 8),
+            max_grid_size=256,
+            cfl=0.3,
+            stop_time=5.0,
+            max_time_steps=100_000,
+            snapshot_index_interval=100,
+        )
+        bundle.write(output_path=self.test_file_path, verbose=False)
+        self.assertIn("setup.error_tol = 0.01", self.test_file_path.read_text())
+
     def test_slow_wave_convergence_matches_real_file(
         self,
     ):

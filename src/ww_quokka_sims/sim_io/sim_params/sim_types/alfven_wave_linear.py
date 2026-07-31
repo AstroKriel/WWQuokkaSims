@@ -47,6 +47,7 @@ def build_sim_params(
     num_modes_z: int,
     angle_between_k_b0: float,
     run_sim: bool = False,
+    error_tol: float | None = None,
     resistivity: float | None = None,
     domain_lo: tuple[float, float, float] | None = None,
     domain_hi: tuple[float, float, float] | None = None,
@@ -118,6 +119,7 @@ def build_sim_params(
                     "num_modes_x": num_modes_x,
                     "num_modes_y": num_modes_y,
                     "num_modes_z": num_modes_z,
+                    **({} if error_tol is None else {"error_tol": error_tol}),
                 },
             ),
         )
