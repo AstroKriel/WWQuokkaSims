@@ -45,3 +45,4 @@ setup.angle_between_k_b0 = 0
 setup.num_modes_x = 1
 setup.num_modes_y = 0
 setup.num_modes_z = 0
+setup.error_tol = 0.005
