@@ -13,6 +13,7 @@ from . import mhd_quirk as mhd_quirk
 from . import orszag_tang as orszag_tang
 from . import ryu_jones_2a_shock_tube as ryu_jones_2a_shock_tube
 from . import scheme_lookup as scheme_lookup
+from . import slow_wave_convergence as slow_wave_convergence
 
 ## add one entry per new file added under `sim_types/`
 _SIM_PARAMS_BUILDER_LOOKUP = {
@@ -27,6 +28,7 @@ _SIM_PARAMS_BUILDER_LOOKUP = {
     mhd_quirk.PROBLEM_NAME: mhd_quirk.build_sim_params,
     orszag_tang.PROBLEM_NAME: orszag_tang.build_sim_params,
     ryu_jones_2a_shock_tube.PROBLEM_NAME: ryu_jones_2a_shock_tube.build_sim_params,
+    slow_wave_convergence.PROBLEM_NAME: slow_wave_convergence.build_sim_params,
 }
 
 

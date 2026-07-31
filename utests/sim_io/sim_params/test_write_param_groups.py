@@ -40,6 +40,8 @@ _BALSARA_VORTEX_NCELLS128_REFERENCE_FILE = _FIXTURES_DIR / "balsara_vortex-ncell
 _ALFVEN_WAVE_CIRCULAR_REFERENCE_FILE = _FIXTURES_DIR / "alfven_wave_circular-convergence.toml"
 _ALFVEN_WAVE_LINEAR_CONVERGENCE_REFERENCE_FILE = _FIXTURES_DIR / "alfven_wave_linear-convergence.toml"
 _ALFVEN_WAVE_LINEAR_RESISTIVE_REFERENCE_FILE = _FIXTURES_DIR / "alfven_wave_linear-correctness=resistive.toml"
+_SLOW_WAVE_CONVERGENCE_REFERENCE_FILE = _FIXTURES_DIR / "slow_wave-convergence.toml"
+_SLOW_WAVE_CORRECTNESS_REFERENCE_FILE = _FIXTURES_DIR / "slow_wave-correctness.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -742,6 +744,45 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             checkpoint_index_interval=-1,
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_ALFVEN_WAVE_LINEAR_RESISTIVE_REFERENCE_FILE)
+
+    def test_slow_wave_convergence_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.slow_wave_convergence.build_sim_params(
+            compute_scheme_key="b25",
+            averaging_scheme_key="b25",
+            reconstruction="pcm",
+            num_modes_x=1,
+            num_modes_y=0,
+            num_modes_z=0,
+            angle_between_k_b0=45,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_SLOW_WAVE_CONVERGENCE_REFERENCE_FILE)
+
+    def test_slow_wave_correctness_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.slow_wave_convergence.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm_ep",
+            num_modes_x=1,
+            num_modes_y=2,
+            num_modes_z=3,
+            angle_between_k_b0=45,
+            run_sim=True,
+            domain_lo=(0.0, 0.0, 0.0),
+            domain_hi=(1.0, 1.0, 1.0),
+            num_cells=(128, 128, 128),
+            blocking_factor=128,
+            max_grid_size=128,
+            cfl=0.3,
+            stop_time=0.987669,
+            max_time_steps=100_000,
+            snapshot_index_interval=25,
+            checkpoint_index_interval=-1,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_SLOW_WAVE_CORRECTNESS_REFERENCE_FILE)
 
 
 ##
