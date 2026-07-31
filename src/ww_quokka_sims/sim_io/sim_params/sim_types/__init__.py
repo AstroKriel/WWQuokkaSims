@@ -1,18 +1,20 @@
 from collections.abc import Callable
 
-from ..write_param_groups import SimParams
+from .. import write_param_groups
+from . import blast_wave as blast_wave
 from . import fast_wave_convergence as fast_wave_convergence
 from . import scheme_lookup as scheme_lookup
 
 ## add one entry per new file added under `sim_types/`
 _SIM_PARAMS_BUILDER_LOOKUP = {
+    blast_wave.PROBLEM_NAME: blast_wave.build_sim_params,
     fast_wave_convergence.PROBLEM_NAME: fast_wave_convergence.build_sim_params,
 }
 
 
 def resolve_sim_params_builder(
     problem_name: str,
-) -> Callable[..., SimParams]:
+) -> Callable[..., write_param_groups.SimParams]:
     """Resolve `problem_name` to its profile's `build_sim_params` function."""
     if problem_name not in _SIM_PARAMS_BUILDER_LOOKUP:
         raise ValueError(

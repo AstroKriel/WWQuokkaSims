@@ -19,11 +19,14 @@ from ww_quokka_sims.sim_io.sim_params import (
 from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 
 ##
-## === REFERENCE FILE
-## a hand-audited, known-good `sim_params.toml`, frozen here as a fixture
+## === REFERENCE FILES
+## hand-audited, known-good `sim_params.toml` files, frozen here as fixtures
 ##
 
-_REFERENCE_FILE = Path(__file__).parent / "fixtures" / "fast_wave_convergence_reference.toml"
+_FIXTURES_DIR = Path(__file__).parent / "fixtures"
+_FAST_WAVE_CONVERGENCE_REFERENCE_FILE = _FIXTURES_DIR / "fast_wave_convergence_reference.toml"
+_BLAST_WAVE_NCELLS128_REFERENCE_FILE = _FIXTURES_DIR / "blast_wave_ncells128_reference.toml"
+_BLAST_WAVE_NCELLS1024_REFERENCE_FILE = _FIXTURES_DIR / "blast_wave_ncells1024_reference.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -455,6 +458,22 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
 
 class RoundTripTests(_WritesSimParamsFileTestCase):
 
+    def _assert_matches_reference(
+        self,
+        *,
+        bundle: write_param_groups.SimParams,
+        reference_file: Path,
+    ) -> None:
+        bundle.write(
+            output_path=self.test_file_path,
+            verbose=False,
+        )
+        with open(self.test_file_path, "rb") as file_pointer:
+            generated = tomllib.load(file_pointer)
+        with open(reference_file, "rb") as file_pointer:
+            reference = tomllib.load(file_pointer)
+        self.assertEqual(generated, reference)
+
     def test_fast_wave_convergence_matches_real_file(
         self,
     ):
@@ -463,15 +482,41 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             averaging_scheme_key="b25",
             reconstruction="ppm_ep",
         )
-        bundle.write(
-            output_path=self.test_file_path,
-            verbose=False,
+        self._assert_matches_reference(bundle=bundle, reference_file=_FAST_WAVE_CONVERGENCE_REFERENCE_FILE)
+
+    def test_blast_wave_ncells128_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.blast_wave.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm",
+            num_cells=(128, 128, 128),
+            blocking_factor=16,
+            max_grid_size=16,
+            max_time_steps=4000,
+            snapshot_index_interval=25,
+            checkpoint_index_interval=-1,
         )
-        with open(self.test_file_path, "rb") as file_pointer:
-            generated = tomllib.load(file_pointer)
-        with open(_REFERENCE_FILE, "rb") as file_pointer:
-            reference = tomllib.load(file_pointer)
-        self.assertEqual(generated, reference)
+        self._assert_matches_reference(bundle=bundle, reference_file=_BLAST_WAVE_NCELLS128_REFERENCE_FILE)
+
+    def test_blast_wave_ncells1024_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.blast_wave.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm",
+            num_cells=(1024, 1024, 1024),
+            blocking_factor=32,
+            max_grid_size=128,
+            max_time_steps=10000,
+            snapshot_time_interval=0.0025,
+            checkpoint_index_interval=-1,
+            checkpoint_time_interval=0.005,
+            checkpoint_prefix="checkpoints/chk",
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_BLAST_WAVE_NCELLS1024_REFERENCE_FILE)
 
 
 ##
