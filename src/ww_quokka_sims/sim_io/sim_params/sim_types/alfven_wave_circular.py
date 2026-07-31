@@ -18,11 +18,13 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_NAME = "AlfvenWaveCircular"
 
-## `problem_main()` defaults to `setup.run_convergence=true` (Richardson convergence sweep,
-## `runWaveTest`), which overrides `amr.n_cell`/`geometry.*` and `sim.stopTime_`/`maxTimesteps_`
-## internally for every sweep iteration, ignoring whatever the toml sets (see
-## threads/dead-toml-params/); domain/resolution below are fixed to match what the real
-## reference files render, not because they control anything under the default mode
+## `problem_main()` defaults to `setup.run_convergence=true` (Richardson sweep), which overrides
+## `amr.n_cell`/`geometry.*`/`stop_time`/`max_timesteps` per sweep iteration, ignoring the toml
+## (see threads/dead-toml-params/); domain/resolution below are fixed to match the reference file.
+##
+## `cfl`/`use_reflux`/`use_subcycle` are genuinely respected but kept fixed too: the sweep's
+## pass/fail check (`expected_rate=2.0`/`tolerance=0.3`, hardcoded, no toml key) can fail from
+## temporal error alone if `cfl` is too large, unrelated to reconstruction/EMF-scheme accuracy.
 _DOMAIN_LO = (0.0, 0.0, 0.0)
 _DOMAIN_HI = (1.0, 1.0, 1.0)
 _NUM_CELLS = (64, 8, 8)

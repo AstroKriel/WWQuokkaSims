@@ -19,10 +19,11 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 PROBLEM_NAME = "AlfvenWaveLinear"
 
 ## `problem_main()` has two mutually exclusive modes, both under `setup.*`:
-## - `run_convergence` (default `true`): a Richardson convergence sweep that overrides
-##   `amr.n_cell`/`geometry.*`/`stop_time`/`max_timesteps` internally, same as the other
-##   wave-family problems (see threads/dead-toml-params/) -> everything below except the
-##   scheme combo and wave direction is fixed to match the real reference file.
+## - `run_convergence` (default `true`): a Richardson sweep that overrides `amr.n_cell`/
+##   `geometry.*`/`stop_time`/`max_timesteps` per iteration, ignoring the toml (see
+##   threads/dead-toml-params/). `cfl`/etc. ARE respected but are fixed here too: the sweep's
+##   pass/fail check (`expected_rate=2.0`/`tolerance=0.3`, hardcoded, no toml key) can fail from
+##   temporal error alone if `cfl` is too large, unrelated to reconstruction/EMF-scheme accuracy.
 ## - `run_sim` (must explicitly set `run_convergence=false` too): a single fixed-resolution
 ##   run at real user-chosen geometry/resolution/output/time-integration, and the only one
 ##   of the 11 problems here with real resistive-MHD support (`mhd.resistivity`).
