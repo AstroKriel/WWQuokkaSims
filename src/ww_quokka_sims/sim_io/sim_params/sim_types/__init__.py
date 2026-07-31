@@ -5,6 +5,7 @@ from . import blast_wave as blast_wave
 from . import brio_wu_shock_tube as brio_wu_shock_tube
 from . import current_sheet as current_sheet
 from . import fast_wave_convergence as fast_wave_convergence
+from . import orszag_tang as orszag_tang
 from . import scheme_lookup as scheme_lookup
 
 ## add one entry per new file added under `sim_types/`
@@ -13,6 +14,7 @@ _SIM_PARAMS_BUILDER_LOOKUP = {
     brio_wu_shock_tube.PROBLEM_NAME: brio_wu_shock_tube.build_sim_params,
     current_sheet.PROBLEM_NAME: current_sheet.build_sim_params,
     fast_wave_convergence.PROBLEM_NAME: fast_wave_convergence.build_sim_params,
+    orszag_tang.PROBLEM_NAME: orszag_tang.build_sim_params,
 }
 
 

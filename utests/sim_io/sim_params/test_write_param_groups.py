@@ -30,6 +30,8 @@ _BLAST_WAVE_NCELLS1024_REFERENCE_FILE = _FIXTURES_DIR / "blast_wave-ncells=1024.
 _BRIO_WU_SHOCK_TUBE_NCELLS256_REFERENCE_FILE = _FIXTURES_DIR / "brio_wu_shock_tube-ncells=256.toml"
 _BRIO_WU_SHOCK_TUBE_NCELLS8192_REFERENCE_FILE = _FIXTURES_DIR / "brio_wu_shock_tube-ncells=8192.toml"
 _CURRENT_SHEET_REFERENCE_FILE = _FIXTURES_DIR / "current_sheet.toml"
+_ORSZAG_TANG_NCELLS1024_REFERENCE_FILE = _FIXTURES_DIR / "orszag_tang-ncells=1024.toml"
+_ORSZAG_TANG_NCELLS8192_REFERENCE_FILE = _FIXTURES_DIR / "orszag_tang-ncells=8192.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -562,6 +564,34 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             reconstruction="ppm",
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_CURRENT_SHEET_REFERENCE_FILE)
+
+    def test_orszag_tang_ncells1024_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.orszag_tang.build_sim_params(
+            compute_scheme_key="b25",
+            averaging_scheme_key="b25",
+            reconstruction="plm",
+            checkpoint_index_interval=-1,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_ORSZAG_TANG_NCELLS1024_REFERENCE_FILE)
+
+    def test_orszag_tang_ncells8192_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.orszag_tang.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm",
+            num_cells=(8192, 8192, 8),
+            max_time_steps=200_000,
+            use_reflux=0,
+            use_subcycle=0,
+            use_dual_energy=0,
+            checkpoint_time_interval=0.05,
+            checkpoint_prefix="checkpoints/chk",
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_ORSZAG_TANG_NCELLS8192_REFERENCE_FILE)
 
 
 ##
