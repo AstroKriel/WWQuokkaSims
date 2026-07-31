@@ -38,6 +38,8 @@ _FIELD_LOOP_REFERENCE_FILE = _FIXTURES_DIR / "field_loop.toml"
 _BALSARA_VORTEX_NCELLS64_REFERENCE_FILE = _FIXTURES_DIR / "balsara_vortex-ncells=64.toml"
 _BALSARA_VORTEX_NCELLS128_REFERENCE_FILE = _FIXTURES_DIR / "balsara_vortex-ncells=128.toml"
 _ALFVEN_WAVE_CIRCULAR_REFERENCE_FILE = _FIXTURES_DIR / "alfven_wave_circular-convergence.toml"
+_ALFVEN_WAVE_LINEAR_CONVERGENCE_REFERENCE_FILE = _FIXTURES_DIR / "alfven_wave_linear-convergence.toml"
+_ALFVEN_WAVE_LINEAR_RESISTIVE_REFERENCE_FILE = _FIXTURES_DIR / "alfven_wave_linear-correctness=resistive.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -699,6 +701,47 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             reconstruction="pcm",
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_ALFVEN_WAVE_CIRCULAR_REFERENCE_FILE)
+
+    def test_alfven_wave_linear_convergence_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.alfven_wave_linear.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="pcm",
+            num_modes_x=1,
+            num_modes_y=0,
+            num_modes_z=0,
+            angle_between_k_b0=0.0,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_ALFVEN_WAVE_LINEAR_CONVERGENCE_REFERENCE_FILE)
+
+    def test_alfven_wave_linear_resistive_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.alfven_wave_linear.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm",
+            num_modes_x=1,
+            num_modes_y=0,
+            num_modes_z=0,
+            angle_between_k_b0=0,
+            run_sim=True,
+            resistivity=0.0001,
+            domain_lo=(0.0, 0.0, 0.0),
+            domain_hi=(1.0, 1.0, 1.0),
+            num_cells=(256, 8, 8),
+            blocking_factor=(256, 8, 8),
+            max_grid_size=256,
+            cfl=0.3,
+            stop_time=5.0,
+            max_time_steps=100_000,
+            use_subcycle=0,
+            snapshot_index_interval=100,
+            checkpoint_index_interval=-1,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_ALFVEN_WAVE_LINEAR_RESISTIVE_REFERENCE_FILE)
 
 
 ##

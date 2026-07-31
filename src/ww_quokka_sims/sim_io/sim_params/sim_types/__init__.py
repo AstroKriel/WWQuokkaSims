@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from .. import write_param_groups
 from . import alfven_wave_circular as alfven_wave_circular
+from . import alfven_wave_linear as alfven_wave_linear
 from . import balsara_vortex as balsara_vortex
 from . import blast_wave as blast_wave
 from . import brio_wu_shock_tube as brio_wu_shock_tube
@@ -16,6 +17,7 @@ from . import scheme_lookup as scheme_lookup
 ## add one entry per new file added under `sim_types/`
 _SIM_PARAMS_BUILDER_LOOKUP = {
     alfven_wave_circular.PROBLEM_NAME: alfven_wave_circular.build_sim_params,
+    alfven_wave_linear.PROBLEM_NAME: alfven_wave_linear.build_sim_params,
     balsara_vortex.PROBLEM_NAME: balsara_vortex.build_sim_params,
     blast_wave.PROBLEM_NAME: blast_wave.build_sim_params,
     brio_wu_shock_tube.PROBLEM_NAME: brio_wu_shock_tube.build_sim_params,
