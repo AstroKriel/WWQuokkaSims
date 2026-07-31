@@ -33,6 +33,7 @@ _CURRENT_SHEET_REFERENCE_FILE = _FIXTURES_DIR / "current_sheet.toml"
 _ORSZAG_TANG_NCELLS1024_REFERENCE_FILE = _FIXTURES_DIR / "orszag_tang-ncells=1024.toml"
 _ORSZAG_TANG_NCELLS8192_REFERENCE_FILE = _FIXTURES_DIR / "orszag_tang-ncells=8192.toml"
 _MHD_QUIRK_REFERENCE_FILE = _FIXTURES_DIR / "mhd_quirk.toml"
+_RYU_JONES_2A_SHOCK_TUBE_REFERENCE_FILE = _FIXTURES_DIR / "ryu_jones_2a_shock_tube.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -605,6 +606,16 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             reconstruction="ppm_ep",
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_MHD_QUIRK_REFERENCE_FILE)
+
+    def test_ryu_jones_2a_shock_tube_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.ryu_jones_2a_shock_tube.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="ld04",
+            reconstruction="ppm_ep",
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_RYU_JONES_2A_SHOCK_TUBE_REFERENCE_FILE)
 
 
 ##
