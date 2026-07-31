@@ -35,6 +35,8 @@ _ORSZAG_TANG_NCELLS8192_REFERENCE_FILE = _FIXTURES_DIR / "orszag_tang-ncells=819
 _MHD_QUIRK_REFERENCE_FILE = _FIXTURES_DIR / "mhd_quirk.toml"
 _RYU_JONES_2A_SHOCK_TUBE_REFERENCE_FILE = _FIXTURES_DIR / "ryu_jones_2a_shock_tube.toml"
 _FIELD_LOOP_REFERENCE_FILE = _FIXTURES_DIR / "field_loop.toml"
+_BALSARA_VORTEX_NCELLS64_REFERENCE_FILE = _FIXTURES_DIR / "balsara_vortex-ncells=64.toml"
+_BALSARA_VORTEX_NCELLS128_REFERENCE_FILE = _FIXTURES_DIR / "balsara_vortex-ncells=128.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -646,6 +648,38 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             region_hi_z=0.25,
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_FIELD_LOOP_REFERENCE_FILE)
+
+    def test_balsara_vortex_ncells64_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.balsara_vortex.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm",
+            domain_lo=(-5.0, -5.0, -0.078125),
+            domain_hi=(5.0, 5.0, 0.078125),
+            num_cells=(64, 64, 8),
+            blocking_factor=(64, 64, 8),
+            max_grid_size=64,
+            max_time_steps=800_000,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_BALSARA_VORTEX_NCELLS64_REFERENCE_FILE)
+
+    def test_balsara_vortex_ncells128_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.balsara_vortex.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm",
+            domain_lo=(-5.0, -5.0, -0.0390625),
+            domain_hi=(5.0, 5.0, 0.0390625),
+            num_cells=(128, 128, 8),
+            blocking_factor=(128, 128, 8),
+            max_grid_size=(128, 128, 128),
+            max_time_steps=2_000_000,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_BALSARA_VORTEX_NCELLS128_REFERENCE_FILE)
 
 
 ##
