@@ -24,7 +24,7 @@ from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 ##
 
 _FIXTURES_DIR = Path(__file__).parent / "fixtures"
-_FAST_WAVE_CONVERGENCE_REFERENCE_FILE = _FIXTURES_DIR / "fast_wave_convergence.toml"
+_FAST_WAVE_CONVERGENCE_REFERENCE_FILE = _FIXTURES_DIR / "fast_wave-convergence.toml"
 _BLAST_WAVE_NCELLS128_REFERENCE_FILE = _FIXTURES_DIR / "blast_wave-ncells=128.toml"
 _BLAST_WAVE_NCELLS1024_REFERENCE_FILE = _FIXTURES_DIR / "blast_wave-ncells=1024.toml"
 
