@@ -179,8 +179,10 @@ class ResolutionParams:
 @dataclass(frozen=True)
 class OutputFileParams:
     """
-    Checkpoint and plotfile cadence. Exactly one of `snapshot_index_interval` or `snapshot_time_interval`
-    must be set.
+    Checkpoint and plotfile cadence. Quokka accepts index- and time-based cadence simultaneously
+    for both (whichever fires first triggers output). At least one of `snapshot_index_interval`
+    or `snapshot_time_interval` must be set; checkpointing may be disabled entirely by leaving
+    both checkpoint fields unset.
 
     Fields
     ---
@@ -188,31 +190,40 @@ class OutputFileParams:
         Directory/filename prefix for plotfiles; omit to use Quokka's default.
 
     - `snapshot_index_interval`:
-        Emit a plotfile every N steps; mutually exclusive with `snapshot_time_interval`.
+        Emit a plotfile every N steps; at least one of this or `snapshot_time_interval` must be set.
 
     - `snapshot_time_interval`:
-        Emit a plotfile every `snapshot_time_interval` of simulation time; mutually exclusive with
-        `snapshot_index_interval`.
+        Emit a plotfile every `snapshot_time_interval` of simulation time; at least one of this or
+        `snapshot_index_interval` must be set.
 
     - `checkpoint_index_interval`:
-        Emit a checkpoint every N steps; omit to disable checkpointing.
+        Emit a checkpoint every N steps; omit to disable index-based checkpointing.
+
+    - `checkpoint_time_interval`:
+        Emit a checkpoint every `checkpoint_time_interval` of simulation time; omit to disable
+        time-based checkpointing.
 
     - `checkpoint_prefix`:
         Directory/filename prefix for checkpoints; omit to use Quokka's default.
+
+    - `derived_vars`:
+        Extra derived output fields (e.g. `"magnetic_divergence"`); omit for none.
     """
 
     snapshot_prefix: str | None = None
     snapshot_index_interval: int | None = None
     snapshot_time_interval: float | None = None
     checkpoint_index_interval: int | None = None
+    checkpoint_time_interval: float | None = None
     checkpoint_prefix: str | None = None
+    derived_vars: tuple[str, ...] | None = None
 
     def __post_init__(
         self,
     ) -> None:
-        if (self.snapshot_index_interval is None) == (self.snapshot_time_interval is None):
+        if self.snapshot_index_interval is None and self.snapshot_time_interval is None:
             raise ValueError(
-                "exactly one of `<snapshot_index_interval>` or `<snapshot_time_interval>` must be set, got "
+                "at least one of `<snapshot_index_interval>` or `<snapshot_time_interval>` must be set, got "
                 f"snapshot_index_interval={self.snapshot_index_interval!r}, "
                 f"snapshot_time_interval={self.snapshot_time_interval!r}.",
             )
@@ -226,6 +237,15 @@ class OutputFileParams:
                 param=self.checkpoint_index_interval,
                 param_name="<checkpoint_index_interval>",
             )
+        if self.derived_vars is not None:
+            validate_types.ensure_tuple_of_strings(
+                param=self.derived_vars,
+                param_name="<derived_vars>",
+            )
+            if not self.derived_vars:
+                raise ValueError(
+                    "`<derived_vars>` must be non-empty; omit it entirely instead of passing an empty tuple.",
+                )
 
 
 ##

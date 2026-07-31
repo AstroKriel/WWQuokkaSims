@@ -200,11 +200,23 @@ class ModelValidationTests(unittest.TestCase):
                 boundary_conditions=("ext_dir", "periodic", "periodic"),
             )  # both set
 
-    def test_output_requires_exactly_one_interval_style(
+    def test_output_requires_at_least_one_interval_style(
         self,
     ):
         with self.assertRaises(ValueError):
             param_groups.OutputFileParams()  # neither snapshot_index_interval nor snapshot_time_interval
+
+    def test_output_allows_both_interval_styles_simultaneously(
+        self,
+    ):
+        ## Quokka accepts index- and time-based cadence together; whichever fires first wins
+        param_groups.OutputFileParams(snapshot_index_interval=100, snapshot_time_interval=0.5)
+
+    def test_output_rejects_empty_derived_vars(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            param_groups.OutputFileParams(snapshot_index_interval=100, derived_vars=())
 
     def test_hydro_rejects_invalid_reconstruction_order(
         self,
@@ -397,6 +409,26 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
         self.assertIn("checkpoint_interval = 100", content)
         self.assertIn('checkpoint_prefix = "checkpoints/chk"', content)
         self.assertNotIn("plotfile_interval", content)
+
+    def test_writes_both_interval_styles_and_derived_vars(
+        self,
+    ):
+        kwargs = self._base_kwargs(
+            output_file_params=param_groups.OutputFileParams(
+                snapshot_index_interval=100,
+                snapshot_time_interval=0.5,
+                checkpoint_index_interval=10,
+                checkpoint_time_interval=1.0,
+                derived_vars=("magnetic_divergence",),
+            ),
+        )
+        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+        content = path.read_text()
+        self.assertIn("plotfile_interval = 100", content)
+        self.assertIn("plottime_interval = 0.5", content)
+        self.assertIn("checkpoint_interval = 10", content)
+        self.assertIn("checkpointtime_interval = 1.0", content)
+        self.assertIn('derived_vars = ["magnetic_divergence"]', content)
 
     def test_writes_amr_refinement_settings(
         self,

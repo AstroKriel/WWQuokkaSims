@@ -175,6 +175,10 @@ def _build_output_lines(
         assignment_lines.append(
             _render_param_groups.render_key_value(key="checkpoint_interval", value=output_file_params.checkpoint_index_interval),
         )
+    if output_file_params.checkpoint_time_interval is not None:
+        assignment_lines.append(
+            _render_param_groups.render_key_value(key="checkpointtime_interval", value=output_file_params.checkpoint_time_interval),
+        )
     if output_file_params.checkpoint_prefix is not None:
         assignment_lines.append(
             _render_param_groups.render_key_value(key="checkpoint_prefix", value=output_file_params.checkpoint_prefix),
@@ -183,13 +187,17 @@ def _build_output_lines(
         assignment_lines.append(
             _render_param_groups.render_key_value(key="plotfile_interval", value=output_file_params.snapshot_index_interval),
         )
-    else:
+    if output_file_params.snapshot_time_interval is not None:
         assignment_lines.append(
             _render_param_groups.render_key_value(key="plottime_interval", value=output_file_params.snapshot_time_interval),
         )
     if output_file_params.snapshot_prefix is not None:
         assignment_lines.append(
             _render_param_groups.render_key_value(key="plotfile_prefix", value=output_file_params.snapshot_prefix),
+        )
+    if output_file_params.derived_vars is not None:
+        assignment_lines.append(
+            _render_param_groups.render_key_value(key="derived_vars", value=list(output_file_params.derived_vars)),
         )
     return assignment_lines
 
