@@ -32,6 +32,7 @@ _BRIO_WU_SHOCK_TUBE_NCELLS8192_REFERENCE_FILE = _FIXTURES_DIR / "brio_wu_shock_t
 _CURRENT_SHEET_REFERENCE_FILE = _FIXTURES_DIR / "current_sheet.toml"
 _ORSZAG_TANG_NCELLS1024_REFERENCE_FILE = _FIXTURES_DIR / "orszag_tang-ncells=1024.toml"
 _ORSZAG_TANG_NCELLS8192_REFERENCE_FILE = _FIXTURES_DIR / "orszag_tang-ncells=8192.toml"
+_MHD_QUIRK_REFERENCE_FILE = _FIXTURES_DIR / "mhd_quirk.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -592,6 +593,18 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             checkpoint_prefix="checkpoints/chk",
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_ORSZAG_TANG_NCELLS8192_REFERENCE_FILE)
+
+    def test_mhd_quirk_matches_real_file(
+        self,
+    ):
+        ## `cfl`/`stop_time`/`max_timesteps` in the fixture are the true runtime-effective values,
+        ## not what kriel-quokka-mhd's checked-in file has (see threads/dead-toml-params/)
+        bundle = sim_types.mhd_quirk.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm_ep",
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_MHD_QUIRK_REFERENCE_FILE)
 
 
 ##
