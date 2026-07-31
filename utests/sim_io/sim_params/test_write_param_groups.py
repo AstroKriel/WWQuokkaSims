@@ -771,6 +771,26 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
         bundle.write(output_path=self.test_file_path, verbose=False)
         self.assertIn("setup.error_tol = 0.01", self.test_file_path.read_text())
 
+    def test_alfven_wave_linear_run_sim_minimal_call_uses_defaults(
+        self,
+    ):
+        ## only the genuinely-required args (mode selection, wave direction, stop_time/max_time_steps);
+        ## everything else should fall back to the defaults matching the real reference file
+        bundle = sim_types.alfven_wave_linear.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm",
+            num_modes_x=1,
+            num_modes_y=0,
+            num_modes_z=0,
+            angle_between_k_b0=0,
+            run_sim=True,
+            resistivity=0.0001,
+            stop_time=5.0,
+            max_time_steps=100_000,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_ALFVEN_WAVE_LINEAR_RESISTIVE_REFERENCE_FILE)
+
     def test_slow_wave_convergence_matches_real_file(
         self,
     ):
@@ -807,6 +827,25 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             max_time_steps=100_000,
             snapshot_index_interval=25,
             checkpoint_index_interval=-1,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_SLOW_WAVE_CORRECTNESS_REFERENCE_FILE)
+
+    def test_slow_wave_correctness_minimal_call_uses_defaults(
+        self,
+    ):
+        ## only the genuinely-required args (mode selection, wave direction, stop_time/max_time_steps);
+        ## everything else should fall back to the defaults matching the real reference file
+        bundle = sim_types.slow_wave_convergence.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm_ep",
+            num_modes_x=1,
+            num_modes_y=2,
+            num_modes_z=3,
+            angle_between_k_b0=45,
+            run_sim=True,
+            stop_time=0.987669,
+            max_time_steps=100_000,
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_SLOW_WAVE_CORRECTNESS_REFERENCE_FILE)
 

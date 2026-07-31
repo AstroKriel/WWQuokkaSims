@@ -49,12 +49,12 @@ def build_sim_params(
     run_sim: bool = False,
     error_tol: float = 0.005,
     resistivity: float | None = None,
-    domain_lo: tuple[float, float, float] | None = None,
-    domain_hi: tuple[float, float, float] | None = None,
-    num_cells: tuple[int, int, int] | None = None,
-    blocking_factor: int | tuple[int, int, int] | None = None,
-    max_grid_size: int | tuple[int, int, int] | None = None,
-    cfl: float | None = None,
+    domain_lo: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    domain_hi: tuple[float, float, float] = (1.0, 1.0, 1.0),
+    num_cells: tuple[int, int, int] = (256, 8, 8),
+    blocking_factor: int | tuple[int, int, int] = (256, 8, 8),
+    max_grid_size: int | tuple[int, int, int] = 256,
+    cfl: float = 0.3,
     stop_time: float | None = None,
     max_time_steps: int | None = None,
     use_subcycle: int = 0,
@@ -66,18 +66,18 @@ def build_sim_params(
 
     `run_sim=False` (default) builds a Richardson-convergence-sweep combo (e.g. `q26-b25-pcm`),
     matching `FastWaveConvergence`'s shape. `run_sim=True` builds a single fixed-resolution,
-    optionally resistive, correctness run; `domain_lo`/`domain_hi`/`num_cells`/`blocking_factor`/
-    `max_grid_size`/`stop_time`/`max_time_steps` are then all required.
+    optionally resistive, correctness run. `stop_time`/`max_time_steps` are required (not
+    defaulted): the correct `stop_time` is one full wave period, which depends on
+    `num_modes_x/y/z`/`angle_between_k_b0`, so defaulting it would silently be wrong for any
+    combo other than the one it was measured for.
     """
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
     emf_compute_scheme = scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value
     emf_averaging_scheme = scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value
 
     if run_sim:
-        if domain_lo is None or domain_hi is None or num_cells is None or blocking_factor is None or max_grid_size is None:
-            raise ValueError("`run_sim=True` requires `domain_lo`/`domain_hi`/`num_cells`/`blocking_factor`/`max_grid_size`.")
-        if stop_time is None or max_time_steps is None or cfl is None:
-            raise ValueError("`run_sim=True` requires `stop_time`/`max_time_steps`/`cfl`.")
+        if stop_time is None or max_time_steps is None:
+            raise ValueError("`run_sim=True` requires `stop_time`/`max_time_steps`.")
         return write_param_groups.SimParams(
             geometry_params=param_groups.GeometryParams(
                 domain_lo=domain_lo,
