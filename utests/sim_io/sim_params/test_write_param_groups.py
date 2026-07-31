@@ -27,6 +27,8 @@ _FIXTURES_DIR = Path(__file__).parent / "fixtures"
 _FAST_WAVE_CONVERGENCE_REFERENCE_FILE = _FIXTURES_DIR / "fast_wave-convergence.toml"
 _BLAST_WAVE_NCELLS128_REFERENCE_FILE = _FIXTURES_DIR / "blast_wave-ncells=128.toml"
 _BLAST_WAVE_NCELLS1024_REFERENCE_FILE = _FIXTURES_DIR / "blast_wave-ncells=1024.toml"
+_BRIO_WU_SHOCK_TUBE_NCELLS256_REFERENCE_FILE = _FIXTURES_DIR / "brio_wu_shock_tube-ncells=256.toml"
+_BRIO_WU_SHOCK_TUBE_NCELLS8192_REFERENCE_FILE = _FIXTURES_DIR / "brio_wu_shock_tube-ncells=8192.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -517,6 +519,38 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             checkpoint_prefix="checkpoints/chk",
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_BLAST_WAVE_NCELLS1024_REFERENCE_FILE)
+
+    def test_brio_wu_shock_tube_ncells256_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.brio_wu_shock_tube.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm_ep",
+            num_cells=(256, 8, 8),
+            blocking_factor=(16, 8, 8),
+            max_grid_size=128,
+            max_time_steps=4000,
+            snapshot_index_interval=200,
+            checkpoint_index_interval=-1,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_BRIO_WU_SHOCK_TUBE_NCELLS256_REFERENCE_FILE)
+
+    def test_brio_wu_shock_tube_ncells8192_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.brio_wu_shock_tube.build_sim_params(
+            compute_scheme_key="q26",
+            averaging_scheme_key="b25",
+            reconstruction="ppm_ep",
+            num_cells=(8192, 8, 8),
+            blocking_factor=(16, 8, 8),
+            max_grid_size=64,
+            max_time_steps=100000,
+            snapshot_index_interval=1600,
+            checkpoint_index_interval=-1,
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_BRIO_WU_SHOCK_TUBE_NCELLS8192_REFERENCE_FILE)
 
 
 ##
