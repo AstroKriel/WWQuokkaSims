@@ -37,6 +37,7 @@ _RYU_JONES_2A_SHOCK_TUBE_REFERENCE_FILE = _FIXTURES_DIR / "ryu_jones_2a_shock_tu
 _FIELD_LOOP_REFERENCE_FILE = _FIXTURES_DIR / "field_loop.toml"
 _BALSARA_VORTEX_NCELLS64_REFERENCE_FILE = _FIXTURES_DIR / "balsara_vortex-ncells=64.toml"
 _BALSARA_VORTEX_NCELLS128_REFERENCE_FILE = _FIXTURES_DIR / "balsara_vortex-ncells=128.toml"
+_ALFVEN_WAVE_CIRCULAR_REFERENCE_FILE = _FIXTURES_DIR / "alfven_wave_circular-convergence.toml"
 
 ##
 ## === TEST SUITE: _render_param_groups internals
@@ -688,6 +689,16 @@ class RoundTripTests(_WritesSimParamsFileTestCase):
             max_time_steps=2_000_000,
         )
         self._assert_matches_reference(bundle=bundle, reference_file=_BALSARA_VORTEX_NCELLS128_REFERENCE_FILE)
+
+    def test_alfven_wave_circular_matches_real_file(
+        self,
+    ):
+        bundle = sim_types.alfven_wave_circular.build_sim_params(
+            compute_scheme_key="b25",
+            averaging_scheme_key="b25",
+            reconstruction="pcm",
+        )
+        self._assert_matches_reference(bundle=bundle, reference_file=_ALFVEN_WAVE_CIRCULAR_REFERENCE_FILE)
 
 
 ##
