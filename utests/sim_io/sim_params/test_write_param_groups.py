@@ -258,11 +258,11 @@ class ModelValidationTests(unittest.TestCase):
 
 
 ##
-## === TEST SUITE: write_sim_params_toml guardrails
+## === SHARED FIXTURES: write_sim_params_toml tests
 ##
 
 
-class GuardrailTests(unittest.TestCase):
+class _WritesSimParamsFileTestCase(unittest.TestCase):
 
     def setUp(
         self,
@@ -276,6 +276,9 @@ class GuardrailTests(unittest.TestCase):
     ):
         if self.test_file_path.exists():
             self.test_file_path.unlink()
+
+
+class _DefaultWriteKwargsTestCase(_WritesSimParamsFileTestCase):
 
     def _base_kwargs(
         self,
@@ -301,6 +304,14 @@ class GuardrailTests(unittest.TestCase):
         }
         kwargs.update(overrides)
         return kwargs
+
+
+##
+## === TEST SUITE: write_sim_params_toml guardrails
+##
+
+
+class GuardrailTests(_DefaultWriteKwargsTestCase):
 
     def test_resistivity_requires_use_subcycle_zero(
         self,
@@ -353,45 +364,7 @@ class GuardrailTests(unittest.TestCase):
 ##
 
 
-class WriteContentTests(unittest.TestCase):
-
-    def setUp(
-        self,
-    ):
-        self.test_file_path = Path("sim_params.toml")
-        if self.test_file_path.exists():
-            self.test_file_path.unlink()
-
-    def tearDown(
-        self,
-    ):
-        if self.test_file_path.exists():
-            self.test_file_path.unlink()
-
-    def _base_kwargs(
-        self,
-        **overrides: object,
-    ) -> dict[str, object]:
-        kwargs: dict[str, object] = {
-            "output_path": self.test_file_path,
-            "geometry_params": param_groups.GeometryParams(
-                domain_lo=(0.0, 0.0, 0.0),
-                domain_hi=(1.0, 1.0, 1.0),
-                is_boundary_periodic=(1, 1, 1),
-            ),
-            "resolution_params": param_groups.ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
-            "output_file_params": param_groups.OutputFileParams(snapshot_index_interval=-1),
-            "time_integration_params": param_groups.TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro_params": param_groups.HydroParams(integrator_order=2, reconstruction_order=5),
-            "mhd_params": param_groups.MHDParams(
-                emf_compute_scheme="Quokka2026",
-                emf_averaging_scheme="Balsara2025",
-                reconstruction_order=5,
-            ),
-            "verbose": False,
-        }
-        kwargs.update(overrides)
-        return kwargs
+class WriteContentTests(_DefaultWriteKwargsTestCase):
 
     def test_writes_ext_dir_boundary_conditions(
         self,
@@ -448,20 +421,7 @@ class WriteContentTests(unittest.TestCase):
 ##
 
 
-class RoundTripTests(unittest.TestCase):
-
-    def setUp(
-        self,
-    ):
-        self.test_file_path = Path("sim_params.toml")
-        if self.test_file_path.exists():
-            self.test_file_path.unlink()
-
-    def tearDown(
-        self,
-    ):
-        if self.test_file_path.exists():
-            self.test_file_path.unlink()
+class RoundTripTests(_WritesSimParamsFileTestCase):
 
     def test_fast_wave_convergence_matches_real_file(
         self,
