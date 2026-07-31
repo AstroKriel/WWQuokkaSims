@@ -18,8 +18,6 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_NAME = "FieldLoop"
 
-VALID_REFINE_BASED_ON = ("Region", "MagneticEnergy")
-
 ## `stop_time`'s default is tuned for one full domain-diagonal crossing at the default
 ## `domain_lo`/`domain_hi`/`advection_angle_deg`; overriding any of those without also
 ## reconsidering `stop_time` still runs fine, just no longer completes exactly one crossing.
@@ -66,18 +64,13 @@ def build_sim_params(
     checkpoint_prefix: str | None = "checkpoints/chk",
     derived_vars: tuple[str, ...] | None = ("magnetic_divergence",),
 ) -> write_param_groups.SimParams:
-    """Build the full parameter set for one `FieldLoop` run."""
-    if loop_radius <= 0.0:
-        raise ValueError(f"`<loop_radius>` must be > 0, got {loop_radius!r}.")
-    if region_lo_x >= region_hi_x or region_lo_y >= region_hi_y or region_lo_z >= region_hi_z:
-        raise ValueError(
-            "`<region_lo_*>` must be < `<region_hi_*>` on every axis, got "
-            f"x=({region_lo_x!r}, {region_hi_x!r}), y=({region_lo_y!r}, {region_hi_y!r}), "
-            f"z=({region_lo_z!r}, {region_hi_z!r}).",
-        )
-    if refine_based_on not in VALID_REFINE_BASED_ON:
-        raise ValueError(f"`<refine_based_on>` must be one of {VALID_REFINE_BASED_ON}; got {refine_based_on!r}.")
+    """
+    Build the full parameter set for one `FieldLoop` run.
 
+    Not validated here: `loop_radius > 0`, `region_lo_* < region_hi_*`, and `refine_based_on`
+    being a real option are all checked by Quokka itself (`problem_main()`, clear abort
+    messages); ww-quokka-sims doesn't duplicate Quokka's own rules.
+    """
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
     return write_param_groups.SimParams(
         geometry_params=param_groups.GeometryParams(
