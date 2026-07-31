@@ -301,14 +301,12 @@ class TimeIntegrationParams:
 ## === HYDRO
 ##
 
-## shared with `MHDParams.reconstruction_order` below
-VALID_RECONSTRUCTION_ORDERS = (1, 2, 3, 5)
-
 
 @dataclass(frozen=True)
 class HydroParams:
     """
-    Reconstruction scheme: pcm=1, plm=2, ppm=3, ppm_ep=5.
+    Reconstruction scheme: pcm=1, plm=2, ppm=3, ppm_ep=5. Quokka itself aborts with a clear
+    message on an invalid `reconstruction_order`, so it isn't re-validated here.
 
     Fields
     ---
@@ -316,7 +314,7 @@ class HydroParams:
         Runge-Kutta time-integrator order.
 
     - `reconstruction_order`:
-        Spatial reconstruction order; must be one of `VALID_RECONSTRUCTION_ORDERS`.
+        Spatial reconstruction order.
 
     - `use_dual_energy`:
         `1` to enable the dual-energy formalism, `0` to disable; omit for Quokka's default.
@@ -326,65 +324,39 @@ class HydroParams:
     reconstruction_order: int
     use_dual_energy: int | None = None
 
-    def __post_init__(
-        self,
-    ) -> None:
-        if self.reconstruction_order not in VALID_RECONSTRUCTION_ORDERS:
-            raise ValueError(
-                f"`<reconstruction_order>` must be one of {VALID_RECONSTRUCTION_ORDERS}; "
-                f"got {self.reconstruction_order}.",
-            )
-
 
 ##
 ## === MHD
 ##
 
-VALID_EMF_COMPUTE_SCHEMES = ("Quokka2026", "FelkerStone2017", "Balsara2025")
-VALID_EMF_AVERAGING_SCHEMES = ("Balsara2025", "LondrilloDelZanna2004")
-
 
 @dataclass(frozen=True)
 class MHDParams:
     """
-    EMF reconstruction and averaging scheme; `resistivity` is only set for resistive-correctness runs.
+    EMF reconstruction and averaging scheme; `resistivity` is only set for resistive-correctness
+    runs. Quokka itself validates `emf_compute_scheme`/`emf_averaging_scheme` (AMReX-enum-typed,
+    errors on an unrecognised name) and `reconstruction_order` (aborts with a clear message), so
+    none of these are re-validated here.
 
     Fields
     ---
     - `emf_compute_scheme`:
-        EMF compute scheme name; must be one of `VALID_EMF_COMPUTE_SCHEMES`.
+        EMF compute scheme name.
 
     - `emf_averaging_scheme`:
-        EMF averaging scheme name; must be one of `VALID_EMF_AVERAGING_SCHEMES`.
+        EMF averaging scheme name.
 
     - `reconstruction_order`:
-        Spatial reconstruction order for the EMF; must be one of `VALID_RECONSTRUCTION_ORDERS`.
+        Spatial reconstruction order for the EMF.
 
     - `resistivity`:
-        Physical resistivity; omit for ideal MHD. See `write_sim_params_toml`'s guardrails for when this is disallowed.
+        Physical resistivity; omit for ideal MHD.
     """
 
     emf_compute_scheme: str
     emf_averaging_scheme: str
     reconstruction_order: int
     resistivity: float | None = None
-
-    def __post_init__(
-        self,
-    ) -> None:
-        if self.emf_compute_scheme not in VALID_EMF_COMPUTE_SCHEMES:
-            raise ValueError(
-                f"`<emf_compute_scheme>` must be one of {VALID_EMF_COMPUTE_SCHEMES}; got {self.emf_compute_scheme!r}.",
-            )
-        if self.emf_averaging_scheme not in VALID_EMF_AVERAGING_SCHEMES:
-            raise ValueError(
-                f"`<emf_averaging_scheme>` must be one of {VALID_EMF_AVERAGING_SCHEMES}; got {self.emf_averaging_scheme!r}.",
-            )
-        if self.reconstruction_order not in VALID_RECONSTRUCTION_ORDERS:
-            raise ValueError(
-                f"`<reconstruction_order>` must be one of {VALID_RECONSTRUCTION_ORDERS}; "
-                f"got {self.reconstruction_order}.",
-            )
 
 
 ##

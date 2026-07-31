@@ -15,7 +15,10 @@ from . import ryu_jones_2a_shock_tube as ryu_jones_2a_shock_tube
 from . import scheme_lookup as scheme_lookup
 from . import slow_wave_convergence as slow_wave_convergence
 
-## add one entry per new file added under `sim_types/`
+## add one entry per new file added under `sim_types/`. Adding a profile is just this: a
+## `PROBLEM_NAME` + `build_sim_params`, registered here. No fixture or dedicated real-file test is
+## required (or even possible for a problem with no production history yet) -- Quokka is the
+## arbiter of whether the resulting toml is valid, not this package.
 _SIM_PARAMS_BUILDER_LOOKUP = {
     alfven_wave_circular.PROBLEM_NAME: alfven_wave_circular.build_sim_params,
     alfven_wave_linear.PROBLEM_NAME: alfven_wave_linear.build_sim_params,

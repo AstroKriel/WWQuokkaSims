@@ -71,23 +71,6 @@ class SimParams:
 
 
 ##
-## === GUARDRAILS
-##
-
-
-def _ensure_guardrails(
-    *,
-    time_integration_params: param_groups.TimeIntegrationParams,
-    mhd_params: param_groups.MHDParams,
-) -> None:
-    if (mhd_params.resistivity is not None) and (time_integration_params.use_subcycle != 0):
-        raise ValueError(
-            "`<mhd.resistivity>` requires `<use_subcycle>` = 0, got "
-            f"resistivity={mhd_params.resistivity!r}, use_subcycle={time_integration_params.use_subcycle!r}.",
-        )
-
-
-##
 ## === FILE PATH VALIDATION
 ##
 
@@ -301,10 +284,6 @@ def write_sim_params_toml(
     output_path = _ensure_path_is_valid(output_path)
     if output_path.is_file() and not overwrite:
         raise FileExistsError(f"sim_params.toml already exists (pass `overwrite=True` to replace it): {output_path}.")
-    _ensure_guardrails(
-        time_integration_params=time_integration_params,
-        mhd_params=mhd_params,
-    )
 
     param_group_entries: list[tuple[str, list[str]]] = [
         (_ParamGroupTitle.GEOMETRY, _build_geometry_lines(geometry_params)),
