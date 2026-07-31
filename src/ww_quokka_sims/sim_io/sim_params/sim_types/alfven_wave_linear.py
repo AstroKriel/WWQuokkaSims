@@ -57,9 +57,9 @@ def build_sim_params(
     cfl: float | None = None,
     stop_time: float | None = None,
     max_time_steps: int | None = None,
-    use_subcycle: int | None = None,
-    snapshot_index_interval: int | None = None,
-    checkpoint_index_interval: int | None = None,
+    use_subcycle: int = 0,
+    snapshot_index_interval: int = 100,
+    checkpoint_index_interval: int = -1,
 ) -> write_param_groups.SimParams:
     """
     Build the full parameter set for one `AlfvenWaveLinear` run.
