@@ -418,16 +418,18 @@ class RenderPDFs:
         )
         ## save each snapshot's PDF to disk as soon as it's computed, not batched at the end, so
         ## a job that dies partway through doesn't lose every already-computed snapshot with it
-        on_computed = None
+        on_computed: Callable[[PDFData], None] | None = None
         if self.extract_data:
 
-            def on_computed(
+            def save_computed_pdf(
                 pdf_data: PDFData,
             ) -> None:
                 self._save_pdf(
                     pdf_data=pdf_data,
                     extracted_dir=self.extracted_dir,
                 )
+
+            on_computed = save_computed_pdf
 
         field_pdfs = compute_pdfs.run(on_computed=on_computed)
         if not field_pdfs:
