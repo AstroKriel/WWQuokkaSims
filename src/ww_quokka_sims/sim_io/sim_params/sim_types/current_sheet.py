@@ -17,8 +17,6 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_KEY = "CurrentSheet"
 
-## perturbation/reversal position are hardcoded relative to the domain; domain must stay fixed,
-## and B-field BCs are hardcoded periodic, so cell BCs must match
 _DOMAIN_LO = (-0.5, -0.5, -0.5)
 _DOMAIN_HI = (0.5, 0.5, 0.5)
 _BOUNDARY_CONDITIONS = ("periodic", "periodic", "periodic")

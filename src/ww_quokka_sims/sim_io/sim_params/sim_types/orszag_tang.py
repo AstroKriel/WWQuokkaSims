@@ -17,8 +17,6 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_KEY = "OrszagTang"
 
-## ICs are hardcoded periodic functions of unit period, and a rot180-symmetry assertion checks
-## the domain centre; domain must stay fixed at unit extent, symmetric around the origin
 _DOMAIN_LO = (-0.5, -0.5, -0.5)
 _DOMAIN_HI = (0.5, 0.5, 0.5)
 _BOUNDARY_CONDITIONS = ("periodic", "periodic", "periodic")

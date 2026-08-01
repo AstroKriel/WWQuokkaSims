@@ -34,8 +34,6 @@ def build_sim_params(
     blocking_factor: int | tuple[int, int, int] = (256, 8, 8),
     max_grid_size: int | tuple[int, int, int] = 256,
     cfl: float = 0.3,
-    ## wave direction/mode count are hardcoded, giving wavelength=1/alfven_speed=1, so one full
-    ## period is exactly 1.0 -- safe to default here (nothing exposed changes it)
     stop_time: float = 1.0,
     max_time_steps: int = 20_000,
     snapshot_index_interval: int = 100,

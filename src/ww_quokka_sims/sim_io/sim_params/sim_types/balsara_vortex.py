@@ -17,8 +17,6 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_KEY = "MHDBalsaraVortex"
 
-## no `stop_time` kwarg: `problem_main()` computes and overwrites it, ignoring the toml.
-## `vortex_radius` is likewise never read from ParmParse; always radius 1.0.
 _BOUNDARY_CONDITIONS = ("periodic", "periodic", "periodic")
 
 ##

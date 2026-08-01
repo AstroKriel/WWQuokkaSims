@@ -17,8 +17,6 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_KEY = "MHDBlast"
 
-## the blast is centered at the origin with a hardcoded radius, independent of the domain;
-## domain must stay symmetric around the origin for the blast to remain centered
 _DOMAIN_LO = (-0.5, -0.5, -0.5)
 _DOMAIN_HI = (0.5, 0.5, 0.5)
 

@@ -17,8 +17,6 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_KEY = "BrioWuShockTube"
 
-## shock is placed at a hardcoded x=0.5, with boundaries baked to the fixed left/right states;
-## domain and boundary conditions must stay fixed for the shock and BCs to apply correctly
 _DOMAIN_LO = (0.0, 0.0, 0.0)
 _DOMAIN_HI = (1.0, 1.0, 1.0)
 _BOUNDARY_CONDITIONS = ("ext_dir", "periodic", "periodic")
