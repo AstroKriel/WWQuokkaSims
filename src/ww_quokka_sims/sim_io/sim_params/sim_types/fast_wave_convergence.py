@@ -33,14 +33,14 @@ def build_sim_params(
     *,
     compute_scheme_key: str,
     averaging_scheme_key: str,
-    reconstruction: str,
+    reconstruction_order_key: str,
     num_modes_x: int,
     num_modes_y: int,
     num_modes_z: int,
     angle_between_k_b0: float,
 ) -> write_param_groups.SimParams:
     """Build the full parameter set for one `FastWaveConvergence` Richardson-convergence-sweep combination."""
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key).value
     return write_param_groups.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=_DOMAIN_LO,

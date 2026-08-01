@@ -32,7 +32,7 @@ def build_sim_params(
     *,
     compute_scheme_key: str,
     averaging_scheme_key: str,
-    reconstruction: str,
+    reconstruction_order_key: str,
     num_cells: tuple[int, int, int] = (512, 8, 8),
     blocking_factor: int | tuple[int, int, int] = (16, 8, 8),
     max_grid_size: int | tuple[int, int, int] = 128,
@@ -50,7 +50,7 @@ def build_sim_params(
     checkpoint_prefix: str | None = None,
 ) -> write_param_groups.SimParams:
     """Build the full parameter set for one `RyuJones2aShockTube` run."""
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key).value
     return write_param_groups.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=_DOMAIN_LO,

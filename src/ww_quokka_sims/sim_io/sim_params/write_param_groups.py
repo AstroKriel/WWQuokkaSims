@@ -232,7 +232,7 @@ def _build_time_integration_lines(
         _render_param_groups.render_key_value(
             key="cfl",
             value=time_integration_params.cfl,
-        )
+        ),
     ]
     optional_keys = (
         ("do_reflux", time_integration_params.use_reflux),
@@ -363,17 +363,19 @@ def write_sim_params_toml(
     output_path = _ensure_path_is_valid(output_path)
     if output_path.is_file() and not overwrite:
         raise FileExistsError(
-            f"sim_params.toml already exists (pass `overwrite=True` to replace it): {output_path}."
+            f"sim_params.toml already exists (pass `overwrite=True` to replace it): {output_path}.",
         )
     param_group_entries: list[tuple[str, list[str]]] = [
         (_ParamGroupTitle.GEOMETRY, _build_geometry_lines(geometry_params)),
         (_ParamGroupTitle.RESOLUTION, _build_resolution_lines(resolution_params)),
         (
             _ParamGroupTitle.VERBOSITY,
-            [_render_param_groups.render_key_value(
-                key="amr.v",
-                value=amr_verbosity,
-            )]
+            [
+                _render_param_groups.render_key_value(
+                    key="amr.v",
+                    value=amr_verbosity,
+                ),
+            ],
         ),
         (_ParamGroupTitle.OUTPUT, _build_output_lines(output_file_params)),
         (_ParamGroupTitle.TIME_INTEGRATION, _build_time_integration_lines(time_integration_params)),

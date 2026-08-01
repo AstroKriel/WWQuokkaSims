@@ -26,7 +26,7 @@ def build_sim_params(
     *,
     compute_scheme_key: str,
     averaging_scheme_key: str,
-    reconstruction: str,
+    reconstruction_order_key: str,
     error_tol: float = 0.003,
     domain_lo: tuple[float, float, float] = (0.0, 0.0, 0.0),
     domain_hi: tuple[float, float, float] = (1.0, 1.0, 1.0),
@@ -42,7 +42,7 @@ def build_sim_params(
     checkpoint_index_interval: int = -1,
 ) -> write_param_groups.SimParams:
     """Build the full parameter set for one `AlfvenWaveCircular` fixed-resolution correctness run."""
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key).value
     return write_param_groups.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=domain_lo,

@@ -63,11 +63,13 @@ class RenderTests(unittest.TestCase):
     ):
         with self.assertRaises(ValueError):
             _render_param_groups.expand_per_axis(
-                (16, 8), key_prefix="amr.blocking_factor"
+                (16, 8),
+                key_prefix="amr.blocking_factor",
             )  # pyright: ignore[reportArgumentType]
         with self.assertRaises(ValueError):
             _render_param_groups.expand_per_axis(
-                (16, 8, 8, 4), key_prefix="amr.blocking_factor"
+                (16, 8, 8, 4),
+                key_prefix="amr.blocking_factor",
             )  # pyright: ignore[reportArgumentType]
 
     def test_expand_per_axis_rejects_non_positive_scalar(
@@ -369,7 +371,7 @@ class GuardrailTests(_DefaultWriteKwargsTestCase):
         write_param_groups.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
         with self.assertRaises(FileExistsError):
             write_param_groups.write_sim_params_toml(
-                **self._base_kwargs()
+                **self._base_kwargs(),
             )  # pyright: ignore[reportArgumentType]
 
     def test_rejects_non_sim_params_filename(
@@ -383,7 +385,7 @@ class GuardrailTests(_DefaultWriteKwargsTestCase):
         self,
     ):
         path = write_param_groups.write_sim_params_toml(
-            **self._base_kwargs()
+            **self._base_kwargs(),
         )  # pyright: ignore[reportArgumentType]
         headers = [line for line in path.read_text().splitlines() if line.startswith("##")]
         expected_titles = (
@@ -511,7 +513,7 @@ class SimTypesTests(unittest.TestCase):
         bundle = sim_types.blast_wave.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
-            reconstruction="ppm",
+            reconstruction_order_key="ppm",
             num_cells=(128, 128, 128),
             blocking_factor=16,
             max_grid_size=16,
@@ -527,7 +529,7 @@ class SimTypesTests(unittest.TestCase):
         bundle = sim_types.blast_wave.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
-            reconstruction="ppm",
+            reconstruction_order_key="ppm",
             num_cells=(128, 128, 128),
             blocking_factor=16,
             max_grid_size=16,
@@ -543,7 +545,7 @@ class SimTypesTests(unittest.TestCase):
         bundle = sim_types.alfven_wave_linear_convergence.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
-            reconstruction="ppm",
+            reconstruction_order_key="ppm",
             num_modes_x=1,
             num_modes_y=0,
             num_modes_z=0,
@@ -558,7 +560,7 @@ class SimTypesTests(unittest.TestCase):
         bundle = sim_types.alfven_wave_linear_correctness.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
-            reconstruction="ppm",
+            reconstruction_order_key="ppm",
             num_modes_x=1,
             num_modes_y=0,
             num_modes_z=0,
@@ -576,7 +578,7 @@ class SimTypesTests(unittest.TestCase):
             sim_types.alfven_wave_linear_correctness.build_sim_params(
                 compute_scheme_key="q26",
                 averaging_scheme_key="b25",
-                reconstruction="ppm",
+                reconstruction_order_key="ppm",
                 num_modes_x=1,
                 num_modes_y=0,
                 num_modes_z=0,
