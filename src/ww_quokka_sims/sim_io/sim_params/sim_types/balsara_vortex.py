@@ -19,9 +19,9 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 PROBLEM_NAME = "MHDBalsaraVortex"
 
 ## no `stop_time` kwarg: `problem_main()` computes it from `vortex_Mach`/`num_orbits`/`advection`
-## and overwrites `sim.stopTime_` after construction, unconditionally overriding the toml (see
-## threads/dead-toml-params/). `vortex_radius` is likewise declared but never read from ParmParse
-## at all, so it isn't exposed either; the vortex is always radius 1.0.
+## and overwrites `sim.stopTime_` after construction, unconditionally overriding the toml.
+## `vortex_radius` is likewise declared but never read from ParmParse at all, so it isn't
+## exposed either; the vortex is always radius 1.0.
 _BOUNDARY_CONDITIONS = ("periodic", "periodic", "periodic")
 
 ##

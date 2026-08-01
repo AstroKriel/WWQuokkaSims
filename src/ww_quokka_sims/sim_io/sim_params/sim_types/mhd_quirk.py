@@ -24,14 +24,14 @@ _DOMAIN_LO = (0.0, 0.0, 0.0)
 _DOMAIN_HI = (1.0, 1.0, 1.0)
 
 ## `problem_main()` hardcodes boundary conditions in code (ext_dir in x, periodic in y/z),
-## ignoring `quokka.bc` entirely (see threads/dead-toml-params/); kept here to document the
-## true configuration, not because the toml key has any effect
+## ignoring `quokka.bc` entirely; kept here to document the true configuration, not because
+## the toml key has any effect
 _BOUNDARY_CONDITIONS = ("ext_dir", "periodic", "periodic")
 
 ## `problem_main()` also hardcodes `cfl`/`stop_time`/`max_timesteps` after construction,
-## unconditionally overwriting whatever `readParmParse()` read from the toml (see
-## threads/dead-toml-params/); these render the true runtime-effective values, not
-## configurable kwargs, since overriding them via the toml has no actual effect
+## unconditionally overwriting whatever `readParmParse()` read from the toml; these render
+## the true runtime-effective values, not configurable kwargs, since overriding them via
+## the toml has no actual effect
 _CFL = 0.4
 _STOP_TIME = 0.4
 _MAX_TIME_STEPS = 2000
