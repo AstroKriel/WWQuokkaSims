@@ -420,6 +420,7 @@ class RenderPDFs:
         ## a job that dies partway through doesn't lose every already-computed snapshot with it
         on_computed = None
         if self.extract_data:
+
             def on_computed(
                 pdf_data: PDFData,
             ) -> None:
@@ -427,6 +428,7 @@ class RenderPDFs:
                     pdf_data=pdf_data,
                     extracted_dir=self.extracted_dir,
                 )
+
         field_pdfs = compute_pdfs.run(on_computed=on_computed)
         if not field_pdfs:
             return
