@@ -48,7 +48,7 @@ class EMFAveragingScheme(str, Enum):
 def resolve_reconstruction_scheme(
     key: str,
 ) -> ReconstructionScheme:
-    """Resolve `key` (a name, value, or shorthand combo-name key) to a `ReconstructionScheme` member."""
+    """Resolve `key` (a name, value, or shorthand combination-name key) to a `ReconstructionScheme` member."""
     return cast(
         ReconstructionScheme,
         validate_enums.resolve_member(
@@ -61,7 +61,7 @@ def resolve_reconstruction_scheme(
 def resolve_emf_compute_scheme(
     key: str,
 ) -> EMFComputeScheme:
-    """Resolve `key` (a name, value, or shorthand combo-name key) to an `EMFComputeScheme` member."""
+    """Resolve `key` (a name, value, or shorthand combination-name key) to an `EMFComputeScheme` member."""
     return cast(
         EMFComputeScheme,
         validate_enums.resolve_member(
@@ -74,7 +74,7 @@ def resolve_emf_compute_scheme(
 def resolve_emf_averaging_scheme(
     key: str,
 ) -> EMFAveragingScheme:
-    """Resolve `key` (a name, value, or shorthand combo-name key) to an `EMFAveragingScheme` member."""
+    """Resolve `key` (a name, value, or shorthand combination-name key) to an `EMFAveragingScheme` member."""
     return cast(
         EMFAveragingScheme,
         validate_enums.resolve_member(

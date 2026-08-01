@@ -35,7 +35,7 @@ def build_sim_params(
     averaging_scheme_key: str,
     reconstruction: str,
 ) -> write_param_groups.SimParams:
-    """Build the full parameter set for one `AlfvenWaveCircular` Richardson-convergence-sweep combo."""
+    """Build the full parameter set for one `AlfvenWaveCircular` Richardson-convergence-sweep combination."""
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
     return write_param_groups.SimParams(
         geometry_params=param_groups.GeometryParams(

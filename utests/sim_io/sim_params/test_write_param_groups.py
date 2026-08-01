@@ -144,7 +144,7 @@ class ModelValidationTests(unittest.TestCase):
                 max_grid_size=128,
             )
 
-    def test_resolution_accepts_a_sensible_combo(
+    def test_resolution_accepts_a_sensible_combination(
         self,
     ):
         param_groups.ResolutionParams(

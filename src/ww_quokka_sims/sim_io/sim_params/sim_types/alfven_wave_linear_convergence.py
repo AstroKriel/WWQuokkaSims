@@ -39,7 +39,7 @@ def build_sim_params(
     num_modes_z: int,
     angle_between_k_b0: float,
 ) -> write_param_groups.SimParams:
-    """Build the full parameter set for one `AlfvenWaveLinear` Richardson-convergence-sweep combo."""
+    """Build the full parameter set for one `AlfvenWaveLinear` Richardson-convergence-sweep combination."""
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
     return write_param_groups.SimParams(
         geometry_params=param_groups.GeometryParams(
