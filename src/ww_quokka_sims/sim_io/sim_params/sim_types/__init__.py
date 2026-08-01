@@ -24,10 +24,11 @@ from . import slow_wave_correctness as slow_wave_correctness
 ## required (or even possible for a problem with no production history yet) -- Quokka is the
 ## arbiter of whether the resulting toml is valid, not this package.
 ##
-## `PROBLEM_NAME` is a pure ww-quokka-sims registry key, never written into the toml (Quokka
-## selects its problem at compile time, via which binary you run), so it doesn't need to match
-## Quokka's C++ struct name exactly -- convergence/correctness variants of the same Quokka
-## problem register under distinct keys here even though they drive the same binary.
+## `PROBLEM_NAME` is a ww-quokka-sims registry key, never written into the toml (Quokka selects
+## its problem at compile time, via which binary you run). For a problem with both a convergence
+## sweep and a fixed-resolution correctness run on the same binary, Quokka's own CMakeLists.txt
+## already registers two separate ctest names for them (e.g. `AlfvenWaveLinearConvergence` and
+## `AlfvenWaveLinear`); use those real names here too, not an invented suffix.
 _SIM_PARAMS_BUILDER_LOOKUP = {
     alfven_wave_circular_convergence.PROBLEM_NAME: alfven_wave_circular_convergence.build_sim_params,
     alfven_wave_circular_correctness.PROBLEM_NAME: alfven_wave_circular_correctness.build_sim_params,
