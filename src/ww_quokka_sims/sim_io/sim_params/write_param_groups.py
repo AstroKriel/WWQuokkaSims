@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ## personal
-from jormi.ww_io import manage_log
+from jormi.ww_io import manage_io, manage_log
 from jormi.ww_validation import validate_types
 
 ## local
@@ -384,9 +384,9 @@ def write_sim_params_toml(
     ]
     if setup_params is not None:
         param_group_entries.append((setup_params.group_title, _build_setup_lines(setup_params)))
-    output_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
+    manage_io.create_directory(
+        directory=output_path.parent,
+        verbose=verbose,
     )
     output_path.write_text(_render_param_groups.render_param_groups(param_group_entries))
     if verbose:
