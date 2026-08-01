@@ -47,9 +47,8 @@ def build_sim_params(
     """
     Build the full parameter set for one `FastWaveConvergence` fixed-resolution correctness run.
 
-    `stop_time`/`max_time_steps` have no default: the correct `stop_time` is one full wave
-    period, which depends on `num_modes_x/y/z`/`angle_between_k_b0`, so a fixed default would
-    silently be wrong for any combo other than the one it was chosen for.
+    `stop_time`/`max_time_steps` have no default: the right `stop_time` (one wave period) depends
+    on `num_modes_x/y/z`/`angle_between_k_b0`, so a fixed default would silently be wrong.
     """
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
     return write_param_groups.SimParams(

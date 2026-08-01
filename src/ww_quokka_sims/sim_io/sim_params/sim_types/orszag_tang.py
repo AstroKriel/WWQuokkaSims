@@ -18,10 +18,8 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_NAME = "OrszagTang"
 
-## velocity/vector-potential ICs are hardcoded periodic functions of unit period (`sin(2*pi*y)`,
-## `cos(4*pi*x)`, ...), and `computeAfterEvolve` asserts bit-exact 180-degree point-reflection
-## symmetry about the domain centre (see `OrszagTang.cpp`); the domain must stay fixed at unit
-## extent, symmetric around the origin, for both to hold
+## ICs are hardcoded periodic functions of unit period, and a rot180-symmetry assertion checks
+## the domain centre; domain must stay fixed at unit extent, symmetric around the origin
 _DOMAIN_LO = (-0.5, -0.5, -0.5)
 _DOMAIN_HI = (0.5, 0.5, 0.5)
 _BOUNDARY_CONDITIONS = ("periodic", "periodic", "periodic")

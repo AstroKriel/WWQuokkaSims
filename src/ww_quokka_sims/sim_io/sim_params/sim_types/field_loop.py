@@ -18,9 +18,8 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_NAME = "FieldLoop"
 
-## `stop_time`'s default is tuned for one full domain-diagonal crossing at the default
-## `domain_lo`/`domain_hi`/`advection_angle_deg`; overriding any of those without also
-## reconsidering `stop_time` still runs fine, just no longer completes exactly one crossing.
+## `stop_time`'s default is tuned for one full domain-diagonal crossing at the other defaults;
+## overriding those without reconsidering `stop_time` still runs, just not one clean crossing.
 
 ##
 ## === PROGRAM MAIN
@@ -68,8 +67,7 @@ def build_sim_params(
     Build the full parameter set for one `FieldLoop` run.
 
     Not validated here: `loop_radius > 0`, `region_lo_* < region_hi_*`, and `refine_based_on`
-    being a real option are all checked by Quokka itself (`problem_main()`, clear abort
-    messages); ww-quokka-sims doesn't duplicate Quokka's own rules.
+    validity are all checked by Quokka itself, with clear abort messages.
     """
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
     return write_param_groups.SimParams(

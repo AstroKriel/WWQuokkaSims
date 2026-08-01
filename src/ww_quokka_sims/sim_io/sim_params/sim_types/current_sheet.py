@@ -18,10 +18,8 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_NAME = "CurrentSheet"
 
-## the velocity perturbation is `sin(2*pi*y)` and the sheet reversal sits at hardcoded
-## `abs(x) > 0.25` (see `CurrentSheet::setInitialConditionsOnGrid`/`setInitialConditionsOnGridFaceVars`);
-## the domain must stay fixed at unit extent, symmetric around the origin, for both to hold, and
-## face-centered B-field BCs are hardcoded periodic in `problem_main`, so cell BCs must match
+## perturbation/reversal position are hardcoded relative to the domain; domain must stay fixed,
+## and B-field BCs are hardcoded periodic, so cell BCs must match
 _DOMAIN_LO = (-0.5, -0.5, -0.5)
 _DOMAIN_HI = (0.5, 0.5, 0.5)
 _BOUNDARY_CONDITIONS = ("periodic", "periodic", "periodic")

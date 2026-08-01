@@ -334,9 +334,7 @@ class HydroParams:
 class MHDParams:
     """
     EMF reconstruction and averaging scheme; `resistivity` is only set for resistive-correctness
-    runs. Quokka itself validates `emf_compute_scheme`/`emf_averaging_scheme` (AMReX-enum-typed,
-    errors on an unrecognised name) and `reconstruction_order` (aborts with a clear message), so
-    none of these are re-validated here.
+    runs. Quokka validates these itself (enum-typed schemes, clear abort on bad order).
 
     Fields
     ---
