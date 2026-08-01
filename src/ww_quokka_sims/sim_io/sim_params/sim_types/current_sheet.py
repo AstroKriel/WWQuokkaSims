@@ -39,6 +39,7 @@ def build_sim_params(
     stop_time: float = 10.0,
     use_reflux: int = 0,
     use_subcycle: int = 0,
+    resistivity: float | None = None,
     snapshot_prefix: str = "snapshots/plt",
     snapshot_index_interval: int | None = None,
     snapshot_time_interval: float | None = 0.5,
@@ -77,11 +78,14 @@ def build_sim_params(
         hydro_params=param_groups.HydroParams(
             integrator_order=2,
             reconstruction_order=reconstruction_order,
+            ## Quokka requires use_dual_energy=0 whenever resistivity is nonzero
+            use_dual_energy=0 if resistivity is not None else None,
         ),
         mhd_params=param_groups.MHDParams(
             emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
             emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value,
             reconstruction_order=reconstruction_order,
+            resistivity=resistivity,
         ),
     )
 
