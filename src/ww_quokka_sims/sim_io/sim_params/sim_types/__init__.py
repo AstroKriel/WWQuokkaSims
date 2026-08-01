@@ -1,4 +1,8 @@
 from collections.abc import Callable
+from enum import Enum
+from typing import cast
+
+from jormi.ww_validation import validate_enums
 
 from .. import write_param_groups
 from . import alfven_wave_circular_convergence as alfven_wave_circular_convergence
@@ -19,35 +23,56 @@ from . import scheme_lookup as scheme_lookup
 from . import slow_wave_convergence as slow_wave_convergence
 from . import slow_wave_correctness as slow_wave_correctness
 
+
+class ProblemKey(str, Enum):
+    ALFVEN_WAVE_CIRCULAR_CONVERGENCE = alfven_wave_circular_convergence.PROBLEM_KEY
+    ALFVEN_WAVE_CIRCULAR_CORRECTNESS = alfven_wave_circular_correctness.PROBLEM_KEY
+    ALFVEN_WAVE_LINEAR_CONVERGENCE = alfven_wave_linear_convergence.PROBLEM_KEY
+    ALFVEN_WAVE_LINEAR_CORRECTNESS = alfven_wave_linear_correctness.PROBLEM_KEY
+    MHD_BALSARA_VORTEX = balsara_vortex.PROBLEM_KEY
+    MHD_BLAST = blast_wave.PROBLEM_KEY
+    BRIO_WU_SHOCK_TUBE = brio_wu_shock_tube.PROBLEM_KEY
+    CURRENT_SHEET = current_sheet.PROBLEM_KEY
+    FAST_WAVE_CONVERGENCE = fast_wave_convergence.PROBLEM_KEY
+    FAST_WAVE_CORRECTNESS = fast_wave_correctness.PROBLEM_KEY
+    FIELD_LOOP = field_loop.PROBLEM_KEY
+    MHD_QUIRK = mhd_quirk.PROBLEM_KEY
+    ORSZAG_TANG = orszag_tang.PROBLEM_KEY
+    RYU_JONES_2A_SHOCK_TUBE = ryu_jones_2a_shock_tube.PROBLEM_KEY
+    SLOW_WAVE_CONVERGENCE = slow_wave_convergence.PROBLEM_KEY
+    SLOW_WAVE_CORRECTNESS = slow_wave_correctness.PROBLEM_KEY
+
+
 ## add one entry per new file added under `sim_types/`; `PROBLEM_KEY` is `[problem_name]` or,
 ## when a problem has multiple modes on one Quokka binary, `[problem_name]-[mode]`.
 _SIM_PARAMS_BUILDER_LOOKUP = {
-    alfven_wave_circular_convergence.PROBLEM_KEY: alfven_wave_circular_convergence.build_sim_params,
-    alfven_wave_circular_correctness.PROBLEM_KEY: alfven_wave_circular_correctness.build_sim_params,
-    alfven_wave_linear_convergence.PROBLEM_KEY: alfven_wave_linear_convergence.build_sim_params,
-    alfven_wave_linear_correctness.PROBLEM_KEY: alfven_wave_linear_correctness.build_sim_params,
-    balsara_vortex.PROBLEM_KEY: balsara_vortex.build_sim_params,
-    blast_wave.PROBLEM_KEY: blast_wave.build_sim_params,
-    brio_wu_shock_tube.PROBLEM_KEY: brio_wu_shock_tube.build_sim_params,
-    current_sheet.PROBLEM_KEY: current_sheet.build_sim_params,
-    fast_wave_convergence.PROBLEM_KEY: fast_wave_convergence.build_sim_params,
-    fast_wave_correctness.PROBLEM_KEY: fast_wave_correctness.build_sim_params,
-    field_loop.PROBLEM_KEY: field_loop.build_sim_params,
-    mhd_quirk.PROBLEM_KEY: mhd_quirk.build_sim_params,
-    orszag_tang.PROBLEM_KEY: orszag_tang.build_sim_params,
-    ryu_jones_2a_shock_tube.PROBLEM_KEY: ryu_jones_2a_shock_tube.build_sim_params,
-    slow_wave_convergence.PROBLEM_KEY: slow_wave_convergence.build_sim_params,
-    slow_wave_correctness.PROBLEM_KEY: slow_wave_correctness.build_sim_params,
+    ProblemKey.ALFVEN_WAVE_CIRCULAR_CONVERGENCE: alfven_wave_circular_convergence.build_sim_params,
+    ProblemKey.ALFVEN_WAVE_CIRCULAR_CORRECTNESS: alfven_wave_circular_correctness.build_sim_params,
+    ProblemKey.ALFVEN_WAVE_LINEAR_CONVERGENCE: alfven_wave_linear_convergence.build_sim_params,
+    ProblemKey.ALFVEN_WAVE_LINEAR_CORRECTNESS: alfven_wave_linear_correctness.build_sim_params,
+    ProblemKey.MHD_BALSARA_VORTEX: balsara_vortex.build_sim_params,
+    ProblemKey.MHD_BLAST: blast_wave.build_sim_params,
+    ProblemKey.BRIO_WU_SHOCK_TUBE: brio_wu_shock_tube.build_sim_params,
+    ProblemKey.CURRENT_SHEET: current_sheet.build_sim_params,
+    ProblemKey.FAST_WAVE_CONVERGENCE: fast_wave_convergence.build_sim_params,
+    ProblemKey.FAST_WAVE_CORRECTNESS: fast_wave_correctness.build_sim_params,
+    ProblemKey.FIELD_LOOP: field_loop.build_sim_params,
+    ProblemKey.MHD_QUIRK: mhd_quirk.build_sim_params,
+    ProblemKey.ORSZAG_TANG: orszag_tang.build_sim_params,
+    ProblemKey.RYU_JONES_2A_SHOCK_TUBE: ryu_jones_2a_shock_tube.build_sim_params,
+    ProblemKey.SLOW_WAVE_CONVERGENCE: slow_wave_convergence.build_sim_params,
+    ProblemKey.SLOW_WAVE_CORRECTNESS: slow_wave_correctness.build_sim_params,
 }
 
 
 def resolve_sim_params_builder(
-    problem_key: str,
+    problem_key: ProblemKey | str,
 ) -> Callable[..., write_param_groups.SimParams]:
-    """Resolve `problem_key` to its profile's `build_sim_params` function."""
-    if problem_key not in _SIM_PARAMS_BUILDER_LOOKUP:
-        raise ValueError(
-            f"unknown problem_key {problem_key!r}; expected one of "
-            f"{sorted(_SIM_PARAMS_BUILDER_LOOKUP)}.",
+    """Resolve `problem_key` (a `ProblemKey` member or its string value) to its profile's `build_sim_params`."""
+    resolved_key = cast(
+        ProblemKey, validate_enums.resolve_member(
+            member=problem_key,
+            valid_enums=ProblemKey,
         )
-    return _SIM_PARAMS_BUILDER_LOOKUP[problem_key]
+    )
+    return _SIM_PARAMS_BUILDER_LOOKUP[resolved_key]
