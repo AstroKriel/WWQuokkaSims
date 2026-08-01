@@ -105,7 +105,6 @@ def build_sim_params(
             reconstruction_order=reconstruction_order,
         ),
         setup_params=param_groups.SetupParams(
-            group_title="field loop setup",
             param_values={
                 "loop_radius": loop_radius,
                 "loop_center_x": loop_center_x,

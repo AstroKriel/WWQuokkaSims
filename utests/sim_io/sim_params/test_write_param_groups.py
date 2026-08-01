@@ -539,7 +539,7 @@ class SimTypesTests(unittest.TestCase):
         )
         self.assertEqual(bundle.time_integration_params.cfl, 0.7)
 
-    def test_convergence_profile_renders_wave_setup_group(
+    def test_convergence_profile_omits_run_sim_key(
         self,
     ):
         bundle = sim_types.alfven_wave_linear_convergence.build_sim_params(
@@ -551,7 +551,6 @@ class SimTypesTests(unittest.TestCase):
             num_modes_z=0,
             angle_between_k_b0=0.0,
         )
-        self.assertEqual(bundle.setup_params.group_title, "wave setup")
         self.assertNotIn("run_sim", bundle.setup_params.param_values)
 
     def test_correctness_profile_renders_run_sim_setup_keys(

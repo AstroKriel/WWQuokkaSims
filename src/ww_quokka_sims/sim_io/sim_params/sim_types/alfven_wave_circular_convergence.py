@@ -65,7 +65,6 @@ def build_sim_params(
             reconstruction_order=reconstruction_order,
         ),
         setup_params=param_groups.SetupParams(
-            group_title="wave setup",
             param_values={
                 "machine_precision_target": 0,
                 "nx_max": _NX_MAX,
