@@ -62,9 +62,13 @@ class RenderTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            _render_param_groups.expand_per_axis((16, 8), key_prefix="amr.blocking_factor")  # pyright: ignore[reportArgumentType]
+            _render_param_groups.expand_per_axis(
+                (16, 8), key_prefix="amr.blocking_factor"
+            )  # pyright: ignore[reportArgumentType]
         with self.assertRaises(ValueError):
-            _render_param_groups.expand_per_axis((16, 8, 8, 4), key_prefix="amr.blocking_factor")  # pyright: ignore[reportArgumentType]
+            _render_param_groups.expand_per_axis(
+                (16, 8, 8, 4), key_prefix="amr.blocking_factor"
+            )  # pyright: ignore[reportArgumentType]
 
     def test_expand_per_axis_rejects_non_positive_scalar(
         self,
@@ -134,7 +138,71 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            param_groups.ResolutionParams(num_cells=(4, 8, 8), blocking_factor=8, max_grid_size=128)
+            param_groups.ResolutionParams(
+                num_cells=(4, 8, 8),
+                blocking_factor=8,
+                max_grid_size=128,
+            )
+
+    def test_resolution_accepts_a_sensible_combo(
+        self,
+    ):
+        param_groups.ResolutionParams(
+            num_cells=(256, 8, 8),
+            blocking_factor=(256, 8, 8),
+            max_grid_size=256,
+        )
+
+    def test_resolution_rejects_blocking_factor_not_power_of_two(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            param_groups.ResolutionParams(
+                num_cells=(24, 8, 8),
+                blocking_factor=(24, 8, 8),
+                max_grid_size=128,
+            )
+
+    def test_resolution_rejects_blocking_factor_above_max_grid_size(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            param_groups.ResolutionParams(
+                num_cells=(128, 8, 8),
+                blocking_factor=128,
+                max_grid_size=64,
+            )
+
+    def test_resolution_rejects_num_cells_not_divisible_by_blocking_factor(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            param_groups.ResolutionParams(
+                num_cells=(129, 8, 8),
+                blocking_factor=16,
+                max_grid_size=128,
+            )
+
+    def test_resolution_rejects_max_grid_size_not_divisible_by_blocking_factor_with_amr(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            param_groups.ResolutionParams(
+                num_cells=(128, 8, 8),
+                blocking_factor=16,
+                max_grid_size=100,
+                max_amr_levels=1,
+            )
+
+    def test_resolution_allows_max_grid_size_not_divisible_by_blocking_factor_without_amr(
+        self,
+    ):
+        ## AMReX itself only enforces this relationship once AMR is enabled
+        param_groups.ResolutionParams(
+            num_cells=(8, 8, 8),
+            blocking_factor=8,
+            max_grid_size=100,
+        )
 
     def test_resolution_rejects_num_refinement_buffer_cells_without_amr(
         self,
@@ -152,7 +220,10 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            param_groups.GeometryParams(domain_lo=(0.0, 0.0, 0.0), domain_hi=(1.0, 1.0, 1.0))  # neither set
+            param_groups.GeometryParams(
+                domain_lo=(0.0, 0.0, 0.0),
+                domain_hi=(1.0, 1.0, 1.0),
+            )  # neither set
         with self.assertRaises(ValueError):
             param_groups.GeometryParams(
                 domain_lo=(0.0, 0.0, 0.0),
@@ -171,13 +242,19 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         ## Quokka accepts index- and time-based cadence together; whichever fires first wins
-        param_groups.OutputFileParams(snapshot_index_interval=100, snapshot_time_interval=0.5)
+        param_groups.OutputFileParams(
+            snapshot_index_interval=100,
+            snapshot_time_interval=0.5,
+        )
 
     def test_output_rejects_empty_derived_vars(
         self,
     ):
         with self.assertRaises(ValueError):
-            param_groups.OutputFileParams(snapshot_index_interval=100, derived_vars=())
+            param_groups.OutputFileParams(
+                snapshot_index_interval=100,
+                derived_vars=(),
+            )
 
     def test_time_integration_rejects_cfl_out_of_bounds(
         self,
@@ -197,13 +274,19 @@ class ModelValidationTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            param_groups.SetupParams(param_values={"nx_max": 128}, group_title="")
+            param_groups.SetupParams(
+                param_values={"nx_max": 128},
+                group_title="",
+            )
 
     def test_setup_rejects_empty_key_prefix(
         self,
     ):
         with self.assertRaises(ValueError):
-            param_groups.SetupParams(param_values={"nx_max": 128}, key_prefix="")
+            param_groups.SetupParams(
+                param_values={"nx_max": 128},
+                key_prefix="",
+            )
 
 
 ##
@@ -234,22 +317,40 @@ class _DefaultWriteKwargsTestCase(_WritesSimParamsFileTestCase):
         **overrides: object,
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
-            "output_path": self.test_file_path,
-            "geometry_params": param_groups.GeometryParams(
+            "output_path":
+            self.test_file_path,
+            "geometry_params":
+            param_groups.GeometryParams(
                 domain_lo=(0.0, 0.0, 0.0),
                 domain_hi=(1.0, 1.0, 1.0),
                 is_boundary_periodic=(1, 1, 1),
             ),
-            "resolution_params": param_groups.ResolutionParams(num_cells=(128, 8, 8), blocking_factor=(16, 8, 8), max_grid_size=128),
-            "output_file_params": param_groups.OutputFileParams(snapshot_index_interval=-1),
-            "time_integration_params": param_groups.TimeIntegrationParams(cfl=0.3, use_subcycle=0),
-            "hydro_params": param_groups.HydroParams(integrator_order=2, reconstruction_order=5),
-            "mhd_params": param_groups.MHDParams(
+            "resolution_params":
+            param_groups.ResolutionParams(
+                num_cells=(128, 8, 8),
+                blocking_factor=(16, 8, 8),
+                max_grid_size=128,
+            ),
+            "output_file_params":
+            param_groups.OutputFileParams(snapshot_index_interval=-1),
+            "time_integration_params":
+            param_groups.TimeIntegrationParams(
+                cfl=0.3,
+                use_subcycle=0,
+            ),
+            "hydro_params":
+            param_groups.HydroParams(
+                integrator_order=2,
+                reconstruction_order=5,
+            ),
+            "mhd_params":
+            param_groups.MHDParams(
                 emf_compute_scheme="Quokka2026",
                 emf_averaging_scheme="Balsara2025",
                 reconstruction_order=5,
             ),
-            "verbose": False,
+            "verbose":
+            False,
         }
         kwargs.update(overrides)
         return kwargs
@@ -267,7 +368,9 @@ class GuardrailTests(_DefaultWriteKwargsTestCase):
     ):
         write_param_groups.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
         with self.assertRaises(FileExistsError):
-            write_param_groups.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
+            write_param_groups.write_sim_params_toml(
+                **self._base_kwargs()
+            )  # pyright: ignore[reportArgumentType]
 
     def test_rejects_non_sim_params_filename(
         self,
@@ -279,7 +382,9 @@ class GuardrailTests(_DefaultWriteKwargsTestCase):
     def test_param_group_order_and_setup_last(
         self,
     ):
-        path = write_param_groups.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
+        path = write_param_groups.write_sim_params_toml(
+            **self._base_kwargs()
+        )  # pyright: ignore[reportArgumentType]
         headers = [line for line in path.read_text().splitlines() if line.startswith("##")]
         expected_titles = (
             write_param_groups._ParamGroupTitle.GEOMETRY,
@@ -341,7 +446,7 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
                 snapshot_time_interval=0.5,
                 checkpoint_index_interval=10,
                 checkpoint_time_interval=1.0,
-                derived_vars=("magnetic_divergence",),
+                derived_vars=("magnetic_divergence", ),
             ),
         )
         path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]

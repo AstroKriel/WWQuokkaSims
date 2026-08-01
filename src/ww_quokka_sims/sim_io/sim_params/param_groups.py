@@ -44,6 +44,20 @@ def _ensure_scalar_or_axis_triple(
     )
 
 
+def _as_axis_triple(
+    param: int | tuple[int, int, int],
+) -> tuple[int, int, int]:
+    return param if isinstance(param, tuple) else (param, param, param)
+
+
+def _is_power_of_two(
+    value: int,
+) -> bool:
+    while value > 0 and value % 2 == 0:
+        value //= 2
+    return value == 1
+
+
 ##
 ## === GEOMETRY
 ##
@@ -126,10 +140,12 @@ class ResolutionParams:
         Base-level cell count per axis; each entry must be >= 8.
 
     - `blocking_factor`:
-        Minimum grid tile size; scalar (applied to all axes) or per-axis.
+        Minimum grid tile size; scalar (applied to all axes) or per-axis. Must be a power of 2 and
+        divide `num_cells`, per axis.
 
     - `max_grid_size`:
-        Maximum grid tile size; scalar (applied to all axes) or per-axis.
+        Maximum grid tile size; scalar (applied to all axes) or per-axis. Must be >= `blocking_factor`
+        per axis, and a multiple of it when `max_amr_levels` > 0.
 
     - `max_amr_levels`:
         Number of AMR refinement levels above the base grid; `0` disables AMR.
@@ -169,6 +185,36 @@ class ResolutionParams:
             raise ValueError(
                 "`<num_refinement_buffer_cells>` only applies when `<max_amr_levels>` > 0 (AMR refinement enabled).",
             )
+        ## AMReX's own `Amr::checkInput` enforces these at runtime
+        blocking_factor_axes = _as_axis_triple(self.blocking_factor)
+        max_grid_size_axes = _as_axis_triple(self.max_grid_size)
+        for axis, block_size in enumerate(blocking_factor_axes):
+            if not _is_power_of_two(block_size):
+                raise ValueError(
+                    f"`<blocking_factor>` must be a power of 2 per axis (AMReX requirement), "
+                    f"got {block_size} on axis {axis}.",
+                )
+        for axis, (num_cells_value, block_size, grid_size) in enumerate(zip(
+                self.num_cells,
+                blocking_factor_axes,
+                max_grid_size_axes,
+        ), ):
+            if block_size > grid_size:
+                raise ValueError(
+                    f"`<blocking_factor>` must be <= `<max_grid_size>` per axis, got "
+                    f"blocking_factor={block_size}, max_grid_size={grid_size} on axis {axis}.",
+                )
+            if num_cells_value % block_size != 0:
+                raise ValueError(
+                    f"`<num_cells>` must be divisible by `<blocking_factor>` per axis (AMReX requirement), "
+                    f"got num_cells={num_cells_value}, blocking_factor={block_size} on axis {axis}.",
+                )
+            if (self.max_amr_levels > 0) and (grid_size % block_size != 0):
+                raise ValueError(
+                    f"`<max_grid_size>` must be divisible by `<blocking_factor>` per axis when AMR is "
+                    f"enabled (AMReX requirement), got max_grid_size={grid_size}, "
+                    f"blocking_factor={block_size} on axis {axis}.",
+                )
 
 
 ##
