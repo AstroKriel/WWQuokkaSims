@@ -404,7 +404,8 @@ class MHDParams:
 
 
 ##
-## === SETUP (problem-specific, always rendered last)
+## === SETUP
+## problem-specific, always rendered last
 ##
 
 
