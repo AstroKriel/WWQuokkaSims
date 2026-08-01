@@ -18,7 +18,7 @@ from ww_quokka_sims.sim_io.sim_params import (
 from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 
 ##
-## === TEST SUITE: _render_param_groups internals
+## === TEST RENDER PRIMITIVES
 ##
 
 
@@ -63,14 +63,14 @@ class RenderTests(unittest.TestCase):
     ):
         with self.assertRaises(ValueError):
             _render_param_groups.expand_per_axis(
-                (16, 8),
+                (16, 8),  # pyright: ignore[reportArgumentType]
                 key_prefix="amr.blocking_factor",
-            )  # pyright: ignore[reportArgumentType]
+            )
         with self.assertRaises(ValueError):
             _render_param_groups.expand_per_axis(
-                (16, 8, 8, 4),
+                (16, 8, 8, 4),  # pyright: ignore[reportArgumentType]
                 key_prefix="amr.blocking_factor",
-            )  # pyright: ignore[reportArgumentType]
+            )
 
     def test_expand_per_axis_rejects_non_positive_scalar(
         self,
@@ -99,7 +99,7 @@ class RenderTests(unittest.TestCase):
 
 
 ##
-## === TEST SUITE: scheme_lookup
+## === TEST SCHEME LOOKUP
 ##
 
 
@@ -119,18 +119,14 @@ class SchemeLookupTests(unittest.TestCase):
     def test_invalid_key_raises_with_valid_options_listed(
         self,
     ):
-        ## the whole point of Enum + resolve_member over a plain dict: an invalid key is a
-        ## clear ValueError naming the valid options, not a bare KeyError
         with self.assertRaises(ValueError) as ctx:
             scheme_lookup.resolve_reconstruction_scheme("pmm")  # typo: transposed letters
         self.assertIn("PPM", str(ctx.exception))
 
 
 ##
-## === TEST SUITE: sim_params.param_groups validation
-## only validates what's ww-quokka-sims's own layer's concern (rendering-ambiguity, degenerate
-## inputs); Quokka's own runtime errors are trusted for everything Quokka itself validates
-## (reconstruction_order, emf schemes, resistivity/use_subcycle, ...), not duplicated here
+## === TEST PARAM GROUPS VALIDATION
+## only rendering-ambiguity and degenerate inputs; Quokka validates everything else itself
 ##
 
 
@@ -292,11 +288,12 @@ class ModelValidationTests(unittest.TestCase):
 
 
 ##
-## === SHARED FIXTURES: write_sim_params_toml tests
+## === SHARED FIXTURES
 ##
 
 
 class _WritesSimParamsFileTestCase(unittest.TestCase):
+    test_file_path: Path  # pyright: ignore[reportUninitializedInstanceVariable]
 
     def setUp(
         self,
@@ -316,7 +313,7 @@ class _DefaultWriteKwargsTestCase(_WritesSimParamsFileTestCase):
 
     def _base_kwargs(
         self,
-        **overrides: object,
+        **override_kwargs: object,
     ) -> dict[str, object]:
         kwargs: dict[str, object] = {
             "output_path":
@@ -354,12 +351,12 @@ class _DefaultWriteKwargsTestCase(_WritesSimParamsFileTestCase):
             "verbose":
             False,
         }
-        kwargs.update(overrides)
+        kwargs.update(override_kwargs)
         return kwargs
 
 
 ##
-## === TEST SUITE: write_sim_params_toml behaviour ww-quokka-sims itself owns
+## === TEST WRITE GUARDRAILS
 ##
 
 
@@ -368,27 +365,31 @@ class GuardrailTests(_DefaultWriteKwargsTestCase):
     def test_refuses_to_overwrite_by_default(
         self,
     ):
-        write_param_groups.write_sim_params_toml(**self._base_kwargs())  # pyright: ignore[reportArgumentType]
+        write_param_groups.write_sim_params_toml(
+            **self._base_kwargs(),  # pyright: ignore[reportArgumentType]
+        )
         with self.assertRaises(FileExistsError):
             write_param_groups.write_sim_params_toml(
-                **self._base_kwargs(),
-            )  # pyright: ignore[reportArgumentType]
+                **self._base_kwargs(),  # pyright: ignore[reportArgumentType]
+            )
 
     def test_rejects_non_sim_params_filename(
         self,
     ):
         kwargs = self._base_kwargs(output_path=Path("not_sim_params.toml"))
         with self.assertRaises(ValueError):
-            write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
+            write_param_groups.write_sim_params_toml(
+                **kwargs,  # pyright: ignore[reportArgumentType]
+            )
 
     def test_param_group_order_and_setup_last(
         self,
     ):
-        path = write_param_groups.write_sim_params_toml(
-            **self._base_kwargs(),
-        )  # pyright: ignore[reportArgumentType]
-        headers = [line for line in path.read_text().splitlines() if line.startswith("##")]
-        expected_titles = (
+        file_path = write_param_groups.write_sim_params_toml(
+            **self._base_kwargs(),  # pyright: ignore[reportArgumentType]
+        )
+        rendered_group_titles = [line for line in file_path.read_text().splitlines() if line.startswith("##")]
+        expected_group_titles = (
             write_param_groups._ParamGroupTitle.GEOMETRY,
             write_param_groups._ParamGroupTitle.RESOLUTION,
             write_param_groups._ParamGroupTitle.VERBOSITY,
@@ -397,11 +398,11 @@ class GuardrailTests(_DefaultWriteKwargsTestCase):
             write_param_groups._ParamGroupTitle.HYDRO,
             write_param_groups._ParamGroupTitle.MHD,
         )
-        self.assertEqual(headers, [f"## {title}" for title in expected_titles])
+        self.assertEqual(rendered_group_titles, [f"## {title}" for title in expected_group_titles])
 
 
 ##
-## === TEST SUITE: write_sim_params_toml render paths
+## === TEST WRITTEN TOML CONTENT
 ##
 
 
@@ -417,10 +418,12 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
                 boundary_conditions=("ext_dir", "periodic", "periodic"),
             ),
         )
-        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
-        content = path.read_text()
-        self.assertIn('quokka.bc = ["ext_dir", "periodic", "periodic"]', content)
-        self.assertNotIn("geometry.is_periodic", content)
+        file_path = write_param_groups.write_sim_params_toml(
+            **kwargs,  # pyright: ignore[reportArgumentType]
+        )
+        file_content = file_path.read_text()
+        self.assertIn('quokka.bc = ["ext_dir", "periodic", "periodic"]', file_content)
+        self.assertNotIn("geometry.is_periodic", file_content)
 
     def test_writes_checkpoint_and_plottime_settings(
         self,
@@ -432,12 +435,14 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
                 checkpoint_prefix="checkpoints/chk",
             ),
         )
-        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
-        content = path.read_text()
-        self.assertIn("plottime_interval = 0.5", content)
-        self.assertIn("checkpoint_interval = 100", content)
-        self.assertIn('checkpoint_prefix = "checkpoints/chk"', content)
-        self.assertNotIn("plotfile_interval", content)
+        file_path = write_param_groups.write_sim_params_toml(
+            **kwargs,  # pyright: ignore[reportArgumentType]
+        )
+        file_content = file_path.read_text()
+        self.assertIn("plottime_interval = 0.5", file_content)
+        self.assertIn("checkpoint_interval = 100", file_content)
+        self.assertIn('checkpoint_prefix = "checkpoints/chk"', file_content)
+        self.assertNotIn("plotfile_interval", file_content)
 
     def test_writes_both_interval_styles_and_derived_vars(
         self,
@@ -451,13 +456,15 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
                 derived_vars=("magnetic_divergence", ),
             ),
         )
-        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
-        content = path.read_text()
-        self.assertIn("plotfile_interval = 100", content)
-        self.assertIn("plottime_interval = 0.5", content)
-        self.assertIn("checkpoint_interval = 10", content)
-        self.assertIn("checkpointtime_interval = 1.0", content)
-        self.assertIn('derived_vars = ["magnetic_divergence"]', content)
+        file_path = write_param_groups.write_sim_params_toml(
+            **kwargs,  # pyright: ignore[reportArgumentType]
+        )
+        file_content = file_path.read_text()
+        self.assertIn("plotfile_interval = 100", file_content)
+        self.assertIn("plottime_interval = 0.5", file_content)
+        self.assertIn("checkpoint_interval = 10", file_content)
+        self.assertIn("checkpointtime_interval = 1.0", file_content)
+        self.assertIn('derived_vars = ["magnetic_divergence"]', file_content)
 
     def test_writes_amr_refinement_settings(
         self,
@@ -471,25 +478,27 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
                 num_refinement_buffer_cells=2,
             ),
         )
-        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
-        content = path.read_text()
-        self.assertIn("amr.max_level = 1", content)
-        self.assertIn("amr.n_error_buf = 2", content)
+        file_path = write_param_groups.write_sim_params_toml(
+            **kwargs,  # pyright: ignore[reportArgumentType]
+        )
+        file_content = file_path.read_text()
+        self.assertIn("amr.max_level = 1", file_content)
+        self.assertIn("amr.n_error_buf = 2", file_content)
 
     def test_writes_amr_verbosity(
         self,
     ):
         kwargs = self._base_kwargs(amr_verbosity=0)
-        path = write_param_groups.write_sim_params_toml(**kwargs)  # pyright: ignore[reportArgumentType]
-        content = path.read_text()
-        self.assertIn("amr.v = 0", content)
+        file_path = write_param_groups.write_sim_params_toml(
+            **kwargs,  # pyright: ignore[reportArgumentType]
+        )
+        file_content = file_path.read_text()
+        self.assertIn("amr.v = 0", file_content)
 
 
 ##
-## === TEST SUITE: sim_types capability (registry, param threading, defaulting, mode selection)
-## exercises the pipeline's own mechanics via self-contained scenarios; does not verify any
-## specific real Quokka problem's own domain knowledge (that's a one-time audit concern, not
-## an ongoing unit-test concern -- see kriel-quokka-mhd's regen-and-diff workflow instead)
+## === TEST SIM TYPES CAPABILITY
+## doesn't verify any real Quokka problem's domain values, only the tool's own mechanics
 ##
 
 
@@ -510,7 +519,7 @@ class SimTypesTests(unittest.TestCase):
     def test_profile_minimal_call_uses_documented_defaults(
         self,
     ):
-        bundle = sim_types.blast_wave.build_sim_params(
+        sim_params = sim_types.blast_wave.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction_order_key="ppm",
@@ -520,13 +529,16 @@ class SimTypesTests(unittest.TestCase):
             max_time_steps=4000,
             snapshot_index_interval=25,
         )
-        self.assertEqual(bundle.time_integration_params.cfl, 0.3)  # documented default, not overridden
-        self.assertEqual(bundle.geometry_params.domain_lo, (-0.5, -0.5, -0.5))  # physics-fixed, never exposed
+        self.assertEqual(sim_params.time_integration_params.cfl, 0.3)
+        self.assertEqual(
+            sim_params.geometry_params.domain_lo,
+            (-0.5, -0.5, -0.5),
+        )
 
     def test_profile_override_threads_through(
         self,
     ):
-        bundle = sim_types.blast_wave.build_sim_params(
+        sim_params = sim_types.blast_wave.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction_order_key="ppm",
@@ -537,12 +549,12 @@ class SimTypesTests(unittest.TestCase):
             snapshot_index_interval=25,
             cfl=0.7,
         )
-        self.assertEqual(bundle.time_integration_params.cfl, 0.7)
+        self.assertEqual(sim_params.time_integration_params.cfl, 0.7)
 
     def test_convergence_profile_omits_run_sim_key(
         self,
     ):
-        bundle = sim_types.alfven_wave_linear_convergence.build_sim_params(
+        sim_params = sim_types.alfven_wave_linear_convergence.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction_order_key="ppm",
@@ -551,12 +563,13 @@ class SimTypesTests(unittest.TestCase):
             num_modes_z=0,
             angle_between_k_b0=0.0,
         )
-        self.assertNotIn("run_sim", bundle.setup_params.param_values)
+        assert sim_params.setup_params is not None
+        self.assertNotIn("run_sim", sim_params.setup_params.param_values)
 
     def test_correctness_profile_renders_run_sim_setup_keys(
         self,
     ):
-        bundle = sim_types.alfven_wave_linear_correctness.build_sim_params(
+        sim_params = sim_types.alfven_wave_linear_correctness.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction_order_key="ppm",
@@ -567,14 +580,15 @@ class SimTypesTests(unittest.TestCase):
             stop_time=5.0,
             max_time_steps=100_000,
         )
-        self.assertEqual(bundle.setup_params.param_values["run_sim"], True)
-        self.assertEqual(bundle.setup_params.param_values["run_convergence"], False)
+        assert sim_params.setup_params is not None
+        self.assertEqual(sim_params.setup_params.param_values["run_sim"], True)
+        self.assertEqual(sim_params.setup_params.param_values["run_convergence"], False)
 
     def test_correctness_profile_requires_stop_time(
         self,
     ):
         with self.assertRaises(TypeError):
-            sim_types.alfven_wave_linear_correctness.build_sim_params(
+            sim_types.alfven_wave_linear_correctness.build_sim_params(  # pyright: ignore[reportCallIssue]
                 compute_scheme_key="q26",
                 averaging_scheme_key="b25",
                 reconstruction_order_key="ppm",
@@ -583,8 +597,7 @@ class SimTypesTests(unittest.TestCase):
                 num_modes_z=0,
                 angle_between_k_b0=0.0,
                 max_time_steps=100_000,
-                ## stop_time omitted
-            )  # pyright: ignore[reportCallIssue]
+            )
 
 
 ##
