@@ -19,35 +19,35 @@ from . import scheme_lookup as scheme_lookup
 from . import slow_wave_convergence as slow_wave_convergence
 from . import slow_wave_correctness as slow_wave_correctness
 
-## add one entry per new file added under `sim_types/`; `PROBLEM_NAME` should be Quokka's own
-## ctest name for that entry point (see its `CMakeLists.txt`), not an invented one.
+## add one entry per new file added under `sim_types/`; `PROBLEM_KEY` is `[problem_name]` or,
+## when a problem has multiple modes on one Quokka binary, `[problem_name]-[mode]`.
 _SIM_PARAMS_BUILDER_LOOKUP = {
-    alfven_wave_circular_convergence.PROBLEM_NAME: alfven_wave_circular_convergence.build_sim_params,
-    alfven_wave_circular_correctness.PROBLEM_NAME: alfven_wave_circular_correctness.build_sim_params,
-    alfven_wave_linear_convergence.PROBLEM_NAME: alfven_wave_linear_convergence.build_sim_params,
-    alfven_wave_linear_correctness.PROBLEM_NAME: alfven_wave_linear_correctness.build_sim_params,
-    balsara_vortex.PROBLEM_NAME: balsara_vortex.build_sim_params,
-    blast_wave.PROBLEM_NAME: blast_wave.build_sim_params,
-    brio_wu_shock_tube.PROBLEM_NAME: brio_wu_shock_tube.build_sim_params,
-    current_sheet.PROBLEM_NAME: current_sheet.build_sim_params,
-    fast_wave_convergence.PROBLEM_NAME: fast_wave_convergence.build_sim_params,
-    fast_wave_correctness.PROBLEM_NAME: fast_wave_correctness.build_sim_params,
-    field_loop.PROBLEM_NAME: field_loop.build_sim_params,
-    mhd_quirk.PROBLEM_NAME: mhd_quirk.build_sim_params,
-    orszag_tang.PROBLEM_NAME: orszag_tang.build_sim_params,
-    ryu_jones_2a_shock_tube.PROBLEM_NAME: ryu_jones_2a_shock_tube.build_sim_params,
-    slow_wave_convergence.PROBLEM_NAME: slow_wave_convergence.build_sim_params,
-    slow_wave_correctness.PROBLEM_NAME: slow_wave_correctness.build_sim_params,
+    alfven_wave_circular_convergence.PROBLEM_KEY: alfven_wave_circular_convergence.build_sim_params,
+    alfven_wave_circular_correctness.PROBLEM_KEY: alfven_wave_circular_correctness.build_sim_params,
+    alfven_wave_linear_convergence.PROBLEM_KEY: alfven_wave_linear_convergence.build_sim_params,
+    alfven_wave_linear_correctness.PROBLEM_KEY: alfven_wave_linear_correctness.build_sim_params,
+    balsara_vortex.PROBLEM_KEY: balsara_vortex.build_sim_params,
+    blast_wave.PROBLEM_KEY: blast_wave.build_sim_params,
+    brio_wu_shock_tube.PROBLEM_KEY: brio_wu_shock_tube.build_sim_params,
+    current_sheet.PROBLEM_KEY: current_sheet.build_sim_params,
+    fast_wave_convergence.PROBLEM_KEY: fast_wave_convergence.build_sim_params,
+    fast_wave_correctness.PROBLEM_KEY: fast_wave_correctness.build_sim_params,
+    field_loop.PROBLEM_KEY: field_loop.build_sim_params,
+    mhd_quirk.PROBLEM_KEY: mhd_quirk.build_sim_params,
+    orszag_tang.PROBLEM_KEY: orszag_tang.build_sim_params,
+    ryu_jones_2a_shock_tube.PROBLEM_KEY: ryu_jones_2a_shock_tube.build_sim_params,
+    slow_wave_convergence.PROBLEM_KEY: slow_wave_convergence.build_sim_params,
+    slow_wave_correctness.PROBLEM_KEY: slow_wave_correctness.build_sim_params,
 }
 
 
 def resolve_sim_params_builder(
-    problem_name: str,
+    problem_key: str,
 ) -> Callable[..., write_param_groups.SimParams]:
-    """Resolve `problem_name` to its profile's `build_sim_params` function."""
-    if problem_name not in _SIM_PARAMS_BUILDER_LOOKUP:
+    """Resolve `problem_key` to its profile's `build_sim_params` function."""
+    if problem_key not in _SIM_PARAMS_BUILDER_LOOKUP:
         raise ValueError(
-            f"unknown problem_name {problem_name!r}; expected one of "
+            f"unknown problem_key {problem_key!r}; expected one of "
             f"{sorted(_SIM_PARAMS_BUILDER_LOOKUP)}.",
         )
-    return _SIM_PARAMS_BUILDER_LOOKUP[problem_name]
+    return _SIM_PARAMS_BUILDER_LOOKUP[problem_key]

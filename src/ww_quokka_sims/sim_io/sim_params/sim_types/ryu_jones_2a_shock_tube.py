@@ -16,7 +16,7 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 ## === CONSTANTS
 ##
 
-PROBLEM_NAME = "RyuJones2aShockTube"
+PROBLEM_KEY = "RyuJones2aShockTube"
 
 ## shock is placed at a hardcoded x=0.5, with boundaries baked to the fixed left/right states;
 ## domain and boundary conditions must stay fixed for the shock and BCs to apply correctly

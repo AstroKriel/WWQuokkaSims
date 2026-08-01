@@ -16,7 +16,7 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 ## === CONSTANTS
 ##
 
-PROBLEM_NAME = "FieldLoop"
+PROBLEM_KEY = "FieldLoop"
 
 ## `stop_time`'s default is tuned for one full domain-diagonal crossing at the other defaults;
 ## overriding those without reconsidering `stop_time` still runs, just not one clean crossing.

@@ -16,7 +16,7 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 ## === CONSTANTS
 ##
 
-PROBLEM_NAME = "MHDQuirk"
+PROBLEM_KEY = "MHDQuirk"
 
 ## the shock is placed at a hardcoded x=0.4 (fraction of domain, from `prob_lo`), so the domain
 ## must stay fixed for the shock to sit where the test intends

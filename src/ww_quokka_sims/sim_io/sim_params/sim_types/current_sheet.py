@@ -16,7 +16,7 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 ## === CONSTANTS
 ##
 
-PROBLEM_NAME = "CurrentSheet"
+PROBLEM_KEY = "CurrentSheet"
 
 ## perturbation/reversal position are hardcoded relative to the domain; domain must stay fixed,
 ## and B-field BCs are hardcoded periodic, so cell BCs must match

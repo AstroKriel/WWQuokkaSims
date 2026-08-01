@@ -16,7 +16,7 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 ## === CONSTANTS
 ##
 
-PROBLEM_NAME = "FastWave"
+PROBLEM_KEY = "FastWave-Correctness"
 
 ##
 ## === PROGRAM MAIN

@@ -16,7 +16,7 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 ## === CONSTANTS
 ##
 
-PROBLEM_NAME = "SlowWaveConvergence"
+PROBLEM_KEY = "SlowWave-Convergence"
 
 ## `run_convergence` overrides domain/resolution/stop_time/max_timesteps internally; values
 ## below match the reference file only. No `resistivity` kwarg: asserts `mhd.resistivity == 0`.
