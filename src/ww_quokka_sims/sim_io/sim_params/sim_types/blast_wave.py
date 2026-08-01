@@ -8,8 +8,7 @@
 from .. import param_groups
 from .. import write_param_groups
 
-## fully-dotted, not `from . import scheme_lookup`: that form triggers `reportImportCycles`,
-## since `sim_types/__init__.py` imports this module before `scheme_lookup` resolves
+## import scheme_lookup directly from its module file, not via the package __init__, to avoid a static import cycle
 import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 ##
@@ -47,7 +46,7 @@ def build_sim_params(
     checkpoint_index_interval: int | None = None,
     checkpoint_time_interval: float | None = None,
     checkpoint_prefix: str | None = None,
-    derived_vars: tuple[str, ...] | None = ("magnetic_divergence",),
+    derived_vars: tuple[str, ...] | None = ("magnetic_divergence", ),
 ) -> write_param_groups.SimParams:
     """Build the full parameter set for one `MHDBlast` run."""
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
@@ -82,7 +81,6 @@ def build_sim_params(
             integrator_order=2,
             reconstruction_order=reconstruction_order,
         ),
-        ## no `resistivity`: `MHDBlast` doesn't opt into resistive physics (default `ResistivityModel::none`)
         mhd_params=param_groups.MHDParams(
             emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
             emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value,
