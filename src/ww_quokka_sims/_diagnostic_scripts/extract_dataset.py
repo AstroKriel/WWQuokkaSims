@@ -362,7 +362,7 @@ class ScriptInterface:
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     parser = argparse.ArgumentParser(
-        description="Extract full-domain Quokka field data to disk (no plotting).",
+        description="Extract and save full-domain Quokka field data.",
         parents=[
             cli.base_parser(
                 num_dirs=1,
