@@ -116,8 +116,14 @@ def _build_geometry_lines(
     geometry_params: param_groups.GeometryParams,
 ) -> list[str]:
     assignment_lines = [
-        _render_param_groups.render_key_value(key="geometry.prob_lo", value=list(geometry_params.domain_lo)),
-        _render_param_groups.render_key_value(key="geometry.prob_hi", value=list(geometry_params.domain_hi)),
+        _render_param_groups.render_key_value(
+            key="geometry.prob_lo",
+            value=list(geometry_params.domain_lo),
+        ),
+        _render_param_groups.render_key_value(
+            key="geometry.prob_hi",
+            value=list(geometry_params.domain_hi),
+        ),
     ]
     if geometry_params.is_boundary_periodic is not None:
         assignment_lines.append(
@@ -140,10 +146,18 @@ def _build_resolution_lines(
     resolution_params: param_groups.ResolutionParams,
 ) -> list[str]:
     assignment_lines = [
-        _render_param_groups.render_key_value(key="amr.n_cell", value=list(resolution_params.num_cells)),
-        _render_param_groups.render_key_value(key="amr.max_level", value=resolution_params.max_amr_levels),
-        *_render_param_groups.expand_per_axis(resolution_params.blocking_factor, key_prefix="amr.blocking_factor"),
-        *_render_param_groups.expand_per_axis(resolution_params.max_grid_size, key_prefix="amr.max_grid_size"),
+        _render_param_groups.render_key_value(
+            key="amr.n_cell",
+            value=list(resolution_params.num_cells),
+        ),
+        _render_param_groups.render_key_value(
+            key="amr.max_level",
+            value=resolution_params.max_amr_levels,
+        ),
+        *_render_param_groups.
+        expand_per_axis(resolution_params.blocking_factor, key_prefix="amr.blocking_factor"),
+        *_render_param_groups.
+        expand_per_axis(resolution_params.max_grid_size, key_prefix="amr.max_grid_size"),
     ]
     if resolution_params.num_refinement_buffer_cells is not None:
         assignment_lines.append(
@@ -161,31 +175,52 @@ def _build_output_lines(
     assignment_lines: list[str] = []
     if output_file_params.checkpoint_index_interval is not None:
         assignment_lines.append(
-            _render_param_groups.render_key_value(key="checkpoint_interval", value=output_file_params.checkpoint_index_interval),
+            _render_param_groups.render_key_value(
+                key="checkpoint_interval",
+                value=output_file_params.checkpoint_index_interval,
+            ),
         )
     if output_file_params.checkpoint_time_interval is not None:
         assignment_lines.append(
-            _render_param_groups.render_key_value(key="checkpointtime_interval", value=output_file_params.checkpoint_time_interval),
+            _render_param_groups.render_key_value(
+                key="checkpointtime_interval",
+                value=output_file_params.checkpoint_time_interval,
+            ),
         )
     if output_file_params.checkpoint_prefix is not None:
         assignment_lines.append(
-            _render_param_groups.render_key_value(key="checkpoint_prefix", value=output_file_params.checkpoint_prefix),
+            _render_param_groups.render_key_value(
+                key="checkpoint_prefix",
+                value=output_file_params.checkpoint_prefix,
+            ),
         )
     if output_file_params.snapshot_index_interval is not None:
         assignment_lines.append(
-            _render_param_groups.render_key_value(key="plotfile_interval", value=output_file_params.snapshot_index_interval),
+            _render_param_groups.render_key_value(
+                key="plotfile_interval",
+                value=output_file_params.snapshot_index_interval,
+            ),
         )
     if output_file_params.snapshot_time_interval is not None:
         assignment_lines.append(
-            _render_param_groups.render_key_value(key="plottime_interval", value=output_file_params.snapshot_time_interval),
+            _render_param_groups.render_key_value(
+                key="plottime_interval",
+                value=output_file_params.snapshot_time_interval,
+            ),
         )
     if output_file_params.snapshot_prefix is not None:
         assignment_lines.append(
-            _render_param_groups.render_key_value(key="plotfile_prefix", value=output_file_params.snapshot_prefix),
+            _render_param_groups.render_key_value(
+                key="plotfile_prefix",
+                value=output_file_params.snapshot_prefix,
+            ),
         )
     if output_file_params.derived_vars is not None:
         assignment_lines.append(
-            _render_param_groups.render_key_value(key="derived_vars", value=list(output_file_params.derived_vars)),
+            _render_param_groups.render_key_value(
+                key="derived_vars",
+                value=list(output_file_params.derived_vars),
+            ),
         )
     return assignment_lines
 
@@ -193,7 +228,12 @@ def _build_output_lines(
 def _build_time_integration_lines(
     time_integration_params: param_groups.TimeIntegrationParams,
 ) -> list[str]:
-    assignment_lines = [_render_param_groups.render_key_value(key="cfl", value=time_integration_params.cfl)]
+    assignment_lines = [
+        _render_param_groups.render_key_value(
+            key="cfl",
+            value=time_integration_params.cfl,
+        )
+    ]
     optional_keys = (
         ("do_reflux", time_integration_params.use_reflux),
         ("do_subcycle", time_integration_params.use_subcycle),
@@ -203,7 +243,12 @@ def _build_time_integration_lines(
     )
     for key, value in optional_keys:
         if value is not None:
-            assignment_lines.append(_render_param_groups.render_key_value(key=key, value=value))
+            assignment_lines.append(
+                _render_param_groups.render_key_value(
+                    key=key,
+                    value=value,
+                ),
+            )
     return assignment_lines
 
 
@@ -211,12 +256,21 @@ def _build_hydro_lines(
     hydro_params: param_groups.HydroParams,
 ) -> list[str]:
     assignment_lines = [
-        _render_param_groups.render_key_value(key="hydro.rk_integrator_order", value=hydro_params.integrator_order),
-        _render_param_groups.render_key_value(key="hydro.reconstruction_order", value=hydro_params.reconstruction_order),
+        _render_param_groups.render_key_value(
+            key="hydro.rk_integrator_order",
+            value=hydro_params.integrator_order,
+        ),
+        _render_param_groups.render_key_value(
+            key="hydro.reconstruction_order",
+            value=hydro_params.reconstruction_order,
+        ),
     ]
     if hydro_params.use_dual_energy is not None:
         assignment_lines.append(
-            _render_param_groups.render_key_value(key="hydro.use_dual_energy", value=hydro_params.use_dual_energy),
+            _render_param_groups.render_key_value(
+                key="hydro.use_dual_energy",
+                value=hydro_params.use_dual_energy,
+            ),
         )
     return assignment_lines
 
@@ -225,12 +279,26 @@ def _build_mhd_lines(
     mhd_params: param_groups.MHDParams,
 ) -> list[str]:
     assignment_lines = [
-        _render_param_groups.render_key_value(key="mhd.emf_compute_scheme", value=mhd_params.emf_compute_scheme),
-        _render_param_groups.render_key_value(key="mhd.emf_averaging_scheme", value=mhd_params.emf_averaging_scheme),
-        _render_param_groups.render_key_value(key="mhd.emf_reconstruction_order", value=mhd_params.reconstruction_order),
+        _render_param_groups.render_key_value(
+            key="mhd.emf_compute_scheme",
+            value=mhd_params.emf_compute_scheme,
+        ),
+        _render_param_groups.render_key_value(
+            key="mhd.emf_averaging_scheme",
+            value=mhd_params.emf_averaging_scheme,
+        ),
+        _render_param_groups.render_key_value(
+            key="mhd.emf_reconstruction_order",
+            value=mhd_params.reconstruction_order,
+        ),
     ]
     if mhd_params.resistivity is not None:
-        assignment_lines.append(_render_param_groups.render_key_value(key="mhd.resistivity", value=mhd_params.resistivity))
+        assignment_lines.append(
+            _render_param_groups.render_key_value(
+                key="mhd.resistivity",
+                value=mhd_params.resistivity,
+            ),
+        )
     return assignment_lines
 
 
@@ -238,8 +306,10 @@ def _build_setup_lines(
     setup_params: param_groups.SetupParams,
 ) -> list[str]:
     return [
-        _render_param_groups.render_key_value(key=f"{setup_params.key_prefix}.{key}", value=value)
-        for key, value in setup_params.param_values.items()
+        _render_param_groups.render_key_value(
+            key=f"{setup_params.key_prefix}.{key}",
+            value=value,
+        ) for key, value in setup_params.param_values.items()
     ]
 
 
@@ -278,17 +348,33 @@ def write_sim_params_toml(
     - `overwrite`:
         Raise if `output_path` already exists and this is `False`.
     """
-    validate_types.ensure_finite_int(param=amr_verbosity, param_name="amr_verbosity")
-    validate_types.ensure_bool(param=overwrite, param_name="overwrite")
-    validate_types.ensure_bool(param=verbose, param_name="verbose")
+    validate_types.ensure_finite_int(
+        param=amr_verbosity,
+        param_name="amr_verbosity",
+    )
+    validate_types.ensure_bool(
+        param=overwrite,
+        param_name="overwrite",
+    )
+    validate_types.ensure_bool(
+        param=verbose,
+        param_name="verbose",
+    )
     output_path = _ensure_path_is_valid(output_path)
     if output_path.is_file() and not overwrite:
-        raise FileExistsError(f"sim_params.toml already exists (pass `overwrite=True` to replace it): {output_path}.")
-
+        raise FileExistsError(
+            f"sim_params.toml already exists (pass `overwrite=True` to replace it): {output_path}."
+        )
     param_group_entries: list[tuple[str, list[str]]] = [
         (_ParamGroupTitle.GEOMETRY, _build_geometry_lines(geometry_params)),
         (_ParamGroupTitle.RESOLUTION, _build_resolution_lines(resolution_params)),
-        (_ParamGroupTitle.VERBOSITY, [_render_param_groups.render_key_value(key="amr.v", value=amr_verbosity)]),
+        (
+            _ParamGroupTitle.VERBOSITY,
+            [_render_param_groups.render_key_value(
+                key="amr.v",
+                value=amr_verbosity,
+            )]
+        ),
         (_ParamGroupTitle.OUTPUT, _build_output_lines(output_file_params)),
         (_ParamGroupTitle.TIME_INTEGRATION, _build_time_integration_lines(time_integration_params)),
         (_ParamGroupTitle.HYDRO, _build_hydro_lines(hydro_params)),
@@ -296,8 +382,10 @@ def write_sim_params_toml(
     ]
     if setup_params is not None:
         param_group_entries.append((setup_params.group_title, _build_setup_lines(setup_params)))
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
     output_path.write_text(_render_param_groups.render_param_groups(param_group_entries))
     if verbose:
         manage_log.log_action(

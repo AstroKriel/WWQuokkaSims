@@ -80,8 +80,10 @@ def expand_per_axis(
         )
         per_axis = (value, value, value)
     return [
-        render_key_value(key=f"{key_prefix}_{axis}", value=per_axis[axis_index])
-        for axis_index, axis in enumerate(_AXES)
+        render_key_value(
+            key=f"{key_prefix}_{axis}",
+            value=per_axis[axis_index],
+        ) for axis_index, axis in enumerate(_AXES)
     ]
 
 
@@ -104,8 +106,10 @@ def render_param_groups(
 ) -> str:
     """Join `(group_title, assignment_lines)` param groups in order, blank-line separated, trailing newline."""
     rendered = [
-        render_param_group(group_title=group_title, assignment_lines=assignment_lines)
-        for group_title, assignment_lines in param_groups
+        render_param_group(
+            group_title=group_title,
+            assignment_lines=assignment_lines,
+        ) for group_title, assignment_lines in param_groups
     ]
     return "\n\n".join(rendered) + "\n"
 

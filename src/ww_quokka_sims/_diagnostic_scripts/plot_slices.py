@@ -436,9 +436,7 @@ class FieldPlotter:
                     sarray_3d=compute_array_stats.compute_safe_log10(numpy.abs(field_comp.sarray_3d)),
                     label=rf"$\log_{{10}}({field_comp.label.strip('$')})$",
                     comp_axis=field_comp.comp_axis,
-                )
-                for field_comp in field_comps
-                if not numpy.all(field_comp.sarray_3d == 0)
+                ) for field_comp in field_comps if not numpy.all(field_comp.sarray_3d == 0)
             ]
             if not field_comps:
                 manage_log.log_hint(

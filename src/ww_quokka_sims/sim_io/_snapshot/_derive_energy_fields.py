@@ -118,9 +118,8 @@ class _DeriveEnergyFields:
         E_int_sarray = E_tot_sarray - E_kin_sarray_3d
         if self._is_vfield_keys_available("magnetic"):
             E_mag_sarray = field_models.extract_3d_sarray(
-                sfield_3d=magnetic_energy_sfield_3d
-                if magnetic_energy_sfield_3d is not None
-                else self.compute_magnetic_energy_sfield(amr_level=amr_level),
+                sfield_3d=magnetic_energy_sfield_3d if magnetic_energy_sfield_3d is not None else
+                self.compute_magnetic_energy_sfield(amr_level=amr_level),
                 param_name="<E_mag_sfield_3d>",
             )
             E_int_sarray -= E_mag_sarray
@@ -150,7 +149,8 @@ class _DeriveEnergyFields:
         *,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
-        """Compute thermal pressure: `p = (gamma - 1) * e_int`.
+        """
+        Compute thermal pressure: `p = (gamma - 1) * e_int`.
 
         `magnetic_energy_sfield_3d` lets a caller that already computed `e_mag` pass it in,
         instead of paying for `|vec(b)|^2` a second time.

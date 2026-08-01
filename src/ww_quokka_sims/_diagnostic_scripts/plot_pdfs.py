@@ -420,7 +420,9 @@ class RenderPDFs:
         ## a job that dies partway through doesn't lose every already-computed snapshot with it
         on_computed = None
         if self.extract_data:
-            def on_computed(pdf_data: PDFData) -> None:
+            def on_computed(
+                pdf_data: PDFData,
+            ) -> None:
                 self._save_pdf(
                     pdf_data=pdf_data,
                     extracted_dir=self.extracted_dir,
