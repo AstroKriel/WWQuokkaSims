@@ -1,37 +1,50 @@
 from collections.abc import Callable
 
 from .. import write_param_groups
-from . import alfven_wave_circular as alfven_wave_circular
-from . import alfven_wave_linear as alfven_wave_linear
+from . import alfven_wave_circular_convergence as alfven_wave_circular_convergence
+from . import alfven_wave_circular_correctness as alfven_wave_circular_correctness
+from . import alfven_wave_linear_convergence as alfven_wave_linear_convergence
+from . import alfven_wave_linear_correctness as alfven_wave_linear_correctness
 from . import balsara_vortex as balsara_vortex
 from . import blast_wave as blast_wave
 from . import brio_wu_shock_tube as brio_wu_shock_tube
 from . import current_sheet as current_sheet
 from . import fast_wave_convergence as fast_wave_convergence
+from . import fast_wave_correctness as fast_wave_correctness
 from . import field_loop as field_loop
 from . import mhd_quirk as mhd_quirk
 from . import orszag_tang as orszag_tang
 from . import ryu_jones_2a_shock_tube as ryu_jones_2a_shock_tube
 from . import scheme_lookup as scheme_lookup
 from . import slow_wave_convergence as slow_wave_convergence
+from . import slow_wave_correctness as slow_wave_correctness
 
 ## add one entry per new file added under `sim_types/`. Adding a profile is just this: a
 ## `PROBLEM_NAME` + `build_sim_params`, registered here. No fixture or dedicated real-file test is
 ## required (or even possible for a problem with no production history yet) -- Quokka is the
 ## arbiter of whether the resulting toml is valid, not this package.
+##
+## `PROBLEM_NAME` is a pure ww-quokka-sims registry key, never written into the toml (Quokka
+## selects its problem at compile time, via which binary you run), so it doesn't need to match
+## Quokka's C++ struct name exactly -- convergence/correctness variants of the same Quokka
+## problem register under distinct keys here even though they drive the same binary.
 _SIM_PARAMS_BUILDER_LOOKUP = {
-    alfven_wave_circular.PROBLEM_NAME: alfven_wave_circular.build_sim_params,
-    alfven_wave_linear.PROBLEM_NAME: alfven_wave_linear.build_sim_params,
+    alfven_wave_circular_convergence.PROBLEM_NAME: alfven_wave_circular_convergence.build_sim_params,
+    alfven_wave_circular_correctness.PROBLEM_NAME: alfven_wave_circular_correctness.build_sim_params,
+    alfven_wave_linear_convergence.PROBLEM_NAME: alfven_wave_linear_convergence.build_sim_params,
+    alfven_wave_linear_correctness.PROBLEM_NAME: alfven_wave_linear_correctness.build_sim_params,
     balsara_vortex.PROBLEM_NAME: balsara_vortex.build_sim_params,
     blast_wave.PROBLEM_NAME: blast_wave.build_sim_params,
     brio_wu_shock_tube.PROBLEM_NAME: brio_wu_shock_tube.build_sim_params,
     current_sheet.PROBLEM_NAME: current_sheet.build_sim_params,
     fast_wave_convergence.PROBLEM_NAME: fast_wave_convergence.build_sim_params,
+    fast_wave_correctness.PROBLEM_NAME: fast_wave_correctness.build_sim_params,
     field_loop.PROBLEM_NAME: field_loop.build_sim_params,
     mhd_quirk.PROBLEM_NAME: mhd_quirk.build_sim_params,
     orszag_tang.PROBLEM_NAME: orszag_tang.build_sim_params,
     ryu_jones_2a_shock_tube.PROBLEM_NAME: ryu_jones_2a_shock_tube.build_sim_params,
     slow_wave_convergence.PROBLEM_NAME: slow_wave_convergence.build_sim_params,
+    slow_wave_correctness.PROBLEM_NAME: slow_wave_correctness.build_sim_params,
 }
 
 

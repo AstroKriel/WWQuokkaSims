@@ -18,14 +18,11 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 PROBLEM_NAME = "FastWaveConvergence"
 
-## `problem_main()` defaults to `setup.run_convergence=true` (Richardson sweep), which overrides
-## `amr.n_cell`/`geometry.*`/`stop_time`/`max_timesteps` per sweep iteration, ignoring the toml;
-## domain/resolution below are fixed to match the reference file.
-##
-## `cfl`/`use_reflux`/`use_subcycle`/`use_tracers` are genuinely respected but kept fixed too: the
-## sweep's pass/fail check (`expected_rate=2.0`/`tolerance=0.3`, hardcoded, no toml key) can fail
-## from temporal error alone if `cfl` is too large, unrelated to reconstruction/EMF-scheme accuracy.
-_BASE_NUM_CELLS = (128, 8, 8)
+## `run_convergence` mode overrides domain/resolution/stop_time/max_timesteps internally per
+## sweep iteration; values below match the reference file, not because they control the sweep
+_DOMAIN_LO = (0.0, 0.0, 0.0)
+_DOMAIN_HI = (1.0, 1.0, 1.0)
+_NUM_CELLS = (128, 8, 8)
 _NX_MAX = 2048
 
 ##
@@ -38,19 +35,21 @@ def build_sim_params(
     compute_scheme_key: str,
     averaging_scheme_key: str,
     reconstruction: str,
+    num_modes_x: int,
+    num_modes_y: int,
+    num_modes_z: int,
+    angle_between_k_b0: float,
 ) -> write_param_groups.SimParams:
-    """Build the full parameter set for one `FastWaveConvergence` scheme combo (e.g. `q26-b25-ppm_ep`)."""
-    ## `.value` unwraps the Enum to the plain int/str `sim_params.param_groups` dataclasses declare;
-    ## an Enum member's `str()`/f-string form is `"ClassName.MEMBER"`, not its underlying value
+    """Build the full parameter set for one `FastWaveConvergence` Richardson-convergence-sweep combo."""
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
     return write_param_groups.SimParams(
         geometry_params=param_groups.GeometryParams(
-            domain_lo=(0.0, 0.0, 0.0),
-            domain_hi=(1.0, 1.0, 1.0),
+            domain_lo=_DOMAIN_LO,
+            domain_hi=_DOMAIN_HI,
             is_boundary_periodic=(1, 1, 1),
         ),
         resolution_params=param_groups.ResolutionParams(
-            num_cells=_BASE_NUM_CELLS,
+            num_cells=_NUM_CELLS,
             blocking_factor=(16, 8, 8),
             max_grid_size=128,
         ),
@@ -68,7 +67,6 @@ def build_sim_params(
             reconstruction_order=reconstruction_order,
             use_dual_energy=0,
         ),
-        ## no `resistivity`: not physically meaningful for this ideal-MHD wave test
         mhd_params=param_groups.MHDParams(
             emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
             emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value,
@@ -77,10 +75,10 @@ def build_sim_params(
         setup_params=param_groups.SetupParams(
             group_title="wave setup",
             param_values={
-                "num_modes_x": 1,
-                "num_modes_y": 0,
-                "num_modes_z": 0,
-                "angle_between_k_b0": 90,
+                "num_modes_x": num_modes_x,
+                "num_modes_y": num_modes_y,
+                "num_modes_z": num_modes_z,
+                "angle_between_k_b0": angle_between_k_b0,
                 "machine_precision_target": 0,
                 "nx_max": _NX_MAX,
             },

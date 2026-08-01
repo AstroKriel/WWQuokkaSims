@@ -432,10 +432,10 @@ class SimTypesTests(unittest.TestCase):
         )
         self.assertEqual(bundle.time_integration_params.cfl, 0.7)
 
-    def test_dual_mode_profile_picks_convergence_branch_by_default(
+    def test_convergence_profile_renders_wave_setup_group(
         self,
     ):
-        bundle = sim_types.alfven_wave_linear.build_sim_params(
+        bundle = sim_types.alfven_wave_linear_convergence.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction="ppm",
@@ -447,10 +447,10 @@ class SimTypesTests(unittest.TestCase):
         self.assertEqual(bundle.setup_params.group_title, "wave setup")
         self.assertNotIn("run_sim", bundle.setup_params.param_values)
 
-    def test_dual_mode_profile_picks_run_sim_branch_when_requested(
+    def test_correctness_profile_renders_run_sim_setup_keys(
         self,
     ):
-        bundle = sim_types.alfven_wave_linear.build_sim_params(
+        bundle = sim_types.alfven_wave_linear_correctness.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction="ppm",
@@ -458,18 +458,17 @@ class SimTypesTests(unittest.TestCase):
             num_modes_y=0,
             num_modes_z=0,
             angle_between_k_b0=0.0,
-            run_sim=True,
             stop_time=5.0,
             max_time_steps=100_000,
         )
         self.assertEqual(bundle.setup_params.param_values["run_sim"], True)
         self.assertEqual(bundle.setup_params.param_values["run_convergence"], False)
 
-    def test_dual_mode_profile_requires_stop_time_in_run_sim_mode(
+    def test_correctness_profile_requires_stop_time(
         self,
     ):
-        with self.assertRaises(ValueError):
-            sim_types.alfven_wave_linear.build_sim_params(
+        with self.assertRaises(TypeError):
+            sim_types.alfven_wave_linear_correctness.build_sim_params(
                 compute_scheme_key="q26",
                 averaging_scheme_key="b25",
                 reconstruction="ppm",
@@ -477,10 +476,9 @@ class SimTypesTests(unittest.TestCase):
                 num_modes_y=0,
                 num_modes_z=0,
                 angle_between_k_b0=0.0,
-                run_sim=True,
                 max_time_steps=100_000,
                 ## stop_time omitted
-            )
+            )  # pyright: ignore[reportCallIssue]
 
 
 ##

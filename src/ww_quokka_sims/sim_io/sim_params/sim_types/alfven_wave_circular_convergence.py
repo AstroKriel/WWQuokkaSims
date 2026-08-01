@@ -16,15 +16,15 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 ## === CONSTANTS
 ##
 
-PROBLEM_NAME = "SlowWaveConvergence"
+PROBLEM_NAME = "AlfvenWaveCircularConvergence"
 
 ## `run_convergence` mode overrides domain/resolution/stop_time/max_timesteps internally per
 ## sweep iteration; values below match the reference file, not because they control the sweep.
-## `SlowWaveConvergence` asserts `mhd.resistivity == 0`, so no `resistivity` kwarg is exposed
-## here (use `AlfvenWaveLinear` for resistivity validation).
+## Wave direction/mode count are hardcoded in the problem itself (not ParmParse-read), so unlike
+## the linear-polarization wave problems, there's no `num_modes`/`angle_between_k_b0` to expose.
 _DOMAIN_LO = (0.0, 0.0, 0.0)
 _DOMAIN_HI = (1.0, 1.0, 1.0)
-_NUM_CELLS = (128, 8, 8)
+_NUM_CELLS = (64, 8, 8)
 _NX_MAX = 2048
 
 ##
@@ -37,12 +37,8 @@ def build_sim_params(
     compute_scheme_key: str,
     averaging_scheme_key: str,
     reconstruction: str,
-    num_modes_x: int,
-    num_modes_y: int,
-    num_modes_z: int,
-    angle_between_k_b0: float,
 ) -> write_param_groups.SimParams:
-    """Build the full parameter set for one `SlowWaveConvergence` Richardson-convergence-sweep combo."""
+    """Build the full parameter set for one `AlfvenWaveCircular` Richardson-convergence-sweep combo."""
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
     return write_param_groups.SimParams(
         geometry_params=param_groups.GeometryParams(
@@ -52,7 +48,7 @@ def build_sim_params(
         ),
         resolution_params=param_groups.ResolutionParams(
             num_cells=_NUM_CELLS,
-            blocking_factor=(16, 8, 8),
+            blocking_factor=8,
             max_grid_size=128,
         ),
         output_file_params=param_groups.OutputFileParams(
@@ -62,7 +58,6 @@ def build_sim_params(
             cfl=0.3,
             use_reflux=0,
             use_subcycle=0,
-            use_tracers=1,
         ),
         hydro_params=param_groups.HydroParams(
             integrator_order=2,
@@ -77,14 +72,11 @@ def build_sim_params(
         setup_params=param_groups.SetupParams(
             group_title="wave setup",
             param_values={
-                "num_modes_x": num_modes_x,
-                "num_modes_y": num_modes_y,
-                "num_modes_z": num_modes_z,
-                "angle_between_k_b0": angle_between_k_b0,
                 "machine_precision_target": 0,
                 "nx_max": _NX_MAX,
             },
         ),
+        amr_verbosity=0,
     )
 
 

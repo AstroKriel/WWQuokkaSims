@@ -16,16 +16,7 @@ import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 ## === CONSTANTS
 ##
 
-PROBLEM_NAME = "SlowWaveConvergence"
-
-## `run_convergence` mode overrides domain/resolution/stop_time/max_timesteps internally per
-## sweep iteration; values below match the reference file, not because they control the sweep.
-## `SlowWaveConvergence` asserts `mhd.resistivity == 0`, so no `resistivity` kwarg is exposed
-## here (use `AlfvenWaveLinear` for resistivity validation).
-_DOMAIN_LO = (0.0, 0.0, 0.0)
-_DOMAIN_HI = (1.0, 1.0, 1.0)
-_NUM_CELLS = (128, 8, 8)
-_NX_MAX = 2048
+PROBLEM_NAME = "SlowWaveCorrectness"
 
 ##
 ## === PROGRAM MAIN
@@ -41,33 +32,50 @@ def build_sim_params(
     num_modes_y: int,
     num_modes_z: int,
     angle_between_k_b0: float,
+    stop_time: float,
+    max_time_steps: int,
+    error_tol: float = 0.002,
+    domain_lo: tuple[float, float, float] = (0.0, 0.0, 0.0),
+    domain_hi: tuple[float, float, float] = (1.0, 1.0, 1.0),
+    num_cells: tuple[int, int, int] = (128, 128, 128),
+    blocking_factor: int | tuple[int, int, int] = 128,
+    max_grid_size: int | tuple[int, int, int] = 128,
+    cfl: float = 0.3,
+    snapshot_index_interval: int = 25,
+    checkpoint_index_interval: int = -1,
 ) -> write_param_groups.SimParams:
-    """Build the full parameter set for one `SlowWaveConvergence` Richardson-convergence-sweep combo."""
+    """
+    Build the full parameter set for one `SlowWaveConvergence` fixed-resolution correctness run.
+
+    `stop_time`/`max_time_steps` have no default: the correct `stop_time` is one full wave
+    period, which depends on `num_modes_x/y/z`/`angle_between_k_b0`, so a fixed default would
+    silently be wrong for any combo other than the one it was chosen for.
+    """
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction).value
     return write_param_groups.SimParams(
         geometry_params=param_groups.GeometryParams(
-            domain_lo=_DOMAIN_LO,
-            domain_hi=_DOMAIN_HI,
-            is_boundary_periodic=(1, 1, 1),
+            domain_lo=domain_lo,
+            domain_hi=domain_hi,
+            boundary_conditions=("periodic", "periodic", "periodic"),
         ),
         resolution_params=param_groups.ResolutionParams(
-            num_cells=_NUM_CELLS,
-            blocking_factor=(16, 8, 8),
-            max_grid_size=128,
+            num_cells=num_cells,
+            blocking_factor=blocking_factor,
+            max_grid_size=max_grid_size,
         ),
         output_file_params=param_groups.OutputFileParams(
-            snapshot_index_interval=-1,
+            snapshot_prefix="snapshots/plt",
+            snapshot_index_interval=snapshot_index_interval,
+            checkpoint_index_interval=checkpoint_index_interval,
         ),
         time_integration_params=param_groups.TimeIntegrationParams(
-            cfl=0.3,
-            use_reflux=0,
-            use_subcycle=0,
-            use_tracers=1,
+            cfl=cfl,
+            stop_time=stop_time,
+            max_time_steps=max_time_steps,
         ),
         hydro_params=param_groups.HydroParams(
             integrator_order=2,
             reconstruction_order=reconstruction_order,
-            use_dual_energy=0,
         ),
         mhd_params=param_groups.MHDParams(
             emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
@@ -75,14 +83,14 @@ def build_sim_params(
             reconstruction_order=reconstruction_order,
         ),
         setup_params=param_groups.SetupParams(
-            group_title="wave setup",
             param_values={
+                "run_sim": True,
+                "run_convergence": False,
+                "angle_between_k_b0": angle_between_k_b0,
                 "num_modes_x": num_modes_x,
                 "num_modes_y": num_modes_y,
                 "num_modes_z": num_modes_z,
-                "angle_between_k_b0": angle_between_k_b0,
-                "machine_precision_target": 0,
-                "nx_max": _NX_MAX,
+                "error_tol": error_tol,
             },
         ),
     )
