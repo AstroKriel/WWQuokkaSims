@@ -22,6 +22,7 @@ dependencies = [
 
 [project.scripts]
 quokka-compare-snapshots = "ww_quokka_sims._diagnostic_scripts.compare_snapshots:main"
+quokka-extract-dataset = "ww_quokka_sims._diagnostic_scripts.extract_dataset:main"
 quokka-inspect-snapshot = "ww_quokka_sims._diagnostic_scripts.inspect_snapshot:main"
 quokka-plot-pdfs = "ww_quokka_sims._diagnostic_scripts.plot_pdfs:main"
 quokka-plot-profiles = "ww_quokka_sims._diagnostic_scripts.plot_profiles:main"
