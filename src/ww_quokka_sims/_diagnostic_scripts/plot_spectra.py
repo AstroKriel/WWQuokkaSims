@@ -52,18 +52,18 @@ class SpectraData:
     step_time: float
     step_index: int
     latex_label: str
-    k_bin_centers: numpy.ndarray
+    log10_k_bin_centers: numpy.ndarray
     log10_spectrum: numpy.ndarray
 
     def __post_init__(
         self,
     ) -> None:
-        validate_arrays.ensure_array(array=self.k_bin_centers)
+        validate_arrays.ensure_array(array=self.log10_k_bin_centers)
         validate_arrays.ensure_array(array=self.log10_spectrum)
-        validate_arrays.ensure_1d(array=self.k_bin_centers)
+        validate_arrays.ensure_1d(array=self.log10_k_bin_centers)
         validate_arrays.ensure_1d(array=self.log10_spectrum)
         validate_arrays.ensure_same_shape(
-            array_a=self.k_bin_centers,
+            array_a=self.log10_k_bin_centers,
             array_b=self.log10_spectrum,
         )
 
@@ -83,16 +83,39 @@ class ComputeSpectra:
         snapshot_tag: str,
         field_name: str,
         field_loader: Callable,
+        index_width: int,
+        extract_data: bool,
+        extracted_dir: Path,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
         self.field_name = field_name
         self.field_loader = field_loader
+        self.index_width = index_width
+        self.extract_data = extract_data
+        self.extracted_dir = extracted_dir
+
+    def _save_incremental(
+        self,
+        *,
+        output_dict: dict,
+    ) -> None:
+        self.extracted_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+        json_io.save_dict_to_json_file(
+            file_path=self.extracted_dir / f"{self.field_name}-spectra.json",
+            input_dict=output_dict,
+            overwrite=True,
+            verbose=False,
+        )
 
     def run(
         self,
     ) -> list[SpectraData]:
         field_spectra: list[SpectraData] = []
+        output_dict: dict = {}
         for snapshot_dir in self.snapshot_dirs:
             step_index = int(
                 find_snapshots.get_step_index_string(
@@ -113,21 +136,36 @@ class ComputeSpectra:
             step_time = field.sim_time
             assert step_time is not None
             spectrum = compute_spectra.compute_isotropic_power_spectrum_sfield(field)
+            log10_k_bin_centers = numpy.ma.log10(
+                numpy.ma.masked_less_equal(
+                    x=spectrum.k_bin_centers_1d,
+                    value=0.0,
+                ),
+            )
             log10_spectrum = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
                     x=spectrum.spectrum_1d,
                     value=0.0,
                 ),
             )
-            field_spectra.append(
-                SpectraData(
-                    step_time=step_time,
-                    step_index=step_index,
-                    latex_label=field.latex_label,
-                    k_bin_centers=spectrum.k_bin_centers_1d,
-                    log10_spectrum=log10_spectrum,
-                ),
+            spectra_data = SpectraData(
+                step_time=step_time,
+                step_index=step_index,
+                latex_label=field.latex_label,
+                log10_k_bin_centers=log10_k_bin_centers,
+                log10_spectrum=log10_spectrum,
             )
+            field_spectra.append(spectra_data)
+            ## save after every snapshot, not just at the end, so a killed/interrupted
+            ## run still leaves usable partial data on disk
+            if self.extract_data:
+                padded_index = f"{step_index:0{self.index_width}d}"
+                output_dict[padded_index] = {
+                    "step_time": spectra_data.step_time,
+                    "log10_k_bin_centers": spectra_data.log10_k_bin_centers,
+                    "log10_spectrum": spectra_data.log10_spectrum,
+                }
+                self._save_incremental(output_dict=output_dict)
         field_spectra.sort(key=lambda s: s.step_time)
         return field_spectra
 
@@ -169,7 +207,7 @@ class RenderSpectra:
         ax: manage_plots.PlotAxis,
         latex_label: str,
     ) -> None:
-        ax.set_xlabel(r"$k$")
+        ax.set_xlabel(r"$\log_{10}(k)$")
         ax.set_ylabel(rf"$\log_{{10}}\big(\mathcal{{P}}_{{{latex_label}}}(k)\big)$")
 
     @staticmethod
@@ -180,7 +218,7 @@ class RenderSpectra:
         color: annotate_axis.ColorType,
     ) -> None:
         ax.plot(
-            spectra_data.k_bin_centers,
+            spectra_data.log10_k_bin_centers,
             spectra_data.log10_spectrum,
             lw=2.0,
             color=color,
@@ -223,50 +261,22 @@ class RenderSpectra:
             label=r"snapshot index",
         )
 
-    def _save_spectra(
-        self,
-        *,
-        field_spectra: list[SpectraData],
-        extracted_dir: Path,
-    ) -> None:
-        extracted_dir.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-        output_dict = {}
-        for spectra_data in field_spectra:
-            padded_index = f"{spectra_data.step_index:0{self.index_width}d}"
-            output_dict[padded_index] = {
-                "step_time": spectra_data.step_time,
-                "k_bin_centers": spectra_data.k_bin_centers,
-                "log10_spectrum": spectra_data.log10_spectrum,
-            }
-        json_io.save_dict_to_json_file(
-            file_path=extracted_dir / f"{self.field_name}-spectra.json",
-            input_dict=output_dict,
-            overwrite=True,
-            verbose=False,
-        )
-
     def run(
         self,
     ) -> None:
-        ## compute the isotropic power spectrum for each snapshot
+        ## compute the isotropic power spectrum for each snapshot; saved incrementally as each completes
         compute = ComputeSpectra(
             snapshot_dirs=self.snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
             field_name=self.field_name,
             field_loader=self.field_loader,
+            index_width=self.index_width,
+            extract_data=self.extract_data,
+            extracted_dir=self.extracted_dir,
         )
         field_spectra = compute.run()
         if not field_spectra:
             return
-        ## optionally write extracted spectrum data to JSON
-        if self.extract_data:
-            self._save_spectra(
-                field_spectra=field_spectra,
-                extracted_dir=self.extracted_dir,
-            )
         ## plot single snapshot in black, or a sequential color series across all snapshots
         fig, ax = manage_plots.create_figure()
         if len(field_spectra) > 1:
