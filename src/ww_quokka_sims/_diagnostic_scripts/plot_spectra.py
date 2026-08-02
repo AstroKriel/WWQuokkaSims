@@ -6,6 +6,7 @@
 
 ## stdlib
 import argparse
+import dataclasses
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -116,6 +117,20 @@ class ComputeSpectra:
     ) -> list[SpectraData]:
         field_spectra: list[SpectraData] = []
         output_dict: dict = {}
+        cached_entries: dict = {}
+        if self.extract_data:
+            existing_path = self.extracted_dir / f"{self.field_name}-spectra.json"
+            if existing_path.exists():
+                cached_entries = json_io.read_json_file_into_dict(
+                    file_path=existing_path,
+                    verbose=False,
+                )
+                output_dict = dict(cached_entries)
+
+        ## latex_label isn't stored per-snapshot in the cache, so track one from
+        ## whichever snapshot actually gets freshly computed this run
+        reference_latex_label: str | None = None
+
         for snapshot_dir in self.snapshot_dirs:
             step_index = int(
                 find_snapshots.get_step_index_string(
@@ -123,6 +138,22 @@ class ComputeSpectra:
                     snapshot_tag=self.snapshot_tag,
                 ),
             )
+            padded_index = f"{step_index:0{self.index_width}d}"
+
+            ## skip snapshots already computed in a prior (e.g. killed/interrupted) run
+            if self.extract_data and (padded_index in cached_entries):
+                cached = cached_entries[padded_index]
+                field_spectra.append(
+                    SpectraData(
+                        step_time=cached["step_time"],
+                        step_index=step_index,
+                        latex_label="",
+                        log10_k_bin_centers=numpy.array(cached["log10_k_bin_centers"]),
+                        log10_spectrum=numpy.array(cached["log10_spectrum"]),
+                    ),
+                )
+                continue
+
             with load_snapshot.QuokkaSnapshot(
                     snapshot_dir=snapshot_dir,
                     verbose=False,
@@ -135,6 +166,7 @@ class ComputeSpectra:
                 )
             step_time = field.sim_time
             assert step_time is not None
+            reference_latex_label = field.latex_label
             spectrum = compute_spectra.compute_isotropic_power_spectrum_sfield(field)
             log10_k_bin_centers = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
@@ -159,14 +191,25 @@ class ComputeSpectra:
             ## save after every snapshot, not just at the end, so a killed/interrupted
             ## run still leaves usable partial data on disk
             if self.extract_data:
-                padded_index = f"{step_index:0{self.index_width}d}"
                 output_dict[padded_index] = {
                     "step_time": spectra_data.step_time,
                     "log10_k_bin_centers": spectra_data.log10_k_bin_centers,
                     "log10_spectrum": spectra_data.log10_spectrum,
                 }
                 self._save_incremental(output_dict=output_dict)
+
         field_spectra.sort(key=lambda s: s.step_time)
+        ## every entry needs a valid latex_label for plot styling, but cache-hit entries
+        ## are given an empty one above; only field_spectra[0] is ever read, so fix that one
+        if field_spectra and not field_spectra[0].latex_label:
+            if reference_latex_label is None:
+                ## every snapshot was a cache hit this run; do one minimal load just for the label
+                with load_snapshot.QuokkaSnapshot(
+                        snapshot_dir=self.snapshot_dirs[0],
+                        verbose=False,
+                ) as snapshot:
+                    reference_latex_label = self.field_loader(snapshot).latex_label
+            field_spectra[0] = dataclasses.replace(field_spectra[0], latex_label=reference_latex_label)
         return field_spectra
 
 
