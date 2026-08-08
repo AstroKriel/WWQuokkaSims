@@ -55,9 +55,10 @@ def base_parser(
         `True` adds `--axes` argument for selecting slice axes; default: `False`.
 
     - `allow_output`:
-        `True` adds `--save-figure`/`--figures-dir` and `--save-data`/`--data-dir`, two independent
-        pairs; default: `False`. Set to `False` for scripts that write no data or figures to disk.
-        Pair with `ensure_save_flag_selected` to require at least one of the two flags.
+        `True` adds `--save-figure`/`--figures-dir`, `--save-data`/`--data-dir`, and `--overwrite`;
+        default: `False`. Set to `False` for scripts that write no data or figures to disk. Pair with
+        `ensure_save_flag_selected` to require at least one of `--save-figure`/`--save-data`. Scripts
+        resume by default (skip snapshots whose output already exists); `--overwrite` disables that.
 
     - `allow_parallel`:
         `True` adds `--num-workers` for scripts that dispatch work across snapshots via
@@ -179,6 +180,15 @@ def base_parser(
             action="store_true",
             default=False,
             help="Save the extracted data to disk; default: False.",
+        )
+        parser.add_argument(
+            "--overwrite",
+            action="store_true",
+            default=False,
+            help=(
+                "Redo snapshots whose output already exists, instead of skipping them; "
+                "default: False (resume where a prior run left off)."
+            ),
         )
     ## optional worker-count flag
     if allow_parallel:
