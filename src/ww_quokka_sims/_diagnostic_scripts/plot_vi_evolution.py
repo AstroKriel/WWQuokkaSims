@@ -10,7 +10,11 @@ import argparse
 from pathlib import Path
 from typing import final
 
+## third-party
+import numpy
+
 ## personal
+from jormi.ww_arrays import compute_array_stats
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     annotate_axis,
@@ -42,11 +46,13 @@ class RenderDataSeries:
         figures_dir: Path,
         field_name: str,
         extract_data: bool,
+        apply_log10: bool = False,
     ):
         self.extracted_dir = extracted_dir
         self.figures_dir = figures_dir
         self.field_name = field_name
         self.extract_data = extract_data
+        self.apply_log10 = bool(apply_log10)
 
     def _save_series(
         self,
@@ -92,9 +98,16 @@ class RenderDataSeries:
                 y_alignment="center",
             )
             return
+        plot_values = values_array
+        ylabel = f"${vi_series.latex_label}$"
+        fig_name = f"{self.field_name}-time_evolution.png"
+        if self.apply_log10:
+            plot_values = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
+            ylabel = rf"$\log_{{10}}\big({vi_series.latex_label}\big)$"
+            fig_name = f"log10_{self.field_name}-time_evolution.png"
         ax.plot(
             time_array,
-            values_array,
+            plot_values,
             color="black",
             marker="o",
             ms=6,
@@ -102,8 +115,8 @@ class RenderDataSeries:
             lw=1.5,
         )
         ax.set_xlabel("time")
-        ax.set_ylabel(f"${vi_series.latex_label}$")
-        fig_path = self.figures_dir / f"{self.field_name}-time_evolution.png"
+        ax.set_ylabel(ylabel)
+        fig_path = self.figures_dir / fig_name
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
@@ -129,6 +142,7 @@ class ScriptInterface:
         extracted_dir: Path | None = None,
         figures_dir: Path | None = None,
         use_parallel: bool = True,
+        apply_log10: bool = False,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
@@ -142,6 +156,7 @@ class ScriptInterface:
         self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         self.use_parallel = bool(use_parallel)
+        self.apply_log10 = bool(apply_log10)
 
     def run(
         self,
@@ -174,6 +189,7 @@ class ScriptInterface:
                 figures_dir=figures_dir,
                 field_name=field_name,
                 extract_data=self.extract_data,
+                apply_log10=self.apply_log10,
             )
             render_data_series.run(vi_series=vi_series)
 
@@ -186,7 +202,7 @@ class ScriptInterface:
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_plots.set_theme()
-    user_args = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="Plot volume-integrated field evolution from Quokka simulations.",
         parents=[
             cli.base_parser(
@@ -195,7 +211,14 @@ def main():
                 produces_data=True,
             ),
         ],
-    ).parse_args()
+    )
+    parser.add_argument(
+        "--log10",
+        action="store_true",
+        default=False,
+        help="Apply log10(|field|) to the plotted data (does not affect saved JSON data).",
+    )
+    user_args = parser.parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.input_dir,
         snapshot_tag=user_args.tag,
@@ -204,6 +227,7 @@ def main():
         extracted_dir=user_args.extracted_dir,
         figures_dir=user_args.figures_dir,
         use_parallel=True,
+        apply_log10=user_args.log10,
     )
     script_interface.run()
 
