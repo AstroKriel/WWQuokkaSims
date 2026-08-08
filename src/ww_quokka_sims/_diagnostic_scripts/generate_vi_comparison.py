@@ -41,21 +41,23 @@ class RenderComparisonPlot:
     def __init__(
         self,
         *,
-        extracted_dir: Path,
+        data_dir: Path,
         figures_dir: Path,
         field_name: str,
         label_dir_1: str,
         label_dir_2: str,
-        extract_data: bool,
+        save_data: bool,
+        save_figure: bool,
         marker_dir_1: str = "o",
         marker_dir_2: str = "s",
     ):
-        self.extracted_dir = extracted_dir
+        self.data_dir = data_dir
         self.figures_dir = figures_dir
         self.field_name = field_name
         self.label_dir_1 = str(label_dir_1)
         self.label_dir_2 = str(label_dir_2)
-        self.extract_data = extract_data
+        self.save_data = save_data
+        self.save_figure = save_figure
         self.marker_dir_1 = str(marker_dir_1)
         self.marker_dir_2 = str(marker_dir_2)
 
@@ -65,12 +67,12 @@ class RenderComparisonPlot:
         t_array: numpy.ndarray,
         y_array: numpy.ndarray,
     ) -> None:
-        self.extracted_dir.mkdir(
+        self.data_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
         json_io.save_dict_to_json_file(
-            file_path=self.extracted_dir / f"{self.field_name}-time_comparison.json",
+            file_path=self.data_dir / f"{self.field_name}-time_comparison.json",
             input_dict={
                 "time": t_array,
                 "frac_diff": y_array,
@@ -159,11 +161,13 @@ class RenderComparisonPlot:
         ## fractional difference: (series_2 / series_1) - 1, with series_1 as the reference
         y_array_frac_diff = y_array_2_interp / y_array_1_common - 1.0
         ## optionally write the comparison data to JSON
-        if self.extract_data:
+        if self.save_data:
             self._save_comparison(
                 t_array=t_array_common,
                 y_array=y_array_frac_diff,
             )
+        if not self.save_figure:
+            return
         fig, ax = manage_plots.create_figure()
         ax.plot(
             t_array_common,
@@ -200,26 +204,31 @@ class ScriptInterface:
         dir_2: Path,
         snapshot_tag: str,
         fields_to_plot: list[str],
-        extracted_dir: Path,
+        data_dir: Path,
         figures_dir: Path | None,
-        extract_data: bool,
+        save_data: bool,
+        save_figure: bool,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
             param_name="snapshot_tag",
         )
+        cli.ensure_save_flag_selected(
+            save_figure=save_figure,
+            save_data=save_data,
+        )
         if not Path(dir_1).is_dir():
             raise ValueError(f"dir_1 does not exist: {dir_1}.")
         if not Path(dir_2).is_dir():
             raise ValueError(f"dir_2 does not exist: {dir_2}.")
-        if not Path(extracted_dir).is_dir():
-            raise ValueError(f"extracted_dir does not exist: {extracted_dir}.")
+        if not Path(data_dir).is_dir():
+            raise ValueError(f"data_dir does not exist: {data_dir}.")
         if (figures_dir is not None) and (not Path(figures_dir).is_dir()):
             raise ValueError(f"figures_dir does not exist: {figures_dir}.")
         self.dir_1 = Path(dir_1)
         self.dir_2 = Path(dir_2)
-        self.extracted_dir = Path(extracted_dir)
-        self.figures_dir = Path(figures_dir) if figures_dir is not None else self.extracted_dir
+        self.data_dir = Path(data_dir)
+        self.figures_dir = Path(figures_dir) if figures_dir is not None else self.data_dir
         valid_fields = set(
             field_registry.QUOKKA_FIELD_LOOKUP.keys(),
         )
@@ -227,7 +236,8 @@ class ScriptInterface:
             raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}.")
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = list(fields_to_plot)
-        self.extract_data = extract_data
+        self.save_data = save_data
+        self.save_figure = save_figure
 
     def run(
         self,
@@ -271,12 +281,13 @@ class ScriptInterface:
             vi_series_1 = loader_1.run()
             vi_series_2 = loader_2.run()
             render_comparison_plot = RenderComparisonPlot(
-                extracted_dir=self.extracted_dir,
+                data_dir=self.data_dir,
                 figures_dir=self.figures_dir,
                 field_name=field_name,
                 label_dir_1=label_dir_1,
                 label_dir_2=label_dir_2,
-                extract_data=self.extract_data,
+                save_data=self.save_data,
+                save_figure=self.save_figure,
                 marker_dir_1="o",
                 marker_dir_2="s",
             )
@@ -295,12 +306,12 @@ def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_plots.set_theme()
     user_args = argparse.ArgumentParser(
-        description="Compare volume-integrated field evolution between two Quokka simulations.",
+        description="Compare volume-integrated field evolution between two Quokka simulations: figures and/or extracted data.",
         parents=[
             cli.base_parser(
                 num_dirs=2,
                 allow_vfields=False,
-                produces_data=True,
+                allow_output=True,
             ),
         ],
     ).parse_args()
@@ -309,9 +320,10 @@ def main():
         dir_2=user_args.input_dir_2,
         snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
-        extracted_dir=user_args.extracted_dir,
+        data_dir=user_args.data_dir,
         figures_dir=user_args.figures_dir,
-        extract_data=user_args.save_data,
+        save_data=user_args.save_data,
+        save_figure=user_args.save_figure,
     )
     script_interface.run()
 
