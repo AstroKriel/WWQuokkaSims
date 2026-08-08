@@ -276,27 +276,29 @@ class RenderPDFs:
         snapshot_dirs: list[Path],
         snapshot_tag: str,
         index_width: int,
-        extracted_dir: Path,
+        data_dir: Path,
         figures_dir: Path,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         cmap_name: str,
         field_loader: Callable,
         num_bins: int,
-        extract_data: bool,
+        save_data: bool,
+        save_figure: bool,
         log10_binning: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
         self.index_width = index_width
-        self.extracted_dir = extracted_dir
+        self.data_dir = data_dir
         self.figures_dir = figures_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
         self.cmap_name = cmap_name
         self.field_loader = field_loader
         self.num_bins = int(num_bins)
-        self.extract_data = extract_data
+        self.save_data = save_data
+        self.save_figure = save_figure
         self.log10_binning = log10_binning
 
     @staticmethod
@@ -373,14 +375,14 @@ class RenderPDFs:
         self,
         *,
         pdf_data: PDFData,
-        extracted_dir: Path,
+        data_dir: Path,
     ) -> None:
-        """Save one snapshot's PDF to its own file, mirroring `plot_slices.py`'s one-file-per-
+        """Save one snapshot's PDF to its own file, mirroring `generate_slices.py`'s one-file-per-
         snapshot convention (rather than one file aggregating every snapshot) -- each file is
         self-contained (carries its own `step_time`/`log10_binning`), so results already on disk
         are immediately usable even if a later snapshot in the run fails or the job is cut off.
         """
-        extracted_dir.mkdir(
+        data_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -397,7 +399,7 @@ class RenderPDFs:
             }
         padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
         json_io.save_dict_to_json_file(
-            file_path=extracted_dir / f"{self.field_name}-pdf-index={padded_index}.json",
+            file_path=data_dir / f"{self.field_name}-pdf-index={padded_index}.json",
             input_dict=output_dict,
             overwrite=True,
             verbose=False,
@@ -419,20 +421,22 @@ class RenderPDFs:
         ## save each snapshot's PDF to disk as soon as it's computed, not batched at the end, so
         ## a job that dies partway through doesn't lose every already-computed snapshot with it
         on_computed: Callable[[PDFData], None] | None = None
-        if self.extract_data:
+        if self.save_data:
 
             def save_computed_pdf(
                 pdf_data: PDFData,
             ) -> None:
                 self._save_pdf(
                     pdf_data=pdf_data,
-                    extracted_dir=self.extracted_dir,
+                    data_dir=self.data_dir,
                 )
 
             on_computed = save_computed_pdf
 
         field_pdfs = compute_pdfs.run(on_computed=on_computed)
         if not field_pdfs:
+            return
+        if not self.save_figure:
             return
         ## figure layout: one col per field component; extra right margin for the colorbar if series
         num_cols = field_pdfs[0].num_comps
@@ -487,15 +491,20 @@ class ScriptInterface:
         snapshot_tag: str,
         fields_to_plot: tuple[str, ...] | list[str] | None,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
-        extract_data: bool,
+        save_data: bool,
+        save_figure: bool,
         num_bins: int = 15,
         log10_binning: bool = False,
-        extracted_dir: Path | None = None,
+        data_dir: Path | None = None,
         figures_dir: Path | None = None,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
             param_name="snapshot_tag",
+        )
+        cli.ensure_save_flag_selected(
+            save_figure=save_figure,
+            save_data=save_data,
         )
         field_registry.validate_fields(field_names=fields_to_plot)
         if comps_to_plot is None:
@@ -506,10 +515,11 @@ class ScriptInterface:
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
-        self.extract_data = extract_data
+        self.save_data = save_data
+        self.save_figure = save_figure
         self.num_bins = int(num_bins)
         self.log10_binning = log10_binning
-        self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
+        self.data_dir = Path(data_dir) if data_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
 
     def run(
@@ -522,13 +532,13 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        extracted_dir = cli.resolve_output_dir(
-            output_dir=self.extracted_dir,
+        data_dir = cli.resolve_output_dir(
+            output_dir=self.data_dir,
             default_dir=snapshot_dirs[0].parent,
         )
         figures_dir = cli.resolve_output_dir(
             output_dir=self.figures_dir,
-            default_dir=extracted_dir,
+            default_dir=data_dir,
         )
         index_width = find_snapshots.get_max_index_width(
             snapshot_dirs=snapshot_dirs,
@@ -541,14 +551,15 @@ class ScriptInterface:
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
                 index_width=index_width,
-                extracted_dir=extracted_dir,
+                data_dir=data_dir,
                 figures_dir=figures_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 cmap_name=field_meta.cmap,
                 field_loader=field_meta.loader,
                 num_bins=self.num_bins,
-                extract_data=self.extract_data,
+                save_data=self.save_data,
+                save_figure=self.save_figure,
                 log10_binning=self.log10_binning,
             )
             renderer.run()
@@ -563,13 +574,13 @@ def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_plots.set_theme()
     parser = argparse.ArgumentParser(
-        description="Plot PDFs of Quokka field components.",
+        description="Generate PDFs of Quokka field components: figures and/or extracted data.",
         parents=[
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
                 allow_slicing=False,
-                produces_data=True,
+                allow_output=True,
             ),
         ],
     )
@@ -580,7 +591,7 @@ def main():
         help="Number of histogram bins for the PDF estimate; default: 15.",
     )
     parser.add_argument(
-        "--log10-data",
+        "--log10-bins",
         action="store_true",
         default=False,
         help=(
@@ -597,10 +608,11 @@ def main():
         snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
         comps_to_plot=user_args.comps,
-        extract_data=user_args.save_data,
+        save_data=user_args.save_data,
+        save_figure=user_args.save_figure,
         num_bins=user_args.num_bins,
-        log10_binning=user_args.log10_data,
-        extracted_dir=user_args.extracted_dir,
+        log10_binning=user_args.log10_bins,
+        data_dir=user_args.data_dir,
         figures_dir=user_args.figures_dir,
     )
     script_interface.run()
