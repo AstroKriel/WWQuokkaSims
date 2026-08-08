@@ -222,14 +222,10 @@ class ScriptInterface:
             raise ValueError(f"dir_1 does not exist: {dir_1}.")
         if not Path(dir_2).is_dir():
             raise ValueError(f"dir_2 does not exist: {dir_2}.")
-        if not Path(data_dir).is_dir():
-            raise ValueError(f"data_dir does not exist: {data_dir}.")
-        if (figures_dir is not None) and (not Path(figures_dir).is_dir()):
-            raise ValueError(f"figures_dir does not exist: {figures_dir}.")
         self.dir_1 = Path(dir_1)
         self.dir_2 = Path(dir_2)
         self.data_dir = Path(data_dir)
-        self.figures_dir = Path(figures_dir) if figures_dir is not None else self.data_dir
+        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         valid_fields = set(
             field_registry.QUOKKA_FIELD_LOOKUP.keys(),
         )
@@ -244,6 +240,14 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
+        data_dir = cli.resolve_output_dir(
+            output_dir=self.data_dir,
+            default_dir=self.data_dir,
+        )
+        figures_dir = cli.resolve_output_dir(
+            output_dir=self.figures_dir,
+            default_dir=data_dir,
+        )
         ## find snapshot dirs for each of the two sim roots, matched by snapshot_tag
         snapshot_dirs_1 = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.dir_1,
@@ -273,7 +277,7 @@ class ScriptInterface:
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 use_parallel=True,
-                data_dir=self.data_dir,
+                data_dir=data_dir,
                 overwrite=self.overwrite,
                 cache_key=f"{field_name}-{label_dir_1}",
             )
@@ -282,15 +286,15 @@ class ScriptInterface:
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 use_parallel=True,
-                data_dir=self.data_dir,
+                data_dir=data_dir,
                 overwrite=self.overwrite,
                 cache_key=f"{field_name}-{label_dir_2}",
             )
             vi_series_1 = loader_1.run()
             vi_series_2 = loader_2.run()
             generate_comparison_plot = GenerateComparisonPlot(
-                data_dir=self.data_dir,
-                figures_dir=self.figures_dir,
+                data_dir=data_dir,
+                figures_dir=figures_dir,
                 field_name=field_name,
                 label_dir_1=label_dir_1,
                 label_dir_2=label_dir_2,
