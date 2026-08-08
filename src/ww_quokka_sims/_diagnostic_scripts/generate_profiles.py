@@ -284,31 +284,33 @@ class RenderCompProfiles:
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
         field_loader: Callable,
         cmap_name: str,
-        extracted_dir: Path,
+        data_dir: Path,
         figures_dir: Path,
-        extract_data: bool,
+        save_data: bool,
+        save_figure: bool,
         amr_level: int = 0,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
         self.index_width = index_width
-        self.extracted_dir = extracted_dir
+        self.data_dir = data_dir
         self.figures_dir = figures_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
         self.axes_to_slice = axes_to_slice
         self.field_loader = field_loader
         self.cmap_name = cmap_name
-        self.extract_data = extract_data
+        self.save_data = save_data
+        self.save_figure = save_figure
         self.amr_level = amr_level
 
     def _save_comp_profiles(
         self,
         *,
         comp_profiles_lookup: dict[str, list[CompProfile]],
-        extracted_dir: Path,
+        data_dir: Path,
     ) -> None:
-        extracted_dir.mkdir(
+        data_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
@@ -324,7 +326,7 @@ class RenderCompProfiles:
             for axis_index, axis in enumerate(any_profile.axis_labels):
                 axis_label = cartesian_axes.get_axis_label(axis)
                 stem = f"{self.field_name}-axis={axis_label}-{index_tag}-amr_level={self.amr_level}"
-                file_path = extracted_dir / f"{stem}.json"
+                file_path = data_dir / f"{stem}.json"
                 if is_scalar:
                     comp_profile = comp_profiles_lookup[comp_labels[0]][position_index]
                     profile_models.ScalarProfile(
@@ -451,6 +453,13 @@ class RenderCompProfiles:
         comp_profiles_lookup = compute_comp_profiles.run()
         if not comp_profiles_lookup:
             return
+        if self.save_data:
+            self._save_comp_profiles(
+                comp_profiles_lookup=comp_profiles_lookup,
+                data_dir=self.data_dir,
+            )
+        if not self.save_figure:
+            return
         comp_labels = list(
             comp_profiles_lookup.keys(),
         )
@@ -478,12 +487,6 @@ class RenderCompProfiles:
                     axs_row=axs_grid[row_index],
                     comp_profiles=comp_profiles,
                 )
-        ## optionally write extracted profile data to JSON
-        if self.extract_data:
-            self._save_comp_profiles(
-                comp_profiles_lookup=comp_profiles_lookup,
-                extracted_dir=self.extracted_dir,
-            )
         ## label axes and save; include snapshot index in filename if there is only one snapshot
         RenderCompProfiles._style_axs(
             axs_grid=axs_grid,
@@ -525,14 +528,19 @@ class ScriptInterface:
         fields_to_plot: list[str],
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
-        extract_data: bool,
-        extracted_dir: Path | None = None,
+        save_data: bool,
+        save_figure: bool,
+        data_dir: Path | None = None,
         figures_dir: Path | None = None,
         amr_level: int = 0,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
             param_name="snapshot_tag",
+        )
+        cli.ensure_save_flag_selected(
+            save_figure=save_figure,
+            save_data=save_data,
         )
         field_registry.validate_fields(field_names=fields_to_plot)
         if comps_to_plot is None:
@@ -548,8 +556,9 @@ class ScriptInterface:
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
         self.axes_to_slice = validate_types.as_tuple(param=axes_to_slice)
-        self.extract_data = extract_data
-        self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
+        self.save_data = save_data
+        self.save_figure = save_figure
+        self.data_dir = Path(data_dir) if data_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         self.amr_level = amr_level
 
@@ -563,13 +572,13 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        extracted_dir = cli.resolve_output_dir(
-            output_dir=self.extracted_dir,
+        data_dir = cli.resolve_output_dir(
+            output_dir=self.data_dir,
             default_dir=snapshot_dirs[0].parent,
         )
         figures_dir = cli.resolve_output_dir(
             output_dir=self.figures_dir,
-            default_dir=extracted_dir,
+            default_dir=data_dir,
         )
         index_width = find_snapshots.get_max_index_width(
             snapshot_dirs=snapshot_dirs,
@@ -582,14 +591,15 @@ class ScriptInterface:
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
                 index_width=index_width,
-                extracted_dir=extracted_dir,
+                data_dir=data_dir,
                 figures_dir=figures_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
                 field_loader=field_meta.loader,
                 cmap_name=field_meta.cmap,
-                extract_data=self.extract_data,
+                save_data=self.save_data,
+                save_figure=self.save_figure,
                 amr_level=self.amr_level,
             )
             render_comp_profiles.run()
@@ -604,13 +614,13 @@ def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_plots.set_theme()
     user_args = argparse.ArgumentParser(
-        description="Plot midplane profiles of Quokka field components.",
+        description="Generate midplane profiles of Quokka field components: figures and/or extracted data.",
         parents=[
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
                 allow_slicing=True,
-                produces_data=True,
+                allow_output=True,
             ),
         ],
     ).parse_args()
@@ -620,8 +630,9 @@ def main():
         fields_to_plot=user_args.fields,
         comps_to_plot=user_args.comps,
         axes_to_slice=user_args.axes,
-        extract_data=user_args.save_data,
-        extracted_dir=user_args.extracted_dir,
+        save_data=user_args.save_data,
+        save_figure=user_args.save_figure,
+        data_dir=user_args.data_dir,
         figures_dir=user_args.figures_dir,
         amr_level=user_args.amr_level,
     )
