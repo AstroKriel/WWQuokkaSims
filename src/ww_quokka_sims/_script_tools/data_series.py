@@ -19,6 +19,7 @@ from jormi.ww_fields.fields_3d import (
     field_models,
 )
 from jormi.ww_fns import parallel_dispatch
+from jormi.ww_io import json_io
 from jormi.ww_validation import (
     validate_arrays,
     validate_types,
@@ -94,6 +95,9 @@ class LoadDataSeries:
         field_name: str,
         field_loader: Callable,
         use_parallel: bool = True,
+        data_dir: Path | None = None,
+        overwrite: bool = False,
+        cache_key: str | None = None,
     ):
         validate_types.ensure_nonempty_string(
             param=field_name,
@@ -103,6 +107,24 @@ class LoadDataSeries:
         self.field_name = field_name
         self.field_loader = field_loader
         self.use_parallel = bool(use_parallel)
+        self.data_dir = data_dir
+        self.overwrite = bool(overwrite)
+        self.cache_key = cache_key if cache_key is not None else field_name
+
+    def _cache_path(
+        self,
+    ) -> Path | None:
+        """Resume cache, keyed by snapshot directory name; separate from whatever final output
+        format the calling script writes via its own --save-data (this is purely to avoid
+        recomputing a snapshot's volume integral on a rerun, not a user-facing artifact).
+
+        `cache_key` defaults to `field_name`, but callers loading the same field from more than
+        one input directory into the same `data_dir` (eg. a two-run comparison) must pass a
+        distinct `cache_key` per loader, else they'd silently overwrite each other's cache.
+        """
+        if self.data_dir is None:
+            return None
+        return self.data_dir / f"{self.cache_key}-vi_series_cache.json"
 
     @staticmethod
     def load_snapshot(
@@ -130,28 +152,79 @@ class LoadDataSeries:
     def run(
         self,
     ) -> DataSeries:
-        grouped_field_args: list[FieldArgs] = [
-            FieldArgs(
-                snapshot_dir=Path(snapshot_dir),
-                field_name=self.field_name,
-                field_loader=self.field_loader,
-            ) for snapshot_dir in self.snapshot_dirs
-        ]
-        if not grouped_field_args:
-            return DataSeries(points=[])
-        ## load each snapshot in parallel if the series is large enough to justify it, else serial
-        if self.use_parallel and (len(grouped_field_args) > 5):
-            data_points: list[DataPoint] = parallel_dispatch.run_in_parallel(
+        cache_path = self._cache_path()
+        cached_entries: dict = {}
+        if (cache_path is not None) and (not self.overwrite) and cache_path.exists():
+            cached_entries = json_io.read_json_file_into_dict(
+                file_path=cache_path,
+                verbose=False,
+            )
+        output_dict = dict(cached_entries)
+
+        data_points: list[DataPoint] = []
+        pending_field_args: list[FieldArgs] = []
+        for snapshot_dir in self.snapshot_dirs:
+            snapshot_dir = Path(snapshot_dir)
+            cached = cached_entries.get(snapshot_dir.name)
+            if cached is not None:
+                data_points.append(
+                    DataPoint(
+                        sim_time=cached["sim_time"],
+                        latex_label=cached["latex_label"],
+                        vi_value=cached["vi_value"],
+                    ),
+                )
+                continue
+            pending_field_args.append(
+                FieldArgs(
+                    snapshot_dir=snapshot_dir,
+                    field_name=self.field_name,
+                    field_loader=self.field_loader,
+                ),
+            )
+        if not pending_field_args:
+            return DataSeries(points=data_points)
+
+        def write_cache() -> None:
+            if cache_path is None:
+                return
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            json_io.save_dict_to_json_file(
+                file_path=cache_path,
+                input_dict=output_dict,
+                overwrite=True,
+                verbose=False,
+            )
+
+        ## load each pending snapshot in parallel if there are enough to justify it, else serial.
+        ## the serial path caches after every snapshot; the parallel path can only cache once the
+        ## whole batch returns, since jormi's parallel_dispatch has no per-task completion hook
+        if self.use_parallel and (len(pending_field_args) > 5):
+            new_points: list[DataPoint] = parallel_dispatch.run_in_parallel(
                 worker_fn=LoadDataSeries.load_snapshot,
-                grouped_args=grouped_field_args,
+                grouped_args=pending_field_args,
                 timeout_seconds=120,
                 show_progress=True,
                 enable_plotting=True,
             )
+            for field_args, data_point in zip(pending_field_args, new_points):
+                output_dict[field_args.snapshot_dir.name] = {
+                    "sim_time": data_point.sim_time,
+                    "latex_label": data_point.latex_label,
+                    "vi_value": data_point.vi_value,
+                }
+            write_cache()
+            data_points.extend(new_points)
         else:
-            data_points = [
-                LoadDataSeries.load_snapshot(field_args=field_args) for field_args in grouped_field_args
-            ]
+            for field_args in pending_field_args:
+                data_point = LoadDataSeries.load_snapshot(field_args=field_args)
+                output_dict[field_args.snapshot_dir.name] = {
+                    "sim_time": data_point.sim_time,
+                    "latex_label": data_point.latex_label,
+                    "vi_value": data_point.vi_value,
+                }
+                write_cache()
+                data_points.append(data_point)
         return DataSeries(points=data_points)
 
 
