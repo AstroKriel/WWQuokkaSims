@@ -57,6 +57,7 @@ class WorkerArgs(NamedTuple):
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...]
     data_dir: str
     index_width: int
+    overwrite: bool
     amr_level: int = 0
 
 
@@ -111,6 +112,17 @@ class FieldExtractor:
     snapshot_tag: str
     field_args: FieldArgs
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...]
+    overwrite: bool = False
+
+    def _expected_file_name(
+        self,
+        *,
+        step_index: int,
+        index_width: int,
+    ) -> str:
+        field_name = self.field_args.field_name
+        padded_index = f"{step_index:0{index_width}d}"
+        return f"{field_name}-index={padded_index}-amr_level={self.field_args.amr_level}.npz"
 
     def _load_field(
         self,
@@ -137,8 +149,7 @@ class FieldExtractor:
         data_dir: Path,
     ) -> None:
         field_name = self.field_args.field_name
-        padded_index = f"{step_index:0{index_width}d}"
-        file_name = f"{field_name}-index={padded_index}-amr_level={self.field_args.amr_level}.npz"
+        file_name = self._expected_file_name(step_index=step_index, index_width=index_width)
         if isinstance(field, field_models.ScalarField_3D):
             sarray_3d = field_models.extract_3d_sarray(
                 sfield_3d=field,
@@ -178,13 +189,16 @@ class FieldExtractor:
         data_dir: Path,
         index_width: int,
     ) -> None:
-        field = self._load_field(snapshot_dir=snapshot_dir)
         step_index = int(
             find_snapshots.get_step_index_string(
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=self.snapshot_tag,
             ),
         )
+        file_path = data_dir / self._expected_file_name(step_index=step_index, index_width=index_width)
+        if (not self.overwrite) and file_path.exists():
+            return
+        field = self._load_field(snapshot_dir=snapshot_dir)
         self._save_field(
             field=field,
             step_time=_get_step_time(field),
@@ -202,6 +216,7 @@ def extract_fields_in_serial(
     snapshot_dirs: list[Path],
     data_dir: Path,
     index_width: int,
+    overwrite: bool = False,
     amr_level: int = 0,
 ) -> None:
     for field_name in fields_to_extract:
@@ -214,6 +229,7 @@ def extract_fields_in_serial(
                 amr_level=amr_level,
             ),
             comps_to_extract=comps_to_extract,
+            overwrite=overwrite,
         )
         for snapshot_dir in snapshot_dirs:
             field_extractor.extract_snapshot(
@@ -236,6 +252,7 @@ def _extract_snapshot_worker(
             amr_level=worker_args.amr_level,
         ),
         comps_to_extract=worker_args.comps_to_extract,
+        overwrite=worker_args.overwrite,
     )
     field_extractor.extract_snapshot(
         snapshot_dir=Path(worker_args.snapshot_dir),
@@ -252,6 +269,7 @@ def extract_fields_in_parallel(
     snapshot_dirs: list[Path],
     data_dir: Path,
     index_width: int,
+    overwrite: bool = False,
     amr_level: int = 0,
     num_workers: int | None = None,
 ) -> None:
@@ -268,6 +286,7 @@ def extract_fields_in_parallel(
                     comps_to_extract=comps_to_extract,
                     data_dir=str(data_dir),
                     index_width=index_width,
+                    overwrite=overwrite,
                     amr_level=amr_level,
                 ),
             )
@@ -298,6 +317,7 @@ class ScriptInterface:
         comps_to_extract: tuple[str, ...] | list[str] | None,
         data_dir: Path | None = None,
         num_workers: int | None = None,
+        overwrite: bool = False,
         amr_level: int = 0,
     ):
         validate_types.ensure_nonempty_string(
@@ -315,6 +335,7 @@ class ScriptInterface:
         self.comps_to_extract = _parse_axes(axes=comps_to_extract)
         self.data_dir = Path(data_dir) if data_dir is not None else None
         self.num_workers = num_workers
+        self.overwrite = bool(overwrite)
         self.amr_level = amr_level
 
     def run(
@@ -342,6 +363,7 @@ class ScriptInterface:
                 snapshot_dirs=snapshot_dirs,
                 data_dir=data_dir,
                 index_width=index_width,
+                overwrite=self.overwrite,
                 amr_level=self.amr_level,
                 num_workers=self.num_workers,
             )
@@ -353,6 +375,7 @@ class ScriptInterface:
                 snapshot_dirs=snapshot_dirs,
                 data_dir=data_dir,
                 index_width=index_width,
+                overwrite=self.overwrite,
                 amr_level=self.amr_level,
             )
 
@@ -380,6 +403,15 @@ def main():
         default=None,
         help="Output directory for extracted data; defaults to the parent directory of the snapshot.",
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        default=False,
+        help=(
+            "Redo snapshots whose output already exists, instead of skipping them; "
+            "default: False (resume where a prior run left off)."
+        ),
+    )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
         input_dir=user_args.input_dir,
@@ -388,6 +420,7 @@ def main():
         comps_to_extract=user_args.comps,
         data_dir=user_args.data_dir,
         num_workers=user_args.num_workers,
+        overwrite=user_args.overwrite,
         amr_level=user_args.amr_level,
     )
     script_interface.run()
