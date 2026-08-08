@@ -21,7 +21,7 @@ from jormi.ww_fields.fields_3d import (
     domain_models,
     field_models,
 )
-from jormi.ww_io import manage_log
+from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
     annotate_axis,
@@ -88,16 +88,12 @@ class ComputeCompProfiles:
     def __init__(
         self,
         *,
-        snapshot_dirs: list[Path],
-        snapshot_tag: str,
         field_name: str,
         field_loader: Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
         amr_level: int = 0,
     ):
-        self.snapshot_dirs = snapshot_dirs
-        self.snapshot_tag = snapshot_tag
         self.field_name = field_name
         self.field_loader = field_loader
         self.comps_to_plot = comps_to_plot
@@ -224,45 +220,37 @@ class ComputeCompProfiles:
             )
         return comp_profiles
 
-    def run(
+    def compute_snapshot(
         self,
-    ) -> dict[str, list[CompProfile]]:
-        comp_profiles_lookup: dict[str, list[CompProfile]] = {}
-        for snapshot_dir in self.snapshot_dirs:
-            step_index = int(
-                find_snapshots.get_step_index_string(
-                    snapshot_dir=snapshot_dir,
-                    snapshot_tag=self.snapshot_tag,
-                ),
+        *,
+        snapshot_dir: Path,
+        snapshot_tag: str,
+    ) -> list[CompProfile]:
+        step_index = int(
+            find_snapshots.get_step_index_string(
+                snapshot_dir=snapshot_dir,
+                snapshot_tag=snapshot_tag,
+            ),
+        )
+        with load_snapshot.QuokkaSnapshot(
+                snapshot_dir=snapshot_dir,
+                verbose=False,
+        ) as snapshot:
+            uniform_domain_3d = snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
+            field = self.field_loader(snapshot, amr_level=self.amr_level)  # ScalarField or VectorField
+        if isinstance(field, field_models.ScalarField_3D):
+            return self._compute_scalar_profiles(
+                field=field,
+                uniform_domain_3d=uniform_domain_3d,
+                step_index=step_index,
             )
-            with load_snapshot.QuokkaSnapshot(
-                    snapshot_dir=snapshot_dir,
-                    verbose=False,
-            ) as snapshot:
-                uniform_domain_3d = snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
-                field = self.field_loader(snapshot, amr_level=self.amr_level)  # ScalarField or VectorField
-            if isinstance(field, field_models.ScalarField_3D):
-                comp_profiles = self._compute_scalar_profiles(
-                    field=field,
-                    uniform_domain_3d=uniform_domain_3d,
-                    step_index=step_index,
-                )
-            elif isinstance(field, field_models.VectorField_3D):
-                comp_profiles = self._compute_vector_profiles(
-                    field=field,
-                    uniform_domain_3d=uniform_domain_3d,
-                    step_index=step_index,
-                )
-            else:
-                raise ValueError(f"{self.field_name} is an unrecognised field type.")
-            for comp_profile in comp_profiles:
-                comp_label = comp_profile.comp_label
-                if comp_label not in comp_profiles_lookup:
-                    comp_profiles_lookup[comp_label] = []
-                comp_profiles_lookup[comp_label].append(comp_profile)
-        for comp_label in comp_profiles_lookup:
-            comp_profiles_lookup[comp_label].sort(key=lambda item: item.step_time)
-        return comp_profiles_lookup
+        if isinstance(field, field_models.VectorField_3D):
+            return self._compute_vector_profiles(
+                field=field,
+                uniform_domain_3d=uniform_domain_3d,
+                step_index=step_index,
+            )
+        raise ValueError(f"{self.field_name} is an unrecognised field type.")
 
 
 ##
@@ -288,6 +276,7 @@ class RenderCompProfiles:
         figures_dir: Path,
         save_data: bool,
         save_figure: bool,
+        overwrite: bool = False,
         amr_level: int = 0,
     ):
         self.snapshot_dirs = snapshot_dirs
@@ -302,63 +291,132 @@ class RenderCompProfiles:
         self.cmap_name = cmap_name
         self.save_data = save_data
         self.save_figure = save_figure
+        self.overwrite = bool(overwrite)
         self.amr_level = amr_level
 
-    def _save_comp_profiles(
+    def _data_file_path(
         self,
         *,
-        comp_profiles_lookup: dict[str, list[CompProfile]],
+        axis_label: str,
+        padded_index: str,
         data_dir: Path,
+    ) -> Path:
+        return data_dir / f"{self.field_name}-axis={axis_label}-index={padded_index}-amr_level={self.amr_level}.json"
+
+    def _snapshot_figure_file_path(
+        self,
+        *,
+        figures_dir: Path,
+        padded_index: str,
+    ) -> Path:
+        return figures_dir / f"{self.field_name}-profile-index={padded_index}.png"
+
+    def _save_snapshot_data(
+        self,
+        *,
+        comp_profiles: list[CompProfile],
+        data_dir: Path,
+        padded_index: str,
     ) -> None:
         data_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
-        comp_labels = list(comp_profiles_lookup.keys())
-        num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
-        first_profile = comp_profiles_lookup[comp_labels[0]][0]
-        is_scalar = first_profile.comp_name == self.field_name
-        for position_index in range(num_snapshots):
-            any_profile = comp_profiles_lookup[comp_labels[0]][position_index]
-            step_time = any_profile.step_time
-            step_index = any_profile.step_index
-            index_tag = f"index={step_index:0{self.index_width}d}"
-            for axis_index, axis in enumerate(any_profile.axis_labels):
-                axis_label = cartesian_axes.get_axis_label(axis)
-                stem = f"{self.field_name}-axis={axis_label}-{index_tag}-amr_level={self.amr_level}"
-                file_path = data_dir / f"{stem}.json"
-                if is_scalar:
-                    comp_profile = comp_profiles_lookup[comp_labels[0]][position_index]
-                    profile_models.ScalarProfile(
-                        field_name=self.field_name,
-                        step_time=step_time,
-                        step_index=step_index,
-                        profile_axis=axis_label,
+        is_scalar = comp_profiles[0].comp_name == self.field_name
+        step_time = comp_profiles[0].step_time
+        step_index = comp_profiles[0].step_index
+        for axis_index, axis in enumerate(comp_profiles[0].axis_labels):
+            axis_label = cartesian_axes.get_axis_label(axis)
+            file_path = self._data_file_path(axis_label=axis_label, padded_index=padded_index, data_dir=data_dir)
+            if is_scalar:
+                comp_profile = comp_profiles[0]
+                profile_models.ScalarProfile(
+                    field_name=self.field_name,
+                    field_label=comp_profile.comp_label,
+                    step_time=step_time,
+                    step_index=step_index,
+                    profile_axis=axis_label,
+                    position=comp_profile.get_domain(axis_index=axis_index),
+                    field_value=comp_profile.get_values(axis_index=axis_index),
+                    amr_level=self.amr_level,
+                ).save_to_file(file_path)
+            else:
+                components = {
+                    comp_profile.comp_name:
+                    profile_models.ComponentArrays(
                         position=comp_profile.get_domain(axis_index=axis_index),
                         field_value=comp_profile.get_values(axis_index=axis_index),
-                        amr_level=self.amr_level,
-                    ).save_to_file(file_path)
-                else:
-                    components = {
-                        comp_profiles_lookup[comp_label][position_index].comp_name:
-                        profile_models.ComponentArrays(
-                            position=comp_profiles_lookup[comp_label][position_index].get_domain(
-                                axis_index=axis_index,
-                            ),
-                            field_value=comp_profiles_lookup[comp_label][position_index].get_values(
-                                axis_index=axis_index,
-                            ),
-                        )
-                        for comp_label in comp_labels
-                    }
-                    profile_models.VectorProfile(
-                        field_name=self.field_name,
-                        step_time=step_time,
-                        step_index=step_index,
-                        profile_axis=axis_label,
-                        components=components,
-                        amr_level=self.amr_level,
-                    ).save_to_file(file_path)
+                        label=comp_profile.comp_label,
+                    )
+                    for comp_profile in comp_profiles
+                }
+                profile_models.VectorProfile(
+                    field_name=self.field_name,
+                    step_time=step_time,
+                    step_index=step_index,
+                    profile_axis=axis_label,
+                    components=components,
+                    amr_level=self.amr_level,
+                ).save_to_file(file_path)
+
+    def _load_snapshot_data(
+        self,
+        *,
+        data_paths: list[Path],
+    ) -> tuple[list[CompProfile], float] | None:
+        if not all(path.exists() for path in data_paths):
+            return None
+        first_raw = json_io.read_json_file_into_dict(file_path=data_paths[0], verbose=False)
+        step_time = 0.0
+        step_index = 0
+        if "field_comps" not in first_raw:
+            x_array_by_axis: list[numpy.ndarray] = []
+            y_array_by_axis: list[numpy.ndarray] = []
+            comp_label = ""
+            for path in data_paths:
+                scalar_profile = profile_models.ScalarProfile.load_from_file(path)
+                x_array_by_axis.append(scalar_profile.position)
+                y_array_by_axis.append(scalar_profile.field_value)
+                comp_label = scalar_profile.field_label
+                step_time = scalar_profile.step_time
+                step_index = scalar_profile.step_index
+            comp_profiles = [
+                CompProfile(
+                    step_time=step_time,
+                    step_index=step_index,
+                    comp_name=self.field_name,
+                    axis_labels=list(self.axes_to_slice),
+                    comp_label=comp_label,
+                    x_array_by_axis=x_array_by_axis,
+                    y_array_by_axis=y_array_by_axis,
+                ),
+            ]
+            return comp_profiles, step_time
+        vector_profiles = [profile_models.VectorProfile.load_from_file(path) for path in data_paths]
+        comp_keys = sorted(vector_profiles[0].components.keys())
+        per_comp_x: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+        per_comp_y: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+        per_comp_label: dict[str, str] = {}
+        for vector_profile in vector_profiles:
+            step_time = vector_profile.step_time
+            step_index = vector_profile.step_index
+            for key in comp_keys:
+                comp_arrays = vector_profile.components[key]
+                per_comp_x[key].append(comp_arrays.position)
+                per_comp_y[key].append(comp_arrays.field_value)
+                per_comp_label[key] = comp_arrays.label
+        comp_profiles = [
+            CompProfile(
+                step_time=step_time,
+                step_index=step_index,
+                comp_name=key,
+                axis_labels=list(self.axes_to_slice),
+                comp_label=per_comp_label[key],
+                x_array_by_axis=per_comp_x[key],
+                y_array_by_axis=per_comp_y[key],
+            ) for key in comp_keys
+        ]
+        return comp_profiles, step_time
 
     @staticmethod
     def _style_axs(
@@ -437,43 +495,54 @@ class RenderCompProfiles:
             label=r"snapshot index",
         )
 
-    def run(
+    def _save_snapshot_figure(
         self,
+        *,
+        comp_profiles: list[CompProfile],
+        figure_path: Path,
     ) -> None:
-        ## compute midplane profiles for each snapshot and component
-        compute_comp_profiles = ComputeCompProfiles(
-            snapshot_dirs=self.snapshot_dirs,
-            snapshot_tag=self.snapshot_tag,
-            field_name=self.field_name,
-            field_loader=self.field_loader,
-            comps_to_plot=self.comps_to_plot,
-            axes_to_slice=self.axes_to_slice,
-            amr_level=self.amr_level,
-        )
-        comp_profiles_lookup = compute_comp_profiles.run()
-        if not comp_profiles_lookup:
-            return
-        if self.save_data:
-            self._save_comp_profiles(
-                comp_profiles_lookup=comp_profiles_lookup,
-                data_dir=self.data_dir,
-            )
-        if not self.save_figure:
-            return
-        comp_labels = list(
-            comp_profiles_lookup.keys(),
-        )
-        axis_labels = comp_profiles_lookup[comp_labels[0]][0].axis_labels
-        num_rows = len(comp_labels)
-        num_cols = len(axis_labels)
-        ## figure layout: one row per field component, one col per slice axis
+        axis_labels = comp_profiles[0].axis_labels
+        comp_labels = [comp_profile.comp_label for comp_profile in comp_profiles]
         fig, axs_grid = manage_plots.create_figure_grid(
-            num_rows=num_rows,
-            num_cols=num_cols,
+            num_rows=len(comp_profiles),
+            num_cols=len(axis_labels),
             x_spacing=0.05,
-            y_spacing=0.15 if num_rows > 1 else 0.05,
+            y_spacing=0.15 if len(comp_profiles) > 1 else 0.05,
         )
-        ## plot each component row; use a sequential color series if there are multiple snapshots
+        for row_index, comp_profile in enumerate(comp_profiles):
+            RenderCompProfiles._plot_comp_profile(
+                axs_row=axs_grid[row_index],
+                comp_profile=comp_profile,
+                color="black",
+            )
+        RenderCompProfiles._style_axs(
+            axs_grid=axs_grid,
+            comp_labels=comp_labels,
+            axis_labels=axis_labels,
+        )
+        manage_plots.save_figure(
+            fig=fig,
+            fig_path=figure_path,
+            verbose=False,
+        )
+
+    def _save_summary_figure(
+        self,
+        *,
+        comp_profiles_lookup: dict[str, list[CompProfile]],
+        figures_dir: Path,
+    ) -> None:
+        """Combined overlay across every saved snapshot; always rebuilt fresh from whatever is on
+        disk (not from anything held in memory across the potentially-long per-snapshot loop above).
+        """
+        comp_labels = list(comp_profiles_lookup.keys())
+        axis_labels = comp_profiles_lookup[comp_labels[0]][0].axis_labels
+        fig, axs_grid = manage_plots.create_figure_grid(
+            num_rows=len(comp_labels),
+            num_cols=len(axis_labels),
+            x_spacing=0.05,
+            y_spacing=0.15 if len(comp_labels) > 1 else 0.05,
+        )
         for row_index, comp_label in enumerate(comp_labels):
             comp_profiles = comp_profiles_lookup[comp_label]
             if len(comp_profiles) == 1:
@@ -487,29 +556,127 @@ class RenderCompProfiles:
                     axs_row=axs_grid[row_index],
                     comp_profiles=comp_profiles,
                 )
-        ## label axes and save; include snapshot index in filename if there is only one snapshot
         RenderCompProfiles._style_axs(
             axs_grid=axs_grid,
             comp_labels=comp_labels,
             axis_labels=axis_labels,
         )
-        num_snapshots = len(comp_profiles_lookup[comp_labels[0]])
-        if num_snapshots == 1:
-            step_index = int(
-                find_snapshots.get_step_index_string(
-                    snapshot_dir=self.snapshot_dirs[0],
-                    snapshot_tag=self.snapshot_tag,
-                ),
-            )
-            padded_index = f"{step_index:0{self.index_width}d}"
-            fig_path = self.figures_dir / f"{self.field_name}-profile-index={padded_index}.png"
-        else:
-            fig_path = self.figures_dir / f"{self.field_name}-profiles.png"
+        fig_path = figures_dir / f"{self.field_name}-profiles-summary.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
             verbose=True,
         )
+
+    def _process_snapshot(
+        self,
+        *,
+        compute_comp_profiles: ComputeCompProfiles,
+        snapshot_dir: Path,
+        data_dir: Path,
+        figures_dir: Path,
+        index_width: int,
+    ) -> None:
+        step_index = int(
+            find_snapshots.get_step_index_string(
+                snapshot_dir=snapshot_dir,
+                snapshot_tag=self.snapshot_tag,
+            ),
+        )
+        padded_index = f"{step_index:0{index_width}d}"
+        data_paths = [
+            self._data_file_path(
+                axis_label=cartesian_axes.get_axis_label(axis),
+                padded_index=padded_index,
+                data_dir=data_dir,
+            ) for axis in self.axes_to_slice
+        ]
+        figure_path = self._snapshot_figure_file_path(figures_dir=figures_dir, padded_index=padded_index)
+        data_exists = all(path.exists() for path in data_paths)
+        data_needed = self.save_data and (self.overwrite or not data_exists)
+        figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
+
+        if not data_needed and not figure_needed:
+            return
+
+        if figure_needed and not data_needed and data_exists:
+            loaded = self._load_snapshot_data(data_paths=data_paths)
+            if loaded is not None:
+                ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot
+                manage_log.log_hint(
+                    text=(
+                        f"`{self.field_name}` at snapshot {step_index}: "
+                        f"building figure from saved data, skipping the raw snapshot."
+                    ),
+                )
+                comp_profiles, _step_time = loaded
+                self._save_snapshot_figure(comp_profiles=comp_profiles, figure_path=figure_path)
+                return
+
+        comp_profiles = compute_comp_profiles.compute_snapshot(snapshot_dir=snapshot_dir, snapshot_tag=self.snapshot_tag)
+        if data_needed:
+            self._save_snapshot_data(comp_profiles=comp_profiles, data_dir=data_dir, padded_index=padded_index)
+        if figure_needed:
+            self._save_snapshot_figure(comp_profiles=comp_profiles, figure_path=figure_path)
+
+    def _load_all_saved_comp_profiles(
+        self,
+        *,
+        data_dir: Path,
+    ) -> dict[str, list[CompProfile]]:
+        first_axis_label = cartesian_axes.get_axis_label(self.axes_to_slice[0])
+        pattern = f"{self.field_name}-axis={first_axis_label}-index=*-amr_level={self.amr_level}.json"
+        comp_profiles_lookup: dict[str, list[CompProfile]] = {}
+        for first_axis_path in sorted(data_dir.glob(pattern)):
+            raw = json_io.read_json_file_into_dict(file_path=first_axis_path, verbose=False)
+            padded_index = f"{int(raw['step_index']):0{self.index_width}d}"
+            data_paths = [
+                self._data_file_path(
+                    axis_label=cartesian_axes.get_axis_label(axis),
+                    padded_index=padded_index,
+                    data_dir=data_dir,
+                ) for axis in self.axes_to_slice
+            ]
+            loaded = self._load_snapshot_data(data_paths=data_paths)
+            if loaded is None:
+                continue
+            comp_profiles, _step_time = loaded
+            for comp_profile in comp_profiles:
+                comp_profiles_lookup.setdefault(comp_profile.comp_label, []).append(comp_profile)
+        for comp_label in comp_profiles_lookup:
+            comp_profiles_lookup[comp_label].sort(key=lambda item: item.step_time)
+        return comp_profiles_lookup
+
+    def run(
+        self,
+    ) -> None:
+        if self.save_data or self.save_figure:
+            compute_comp_profiles = ComputeCompProfiles(
+                field_name=self.field_name,
+                field_loader=self.field_loader,
+                comps_to_plot=self.comps_to_plot,
+                axes_to_slice=self.axes_to_slice,
+                amr_level=self.amr_level,
+            )
+            for snapshot_dir in self.snapshot_dirs:
+                self._process_snapshot(
+                    compute_comp_profiles=compute_comp_profiles,
+                    snapshot_dir=snapshot_dir,
+                    data_dir=self.data_dir,
+                    figures_dir=self.figures_dir,
+                    index_width=self.index_width,
+                )
+        if not self.save_figure:
+            return
+        ## the summary is only buildable from saved data; if none was ever saved for this field
+        ## (eg. --save-figure was used without --save-data, ever), there's nothing to aggregate
+        comp_profiles_lookup = self._load_all_saved_comp_profiles(data_dir=self.data_dir)
+        if not comp_profiles_lookup:
+            manage_log.log_hint(
+                text=f"Skipping summary figure for `{self.field_name}`: no saved data found in {self.data_dir}.",
+            )
+            return
+        self._save_summary_figure(comp_profiles_lookup=comp_profiles_lookup, figures_dir=self.figures_dir)
 
 
 ##
@@ -530,6 +697,7 @@ class ScriptInterface:
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
         save_data: bool,
         save_figure: bool,
+        overwrite: bool = False,
         data_dir: Path | None = None,
         figures_dir: Path | None = None,
         amr_level: int = 0,
@@ -558,6 +726,7 @@ class ScriptInterface:
         self.axes_to_slice = validate_types.as_tuple(param=axes_to_slice)
         self.save_data = save_data
         self.save_figure = save_figure
+        self.overwrite = bool(overwrite)
         self.data_dir = Path(data_dir) if data_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         self.amr_level = amr_level
@@ -600,6 +769,7 @@ class ScriptInterface:
                 cmap_name=field_meta.cmap,
                 save_data=self.save_data,
                 save_figure=self.save_figure,
+                overwrite=self.overwrite,
                 amr_level=self.amr_level,
             )
             render_comp_profiles.run()
@@ -632,6 +802,7 @@ def main():
         axes_to_slice=user_args.axes,
         save_data=user_args.save_data,
         save_figure=user_args.save_figure,
+        overwrite=user_args.overwrite,
         data_dir=user_args.data_dir,
         figures_dir=user_args.figures_dir,
         amr_level=user_args.amr_level,

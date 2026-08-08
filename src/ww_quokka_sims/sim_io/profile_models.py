@@ -79,6 +79,7 @@ def _ensure_profile_arrays(
 class ComponentArrays:
     position: NDArray[numpy.floating]
     field_value: NDArray[numpy.floating]
+    label: str
 
     def __post_init__(
         self,
@@ -86,6 +87,10 @@ class ComponentArrays:
         _ensure_profile_arrays(
             position=self.position,
             field_value=self.field_value,
+        )
+        validate_types.ensure_nonempty_string(
+            param=self.label,
+            param_name="<label>",
         )
 
 
@@ -97,6 +102,7 @@ class ComponentArrays:
 @dataclass(frozen=True)
 class ScalarProfile:
     field_name: str
+    field_label: str
     step_time: float
     step_index: int
     profile_axis: str
@@ -108,6 +114,10 @@ class ScalarProfile:
         self,
     ) -> None:
         _ensure_field_name(self.field_name)
+        validate_types.ensure_nonempty_string(
+            param=self.field_label,
+            param_name="<field_label>",
+        )
         validate_types.ensure_finite_float(
             param=self.step_time,
             param_name="<step_time>",
@@ -139,6 +149,7 @@ class ScalarProfile:
             file_path=file_path,
             input_dict={
                 "field_name": self.field_name,
+                "field_label": self.field_label,
                 "step_time": self.step_time,
                 "step_index": self.step_index,
                 "profile_axis": self.profile_axis,
@@ -163,6 +174,7 @@ class ScalarProfile:
             param=data,
             required_keys={
                 "field_name",
+                "field_label",
                 "step_time",
                 "step_index",
                 "profile_axis",
@@ -174,6 +186,7 @@ class ScalarProfile:
         )
         return cls(
             field_name=data["field_name"],
+            field_label=data["field_label"],
             step_time=float(data["step_time"]),
             step_index=int(data["step_index"]),
             profile_axis=data["profile_axis"],
@@ -243,6 +256,7 @@ class VectorProfile:
                     comp_axis: {
                         "position": comp.position,
                         "field_value": comp.field_value,
+                        "label": comp.label,
                     }
                     for comp_axis, comp in self.components.items()
                 },
@@ -278,6 +292,7 @@ class VectorProfile:
             ComponentArrays(
                 position=numpy.asarray(comp_data["position"]),
                 field_value=numpy.asarray(comp_data["field_value"]),
+                label=comp_data["label"],
             )
             for comp_axis, comp_data in data["field_comps"].items()
         }
