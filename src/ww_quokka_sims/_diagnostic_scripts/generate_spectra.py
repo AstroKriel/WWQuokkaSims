@@ -6,7 +6,6 @@
 
 ## stdlib
 import argparse
-import dataclasses
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -87,6 +86,7 @@ class ComputeSpectra:
         index_width: int,
         save_data: bool,
         data_dir: Path,
+        overwrite: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -95,6 +95,7 @@ class ComputeSpectra:
         self.index_width = index_width
         self.save_data = save_data
         self.data_dir = data_dir
+        self.overwrite = bool(overwrite)
 
     def _save_incremental(
         self,
@@ -118,18 +119,15 @@ class ComputeSpectra:
         field_spectra: list[SpectraData] = []
         output_dict: dict = {}
         cached_entries: dict = {}
-        if self.save_data:
-            existing_path = self.data_dir / f"{self.field_name}-spectra.json"
-            if existing_path.exists():
-                cached_entries = json_io.read_json_file_into_dict(
-                    file_path=existing_path,
-                    verbose=False,
-                )
-                output_dict = dict(cached_entries)
-
-        ## latex_label isn't stored per-snapshot in the cache, so track one from
-        ## whichever snapshot actually gets freshly computed this run
-        reference_latex_label: str | None = None
+        ## read whatever's already cached whenever it's there, regardless of save_data this run,
+        ## so a --save-figure-only run still gets the cheap reuse; only writing is save_data-gated
+        existing_path = self.data_dir / f"{self.field_name}-spectra.json"
+        if (not self.overwrite) and existing_path.exists():
+            cached_entries = json_io.read_json_file_into_dict(
+                file_path=existing_path,
+                verbose=False,
+            )
+            output_dict = dict(cached_entries)
 
         for snapshot_dir in self.snapshot_dirs:
             step_index = int(
@@ -141,13 +139,13 @@ class ComputeSpectra:
             padded_index = f"{step_index:0{self.index_width}d}"
 
             ## skip snapshots already computed in a prior (e.g. killed/interrupted) run
-            if self.save_data and (padded_index in cached_entries):
+            if padded_index in cached_entries:
                 cached = cached_entries[padded_index]
                 field_spectra.append(
                     SpectraData(
                         step_time=cached["step_time"],
                         step_index=step_index,
-                        latex_label="",
+                        latex_label=cached.get("latex_label", ""),
                         log10_k_bin_centers=numpy.array(cached["log10_k_bin_centers"]),
                         log10_spectrum=numpy.array(cached["log10_spectrum"]),
                     ),
@@ -166,7 +164,6 @@ class ComputeSpectra:
                 )
             step_time = field.sim_time
             assert step_time is not None
-            reference_latex_label = field.latex_label
             spectrum = compute_spectra.compute_isotropic_power_spectrum_sfield(field)
             log10_k_bin_centers = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
@@ -193,23 +190,13 @@ class ComputeSpectra:
             if self.save_data:
                 output_dict[padded_index] = {
                     "step_time": spectra_data.step_time,
+                    "latex_label": spectra_data.latex_label,
                     "log10_k_bin_centers": spectra_data.log10_k_bin_centers,
                     "log10_spectrum": spectra_data.log10_spectrum,
                 }
                 self._save_incremental(output_dict=output_dict)
 
         field_spectra.sort(key=lambda s: s.step_time)
-        ## every entry needs a valid latex_label for plot styling, but cache-hit entries
-        ## are given an empty one above; only field_spectra[0] is ever read, so fix that one
-        if field_spectra and not field_spectra[0].latex_label:
-            if reference_latex_label is None:
-                ## every snapshot was a cache hit this run; do one minimal load just for the label
-                with load_snapshot.QuokkaSnapshot(
-                        snapshot_dir=self.snapshot_dirs[0],
-                        verbose=False,
-                ) as snapshot:
-                    reference_latex_label = self.field_loader(snapshot).latex_label
-            field_spectra[0] = dataclasses.replace(field_spectra[0], latex_label=reference_latex_label)
         return field_spectra
 
 
@@ -234,6 +221,7 @@ class RenderSpectra:
         cmap_name: str,
         save_data: bool,
         save_figure: bool,
+        overwrite: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -245,6 +233,7 @@ class RenderSpectra:
         self.cmap_name = cmap_name
         self.save_data = save_data
         self.save_figure = save_figure
+        self.overwrite = bool(overwrite)
 
     @staticmethod
     def _style_ax(
@@ -306,25 +295,43 @@ class RenderSpectra:
             label=r"snapshot index",
         )
 
-    def run(
+    def _snapshot_figure_file_path(
         self,
+        *,
+        figures_dir: Path,
+        padded_index: str,
+    ) -> Path:
+        return figures_dir / f"{self.field_name}-spectrum-index={padded_index}.png"
+
+    def _save_snapshot_figure(
+        self,
+        *,
+        spectra_data: SpectraData,
+        figure_path: Path,
     ) -> None:
-        ## compute the isotropic power spectrum for each snapshot; saved incrementally as each completes
-        compute = ComputeSpectra(
-            snapshot_dirs=self.snapshot_dirs,
-            snapshot_tag=self.snapshot_tag,
-            field_name=self.field_name,
-            field_loader=self.field_loader,
-            index_width=self.index_width,
-            save_data=self.save_data,
-            data_dir=self.data_dir,
+        fig, ax = manage_plots.create_figure()
+        self._plot_snapshot(
+            ax=ax,
+            spectra_data=spectra_data,
+            color="black",
         )
-        field_spectra = compute.run()
-        if not field_spectra:
-            return
-        if not self.save_figure:
-            return
-        ## plot single snapshot in black, or a sequential color series across all snapshots
+        self._style_ax(
+            ax=ax,
+            latex_label=spectra_data.latex_label,
+        )
+        manage_plots.save_figure(
+            fig=fig,
+            fig_path=figure_path,
+            verbose=False,
+        )
+
+    def _save_summary_figure(
+        self,
+        *,
+        field_spectra: list[SpectraData],
+        figures_dir: Path,
+    ) -> None:
+        """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
         fig, ax = manage_plots.create_figure()
         if len(field_spectra) > 1:
             fig.subplots_adjust(right=0.82)
@@ -344,23 +351,40 @@ class RenderSpectra:
             ax=ax,
             latex_label=field_spectra[0].latex_label,
         )
-        ## include step index in the filename if there is only one snapshot
-        if len(field_spectra) == 1:
-            step_index = int(
-                find_snapshots.get_step_index_string(
-                    snapshot_dir=self.snapshot_dirs[0],
-                    snapshot_tag=self.snapshot_tag,
-                ),
-            )
-            padded_index = f"{step_index:0{self.index_width}d}"
-            fig_path = self.figures_dir / f"{self.field_name}-spectrum-index={padded_index}.png"
-        else:
-            fig_path = self.figures_dir / f"{self.field_name}-spectra.png"
+        fig_path = figures_dir / f"{self.field_name}-spectra-summary.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
             verbose=True,
         )
+
+    def run(
+        self,
+    ) -> None:
+        ## compute the isotropic power spectrum for each snapshot; saved incrementally as each completes
+        compute = ComputeSpectra(
+            snapshot_dirs=self.snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
+            field_name=self.field_name,
+            field_loader=self.field_loader,
+            index_width=self.index_width,
+            save_data=self.save_data,
+            data_dir=self.data_dir,
+            overwrite=self.overwrite,
+        )
+        field_spectra = compute.run()
+        if not field_spectra:
+            return
+        if not self.save_figure:
+            return
+        ## one figure per snapshot, resumed like everything else; the combined summary always
+        ## rebuilds since it's cheap relative to the per-snapshot compute above
+        for spectra_data in field_spectra:
+            padded_index = f"{spectra_data.step_index:0{self.index_width}d}"
+            figure_path = self._snapshot_figure_file_path(figures_dir=self.figures_dir, padded_index=padded_index)
+            if self.overwrite or not figure_path.exists():
+                self._save_snapshot_figure(spectra_data=spectra_data, figure_path=figure_path)
+        self._save_summary_figure(field_spectra=field_spectra, figures_dir=self.figures_dir)
 
 
 ##
@@ -379,6 +403,7 @@ class ScriptInterface:
         fields_to_plot: tuple[str, ...] | list[str] | None,
         save_data: bool,
         save_figure: bool,
+        overwrite: bool = False,
         data_dir: Path | None = None,
         figures_dir: Path | None = None,
     ):
@@ -396,6 +421,7 @@ class ScriptInterface:
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
         self.save_data = save_data
         self.save_figure = save_figure
+        self.overwrite = bool(overwrite)
         self.data_dir = Path(data_dir) if data_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
 
@@ -435,6 +461,7 @@ class ScriptInterface:
                 cmap_name=field_meta.cmap,
                 save_data=self.save_data,
                 save_figure=self.save_figure,
+                overwrite=self.overwrite,
             )
             renderer.run()
 
@@ -463,6 +490,7 @@ def main():
         fields_to_plot=user_args.fields,
         save_data=user_args.save_data,
         save_figure=user_args.save_figure,
+        overwrite=user_args.overwrite,
         data_dir=user_args.data_dir,
         figures_dir=user_args.figures_dir,
     )
