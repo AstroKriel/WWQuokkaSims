@@ -23,13 +23,13 @@ dependencies = [
 [project.scripts]
 quokka-compare-snapshots = "ww_quokka_sims._diagnostic_scripts.compare_snapshots:main"
 quokka-extract-dataset = "ww_quokka_sims._diagnostic_scripts.extract_dataset:main"
+quokka-generate-pdfs = "ww_quokka_sims._diagnostic_scripts.generate_pdfs:main"
+quokka-generate-profiles = "ww_quokka_sims._diagnostic_scripts.generate_profiles:main"
+quokka-generate-slices = "ww_quokka_sims._diagnostic_scripts.generate_slices:main"
+quokka-generate-spectra = "ww_quokka_sims._diagnostic_scripts.generate_spectra:main"
+quokka-generate-vi-comparison = "ww_quokka_sims._diagnostic_scripts.generate_vi_comparison:main"
+quokka-generate-vi-evolution = "ww_quokka_sims._diagnostic_scripts.generate_vi_evolution:main"
 quokka-inspect-snapshot = "ww_quokka_sims._diagnostic_scripts.inspect_snapshot:main"
-quokka-plot-pdfs = "ww_quokka_sims._diagnostic_scripts.plot_pdfs:main"
-quokka-plot-profiles = "ww_quokka_sims._diagnostic_scripts.plot_profiles:main"
-quokka-plot-slices = "ww_quokka_sims._diagnostic_scripts.plot_slices:main"
-quokka-plot-spectra = "ww_quokka_sims._diagnostic_scripts.plot_spectra:main"
-quokka-plot-vi-comparison = "ww_quokka_sims._diagnostic_scripts.plot_vi_comparison:main"
-quokka-plot-vi-evolution = "ww_quokka_sims._diagnostic_scripts.plot_vi_evolution:main"
 
 [tool.uv.sources]
 jormi = { path = "../jormi", editable = true }
