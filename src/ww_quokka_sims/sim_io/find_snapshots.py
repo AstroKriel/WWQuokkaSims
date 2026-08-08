@@ -7,6 +7,9 @@
 ## stdlib
 from pathlib import Path
 
+## third-party
+import numpy
+
 ## personal
 from jormi import ww_lists
 from jormi.ww_validation import validate_types
@@ -117,6 +120,22 @@ def get_max_index_width(
         )
         index_widths.append(len(step_index_string))
     return max(index_widths)
+
+
+def find_npz_near_time(
+    *,
+    extracted_dir: Path,
+    glob_pattern: str,
+    target_time: float,
+) -> Path:
+    """Return the `extracted_dir` file matching `glob_pattern` whose `step_time` is nearest `target_time`."""
+    npz_paths = sorted(extracted_dir.glob(glob_pattern))
+    if not npz_paths:
+        raise FileNotFoundError(f"no file matching `{glob_pattern}` found in: {extracted_dir}.")
+    return min(
+        npz_paths,
+        key=lambda npz_path: abs(float(numpy.load(npz_path)["step_time"]) - target_time),
+    )
 
 
 ## } MODULE
