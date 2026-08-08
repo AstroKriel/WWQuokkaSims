@@ -208,6 +208,7 @@ class ScriptInterface:
         figures_dir: Path | None,
         save_data: bool,
         save_figure: bool,
+        overwrite: bool = False,
     ):
         validate_types.ensure_nonempty_string(
             param=snapshot_tag,
@@ -238,6 +239,7 @@ class ScriptInterface:
         self.fields_to_plot = list(fields_to_plot)
         self.save_data = save_data
         self.save_figure = save_figure
+        self.overwrite = bool(overwrite)
 
     def run(
         self,
@@ -271,12 +273,18 @@ class ScriptInterface:
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 use_parallel=True,
+                data_dir=self.data_dir,
+                overwrite=self.overwrite,
+                cache_key=f"{field_name}-{label_dir_1}",
             )
             loader_2 = data_series.LoadDataSeries(
                 snapshot_dirs=snapshot_dirs_2,
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 use_parallel=True,
+                data_dir=self.data_dir,
+                overwrite=self.overwrite,
+                cache_key=f"{field_name}-{label_dir_2}",
             )
             vi_series_1 = loader_1.run()
             vi_series_2 = loader_2.run()
@@ -324,6 +332,7 @@ def main():
         figures_dir=user_args.figures_dir,
         save_data=user_args.save_data,
         save_figure=user_args.save_figure,
+        overwrite=user_args.overwrite,
     )
     script_interface.run()
 
