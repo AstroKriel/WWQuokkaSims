@@ -38,29 +38,31 @@ class RenderDataSeries:
     def __init__(
         self,
         *,
-        extracted_dir: Path,
+        data_dir: Path,
         figures_dir: Path,
         field_name: str,
-        extract_data: bool,
+        save_data: bool,
+        save_figure: bool,
     ):
-        self.extracted_dir = extracted_dir
+        self.data_dir = data_dir
         self.figures_dir = figures_dir
         self.field_name = field_name
-        self.extract_data = extract_data
+        self.save_data = save_data
+        self.save_figure = save_figure
 
     def _save_series(
         self,
         *,
         vi_series: data_series.DataSeries,
-        extracted_dir: Path,
+        data_dir: Path,
     ) -> None:
-        extracted_dir.mkdir(
+        data_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
         time_array, values_array = vi_series.get_sorted_arrays()
         json_io.save_dict_to_json_file(
-            file_path=extracted_dir / f"{self.field_name}-vi_evolution.json",
+            file_path=data_dir / f"{self.field_name}-vi_evolution.json",
             input_dict={
                 "sim_times": time_array,
                 "vi_values": values_array,
@@ -75,11 +77,13 @@ class RenderDataSeries:
         vi_series: data_series.DataSeries,
     ) -> None:
         ## optionally write the time series data to JSON
-        if self.extract_data:
+        if self.save_data:
             self._save_series(
                 vi_series=vi_series,
-                extracted_dir=self.extracted_dir,
+                data_dir=self.data_dir,
             )
+        if not self.save_figure:
+            return
         fig, ax = manage_plots.create_figure()
         time_array, values_array = vi_series.get_sorted_arrays()
         if time_array.size == 0:
@@ -125,8 +129,9 @@ class ScriptInterface:
         input_dir: Path,
         snapshot_tag: str,
         fields_to_plot: list[str],
-        extract_data: bool,
-        extracted_dir: Path | None = None,
+        save_data: bool,
+        save_figure: bool,
+        data_dir: Path | None = None,
         figures_dir: Path | None = None,
         use_parallel: bool = True,
     ):
@@ -134,12 +139,17 @@ class ScriptInterface:
             param=snapshot_tag,
             param_name="snapshot_tag",
         )
+        cli.ensure_save_flag_selected(
+            save_figure=save_figure,
+            save_data=save_data,
+        )
         field_registry.validate_fields(field_names=fields_to_plot)
         self.input_dir = Path(input_dir)
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = list(fields_to_plot)
-        self.extract_data = extract_data
-        self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
+        self.save_data = save_data
+        self.save_figure = save_figure
+        self.data_dir = Path(data_dir) if data_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         self.use_parallel = bool(use_parallel)
 
@@ -152,13 +162,13 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        extracted_dir = cli.resolve_output_dir(
-            output_dir=self.extracted_dir,
+        data_dir = cli.resolve_output_dir(
+            output_dir=self.data_dir,
             default_dir=snapshot_dirs[0].parent,
         )
         figures_dir = cli.resolve_output_dir(
             output_dir=self.figures_dir,
-            default_dir=extracted_dir,
+            default_dir=data_dir,
         )
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
@@ -170,10 +180,11 @@ class ScriptInterface:
             )
             vi_series = loader.run()
             render_data_series = RenderDataSeries(
-                extracted_dir=extracted_dir,
+                data_dir=data_dir,
                 figures_dir=figures_dir,
                 field_name=field_name,
-                extract_data=self.extract_data,
+                save_data=self.save_data,
+                save_figure=self.save_figure,
             )
             render_data_series.run(vi_series=vi_series)
 
@@ -187,12 +198,12 @@ def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_plots.set_theme()
     user_args = argparse.ArgumentParser(
-        description="Plot volume-integrated field evolution from Quokka simulations.",
+        description="Generate volume-integrated field evolution from Quokka simulations: figures and/or extracted data.",
         parents=[
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=False,
-                produces_data=True,
+                allow_output=True,
             ),
         ],
     ).parse_args()
@@ -200,8 +211,9 @@ def main():
         input_dir=user_args.input_dir,
         snapshot_tag=user_args.tag,
         fields_to_plot=user_args.fields,
-        extract_data=user_args.save_data,
-        extracted_dir=user_args.extracted_dir,
+        save_data=user_args.save_data,
+        save_figure=user_args.save_figure,
+        data_dir=user_args.data_dir,
         figures_dir=user_args.figures_dir,
         use_parallel=True,
     )
