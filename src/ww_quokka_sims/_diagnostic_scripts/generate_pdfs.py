@@ -301,6 +301,17 @@ class RenderPDFs:
         self.save_figure = save_figure
         self.log10_binning = log10_binning
 
+    def _data_name(
+        self,
+    ) -> str:
+        """Filename stem, tagged with `log10_` when bins are log10-spaced.
+
+        The filename is a hint for humans browsing the directory, not the source of truth (it can
+        be renamed); the saved `log10_binning` flag and `log10_bin_centers` key inside the file
+        itself are what downstream code should actually check.
+        """
+        return f"log10_{self.field_name}" if self.log10_binning else self.field_name
+
     @staticmethod
     def _style_axs(
         *,
@@ -391,15 +402,16 @@ class RenderPDFs:
             "step_index": pdf_data.step_index,
             "log10_binning": self.log10_binning,
         }
+        bin_centers_key = "log10_bin_centers" if self.log10_binning else "bin_centers"
         for comp_index, comp_label in enumerate(pdf_data.comp_labels):
             bin_centers, densities = pdf_data.get_pdf(comp_index)
             output_dict[comp_label] = {
-                "bin_centers": bin_centers,
+                bin_centers_key: bin_centers,
                 "log10_density": densities,
             }
         padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
         json_io.save_dict_to_json_file(
-            file_path=data_dir / f"{self.field_name}-pdf-index={padded_index}.json",
+            file_path=data_dir / f"{self._data_name()}-pdf-index={padded_index}.json",
             input_dict=output_dict,
             overwrite=True,
             verbose=False,
@@ -468,7 +480,7 @@ class RenderPDFs:
             log10_binning=self.log10_binning,
         )
         suffix = "pdf" if len(field_pdfs) == 1 else "pdfs"
-        fig_path = self.figures_dir / f"{self.field_name}-{suffix}.png"
+        fig_path = self.figures_dir / f"{self._data_name()}-{suffix}.png"
         manage_plots.save_figure(
             fig=fig,
             fig_path=fig_path,
