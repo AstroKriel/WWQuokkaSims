@@ -131,6 +131,7 @@ class ScriptInterface:
         fields_to_plot: list[str],
         save_data: bool,
         save_figure: bool,
+        overwrite: bool = False,
         data_dir: Path | None = None,
         figures_dir: Path | None = None,
         use_parallel: bool = True,
@@ -149,6 +150,7 @@ class ScriptInterface:
         self.fields_to_plot = list(fields_to_plot)
         self.save_data = save_data
         self.save_figure = save_figure
+        self.overwrite = bool(overwrite)
         self.data_dir = Path(data_dir) if data_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         self.use_parallel = bool(use_parallel)
@@ -177,6 +179,8 @@ class ScriptInterface:
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 use_parallel=self.use_parallel,
+                data_dir=data_dir,
+                overwrite=self.overwrite,
             )
             vi_series = loader.run()
             render_data_series = RenderDataSeries(
@@ -213,6 +217,7 @@ def main():
         fields_to_plot=user_args.fields,
         save_data=user_args.save_data,
         save_figure=user_args.save_figure,
+        overwrite=user_args.overwrite,
         data_dir=user_args.data_dir,
         figures_dir=user_args.figures_dir,
         use_parallel=True,
