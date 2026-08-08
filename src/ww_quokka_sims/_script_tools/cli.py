@@ -22,11 +22,13 @@ from ww_quokka_sims._script_tools import field_registry
 
 
 def base_parser(
+    *,
     num_dirs: int = 1,
     allow_fields: bool = True,
     allow_vfields: bool = False,
     allow_slicing: bool = False,
-    produces_data: bool = False,
+    allow_output: bool = False,
+    allow_parallel: bool = False,
 ) -> argparse.ArgumentParser:
     """
     Shared argument parser for diagnostic scripts.
@@ -52,9 +54,16 @@ def base_parser(
     - `allow_slicing`:
         `True` adds `--axes` argument for selecting slice axes; default: `False`.
 
-    - `produces_data`:
-        `True` adds arguments `--extracted-dir`, `--figures-dir`, and `--save-data`; default: `False`.
-        Set to `False` for scripts that write no data or figures to disk.
+    - `allow_output`:
+        `True` adds `--save-figure`/`--figures-dir`, `--save-data`/`--data-dir`, and `--overwrite`;
+        default: `False`. Set to `False` for scripts that write no data or figures to disk. Pair with
+        `ensure_save_flag_selected` to require at least one of `--save-figure`/`--save-data`. Scripts
+        resume by default (skip snapshots whose output already exists); `--overwrite` disables that.
+
+    - `allow_parallel`:
+        `True` adds `--num-workers` for scripts that dispatch work across snapshots via
+        `jormi.ww_fns.parallel_dispatch`; default: `False`. `None` (the flag's default) means all
+        available cores; `1` runs serially.
 
     Example
     ---
@@ -83,9 +92,9 @@ def base_parser(
                 "Path to a directory containing snapshot dirs (matched by --tag), or to a single snapshot dir."
             ),
         )
-        if produces_data:
+        if allow_output:
             parser.add_argument(
-                "--extracted-dir",
+                "--data-dir",
                 type=lambda path: Path(path).expanduser().resolve(),
                 default=None,
                 help=(
@@ -97,7 +106,7 @@ def base_parser(
                 "--figures-dir",
                 type=lambda path: Path(path).expanduser().resolve(),
                 default=None,
-                help="Output directory for figures; defaults to --extracted-dir.",
+                help="Output directory for figures (used with --save-figure); defaults to --data-dir.",
             )
     else:
         for dir_index in range(1, num_dirs + 1):
@@ -107,9 +116,9 @@ def base_parser(
                 required=True,
                 help=f"Input directory {dir_index} of {num_dirs}.",
             )
-        if produces_data:
+        if allow_output:
             parser.add_argument(
-                "--extracted-dir",
+                "--data-dir",
                 type=lambda path: Path(path).expanduser().resolve(),
                 required=True,
                 help="Output directory for extracted data (used with --save-data).",
@@ -118,7 +127,7 @@ def base_parser(
                 "--figures-dir",
                 type=lambda path: Path(path).expanduser().resolve(),
                 default=None,
-                help="Output directory for figures; defaults to --extracted-dir.",
+                help="Output directory for figures (used with --save-figure); defaults to --data-dir.",
             )
     ## always-present arguments
     parser.add_argument(
@@ -158,13 +167,36 @@ def base_parser(
             default=None,
             help=f"Axes to slice along; options: {axis_list}",
         )
-    ## optional save-data flag
-    if produces_data:
+    ## optional save-figure/save-data flags
+    if allow_output:
+        parser.add_argument(
+            "--save-figure",
+            action="store_true",
+            default=False,
+            help="Save the figure to disk; default: False.",
+        )
         parser.add_argument(
             "--save-data",
             action="store_true",
             default=False,
-            help="Save plotted data to disk; default: False.",
+            help="Save the extracted data to disk; default: False.",
+        )
+        parser.add_argument(
+            "--overwrite",
+            action="store_true",
+            default=False,
+            help=(
+                "Redo snapshots whose output already exists, instead of skipping them; "
+                "default: False (resume where a prior run left off)."
+            ),
+        )
+    ## optional worker-count flag
+    if allow_parallel:
+        parser.add_argument(
+            "--num-workers",
+            type=int,
+            default=None,
+            help="Number of worker processes; default: all available cores. Set to 1 to run serially.",
         )
     return parser
 
@@ -186,6 +218,16 @@ def resolve_output_dir(
         exist_ok=True,
     )
     return resolved_dir
+
+
+def ensure_save_flag_selected(
+    *,
+    save_figure: bool,
+    save_data: bool,
+) -> None:
+    """Ensure at least one of `--save-figure`/`--save-data` was passed."""
+    if not (save_figure or save_data):
+        raise ValueError("must pass `--save-figure` and/or `--save-data`; neither was given.")
 
 
 ## } MODULE

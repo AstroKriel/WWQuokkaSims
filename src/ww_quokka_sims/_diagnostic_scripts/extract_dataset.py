@@ -55,8 +55,9 @@ class WorkerArgs(NamedTuple):
     field_name: str
     field_loader: Callable
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...]
-    extracted_dir: str
+    data_dir: str
     index_width: int
+    overwrite: bool
     amr_level: int = 0
 
 
@@ -111,6 +112,17 @@ class FieldExtractor:
     snapshot_tag: str
     field_args: FieldArgs
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...]
+    overwrite: bool = False
+
+    def _expected_file_name(
+        self,
+        *,
+        step_index: int,
+        index_width: int,
+    ) -> str:
+        field_name = self.field_args.field_name
+        padded_index = f"{step_index:0{index_width}d}"
+        return f"{field_name}-index={padded_index}-amr_level={self.field_args.amr_level}.npz"
 
     def _load_field(
         self,
@@ -134,18 +146,17 @@ class FieldExtractor:
         step_time: float,
         step_index: int,
         index_width: int,
-        extracted_dir: Path,
+        data_dir: Path,
     ) -> None:
         field_name = self.field_args.field_name
-        padded_index = f"{step_index:0{index_width}d}"
-        file_name = f"{field_name}-index={padded_index}-amr_level={self.field_args.amr_level}.npz"
+        file_name = self._expected_file_name(step_index=step_index, index_width=index_width)
         if isinstance(field, field_models.ScalarField_3D):
             sarray_3d = field_models.extract_3d_sarray(
                 sfield_3d=field,
                 param_name=f"<{field_name}_sfield_3d>",
             )
             numpy.savez(
-                extracted_dir / file_name,
+                data_dir / file_name,
                 sarray_3d=sarray_3d,
                 step_time=step_time,
                 step_index=step_index,
@@ -163,7 +174,7 @@ class FieldExtractor:
         comp_indices = [_axis_to_index(comp_axis) for comp_axis in self.comps_to_extract]
         comp_labels = [comp_axis.axis_label for comp_axis in self.comps_to_extract]
         numpy.savez(
-            extracted_dir / file_name,
+            data_dir / file_name,
             varray_3d=varray_3d[comp_indices, ...],
             comp_labels=numpy.array(comp_labels),
             step_time=step_time,
@@ -175,22 +186,25 @@ class FieldExtractor:
         self,
         *,
         snapshot_dir: Path,
-        extracted_dir: Path,
+        data_dir: Path,
         index_width: int,
     ) -> None:
-        field = self._load_field(snapshot_dir=snapshot_dir)
         step_index = int(
             find_snapshots.get_step_index_string(
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=self.snapshot_tag,
             ),
         )
+        file_path = data_dir / self._expected_file_name(step_index=step_index, index_width=index_width)
+        if (not self.overwrite) and file_path.exists():
+            return
+        field = self._load_field(snapshot_dir=snapshot_dir)
         self._save_field(
             field=field,
             step_time=_get_step_time(field),
             step_index=step_index,
             index_width=index_width,
-            extracted_dir=extracted_dir,
+            data_dir=data_dir,
         )
 
 
@@ -200,8 +214,9 @@ def extract_fields_in_serial(
     fields_to_extract: tuple[str, ...],
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...],
     snapshot_dirs: list[Path],
-    extracted_dir: Path,
+    data_dir: Path,
     index_width: int,
+    overwrite: bool = False,
     amr_level: int = 0,
 ) -> None:
     for field_name in fields_to_extract:
@@ -214,11 +229,12 @@ def extract_fields_in_serial(
                 amr_level=amr_level,
             ),
             comps_to_extract=comps_to_extract,
+            overwrite=overwrite,
         )
         for snapshot_dir in snapshot_dirs:
             field_extractor.extract_snapshot(
                 snapshot_dir=snapshot_dir,
-                extracted_dir=extracted_dir,
+                data_dir=data_dir,
                 index_width=index_width,
             )
 
@@ -236,10 +252,11 @@ def _extract_snapshot_worker(
             amr_level=worker_args.amr_level,
         ),
         comps_to_extract=worker_args.comps_to_extract,
+        overwrite=worker_args.overwrite,
     )
     field_extractor.extract_snapshot(
         snapshot_dir=Path(worker_args.snapshot_dir),
-        extracted_dir=Path(worker_args.extracted_dir),
+        data_dir=Path(worker_args.data_dir),
         index_width=int(worker_args.index_width),
     )
 
@@ -250,9 +267,11 @@ def extract_fields_in_parallel(
     fields_to_extract: tuple[str, ...],
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...],
     snapshot_dirs: list[Path],
-    extracted_dir: Path,
+    data_dir: Path,
     index_width: int,
+    overwrite: bool = False,
     amr_level: int = 0,
+    num_workers: int | None = None,
 ) -> None:
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_extract:
@@ -265,14 +284,16 @@ def extract_fields_in_parallel(
                     field_name=field_name,
                     field_loader=field_meta.loader,
                     comps_to_extract=comps_to_extract,
-                    extracted_dir=str(extracted_dir),
+                    data_dir=str(data_dir),
                     index_width=index_width,
+                    overwrite=overwrite,
                     amr_level=amr_level,
                 ),
             )
     parallel_dispatch.run_in_parallel(
         worker_fn=_extract_snapshot_worker,
         grouped_args=grouped_args,
+        num_workers=num_workers,
         timeout_seconds=120,
         show_progress=True,
         enable_plotting=False,
@@ -294,8 +315,9 @@ class ScriptInterface:
         snapshot_tag: str,
         fields_to_extract: tuple[str, ...] | list[str] | None,
         comps_to_extract: tuple[str, ...] | list[str] | None,
-        extracted_dir: Path | None = None,
-        use_parallel: bool = True,
+        data_dir: Path | None = None,
+        num_workers: int | None = None,
+        overwrite: bool = False,
         amr_level: int = 0,
     ):
         validate_types.ensure_nonempty_string(
@@ -311,8 +333,9 @@ class ScriptInterface:
         self.snapshot_tag = snapshot_tag
         self.fields_to_extract = validate_types.as_tuple(param=fields_to_extract)
         self.comps_to_extract = _parse_axes(axes=comps_to_extract)
-        self.extracted_dir = Path(extracted_dir) if extracted_dir is not None else None
-        self.use_parallel = bool(use_parallel)
+        self.data_dir = Path(data_dir) if data_dir is not None else None
+        self.num_workers = num_workers
+        self.overwrite = bool(overwrite)
         self.amr_level = amr_level
 
     def run(
@@ -324,23 +347,25 @@ class ScriptInterface:
         )
         if not snapshot_dirs:
             return
-        extracted_dir = cli.resolve_output_dir(
-            output_dir=self.extracted_dir,
+        data_dir = cli.resolve_output_dir(
+            output_dir=self.data_dir,
             default_dir=snapshot_dirs[0].parent,
         )
         index_width = find_snapshots.get_max_index_width(
             snapshot_dirs=snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
         )
-        if self.use_parallel and (len(snapshot_dirs) > 5):
+        if (self.num_workers != 1) and (len(snapshot_dirs) > 5):
             extract_fields_in_parallel(
                 snapshot_tag=self.snapshot_tag,
                 fields_to_extract=self.fields_to_extract,
                 comps_to_extract=self.comps_to_extract,
                 snapshot_dirs=snapshot_dirs,
-                extracted_dir=extracted_dir,
+                data_dir=data_dir,
                 index_width=index_width,
+                overwrite=self.overwrite,
                 amr_level=self.amr_level,
+                num_workers=self.num_workers,
             )
         else:
             extract_fields_in_serial(
@@ -348,8 +373,9 @@ class ScriptInterface:
                 fields_to_extract=self.fields_to_extract,
                 comps_to_extract=self.comps_to_extract,
                 snapshot_dirs=snapshot_dirs,
-                extracted_dir=extracted_dir,
+                data_dir=data_dir,
                 index_width=index_width,
+                overwrite=self.overwrite,
                 amr_level=self.amr_level,
             )
 
@@ -367,20 +393,24 @@ def main():
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
+                allow_parallel=True,
             ),
         ],
     )
     parser.add_argument(
-        "--extracted-dir",
+        "--data-dir",
         type=lambda path: Path(path).expanduser().resolve(),
         default=None,
         help="Output directory for extracted data; defaults to the parent directory of the snapshot.",
     )
     parser.add_argument(
-        "--serial-extraction",
+        "--overwrite",
         action="store_true",
         default=False,
-        help="Extract snapshots serially instead of in parallel.",
+        help=(
+            "Redo snapshots whose output already exists, instead of skipping them; "
+            "default: False (resume where a prior run left off)."
+        ),
     )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(
@@ -388,8 +418,9 @@ def main():
         snapshot_tag=user_args.tag,
         fields_to_extract=user_args.fields,
         comps_to_extract=user_args.comps,
-        extracted_dir=user_args.extracted_dir,
-        use_parallel=not user_args.serial_extraction,
+        data_dir=user_args.data_dir,
+        num_workers=user_args.num_workers,
+        overwrite=user_args.overwrite,
         amr_level=user_args.amr_level,
     )
     script_interface.run()

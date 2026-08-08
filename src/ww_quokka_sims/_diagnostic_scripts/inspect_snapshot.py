@@ -65,7 +65,7 @@ def main():
                 allow_vfields=False,
                 allow_slicing=False,
                 allow_fields=False,
-                produces_data=False,
+                allow_output=False,
             ),
         ],
     ).parse_args()
