@@ -249,7 +249,7 @@ class ComputePDFs:
 
 
 @final
-class RenderPDFs:
+class GeneratePDFs:
 
     def __init__(
         self,
@@ -370,7 +370,7 @@ class RenderPDFs:
                     series_index,
                 ),
             )
-            RenderPDFs._plot_snapshot(
+            GeneratePDFs._plot_snapshot(
                 axs_grid=axs_grid,
                 pdf_data=pdf_data,
                 color=color,
@@ -670,7 +670,7 @@ class ScriptInterface:
         ## compute and render PDFs for each requested field
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
-            renderer = RenderPDFs(
+            generator = GeneratePDFs(
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
                 index_width=index_width,
@@ -686,7 +686,7 @@ class ScriptInterface:
                 overwrite=self.overwrite,
                 log10_binning=self.log10_binning,
             )
-            renderer.run()
+            generator.run()
 
 
 ##

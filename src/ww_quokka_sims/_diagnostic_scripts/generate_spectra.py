@@ -206,7 +206,7 @@ class ComputeSpectra:
 
 
 @final
-class RenderSpectra:
+class GenerateSpectra:
 
     def __init__(
         self,
@@ -284,7 +284,7 @@ class RenderSpectra:
                     series_index,
                 ),
             )
-            RenderSpectra._plot_snapshot(
+            GenerateSpectra._plot_snapshot(
                 ax=ax,
                 spectra_data=spectra_data,
                 color=color,
@@ -450,7 +450,7 @@ class ScriptInterface:
         ## compute and render power spectra for each requested field
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
-            renderer = RenderSpectra(
+            generator = GenerateSpectra(
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
                 index_width=index_width,
@@ -463,7 +463,7 @@ class ScriptInterface:
                 save_figure=self.save_figure,
                 overwrite=self.overwrite,
             )
-            renderer.run()
+            generator.run()
 
 
 ##

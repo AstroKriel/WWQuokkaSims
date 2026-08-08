@@ -33,7 +33,7 @@ from ww_quokka_sims.sim_io import find_snapshots
 
 
 @final
-class RenderDataSeries:
+class GenerateDataSeries:
 
     def __init__(
         self,
@@ -183,14 +183,14 @@ class ScriptInterface:
                 overwrite=self.overwrite,
             )
             vi_series = loader.run()
-            render_data_series = RenderDataSeries(
+            generate_data_series = GenerateDataSeries(
                 data_dir=data_dir,
                 figures_dir=figures_dir,
                 field_name=field_name,
                 save_data=self.save_data,
                 save_figure=self.save_figure,
             )
-            render_data_series.run(vi_series=vi_series)
+            generate_data_series.run(vi_series=vi_series)
 
 
 ##

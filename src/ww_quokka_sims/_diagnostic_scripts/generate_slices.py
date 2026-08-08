@@ -231,7 +231,7 @@ def slice_field(
 
 
 @dataclass(frozen=True)
-class FieldPlotter:
+class GenerateFieldSlices:
     snapshot_tag: str
     field_args: FieldArgs
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
@@ -676,7 +676,7 @@ def generate_fields_in_serial(
             cmap_name=field_meta.cmap,
             amr_level=amr_level,
         )
-        field_plotter = FieldPlotter(
+        generate_field_slices = GenerateFieldSlices(
             snapshot_tag=snapshot_tag,
             field_args=field_args,
             comps_to_plot=comps_to_plot,
@@ -688,7 +688,7 @@ def generate_fields_in_serial(
             plot_log10=plot_log10,
         )
         for snapshot_dir in snapshot_dirs:
-            field_plotter.generate_snapshot(
+            generate_field_slices.generate_snapshot(
                 snapshot_dir=snapshot_dir,
                 data_dir=data_dir,
                 figures_dir=figures_dir,
@@ -708,7 +708,7 @@ def _generate_snapshot_worker(
         cmap_name=worker_args.cmap_name,
         amr_level=worker_args.amr_level,
     )
-    field_plotter = FieldPlotter(
+    generate_field_slices = GenerateFieldSlices(
         snapshot_tag=worker_args.snapshot_tag,
         field_args=field_args,
         comps_to_plot=worker_args.comps_to_plot,
@@ -719,7 +719,7 @@ def _generate_snapshot_worker(
         hide_annotations=worker_args.hide_annotations,
         plot_log10=worker_args.plot_log10,
     )
-    field_plotter.generate_snapshot(
+    generate_field_slices.generate_snapshot(
         snapshot_dir=Path(worker_args.snapshot_dir),
         data_dir=Path(worker_args.data_dir),
         figures_dir=Path(worker_args.figures_dir),
@@ -874,7 +874,8 @@ class ScriptInterface:
     ) -> None:
         figures_dir = self.figures_dir
         if self.save_data or self.save_figure:
-            assert self.input_dir is not None  # enforced in __init__
+            ## the following reassures pyright locally; this check is already enforced in __init__
+            assert self.input_dir is not None
             snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
                 input_dir=self.input_dir,
                 snapshot_tag=self.snapshot_tag,
@@ -929,8 +930,7 @@ class ScriptInterface:
                     plot_log10=self.plot_log10,
                     amr_level=self.amr_level,
                 )
-        ## `--animate` is decoupled from `--save-figure`: it always just animates whatever PNGs
-        ## already exist in figures_dir, whether they came from this run or an earlier one
+        ## animate figures, regardless of when they were generated
         if self.animate:
             default_figures_dir = self.data_dir if self.data_dir is not None else self.input_dir
             resolved_figures_dir = figures_dir if figures_dir is not None else default_figures_dir
@@ -960,22 +960,22 @@ def main():
         ],
     )
     parser.add_argument(
-        "--animate",
+        "--plot-log10",
         action="store_true",
         default=False,
-        help="Animate whatever figures already exist in --figures-dir into an MP4 (default: False).",
+        help="Apply log10(|field|) to the plotted field (does not affect saved NPZ slices).",
     )
     parser.add_argument(
         "--no-annotations",
         action="store_true",
         default=False,
-        help="Hide in-panel text annotations: min/max values, sim time, and slice label (default: False).",
+        help="Hide text annotations: min/max values, sim time, and field label (default: False).",
     )
     parser.add_argument(
-        "--plot-log10",
+        "--animate",
         action="store_true",
         default=False,
-        help="Apply log10(|field|) to the plotted data (does not affect saved NPZ slices).",
+        help="Animate figures exist under --figures-dir into an MP4 (default: False).",
     )
     user_args = parser.parse_args()
     script_interface = ScriptInterface(

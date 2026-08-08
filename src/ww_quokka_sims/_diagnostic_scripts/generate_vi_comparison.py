@@ -36,7 +36,7 @@ from ww_quokka_sims.sim_io import find_snapshots
 
 
 @final
-class RenderComparisonPlot:
+class GenerateComparisonPlot:
 
     def __init__(
         self,
@@ -288,7 +288,7 @@ class ScriptInterface:
             )
             vi_series_1 = loader_1.run()
             vi_series_2 = loader_2.run()
-            render_comparison_plot = RenderComparisonPlot(
+            generate_comparison_plot = GenerateComparisonPlot(
                 data_dir=self.data_dir,
                 figures_dir=self.figures_dir,
                 field_name=field_name,
@@ -299,7 +299,7 @@ class ScriptInterface:
                 marker_dir_1="o",
                 marker_dir_2="s",
             )
-            render_comparison_plot.run(
+            generate_comparison_plot.run(
                 vi_series_1=vi_series_1,
                 vi_series_2=vi_series_2,
             )

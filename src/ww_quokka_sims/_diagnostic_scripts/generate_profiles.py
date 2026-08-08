@@ -151,11 +151,11 @@ class ComputeCompProfiles:
         x_array_by_axis: list[numpy.ndarray] = []
         y_array_by_axis: list[numpy.ndarray] = []
         for axis_to_slice in axis_labels:
-            x_positions = ComputeCompProfiles._compute_cell_centers(
+            x_positions = self._compute_cell_centers(
                 uniform_domain_3d=uniform_domain_3d,
                 axis_to_slice=axis_to_slice,
             )
-            field_profile = ComputeCompProfiles._extract_1d_midplane_profile(
+            field_profile = self._extract_1d_midplane_profile(
                 data_3d=field.fdata.farray,
                 axis_to_slice=axis_to_slice,
             )
@@ -195,13 +195,13 @@ class ComputeCompProfiles:
             x_array_by_axis: list[numpy.ndarray] = []
             y_array_by_axis: list[numpy.ndarray] = []
             for axis_to_slice in axis_labels:
-                x_positions = ComputeCompProfiles._compute_cell_centers(
+                x_positions = self._compute_cell_centers(
                     uniform_domain_3d=uniform_domain_3d,
                     axis_to_slice=axis_to_slice,
                 )
                 comp_index = cartesian_axes.get_axis_index(comp_name)
                 comp_data_3d = field.fdata.farray[comp_index]
-                comp_profile = ComputeCompProfiles._extract_1d_midplane_profile(
+                comp_profile = self._extract_1d_midplane_profile(
                     data_3d=comp_data_3d,
                     axis_to_slice=axis_to_slice,
                 )
@@ -259,7 +259,7 @@ class ComputeCompProfiles:
 
 
 @final
-class RenderCompProfiles:
+class GenerateCompProfiles:
 
     def __init__(
         self,
@@ -484,7 +484,7 @@ class RenderCompProfiles:
                     time_index,
                 ),
             )
-            RenderCompProfiles._plot_comp_profile(
+            self._plot_comp_profile(
                 axs_row=axs_row,
                 comp_profile=comp_profile,
                 color=color,
@@ -510,12 +510,12 @@ class RenderCompProfiles:
             y_spacing=0.15 if len(comp_profiles) > 1 else 0.05,
         )
         for row_index, comp_profile in enumerate(comp_profiles):
-            RenderCompProfiles._plot_comp_profile(
+            self._plot_comp_profile(
                 axs_row=axs_grid[row_index],
                 comp_profile=comp_profile,
                 color="black",
             )
-        RenderCompProfiles._style_axs(
+        self._style_axs(
             axs_grid=axs_grid,
             comp_labels=comp_labels,
             axis_labels=axis_labels,
@@ -546,7 +546,7 @@ class RenderCompProfiles:
         for row_index, comp_label in enumerate(comp_labels):
             comp_profiles = comp_profiles_lookup[comp_label]
             if len(comp_profiles) == 1:
-                RenderCompProfiles._plot_comp_profile(
+                self._plot_comp_profile(
                     axs_row=axs_grid[row_index],
                     comp_profile=comp_profiles[0],
                     color="black",
@@ -556,7 +556,7 @@ class RenderCompProfiles:
                     axs_row=axs_grid[row_index],
                     comp_profiles=comp_profiles,
                 )
-        RenderCompProfiles._style_axs(
+        self._style_axs(
             axs_grid=axs_grid,
             comp_labels=comp_labels,
             axis_labels=axis_labels,
@@ -756,7 +756,7 @@ class ScriptInterface:
         ## compute and render profiles for each requested field
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
-            render_comp_profiles = RenderCompProfiles(
+            generate_comp_profiles = GenerateCompProfiles(
                 snapshot_dirs=snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
                 index_width=index_width,
@@ -772,7 +772,7 @@ class ScriptInterface:
                 overwrite=self.overwrite,
                 amr_level=self.amr_level,
             )
-            render_comp_profiles.run()
+            generate_comp_profiles.run()
 
 
 ##
