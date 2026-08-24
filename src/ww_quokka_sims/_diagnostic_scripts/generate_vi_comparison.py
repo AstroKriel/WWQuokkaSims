@@ -18,6 +18,7 @@ from jormi.ww_data import (
     interpolate_series,
     series_types,
 )
+from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import manage_plots, style_plots
 from jormi.ww_validation import validate_types
@@ -226,11 +227,10 @@ class ScriptInterface:
         self.dir_2 = Path(dir_2)
         self.data_dir = Path(data_dir)
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
-        valid_fields = set(
-            field_registry.QUOKKA_FIELD_LOOKUP.keys(),
+        field_registry.validate_fields(
+            field_names=fields_to_plot,
+            allowed_types=(field_models.ScalarField_3D, ),
         )
-        if (not fields_to_plot) or (not set(fields_to_plot).issubset(valid_fields)):
-            raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}.")
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = list(fields_to_plot)
         self.save_data = save_data

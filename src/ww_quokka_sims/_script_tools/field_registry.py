@@ -5,8 +5,12 @@
 ##
 
 ## stdlib
+import inspect
 from collections.abc import Callable
 from dataclasses import dataclass
+
+## personal
+from jormi.ww_fields.fields_3d import field_models
 
 ## local
 from ww_quokka_sims.sim_io import load_snapshot
@@ -142,14 +146,40 @@ QUOKKA_FIELD_LOOKUP = {
 ##
 
 
+def get_field_type(
+    field_name: str,
+) -> type[field_models.AnyField_3D]:
+    """Return the concrete field type `field_name` resolves to, read off its loader's return-type
+    annotation. Doesn't load any data or call the loader."""
+    loader = QUOKKA_FIELD_LOOKUP[field_name].loader
+    return_type = inspect.signature(loader).return_annotation
+    if not isinstance(return_type, type):
+        raise TypeError(f"loader for `{field_name}` has no return-type annotation.")
+    return return_type
+
+
 def validate_fields(
     field_names: list[str] | tuple[str, ...] | None,
+    *,
+    allowed_types: tuple[type, ...] | None = None,
 ) -> None:
+    """Ensure every name in `field_names` is registered, and (if `allowed_types` is given) resolves
+    to one of those types."""
     valid_field_names = set(
         QUOKKA_FIELD_LOOKUP.keys(),
     )
     if not field_names or not set(field_names).issubset(valid_field_names):
         raise ValueError(f"Provide fields via --fields from: {sorted(valid_field_names)}.")
+    if allowed_types is None:
+        return
+    for field_name in field_names:
+        field_type = get_field_type(field_name)
+        if not issubclass(field_type, allowed_types):
+            allowed_names = sorted(allowed_type.__name__ for allowed_type in allowed_types)
+            raise ValueError(
+                f"`{field_name}` resolves to {field_type.__name__}, which is not supported here;"
+                f" supported types: {allowed_names}.",
+            )
 
 
 ## } MODULE

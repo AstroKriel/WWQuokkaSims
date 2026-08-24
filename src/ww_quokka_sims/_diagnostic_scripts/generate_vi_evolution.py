@@ -15,6 +15,7 @@ import numpy
 
 ## personal
 from jormi.ww_arrays import compute_array_stats
+from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     annotate_axis,
@@ -158,7 +159,10 @@ class ScriptInterface:
             save_figure=save_figure,
             save_data=save_data,
         )
-        field_registry.validate_fields(field_names=fields_to_plot)
+        field_registry.validate_fields(
+            field_names=fields_to_plot,
+            allowed_types=(field_models.ScalarField_3D, ),
+        )
         self.input_dir = Path(input_dir)
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = list(fields_to_plot)

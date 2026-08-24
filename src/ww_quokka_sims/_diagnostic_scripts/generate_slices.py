@@ -820,11 +820,10 @@ class ScriptInterface:
             )
         if (save_data or save_figure) and (input_dir is None):
             raise ValueError("`--input-dir` is required with `--save-data`/`--save-figure`.")
-        valid_fields = set(
-            field_registry.QUOKKA_FIELD_LOOKUP.keys(),
+        field_registry.validate_fields(
+            field_names=fields_to_plot,
+            allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
         )
-        if not fields_to_plot or not set(fields_to_plot).issubset(valid_fields):
-            raise ValueError(f"Provide one or more fields to plot (via -f) from: {sorted(valid_fields)}.")
         self.input_dir = Path(input_dir) if input_dir is not None else None
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)

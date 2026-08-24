@@ -326,11 +326,10 @@ class ScriptInterface:
             param=snapshot_tag,
             param_name="snapshot_tag",
         )
-        valid_fields = set(
-            field_registry.QUOKKA_FIELD_LOOKUP.keys(),
+        field_registry.validate_fields(
+            field_names=fields_to_extract,
+            allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
         )
-        if not fields_to_extract or not set(fields_to_extract).issubset(valid_fields):
-            raise ValueError(f"Provide one or more fields to extract (via -f) from: {sorted(valid_fields)}.")
         self.input_dir = Path(input_dir)
         self.snapshot_tag = snapshot_tag
         self.fields_to_extract = validate_types.as_tuple(param=fields_to_extract)

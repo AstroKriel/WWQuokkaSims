@@ -628,7 +628,10 @@ class ScriptInterface:
             save_figure=save_figure,
             save_data=save_data,
         )
-        field_registry.validate_fields(field_names=fields_to_plot)
+        field_registry.validate_fields(
+            field_names=fields_to_plot,
+            allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
+        )
         if comps_to_plot is None:
             comps_to_plot = cartesian_axes.DEFAULT_3D_AXES_ORDER
         elif not set(comps_to_plot).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):

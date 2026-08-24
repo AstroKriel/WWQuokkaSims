@@ -10,13 +10,13 @@ import argparse
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import final
+from typing import final, get_args
 
 ## third-party
 import numpy
 
 ## personal
-from jormi.ww_fields.fields_3d import compute_spectra
+from jormi.ww_fields.fields_3d import compute_spectra, field_models
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
@@ -407,7 +407,10 @@ class ScriptInterface:
             save_figure=save_figure,
             save_data=save_data,
         )
-        field_registry.validate_fields(field_names=fields_to_plot)
+        field_registry.validate_fields(
+            field_names=fields_to_plot,
+            allowed_types=get_args(field_models.AnyField_3D),
+        )
         self.input_dir = Path(input_dir)
         self.snapshot_tag = snapshot_tag
         self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
