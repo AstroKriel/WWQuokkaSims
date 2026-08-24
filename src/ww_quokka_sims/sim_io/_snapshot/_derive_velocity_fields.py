@@ -101,6 +101,21 @@ class _DeriveVelocityFields:
             grad_order=grad_order,
         )
 
+    def compute_velocity_gradient_r2tfield(
+        self: FieldsProtocol,
+        grad_order: int = 2,
+        *,
+        amr_level: int = 0,
+    ) -> field_models.RankTwoTensorField_3D:
+        """Compute velocity gradient tensor `nabla vec(v)`; `grad_order` controls stencil accuracy."""
+        v_vfield_3d = self.compute_velocity_vfield(amr_level=amr_level)
+        return field_operators.compute_vfield_gradient(
+            vfield_3d=v_vfield_3d,
+            grad_order=grad_order,
+            field_name="velocity_gradient",
+            latex_label=r"\nabla\vec{v}",
+        )
+
     def compute_vorticity_vfield(
         self: FieldsProtocol,
         grad_order: int = 2,

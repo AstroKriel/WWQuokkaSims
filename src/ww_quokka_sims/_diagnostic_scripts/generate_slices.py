@@ -86,7 +86,7 @@ class WorkerArgs(NamedTuple):
 @dataclass(frozen=True)
 class SnapshotData:
     uniform_domain: domain_models.UniformDomain_3D
-    field: field_models.ScalarField_3D | field_models.VectorField_3D
+    field: field_models.AnyField_3D
 
     @property
     def step_time(
@@ -320,7 +320,7 @@ class GenerateFieldSlices:
     def _get_field_comps(
         self,
         *,
-        field: field_models.ScalarField_3D | field_models.VectorField_3D,
+        field: field_models.AnyField_3D,
     ) -> list[FieldComp]:
         field_name = self.field_args.field_name
         if isinstance(field, field_models.ScalarField_3D):
@@ -334,6 +334,8 @@ class GenerateFieldSlices:
                     label=field_models.get_label(field),
                 ),
             ]
+        if not isinstance(field, field_models.VectorField_3D):
+            raise ValueError(f"{field_name} is an unrecognised field type.")
         if not self.comps_to_plot:
             raise ValueError(
                 f"Vector field `{field_name}` requires at least one component to plot; none provided.",

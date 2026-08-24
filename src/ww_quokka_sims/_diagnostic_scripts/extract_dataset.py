@@ -92,7 +92,7 @@ def _axis_to_index(
 
 
 def _get_step_time(
-    field: field_models.ScalarField_3D | field_models.VectorField_3D,
+    field: field_models.AnyField_3D,
 ) -> float:
     step_time = field.sim_time
     if (step_time is None) or (not numpy.isfinite(step_time)):
@@ -128,7 +128,7 @@ class FieldExtractor:
         self,
         *,
         snapshot_dir: Path,
-    ) -> field_models.ScalarField_3D | field_models.VectorField_3D:
+    ) -> field_models.AnyField_3D:
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
                 verbose=False,
@@ -142,7 +142,7 @@ class FieldExtractor:
     def _save_field(
         self,
         *,
-        field: field_models.ScalarField_3D | field_models.VectorField_3D,
+        field: field_models.AnyField_3D,
         step_time: float,
         step_index: int,
         index_width: int,
@@ -163,6 +163,8 @@ class FieldExtractor:
                 amr_level=self.field_args.amr_level,
             )
             return
+        if not isinstance(field, field_models.VectorField_3D):
+            raise ValueError(f"{field_name} is an unrecognised field type.")
         if not self.comps_to_extract:
             raise ValueError(
                 f"Vector field `{field_name}` requires at least one component to extract; none provided.",

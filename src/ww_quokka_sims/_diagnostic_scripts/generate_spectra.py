@@ -16,10 +16,7 @@ from typing import final
 import numpy
 
 ## personal
-from jormi.ww_fields.fields_3d import (
-    compute_spectra,
-    field_models,
-)
+from jormi.ww_fields.fields_3d import compute_spectra
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
@@ -157,14 +154,9 @@ class ComputeSpectra:
                     verbose=False,
             ) as snapshot:
                 field = self.field_loader(snapshot)
-            if not isinstance(field, field_models.ScalarField_3D):
-                raise TypeError(
-                    f"`{self.field_name}` is not a scalar field; "
-                    "power spectra are only supported for scalar fields.",
-                )
+            spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
             step_time = field.sim_time
             assert step_time is not None
-            spectrum = compute_spectra.compute_isotropic_power_spectrum_sfield(field)
             log10_k_bin_centers = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
                     x=spectrum.k_bin_centers_1d,
@@ -173,7 +165,7 @@ class ComputeSpectra:
             )
             log10_spectrum = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
-                    x=spectrum.spectrum_1d,
+                    x=spectrum.power_spectrum_1d,
                     value=0.0,
                 ),
             )

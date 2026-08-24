@@ -105,6 +105,11 @@ QUOKKA_FIELD_LOOKUP = {
         loader=load_snapshot.QuokkaSnapshot.compute_div_v_sfield,
         cmap=DIVERGING_CMAP,
     ),
+    "velocity_gradient":
+    FieldEntry(
+        loader=load_snapshot.QuokkaSnapshot.compute_velocity_gradient_r2tfield,
+        cmap=DIVERGING_CMAP,
+    ),
     "vorticity":
     FieldEntry(
         loader=load_snapshot.QuokkaSnapshot.compute_vorticity_vfield,

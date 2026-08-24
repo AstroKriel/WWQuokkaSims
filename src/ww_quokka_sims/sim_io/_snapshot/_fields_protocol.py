@@ -94,6 +94,14 @@ class FieldsProtocol(Protocol):
     ) -> field_models.VectorField_3D:
         ...
 
+    def compute_velocity_gradient_r2tfield(
+        self,
+        grad_order: int,
+        *,
+        amr_level: int = 0,
+    ) -> field_models.RankTwoTensorField_3D:
+        ...
+
     def compute_vorticity_vfield(
         self,
         grad_order: int,
