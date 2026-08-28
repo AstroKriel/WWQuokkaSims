@@ -23,9 +23,9 @@ from jormi.ww_fields.fields_3d import (
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
-    annotate_axis,
-    manage_plots,
-    style_plots,
+    annotate_panel,
+    manage_figure,
+    style_figure,
 )
 from jormi.ww_validation import (
     validate_arrays,
@@ -164,7 +164,7 @@ class ComputeSpectra:
                 )
             step_time = field.sim_time
             assert step_time is not None
-            spectrum = compute_spectra.compute_isotropic_power_spectrum_sfield(field)
+            spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
             log10_k_bin_centers = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
                     x=spectrum.k_bin_centers_1d,
@@ -173,7 +173,7 @@ class ComputeSpectra:
             )
             log10_spectrum = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
-                    x=spectrum.spectrum_1d,
+                    x=spectrum.power_spectrum_1d,
                     value=0.0,
                 ),
             )
@@ -238,7 +238,7 @@ class GenerateSpectra:
     @staticmethod
     def _style_ax(
         *,
-        ax: manage_plots.PlotAxis,
+        ax: manage_figure.Panel,
         latex_label: str,
     ) -> None:
         ax.set_xlabel(r"$\log_{10}(k)$")
@@ -247,9 +247,9 @@ class GenerateSpectra:
     @staticmethod
     def _plot_snapshot(
         *,
-        ax: manage_plots.PlotAxis,
+        ax: manage_figure.Panel,
         spectra_data: SpectraData,
-        color: annotate_axis.ColorType,
+        color: annotate_panel.ColorType,
     ) -> None:
         ax.plot(
             spectra_data.log10_k_bin_centers,
@@ -261,7 +261,7 @@ class GenerateSpectra:
     @staticmethod
     def _plot_series(
         *,
-        ax: manage_plots.PlotAxis,
+        ax: manage_figure.Panel,
         field_spectra: list[SpectraData],
         cmap_name: str,
     ) -> None:
@@ -290,7 +290,7 @@ class GenerateSpectra:
                 color=color,
             )
         add_color.add_colorbar(
-            ax=ax,
+            panels=ax,
             palette=palette,
             label=r"snapshot index",
         )
@@ -309,7 +309,7 @@ class GenerateSpectra:
         spectra_data: SpectraData,
         figure_path: Path,
     ) -> None:
-        fig, ax = manage_plots.create_figure()
+        fig, ax = manage_figure.create_figure()
         self._plot_snapshot(
             ax=ax,
             spectra_data=spectra_data,
@@ -319,9 +319,9 @@ class GenerateSpectra:
             ax=ax,
             latex_label=spectra_data.latex_label,
         )
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=figure_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=figure_path,
             verbose=False,
         )
 
@@ -332,9 +332,7 @@ class GenerateSpectra:
         figures_dir: Path,
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
-        fig, ax = manage_plots.create_figure()
-        if len(field_spectra) > 1:
-            fig.subplots_adjust(right=0.82)
+        fig, ax = manage_figure.create_figure()
         if len(field_spectra) == 1:
             self._plot_snapshot(
                 ax=ax,
@@ -352,9 +350,9 @@ class GenerateSpectra:
             latex_label=field_spectra[0].latex_label,
         )
         fig_path = figures_dir / f"{self.field_name}-spectra-summary.png"
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=fig_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=fig_path,
             verbose=True,
         )
 
@@ -392,6 +390,14 @@ class GenerateSpectra:
 ##
 
 
+@dataclass(frozen=True)
+class ResolvedInputs:
+    snapshot_dirs: list[Path]
+    data_dir: Path
+    figures_dir: Path
+    index_width: int
+
+
 @final
 class ScriptInterface:
 
@@ -425,16 +431,15 @@ class ScriptInterface:
         self.data_dir = Path(data_dir) if data_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
 
-    def run(
+    def _resolve_inputs(
         self,
-    ) -> None:
-        ## find all snapshot dirs under input_dir whose names match snapshot_tag, sorted by index
+    ) -> ResolvedInputs | None:
         snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             snapshot_tag=self.snapshot_tag,
         )
         if not snapshot_dirs:
-            return
+            return None
         data_dir = cli.resolve_output_dir(
             output_dir=self.data_dir,
             default_dir=snapshot_dirs[0].parent,
@@ -447,15 +452,25 @@ class ScriptInterface:
             snapshot_dirs=snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
         )
-        ## compute and render power spectra for each requested field
+        return ResolvedInputs(
+            snapshot_dirs=snapshot_dirs,
+            data_dir=data_dir,
+            figures_dir=figures_dir,
+            index_width=index_width,
+        )
+
+    def _generate_fields(
+        self,
+        resolved_inputs: ResolvedInputs,
+    ) -> None:
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             generator = GenerateSpectra(
-                snapshot_dirs=snapshot_dirs,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
-                index_width=index_width,
-                data_dir=data_dir,
-                figures_dir=figures_dir,
+                index_width=resolved_inputs.index_width,
+                data_dir=resolved_inputs.data_dir,
+                figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 cmap_name=field_meta.cmap,
@@ -465,6 +480,13 @@ class ScriptInterface:
             )
             generator.run()
 
+    def run(
+        self,
+    ) -> None:
+        resolved_inputs = self._resolve_inputs()
+        if resolved_inputs is not None:
+            self._generate_fields(resolved_inputs)
+
 
 ##
 ## === PROGRAM MAIN
@@ -473,7 +495,7 @@ class ScriptInterface:
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
-    style_plots.set_theme()
+    style_figure.set_figure_params()
     user_args = argparse.ArgumentParser(
         description="Generate power spectra of Quokka scalar fields: figures and/or extracted data.",
         parents=[
