@@ -22,9 +22,9 @@ from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
-    annotate_axis,
-    manage_plots,
-    style_plots,
+    annotate_panel,
+    manage_figure,
+    style_figure,
 )
 from jormi.ww_validation import (
     validate_arrays,
@@ -314,7 +314,7 @@ class GeneratePDFs:
     @staticmethod
     def _style_axs(
         *,
-        axs_grid: manage_plots.PlotAxesGrid,
+        axs_grid: manage_figure.PanelGrid,
         comp_labels: list[str],
         log10_binning: bool,
     ) -> None:
@@ -328,9 +328,9 @@ class GeneratePDFs:
     @staticmethod
     def _plot_snapshot(
         *,
-        axs_grid: manage_plots.PlotAxesGrid,
+        axs_grid: manage_figure.PanelGrid,
         pdf_data: PDFData,
-        color: annotate_axis.ColorType,
+        color: annotate_panel.ColorType,
     ) -> None:
         for comp_index in range(pdf_data.num_comps):
             ax = axs_grid[0][comp_index]
@@ -347,7 +347,7 @@ class GeneratePDFs:
     @staticmethod
     def _plot_series(
         *,
-        axs_grid: manage_plots.PlotAxesGrid,
+        axs_grid: manage_figure.PanelGrid,
         field_pdfs: list[PDFData],
         cmap_name: str,
     ) -> None:
@@ -376,7 +376,7 @@ class GeneratePDFs:
                 color=color,
             )
         add_color.add_colorbar(
-            ax=axs_grid[-1][-1],
+            panels=axs_grid[-1][-1],
             palette=palette,
             label=r"snapshot index",
         )
@@ -447,11 +447,9 @@ class GeneratePDFs:
         pdf_data: PDFData,
         figure_path: Path,
     ) -> None:
-        fig, axs_grid = manage_plots.create_figure_grid(
-            num_rows=1,
-            num_cols=pdf_data.num_comps,
-            x_spacing=0.25,
-            y_spacing=0.25,
+        fig, axs_grid = manage_figure.create_figure_grid(
+            num_panel_rows=1,
+            num_panel_cols=pdf_data.num_comps,
         )
         self._plot_snapshot(
             axs_grid=axs_grid,
@@ -463,9 +461,9 @@ class GeneratePDFs:
             comp_labels=pdf_data.comp_labels,
             log10_binning=self.log10_binning,
         )
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=figure_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=figure_path,
             verbose=False,
         )
 
@@ -532,15 +530,10 @@ class GeneratePDFs:
         disk (not from anything held in memory across the potentially-long per-snapshot loop above).
         """
         num_cols = field_pdfs[0].num_comps
-        add_cbar_space = len(field_pdfs) > 1
-        fig, axs_grid = manage_plots.create_figure_grid(
-            num_rows=1,
-            num_cols=num_cols,
-            x_spacing=0.75 if add_cbar_space else 0.25,
-            y_spacing=0.25,
+        fig, axs_grid = manage_figure.create_figure_grid(
+            num_panel_rows=1,
+            num_panel_cols=num_cols,
         )
-        if add_cbar_space:
-            fig.subplots_adjust(right=0.82)
         if len(field_pdfs) == 1:
             self._plot_snapshot(
                 axs_grid=axs_grid,
@@ -559,9 +552,9 @@ class GeneratePDFs:
             log10_binning=self.log10_binning,
         )
         fig_path = figures_dir / f"{self._data_name()}-pdfs-summary.png"
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=fig_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=fig_path,
             verbose=True,
         )
 
@@ -600,6 +593,14 @@ class GeneratePDFs:
 ##
 ## === SCRIPT INTERFACE
 ##
+
+
+@dataclass(frozen=True)
+class ResolvedInputs:
+    snapshot_dirs: list[Path]
+    data_dir: Path
+    figures_dir: Path
+    index_width: int
 
 
 @final
@@ -645,16 +646,15 @@ class ScriptInterface:
         self.data_dir = Path(data_dir) if data_dir is not None else None
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
 
-    def run(
+    def _resolve_inputs(
         self,
-    ) -> None:
-        ## find all snapshot dirs under input_dir whose names match snapshot_tag, sorted by index
+    ) -> ResolvedInputs | None:
         snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             snapshot_tag=self.snapshot_tag,
         )
         if not snapshot_dirs:
-            return
+            return None
         data_dir = cli.resolve_output_dir(
             output_dir=self.data_dir,
             default_dir=snapshot_dirs[0].parent,
@@ -667,15 +667,25 @@ class ScriptInterface:
             snapshot_dirs=snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
         )
-        ## compute and render PDFs for each requested field
+        return ResolvedInputs(
+            snapshot_dirs=snapshot_dirs,
+            data_dir=data_dir,
+            figures_dir=figures_dir,
+            index_width=index_width,
+        )
+
+    def _generate_fields(
+        self,
+        resolved_inputs: ResolvedInputs,
+    ) -> None:
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             generator = GeneratePDFs(
-                snapshot_dirs=snapshot_dirs,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
-                index_width=index_width,
-                data_dir=data_dir,
-                figures_dir=figures_dir,
+                index_width=resolved_inputs.index_width,
+                data_dir=resolved_inputs.data_dir,
+                figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 cmap_name=field_meta.cmap,
@@ -688,6 +698,13 @@ class ScriptInterface:
             )
             generator.run()
 
+    def run(
+        self,
+    ) -> None:
+        resolved_inputs = self._resolve_inputs()
+        if resolved_inputs is not None:
+            self._generate_fields(resolved_inputs)
+
 
 ##
 ## === PROGRAM MAIN
@@ -696,7 +713,7 @@ class ScriptInterface:
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
-    style_plots.set_theme()
+    style_figure.set_figure_params()
     parser = argparse.ArgumentParser(
         description="Generate PDFs of Quokka field components: figures and/or extracted data.",
         parents=[
