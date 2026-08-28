@@ -785,6 +785,14 @@ def generate_fields_in_parallel(
 ##
 
 
+@dataclass(frozen=True)
+class ResolvedInputs:
+    snapshot_dirs: list[Path]
+    data_dir: Path
+    figures_dir: Path
+    index_width: int
+
+
 @final
 class ScriptInterface:
 
@@ -869,74 +877,98 @@ class ScriptInterface:
                 timeout_seconds=120,
             )
 
+    def _resolve_inputs(
+        self,
+    ) -> ResolvedInputs | None:
+        ## input_dir is required whenever save_data/save_figure is set (checked in __init__)
+        assert self.input_dir is not None
+        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
+            input_dir=self.input_dir,
+            snapshot_tag=self.snapshot_tag,
+            max_elems=100,
+        )
+        if not snapshot_dirs:
+            return None
+        data_dir = cli.resolve_output_dir(
+            output_dir=self.data_dir,
+            default_dir=snapshot_dirs[0].parent,
+        )
+        figures_dir = cli.resolve_output_dir(
+            output_dir=self.figures_dir,
+            default_dir=data_dir,
+        )
+        index_width = find_snapshots.get_max_index_width(
+            snapshot_dirs=snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
+        )
+        return ResolvedInputs(
+            snapshot_dirs=snapshot_dirs,
+            data_dir=data_dir,
+            figures_dir=figures_dir,
+            index_width=index_width,
+        )
+
+    def _generate_fields(
+        self,
+        resolved_inputs: ResolvedInputs,
+    ) -> None:
+        if (self.num_workers != 1) and (len(resolved_inputs.snapshot_dirs) > 5):
+            generate_fields_in_parallel(
+                snapshot_tag=self.snapshot_tag,
+                fields_to_plot=self.fields_to_plot,
+                comps_to_plot=self.comps_to_plot,
+                axes_to_slice=self.axes_to_slice,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
+                data_dir=resolved_inputs.data_dir,
+                figures_dir=resolved_inputs.figures_dir,
+                index_width=resolved_inputs.index_width,
+                save_data=self.save_data,
+                save_figure=self.save_figure,
+                overwrite=self.overwrite,
+                hide_annotations=self.hide_annotations,
+                plot_log10=self.plot_log10,
+                amr_level=self.amr_level,
+                num_workers=self.num_workers,
+            )
+        else:
+            generate_fields_in_serial(
+                snapshot_tag=self.snapshot_tag,
+                fields_to_plot=self.fields_to_plot,
+                comps_to_plot=self.comps_to_plot,
+                axes_to_slice=self.axes_to_slice,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
+                data_dir=resolved_inputs.data_dir,
+                figures_dir=resolved_inputs.figures_dir,
+                index_width=resolved_inputs.index_width,
+                save_data=self.save_data,
+                save_figure=self.save_figure,
+                overwrite=self.overwrite,
+                hide_annotations=self.hide_annotations,
+                plot_log10=self.plot_log10,
+                amr_level=self.amr_level,
+            )
+
+    def _resolve_animate_dir(
+        self,
+        figures_dir: Path | None,
+    ) -> Path:
+        default_figures_dir = self.data_dir if self.data_dir is not None else self.input_dir
+        resolved_figures_dir = figures_dir if figures_dir is not None else default_figures_dir
+        if resolved_figures_dir is None:
+            raise ValueError("`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.")
+        return resolved_figures_dir
+
     def run(
         self,
     ) -> None:
         figures_dir = self.figures_dir
         if self.save_data or self.save_figure:
-            ## the following reassures pyright locally; this check is already enforced in __init__
-            assert self.input_dir is not None
-            snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
-                input_dir=self.input_dir,
-                snapshot_tag=self.snapshot_tag,
-                max_elems=100,
-            )
-            if not snapshot_dirs:
-                return
-            data_dir = cli.resolve_output_dir(
-                output_dir=self.data_dir,
-                default_dir=snapshot_dirs[0].parent,
-            )
-            figures_dir = cli.resolve_output_dir(
-                output_dir=self.figures_dir,
-                default_dir=data_dir,
-            )
-            index_width = find_snapshots.get_max_index_width(
-                snapshot_dirs=snapshot_dirs,
-                snapshot_tag=self.snapshot_tag,
-            )
-            if (self.num_workers != 1) and (len(snapshot_dirs) > 5):
-                generate_fields_in_parallel(
-                    snapshot_tag=self.snapshot_tag,
-                    fields_to_plot=self.fields_to_plot,
-                    comps_to_plot=self.comps_to_plot,
-                    axes_to_slice=self.axes_to_slice,
-                    snapshot_dirs=snapshot_dirs,
-                    data_dir=data_dir,
-                    figures_dir=figures_dir,
-                    index_width=index_width,
-                    save_data=self.save_data,
-                    save_figure=self.save_figure,
-                    overwrite=self.overwrite,
-                    hide_annotations=self.hide_annotations,
-                    plot_log10=self.plot_log10,
-                    amr_level=self.amr_level,
-                    num_workers=self.num_workers,
-                )
-            else:
-                generate_fields_in_serial(
-                    snapshot_tag=self.snapshot_tag,
-                    fields_to_plot=self.fields_to_plot,
-                    comps_to_plot=self.comps_to_plot,
-                    axes_to_slice=self.axes_to_slice,
-                    snapshot_dirs=snapshot_dirs,
-                    data_dir=data_dir,
-                    figures_dir=figures_dir,
-                    index_width=index_width,
-                    save_data=self.save_data,
-                    save_figure=self.save_figure,
-                    overwrite=self.overwrite,
-                    hide_annotations=self.hide_annotations,
-                    plot_log10=self.plot_log10,
-                    amr_level=self.amr_level,
-                )
-        ## animate figures, regardless of when they were generated
+            resolved_inputs = self._resolve_inputs()
+            if resolved_inputs is not None:
+                self._generate_fields(resolved_inputs)
+                figures_dir = resolved_inputs.figures_dir
         if self.animate:
-            default_figures_dir = self.data_dir if self.data_dir is not None else self.input_dir
-            resolved_figures_dir = figures_dir if figures_dir is not None else default_figures_dir
-            if resolved_figures_dir is None:
-                raise ValueError("`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.")
-            self._animate_fields(figures_dir=resolved_figures_dir)
+            self._animate_fields(figures_dir=self._resolve_animate_dir(figures_dir))
 
 
 ##
