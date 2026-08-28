@@ -7,6 +7,7 @@
 ## stdlib
 import argparse
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import final
 
@@ -19,7 +20,7 @@ from jormi.ww_data import (
     series_types,
 )
 from jormi.ww_io import json_io, manage_log
-from jormi.ww_plots import manage_plots, style_plots
+from jormi.ww_plots import manage_figure, style_figure
 from jormi.ww_validation import validate_types
 
 ## local
@@ -168,7 +169,7 @@ class GenerateComparisonPlot:
             )
         if not self.save_figure:
             return
-        fig, ax = manage_plots.create_figure()
+        fig, ax = manage_figure.create_figure()
         ax.plot(
             t_array_common,
             y_array_frac_diff,
@@ -182,9 +183,9 @@ class GenerateComparisonPlot:
         ax.set_xlabel("time")
         ax.set_ylabel(f"${vi_series_1.latex_label}$ (frac. diff.)")
         fig_path = self.figures_dir / f"{self.field_name}-time_comparison.png"
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=fig_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=fig_path,
             verbose=True,
         )
 
@@ -192,6 +193,14 @@ class GenerateComparisonPlot:
 ##
 ## === SCRIPT INTERFACE
 ##
+
+
+@dataclass(frozen=True)
+class ResolvedInputs:
+    data_dir: Path
+    figures_dir: Path
+    snapshot_dirs_1: list[Path]
+    snapshot_dirs_2: list[Path]
 
 
 @final
@@ -237,9 +246,9 @@ class ScriptInterface:
         self.save_figure = save_figure
         self.overwrite = bool(overwrite)
 
-    def run(
+    def _resolve_inputs(
         self,
-    ) -> None:
+    ) -> ResolvedInputs:
         data_dir = cli.resolve_output_dir(
             output_dir=self.data_dir,
             default_dir=self.data_dir,
@@ -267,34 +276,45 @@ class ScriptInterface:
             raise RuntimeError(
                 f"No snapshot directories resolved for dir_2: {self.dir_2} (tag={self.snapshot_tag!r})",
             )
+        return ResolvedInputs(
+            data_dir=data_dir,
+            figures_dir=figures_dir,
+            snapshot_dirs_1=snapshot_dirs_1,
+            snapshot_dirs_2=snapshot_dirs_2,
+        )
+
+    def _generate_comparisons(
+        self,
+        resolved_inputs: ResolvedInputs,
+    ) -> None:
         ## use the sim root directory names as labels in the plot legend
         label_dir_1 = self.dir_1.name
         label_dir_2 = self.dir_2.name
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             loader_1 = data_series.LoadDataSeries(
-                snapshot_dirs=snapshot_dirs_1,
+                snapshot_dirs=resolved_inputs.snapshot_dirs_1,
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 use_parallel=True,
-                data_dir=data_dir,
+                data_dir=resolved_inputs.data_dir,
                 overwrite=self.overwrite,
                 cache_key=f"{field_name}-{label_dir_1}",
             )
             loader_2 = data_series.LoadDataSeries(
-                snapshot_dirs=snapshot_dirs_2,
+                snapshot_dirs=resolved_inputs.snapshot_dirs_2,
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 use_parallel=True,
-                data_dir=data_dir,
+                data_dir=resolved_inputs.data_dir,
                 overwrite=self.overwrite,
                 cache_key=f"{field_name}-{label_dir_2}",
             )
             vi_series_1 = loader_1.run()
             vi_series_2 = loader_2.run()
             generate_comparison_plot = GenerateComparisonPlot(
-                data_dir=data_dir,
-                figures_dir=figures_dir,
+                data_dir=resolved_inputs.data_dir,
+                figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
                 label_dir_1=label_dir_1,
                 label_dir_2=label_dir_2,
@@ -308,6 +328,12 @@ class ScriptInterface:
                 vi_series_2=vi_series_2,
             )
 
+    def run(
+        self,
+    ) -> None:
+        resolved_inputs = self._resolve_inputs()
+        self._generate_comparisons(resolved_inputs)
+
 
 ##
 ## === PROGRAM MAIN
@@ -316,7 +342,7 @@ class ScriptInterface:
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
-    style_plots.set_theme()
+    style_figure.set_figure_params()
     user_args = argparse.ArgumentParser(
         description="Compare volume-integrated field evolution between two Quokka simulations: figures and/or extracted data.",
         parents=[
