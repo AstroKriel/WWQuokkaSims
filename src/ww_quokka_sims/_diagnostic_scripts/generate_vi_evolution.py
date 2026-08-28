@@ -7,6 +7,7 @@
 ## stdlib
 import argparse
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import final
 
@@ -18,9 +19,9 @@ from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
-    annotate_axis,
-    manage_plots,
-    style_plots,
+    annotate_panel,
+    manage_figure,
+    style_figure,
 )
 from jormi.ww_validation import validate_types
 
@@ -91,13 +92,13 @@ class GenerateDataSeries:
             )
         if not self.save_figure:
             return
-        fig, ax = manage_plots.create_figure()
+        fig, ax = manage_figure.create_figure()
         time_array, values_array = vi_series.get_sorted_arrays()
         if time_array.size == 0:
-            annotate_axis.add_text(
-                ax=ax,
-                x_pos=0.5,
-                y_pos=0.5,
+            annotate_panel.add_text(
+                panel=ax,
+                x_pos_fraction=0.5,
+                y_pos_fraction=0.5,
                 label="no data",
                 x_alignment="center",
                 y_alignment="center",
@@ -122,9 +123,9 @@ class GenerateDataSeries:
         ax.set_xlabel("time")
         ax.set_ylabel(ylabel)
         fig_path = self.figures_dir / fig_name
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=fig_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=fig_path,
             verbose=True,
         )
 
@@ -132,6 +133,13 @@ class GenerateDataSeries:
 ##
 ## === SCRIPT INTERFACE
 ##
+
+
+@dataclass(frozen=True)
+class ResolvedInputs:
+    snapshot_dirs: list[Path]
+    data_dir: Path
+    figures_dir: Path
 
 
 @final
@@ -174,15 +182,15 @@ class ScriptInterface:
         self.use_parallel = bool(use_parallel)
         self.apply_log10 = bool(apply_log10)
 
-    def run(
+    def _resolve_inputs(
         self,
-    ) -> None:
+    ) -> ResolvedInputs | None:
         snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             snapshot_tag=self.snapshot_tag,
         )
         if not snapshot_dirs:
-            return
+            return None
         data_dir = cli.resolve_output_dir(
             output_dir=self.data_dir,
             default_dir=snapshot_dirs[0].parent,
@@ -191,26 +199,43 @@ class ScriptInterface:
             output_dir=self.figures_dir,
             default_dir=data_dir,
         )
+        return ResolvedInputs(
+            snapshot_dirs=snapshot_dirs,
+            data_dir=data_dir,
+            figures_dir=figures_dir,
+        )
+
+    def _generate_fields(
+        self,
+        resolved_inputs: ResolvedInputs,
+    ) -> None:
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             loader = data_series.LoadDataSeries(
-                snapshot_dirs=snapshot_dirs,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
                 field_name=field_name,
                 field_loader=field_meta.loader,
                 use_parallel=self.use_parallel,
-                data_dir=data_dir,
+                data_dir=resolved_inputs.data_dir,
                 overwrite=self.overwrite,
             )
             vi_series = loader.run()
             generate_data_series = GenerateDataSeries(
-                data_dir=data_dir,
-                figures_dir=figures_dir,
+                data_dir=resolved_inputs.data_dir,
+                figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
                 save_data=self.save_data,
                 save_figure=self.save_figure,
                 apply_log10=self.apply_log10,
             )
             generate_data_series.run(vi_series=vi_series)
+
+    def run(
+        self,
+    ) -> None:
+        resolved_inputs = self._resolve_inputs()
+        if resolved_inputs is not None:
+            self._generate_fields(resolved_inputs)
 
 
 ##
@@ -220,7 +245,7 @@ class ScriptInterface:
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
-    style_plots.set_theme()
+    style_figure.set_figure_params()
     parser = argparse.ArgumentParser(
         description="Generate volume-integrated field evolution from Quokka simulations: figures and/or extracted data.",
         parents=[

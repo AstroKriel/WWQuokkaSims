@@ -32,10 +32,10 @@ from jormi.ww_io import (
 )
 from jormi.ww_plots import (
     add_color,
-    annotate_axis,
-    manage_plots,
+    annotate_panel,
+    manage_figure,
     plot_data,
-    style_plots,
+    style_figure,
 )
 from jormi.ww_validation import validate_types
 
@@ -245,7 +245,7 @@ class GenerateFieldSlices:
     @staticmethod
     def plot_slice(
         *,
-        ax: manage_plots.PlotAxis,
+        ax: manage_figure.Panel,
         step_time: float,
         field_slice: SlicedField,
         plane_label: str,
@@ -254,46 +254,46 @@ class GenerateFieldSlices:
         hide_annotations: bool = False,
     ) -> None:
         plot_data.plot_2d_array(
-            ax=ax,
+            panel=ax,
             array_2d=field_slice.sarray_2d,
             data_format="xy",
-            axis_aspect_ratio="equal",
-            axis_bounds=field_slice.axis_bounds,
-            cbar_bounds=(field_slice.min_value, field_slice.max_value),
+            data_aspect_ratio="equal",
+            axis_ranges=field_slice.axis_bounds,
+            colorbar_range=(field_slice.min_value, field_slice.max_value),
             palette_config=add_color.SequentialConfig(palette_name=cmap_name),
-            add_cbar=True,
-            cbar_label=comp_label,
-            cbar_side="right",
+            add_colorbar=True,
+            colorbar_label=comp_label,
+            colorbar_side="right",
         )
         if not hide_annotations:
-            annotate_axis.add_text(
-                ax=ax,
-                x_pos=0.5,
-                y_pos=0.95,
+            annotate_panel.add_text(
+                panel=ax,
+                x_pos_fraction=0.5,
+                y_pos_fraction=0.95,
                 x_alignment="center",
                 y_alignment="top",
                 label=f"min-value = {field_slice.min_value:.2e}\nmax-value = {field_slice.max_value:.2e}",
-                text_size=16,
+                text_size_pt=16,
                 box_alpha=0.5,
             )
-            annotate_axis.add_text(
-                ax=ax,
-                x_pos=0.5,
-                y_pos=0.5,
+            annotate_panel.add_text(
+                panel=ax,
+                x_pos_fraction=0.5,
+                y_pos_fraction=0.5,
                 x_alignment="center",
                 y_alignment="center",
                 label=rf"$t = {step_time:.2f}$",
-                text_size=16,
+                text_size_pt=16,
                 box_alpha=0.5,
             )
-            annotate_axis.add_text(
-                ax=ax,
-                x_pos=0.5,
-                y_pos=0.05,
+            annotate_panel.add_text(
+                panel=ax,
+                x_pos_fraction=0.5,
+                y_pos_fraction=0.05,
                 x_alignment="center",
                 y_alignment="bottom",
                 label=plane_label,
-                text_size=16,
+                text_size_pt=16,
                 box_alpha=0.5,
             )
 
@@ -375,7 +375,7 @@ class GenerateFieldSlices:
     def _plot_rows(
         self,
         *,
-        axs_grid: manage_plots.PlotAxesGrid,
+        axs_grid: manage_figure.PanelGrid,
         rows: list[Row],
         step_time: float,
     ) -> None:
@@ -395,7 +395,7 @@ class GenerateFieldSlices:
     def _label_axes(
         self,
         *,
-        axs_grid: manage_plots.PlotAxesGrid,
+        axs_grid: manage_figure.PanelGrid,
     ) -> None:
         num_rows = len(axs_grid)
         for row_index in range(num_rows):
@@ -556,13 +556,14 @@ class GenerateFieldSlices:
                 )
                 return
         num_rows = len(rows)
-        fig, axs_grid = manage_plots.create_figure_grid(
-            num_rows=num_rows,
-            num_cols=len(self.axes_to_slice),
-            x_spacing=1.0,
-            y_spacing=0.25,
+        fig, axs_grid = manage_figure.create_figure_grid(
+            num_panel_rows=num_rows,
+            num_panel_cols=len(self.axes_to_slice),
+            panel_width_cm=8.0,
+            panel_aspect_ratio=1.0,
+            panel_row_gap_pt=20.0,
+            panel_col_gap_pt=20.0,
         )
-        fig.subplots_adjust(right=0.82)
         self._plot_rows(
             axs_grid=axs_grid,
             rows=rows,
@@ -570,9 +571,9 @@ class GenerateFieldSlices:
         )
         self._label_axes(axs_grid=axs_grid)
         fig_path = figures_dir / self._figure_file_name(padded_index=padded_index)
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=fig_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=fig_path,
             verbose=verbose,
         )
 
@@ -787,6 +788,14 @@ def generate_fields_in_parallel(
 ##
 
 
+@dataclass(frozen=True)
+class ResolvedInputs:
+    snapshot_dirs: list[Path]
+    data_dir: Path
+    figures_dir: Path
+    index_width: int
+
+
 @final
 class ScriptInterface:
 
@@ -861,83 +870,107 @@ class ScriptInterface:
                     ),
                 )
                 continue
-            mp4_path = figures_dir / f"{plot_name}-slices.mp4"
-            manage_plots.animate_pngs_to_mp4(
+            video_path = figures_dir / f"{plot_name}-slices.mp4"
+            manage_figure.animate_frames_to_video(
                 frames_dir=figures_dir,
-                mp4_path=mp4_path,
+                video_path=video_path,
                 pattern=f"{plot_name}-slice-index=*.png",
-                fps=60,
+                frames_per_second=60,
                 timeout_seconds=120,
             )
+
+    def _resolve_inputs(
+        self,
+    ) -> ResolvedInputs | None:
+        ## input_dir is required whenever save_data/save_figure is set (checked in __init__)
+        assert self.input_dir is not None
+        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
+            input_dir=self.input_dir,
+            snapshot_tag=self.snapshot_tag,
+            max_elems=100,
+        )
+        if not snapshot_dirs:
+            return None
+        data_dir = cli.resolve_output_dir(
+            output_dir=self.data_dir,
+            default_dir=snapshot_dirs[0].parent,
+        )
+        figures_dir = cli.resolve_output_dir(
+            output_dir=self.figures_dir,
+            default_dir=data_dir,
+        )
+        index_width = find_snapshots.get_max_index_width(
+            snapshot_dirs=snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
+        )
+        return ResolvedInputs(
+            snapshot_dirs=snapshot_dirs,
+            data_dir=data_dir,
+            figures_dir=figures_dir,
+            index_width=index_width,
+        )
+
+    def _generate_fields(
+        self,
+        resolved_inputs: ResolvedInputs,
+    ) -> None:
+        if (self.num_workers != 1) and (len(resolved_inputs.snapshot_dirs) > 5):
+            generate_fields_in_parallel(
+                snapshot_tag=self.snapshot_tag,
+                fields_to_plot=self.fields_to_plot,
+                comps_to_plot=self.comps_to_plot,
+                axes_to_slice=self.axes_to_slice,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
+                data_dir=resolved_inputs.data_dir,
+                figures_dir=resolved_inputs.figures_dir,
+                index_width=resolved_inputs.index_width,
+                save_data=self.save_data,
+                save_figure=self.save_figure,
+                overwrite=self.overwrite,
+                hide_annotations=self.hide_annotations,
+                plot_log10=self.plot_log10,
+                amr_level=self.amr_level,
+                num_workers=self.num_workers,
+            )
+        else:
+            generate_fields_in_serial(
+                snapshot_tag=self.snapshot_tag,
+                fields_to_plot=self.fields_to_plot,
+                comps_to_plot=self.comps_to_plot,
+                axes_to_slice=self.axes_to_slice,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
+                data_dir=resolved_inputs.data_dir,
+                figures_dir=resolved_inputs.figures_dir,
+                index_width=resolved_inputs.index_width,
+                save_data=self.save_data,
+                save_figure=self.save_figure,
+                overwrite=self.overwrite,
+                hide_annotations=self.hide_annotations,
+                plot_log10=self.plot_log10,
+                amr_level=self.amr_level,
+            )
+
+    def _resolve_animate_dir(
+        self,
+        figures_dir: Path | None,
+    ) -> Path:
+        default_figures_dir = self.data_dir if self.data_dir is not None else self.input_dir
+        resolved_figures_dir = figures_dir if figures_dir is not None else default_figures_dir
+        if resolved_figures_dir is None:
+            raise ValueError("`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.")
+        return resolved_figures_dir
 
     def run(
         self,
     ) -> None:
         figures_dir = self.figures_dir
         if self.save_data or self.save_figure:
-            ## the following reassures pyright locally; this check is already enforced in __init__
-            assert self.input_dir is not None
-            snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
-                input_dir=self.input_dir,
-                snapshot_tag=self.snapshot_tag,
-                max_elems=100,
-            )
-            if not snapshot_dirs:
-                return
-            data_dir = cli.resolve_output_dir(
-                output_dir=self.data_dir,
-                default_dir=snapshot_dirs[0].parent,
-            )
-            figures_dir = cli.resolve_output_dir(
-                output_dir=self.figures_dir,
-                default_dir=data_dir,
-            )
-            index_width = find_snapshots.get_max_index_width(
-                snapshot_dirs=snapshot_dirs,
-                snapshot_tag=self.snapshot_tag,
-            )
-            if (self.num_workers != 1) and (len(snapshot_dirs) > 5):
-                generate_fields_in_parallel(
-                    snapshot_tag=self.snapshot_tag,
-                    fields_to_plot=self.fields_to_plot,
-                    comps_to_plot=self.comps_to_plot,
-                    axes_to_slice=self.axes_to_slice,
-                    snapshot_dirs=snapshot_dirs,
-                    data_dir=data_dir,
-                    figures_dir=figures_dir,
-                    index_width=index_width,
-                    save_data=self.save_data,
-                    save_figure=self.save_figure,
-                    overwrite=self.overwrite,
-                    hide_annotations=self.hide_annotations,
-                    plot_log10=self.plot_log10,
-                    amr_level=self.amr_level,
-                    num_workers=self.num_workers,
-                )
-            else:
-                generate_fields_in_serial(
-                    snapshot_tag=self.snapshot_tag,
-                    fields_to_plot=self.fields_to_plot,
-                    comps_to_plot=self.comps_to_plot,
-                    axes_to_slice=self.axes_to_slice,
-                    snapshot_dirs=snapshot_dirs,
-                    data_dir=data_dir,
-                    figures_dir=figures_dir,
-                    index_width=index_width,
-                    save_data=self.save_data,
-                    save_figure=self.save_figure,
-                    overwrite=self.overwrite,
-                    hide_annotations=self.hide_annotations,
-                    plot_log10=self.plot_log10,
-                    amr_level=self.amr_level,
-                )
-        ## animate figures, regardless of when they were generated
+            resolved_inputs = self._resolve_inputs()
+            if resolved_inputs is not None:
+                self._generate_fields(resolved_inputs)
+                figures_dir = resolved_inputs.figures_dir
         if self.animate:
-            default_figures_dir = self.data_dir if self.data_dir is not None else self.input_dir
-            resolved_figures_dir = figures_dir if figures_dir is not None else default_figures_dir
-            if resolved_figures_dir is None:
-                raise ValueError("`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.")
-            self._animate_fields(figures_dir=resolved_figures_dir)
+            self._animate_fields(figures_dir=self._resolve_animate_dir(figures_dir))
 
 
 ##
@@ -947,7 +980,7 @@ class ScriptInterface:
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
-    style_plots.set_theme()
+    style_figure.set_figure_params()
     parser = argparse.ArgumentParser(
         description="Generate midplane slices of Quokka field components: figures and/or extracted data.",
         parents=[

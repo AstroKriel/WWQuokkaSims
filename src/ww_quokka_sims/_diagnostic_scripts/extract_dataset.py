@@ -308,6 +308,13 @@ def extract_fields_in_parallel(
 ##
 
 
+@dataclass(frozen=True)
+class ResolvedInputs:
+    snapshot_dirs: list[Path]
+    data_dir: Path
+    index_width: int
+
+
 @final
 class ScriptInterface:
 
@@ -340,15 +347,15 @@ class ScriptInterface:
         self.overwrite = bool(overwrite)
         self.amr_level = amr_level
 
-    def run(
+    def _resolve_inputs(
         self,
-    ) -> None:
+    ) -> ResolvedInputs | None:
         snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             snapshot_tag=self.snapshot_tag,
         )
         if not snapshot_dirs:
-            return
+            return None
         data_dir = cli.resolve_output_dir(
             output_dir=self.data_dir,
             default_dir=snapshot_dirs[0].parent,
@@ -368,14 +375,24 @@ class ScriptInterface:
             data_dir=data_dir,
             overwrite=self.overwrite,
         )
-        if (self.num_workers != 1) and (len(snapshot_dirs) > 5):
+        return ResolvedInputs(
+            snapshot_dirs=snapshot_dirs,
+            data_dir=data_dir,
+            index_width=index_width,
+        )
+
+    def _extract_fields(
+        self,
+        resolved_inputs: ResolvedInputs,
+    ) -> None:
+        if (self.num_workers != 1) and (len(resolved_inputs.snapshot_dirs) > 5):
             extract_fields_in_parallel(
                 snapshot_tag=self.snapshot_tag,
                 fields_to_extract=self.fields_to_extract,
                 comps_to_extract=self.comps_to_extract,
-                snapshot_dirs=snapshot_dirs,
-                data_dir=data_dir,
-                index_width=index_width,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
+                data_dir=resolved_inputs.data_dir,
+                index_width=resolved_inputs.index_width,
                 overwrite=self.overwrite,
                 amr_level=self.amr_level,
                 num_workers=self.num_workers,
@@ -385,12 +402,19 @@ class ScriptInterface:
                 snapshot_tag=self.snapshot_tag,
                 fields_to_extract=self.fields_to_extract,
                 comps_to_extract=self.comps_to_extract,
-                snapshot_dirs=snapshot_dirs,
-                data_dir=data_dir,
-                index_width=index_width,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
+                data_dir=resolved_inputs.data_dir,
+                index_width=resolved_inputs.index_width,
                 overwrite=self.overwrite,
                 amr_level=self.amr_level,
             )
+
+    def run(
+        self,
+    ) -> None:
+        resolved_inputs = self._resolve_inputs()
+        if resolved_inputs is not None:
+            self._extract_fields(resolved_inputs)
 
 
 ##

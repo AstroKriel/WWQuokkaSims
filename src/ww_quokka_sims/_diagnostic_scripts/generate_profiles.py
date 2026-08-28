@@ -24,9 +24,9 @@ from jormi.ww_fields.fields_3d import (
 from jormi.ww_io import json_io, manage_log
 from jormi.ww_plots import (
     add_color,
-    annotate_axis,
-    manage_plots,
-    style_plots,
+    annotate_panel,
+    manage_figure,
+    style_figure,
 )
 from jormi.ww_validation import validate_types
 
@@ -421,7 +421,7 @@ class GenerateCompProfiles:
     @staticmethod
     def _style_axs(
         *,
-        axs_grid: manage_plots.PlotAxesGrid,
+        axs_grid: manage_figure.PanelGrid,
         comp_labels: list[str],
         axis_labels: list[cartesian_axes.AxisLike_3D],
     ) -> None:
@@ -444,9 +444,9 @@ class GenerateCompProfiles:
     @staticmethod
     def _plot_comp_profile(
         *,
-        axs_row: manage_plots.PlotAxesGrid,
+        axs_row: manage_figure.PanelGrid,
         comp_profile: CompProfile,
-        color: annotate_axis.ColorType,
+        color: annotate_panel.ColorType,
     ) -> None:
         for axis_index in range(comp_profile.num_axes):
             ax = axs_row[axis_index]
@@ -462,7 +462,7 @@ class GenerateCompProfiles:
     def _plot_series_row(
         self,
         *,
-        axs_row: manage_plots.PlotAxesGrid,
+        axs_row: manage_figure.PanelGrid,
         comp_profiles: list[CompProfile],
     ) -> None:
         palette = add_color.make_palette(
@@ -490,7 +490,7 @@ class GenerateCompProfiles:
                 color=color,
             )
         add_color.add_colorbar(
-            ax=axs_row[-1],
+            panels=axs_row[-1],
             palette=palette,
             label=r"snapshot index",
         )
@@ -503,11 +503,9 @@ class GenerateCompProfiles:
     ) -> None:
         axis_labels = comp_profiles[0].axis_labels
         comp_labels = [comp_profile.comp_label for comp_profile in comp_profiles]
-        fig, axs_grid = manage_plots.create_figure_grid(
-            num_rows=len(comp_profiles),
-            num_cols=len(axis_labels),
-            x_spacing=0.05,
-            y_spacing=0.15 if len(comp_profiles) > 1 else 0.05,
+        fig, axs_grid = manage_figure.create_figure_grid(
+            num_panel_rows=len(comp_profiles),
+            num_panel_cols=len(axis_labels),
         )
         for row_index, comp_profile in enumerate(comp_profiles):
             self._plot_comp_profile(
@@ -520,9 +518,9 @@ class GenerateCompProfiles:
             comp_labels=comp_labels,
             axis_labels=axis_labels,
         )
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=figure_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=figure_path,
             verbose=False,
         )
 
@@ -537,11 +535,9 @@ class GenerateCompProfiles:
         """
         comp_labels = list(comp_profiles_lookup.keys())
         axis_labels = comp_profiles_lookup[comp_labels[0]][0].axis_labels
-        fig, axs_grid = manage_plots.create_figure_grid(
-            num_rows=len(comp_labels),
-            num_cols=len(axis_labels),
-            x_spacing=0.05,
-            y_spacing=0.15 if len(comp_labels) > 1 else 0.05,
+        fig, axs_grid = manage_figure.create_figure_grid(
+            num_panel_rows=len(comp_labels),
+            num_panel_cols=len(axis_labels),
         )
         for row_index, comp_label in enumerate(comp_labels):
             comp_profiles = comp_profiles_lookup[comp_label]
@@ -562,9 +558,9 @@ class GenerateCompProfiles:
             axis_labels=axis_labels,
         )
         fig_path = figures_dir / f"{self.field_name}-profiles-summary.png"
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=fig_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=fig_path,
             verbose=True,
         )
 
@@ -684,6 +680,14 @@ class GenerateCompProfiles:
 ##
 
 
+@dataclass(frozen=True)
+class ResolvedInputs:
+    snapshot_dirs: list[Path]
+    data_dir: Path
+    figures_dir: Path
+    index_width: int
+
+
 @final
 class ScriptInterface:
 
@@ -734,16 +738,15 @@ class ScriptInterface:
         self.figures_dir = Path(figures_dir) if figures_dir is not None else None
         self.amr_level = amr_level
 
-    def run(
+    def _resolve_inputs(
         self,
-    ) -> None:
-        ## find all snapshot dirs under input_dir whose names match snapshot_tag, sorted by index
+    ) -> ResolvedInputs | None:
         snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
             input_dir=self.input_dir,
             snapshot_tag=self.snapshot_tag,
         )
         if not snapshot_dirs:
-            return
+            return None
         data_dir = cli.resolve_output_dir(
             output_dir=self.data_dir,
             default_dir=snapshot_dirs[0].parent,
@@ -756,15 +759,25 @@ class ScriptInterface:
             snapshot_dirs=snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
         )
-        ## compute and render profiles for each requested field
+        return ResolvedInputs(
+            snapshot_dirs=snapshot_dirs,
+            data_dir=data_dir,
+            figures_dir=figures_dir,
+            index_width=index_width,
+        )
+
+    def _generate_fields(
+        self,
+        resolved_inputs: ResolvedInputs,
+    ) -> None:
         for field_name in self.fields_to_plot:
             field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
             generate_comp_profiles = GenerateCompProfiles(
-                snapshot_dirs=snapshot_dirs,
+                snapshot_dirs=resolved_inputs.snapshot_dirs,
                 snapshot_tag=self.snapshot_tag,
-                index_width=index_width,
-                data_dir=data_dir,
-                figures_dir=figures_dir,
+                index_width=resolved_inputs.index_width,
+                data_dir=resolved_inputs.data_dir,
+                figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
@@ -777,6 +790,13 @@ class ScriptInterface:
             )
             generate_comp_profiles.run()
 
+    def run(
+        self,
+    ) -> None:
+        resolved_inputs = self._resolve_inputs()
+        if resolved_inputs is not None:
+            self._generate_fields(resolved_inputs)
+
 
 ##
 ## === PROGRAM MAIN
@@ -785,7 +805,7 @@ class ScriptInterface:
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
-    style_plots.set_theme()
+    style_figure.set_figure_params()
     user_args = argparse.ArgumentParser(
         description="Generate midplane profiles of Quokka field components: figures and/or extracted data.",
         parents=[
