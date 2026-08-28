@@ -32,10 +32,10 @@ from jormi.ww_io import (
 )
 from jormi.ww_plots import (
     add_color,
-    annotate_axis,
-    manage_plots,
+    annotate_panel,
+    manage_figure,
     plot_data,
-    style_plots,
+    style_figure,
 )
 from jormi.ww_validation import validate_types
 
@@ -245,7 +245,7 @@ class GenerateFieldSlices:
     @staticmethod
     def plot_slice(
         *,
-        ax: manage_plots.PlotAxis,
+        ax: manage_figure.Panel,
         step_time: float,
         field_slice: SlicedField,
         plane_label: str,
@@ -254,46 +254,46 @@ class GenerateFieldSlices:
         hide_annotations: bool = False,
     ) -> None:
         plot_data.plot_2d_array(
-            ax=ax,
+            panel=ax,
             array_2d=field_slice.sarray_2d,
             data_format="xy",
-            axis_aspect_ratio="equal",
-            axis_bounds=field_slice.axis_bounds,
-            cbar_bounds=(field_slice.min_value, field_slice.max_value),
+            data_aspect_ratio="equal",
+            axis_ranges=field_slice.axis_bounds,
+            colorbar_range=(field_slice.min_value, field_slice.max_value),
             palette_config=add_color.SequentialConfig(palette_name=cmap_name),
-            add_cbar=True,
-            cbar_label=comp_label,
-            cbar_side="right",
+            add_colorbar=True,
+            colorbar_label=comp_label,
+            colorbar_side="right",
         )
         if not hide_annotations:
-            annotate_axis.add_text(
-                ax=ax,
-                x_pos=0.5,
-                y_pos=0.95,
+            annotate_panel.add_text(
+                panel=ax,
+                x_pos_fraction=0.5,
+                y_pos_fraction=0.95,
                 x_alignment="center",
                 y_alignment="top",
                 label=f"min-value = {field_slice.min_value:.2e}\nmax-value = {field_slice.max_value:.2e}",
-                text_size=16,
+                text_size_pt=16,
                 box_alpha=0.5,
             )
-            annotate_axis.add_text(
-                ax=ax,
-                x_pos=0.5,
-                y_pos=0.5,
+            annotate_panel.add_text(
+                panel=ax,
+                x_pos_fraction=0.5,
+                y_pos_fraction=0.5,
                 x_alignment="center",
                 y_alignment="center",
                 label=rf"$t = {step_time:.2f}$",
-                text_size=16,
+                text_size_pt=16,
                 box_alpha=0.5,
             )
-            annotate_axis.add_text(
-                ax=ax,
-                x_pos=0.5,
-                y_pos=0.05,
+            annotate_panel.add_text(
+                panel=ax,
+                x_pos_fraction=0.5,
+                y_pos_fraction=0.05,
                 x_alignment="center",
                 y_alignment="bottom",
                 label=plane_label,
-                text_size=16,
+                text_size_pt=16,
                 box_alpha=0.5,
             )
 
@@ -373,7 +373,7 @@ class GenerateFieldSlices:
     def _plot_rows(
         self,
         *,
-        axs_grid: manage_plots.PlotAxesGrid,
+        axs_grid: manage_figure.PanelGrid,
         rows: list[Row],
         step_time: float,
     ) -> None:
@@ -393,7 +393,7 @@ class GenerateFieldSlices:
     def _label_axes(
         self,
         *,
-        axs_grid: manage_plots.PlotAxesGrid,
+        axs_grid: manage_figure.PanelGrid,
     ) -> None:
         num_rows = len(axs_grid)
         for row_index in range(num_rows):
@@ -554,13 +554,14 @@ class GenerateFieldSlices:
                 )
                 return
         num_rows = len(rows)
-        fig, axs_grid = manage_plots.create_figure_grid(
-            num_rows=num_rows,
-            num_cols=len(self.axes_to_slice),
-            x_spacing=1.0,
-            y_spacing=0.25,
+        fig, axs_grid = manage_figure.create_figure_grid(
+            num_panel_rows=num_rows,
+            num_panel_cols=len(self.axes_to_slice),
+            panel_width_cm=8.0,
+            panel_aspect_ratio=1.0,
+            panel_row_gap_pt=20.0,
+            panel_col_gap_pt=20.0,
         )
-        fig.subplots_adjust(right=0.82)
         self._plot_rows(
             axs_grid=axs_grid,
             rows=rows,
@@ -568,9 +569,9 @@ class GenerateFieldSlices:
         )
         self._label_axes(axs_grid=axs_grid)
         fig_path = figures_dir / self._figure_file_name(padded_index=padded_index)
-        manage_plots.save_figure(
-            fig=fig,
-            fig_path=fig_path,
+        manage_figure.save_figure(
+            figure=fig,
+            figure_path=fig_path,
             verbose=verbose,
         )
 
@@ -868,12 +869,12 @@ class ScriptInterface:
                     ),
                 )
                 continue
-            mp4_path = figures_dir / f"{plot_name}-slices.mp4"
-            manage_plots.animate_pngs_to_mp4(
+            video_path = figures_dir / f"{plot_name}-slices.mp4"
+            manage_figure.animate_frames_to_video(
                 frames_dir=figures_dir,
-                mp4_path=mp4_path,
+                video_path=video_path,
                 pattern=f"{plot_name}-slice-index=*.png",
-                fps=60,
+                frames_per_second=60,
                 timeout_seconds=120,
             )
 
@@ -978,7 +979,7 @@ class ScriptInterface:
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
-    style_plots.set_theme()
+    style_figure.set_figure_params()
     parser = argparse.ArgumentParser(
         description="Generate midplane slices of Quokka field components: figures and/or extracted data.",
         parents=[
