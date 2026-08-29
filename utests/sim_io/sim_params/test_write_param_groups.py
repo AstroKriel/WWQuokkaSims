@@ -230,6 +230,22 @@ class ModelValidationTests(unittest.TestCase):
                 boundary_conditions=("ext_dir", "periodic", "periodic"),
             )  # both set
 
+    def test_geometry_rejects_domain_lo_not_less_than_domain_hi(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            param_groups.GeometryParams(
+                domain_lo=(0.0, 0.0, 1.0),
+                domain_hi=(1.0, 1.0, 1.0),
+                is_boundary_periodic=(1, 1, 1),
+            )  # equal on axis 2
+        with self.assertRaises(ValueError):
+            param_groups.GeometryParams(
+                domain_lo=(0.0, 1.0, 0.0),
+                domain_hi=(1.0, 0.5, 1.0),
+                is_boundary_periodic=(1, 1, 1),
+            )  # inverted on axis 1
+
     def test_output_requires_at_least_one_interval_style(
         self,
     ):

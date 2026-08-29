@@ -98,6 +98,12 @@ class GeometryParams:
     ) -> None:
         _ensure_axis_triple(self.domain_lo, param_name="<domain_lo>")
         _ensure_axis_triple(self.domain_hi, param_name="<domain_hi>")
+        for axis, (lo, hi) in enumerate(zip(self.domain_lo, self.domain_hi)):
+            if lo >= hi:
+                raise ValueError(
+                    f"`<domain_lo>` must be less than `<domain_hi>` per axis, got "
+                    f"domain_lo={lo}, domain_hi={hi} on axis {axis}.",
+                )
         if (self.is_boundary_periodic is None) == (self.boundary_conditions is None):
             raise ValueError(
                 "exactly one of `<is_boundary_periodic>` or `<boundary_conditions>` must be set, "
