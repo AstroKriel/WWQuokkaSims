@@ -282,7 +282,7 @@ wheels = [
 [[package]]
 name = "jormi"
 version = "0.1.0"
-source = { editable = "../jormi" }
+source = { git = "https://github.com/AstroKriel/PythonHelpers.git?rev=5f34734daa617085fecf96b451d7d01392d81766#5f34734daa617085fecf96b451d7d01392d81766" }
 dependencies = [
     { name = "cmasher" },
     { name = "h5py" },
@@ -294,26 +294,6 @@ dependencies = [
     { name = "rich" },
     { name = "scipy" },
     { name = "tqdm" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "cmasher", specifier = ">=1.9.2" },
-    { name = "h5py", specifier = ">=3.13.0" },
-    { name = "matplotlib", specifier = ">=3.10.1" },
-    { name = "memory-profiler", specifier = ">=0.61.0" },
-    { name = "numpy", specifier = ">=2.2.4" },
-    { name = "pebble", specifier = ">=5.1.1" },
-    { name = "psutil", specifier = ">=7.0.0" },
-    { name = "rich", specifier = ">=14.1.0" },
-    { name = "scipy", specifier = ">=1.15.2" },
-    { name = "tqdm", specifier = ">=4.67.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "basedpyright", specifier = ">=1.0" },
-    { name = "pytest", specifier = ">=9.0.2" },
 ]
 
 [[package]]
@@ -972,7 +952,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "imageio", specifier = ">=2.37.0" },
-    { name = "jormi", editable = "../jormi" },
+    { name = "jormi", git = "https://github.com/AstroKriel/PythonHelpers.git?rev=5f34734daa617085fecf96b451d7d01392d81766" },
     { name = "numpy", specifier = ">=2.3.2" },
     { name = "yt", specifier = ">=4.4.1" },
 ]
