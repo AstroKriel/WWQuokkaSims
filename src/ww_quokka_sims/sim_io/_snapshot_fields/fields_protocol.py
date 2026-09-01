@@ -5,7 +5,11 @@
 ##
 
 ## stdlib
+from collections.abc import Callable, Iterator
 from typing import Protocol
+
+## third-party
+import numpy
 
 ## personal
 from jormi.ww_fields.fields_3d import (
@@ -14,7 +18,10 @@ from jormi.ww_fields.fields_3d import (
 )
 
 ## local
-from ._read_fields import HelmholtzKineticEnergy
+## direct-name import, not the usual module import: `_snapshot_fields/__init__.py`
+## re-exports this file's own contents, so `from . import read_fields` would need the
+## package fully resolved while it is still mid-import -- a real circular dependency
+from .read_fields import HelmholtzKineticEnergy
 
 ##
 ## === PROTOCOL
@@ -67,6 +74,7 @@ class FieldsProtocol(Protocol):
         self,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
         ...
 
@@ -81,6 +89,27 @@ class FieldsProtocol(Protocol):
         self,
         field_name: str,
     ) -> bool:
+        ...
+
+    def _load_expanded_vfield_boxes(
+        self,
+        *,
+        field_name: str,
+        num_extra_cells: int,
+        amr_level: int = 0,
+    ) -> Iterator[tuple[numpy.ndarray, tuple[slice, slice, slice]]]:
+        ...
+
+    def _compute_chunked_derived_vfield(
+        self,
+        *,
+        field_name: str,
+        grad_order: int,
+        amr_level: int,
+        local_compute_fn: Callable[[numpy.ndarray, int], numpy.ndarray],
+        output_field_name: str,
+        output_latex_label: str,
+    ) -> field_models.VectorField_3D:
         ...
 
     ##
@@ -169,6 +198,7 @@ class FieldsProtocol(Protocol):
         grad_order: int,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
         ...
 
@@ -181,6 +211,7 @@ class FieldsProtocol(Protocol):
         grad_order: int,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
         ...
 

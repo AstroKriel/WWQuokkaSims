@@ -9,6 +9,7 @@ import numpy
 
 ## personal
 from jormi.ww_arrays import compute_array_stats
+from jormi.ww_arrays.farrays_3d import farray_operators
 from jormi.ww_fields.fields_3d import (
     field_models,
     field_operators,
@@ -16,7 +17,11 @@ from jormi.ww_fields.fields_3d import (
 from jormi.ww_validation import validate_types
 
 ## local
-from ._fields_protocol import FieldsProtocol
+## direct-name import, not the usual module import: `_snapshot_fields/__init__.py`
+## re-exports this file's own contents, so `from .. import fields_protocol` would need
+## the package fully resolved while it is still mid-import -- a real circular dependency
+from ..fields_protocol import FieldsProtocol
+from ..readers.read_boxes import read_expanded_box
 
 ##
 ## === DERIVE CLASS
@@ -105,14 +110,44 @@ class _DeriveMagneticFields:
         grad_order: int = 2,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
-        """Compute current density: `curl[vec(b)]`."""
-        b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
-        return field_operators.compute_vfield_curl(
-            vfield_3d=b_vfield_3d,
-            field_name="current_density",
-            latex_label=r"\nabla\times\vec{b}",
+        """
+        Compute current density: `curl[vec(b)]`.
+
+        By default, reads the whole magnetic field via `covering_grid` first, then
+        differentiates it in one pass. `use_chunked_reader=True` instead computes it
+        box-by-box via `_compute_chunked_derived_vfield`: `vec(b)` is never a
+        full-domain array, only the returned current density is. Only supports
+        amr_level=0.
+        """
+        if not use_chunked_reader:
+            b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
+            return field_operators.compute_vfield_curl(
+                vfield_3d=b_vfield_3d,
+                field_name="current_density",
+                latex_label=r"\nabla\times\vec{b}",
+                grad_order=grad_order,
+            )
+        cell_widths_3d = self.load_3d_uniform_domain(amr_level=amr_level).cell_widths
+
+        def local_compute_fn(
+            expanded_b_varray: numpy.ndarray,
+            num_extra_cells: int,
+        ) -> numpy.ndarray:
+            local_curl_varray = farray_operators.compute_varray_curl(
+                expanded_b_varray,
+                cell_widths_3d=cell_widths_3d,
+            )
+            return read_expanded_box.trim_expanded_box(local_curl_varray, num_extra_cells)
+
+        return self._compute_chunked_derived_vfield(
+            field_name="magnetic",
             grad_order=grad_order,
+            amr_level=amr_level,
+            local_compute_fn=local_compute_fn,
+            output_field_name="current_density",
+            output_latex_label=r"\nabla\times\vec{b}",
         )
 
     def compute_current_density_sfield(

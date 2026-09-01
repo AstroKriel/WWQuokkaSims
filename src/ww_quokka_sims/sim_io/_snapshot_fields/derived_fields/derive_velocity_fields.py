@@ -15,7 +15,10 @@ from jormi.ww_fields.fields_3d import (
 )
 
 ## local
-from ._fields_protocol import FieldsProtocol
+## direct-name import, not the usual module import: `_snapshot_fields/__init__.py`
+## re-exports this file's own contents, so `from .. import fields_protocol` would need
+## the package fully resolved while it is still mid-import -- a real circular dependency
+from ..fields_protocol import FieldsProtocol
 
 ##
 ## === DERIVE CLASS

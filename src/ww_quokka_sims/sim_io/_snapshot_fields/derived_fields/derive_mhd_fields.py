@@ -4,15 +4,23 @@
 ## === DEPENDENCIES
 ##
 
+## third-party
+import numpy
+
 ## personal
 from jormi.ww_arrays import compute_array_stats
+from jormi.ww_arrays.farrays_3d import farray_operators
 from jormi.ww_fields.fields_3d import (
     field_models,
     field_operators,
 )
 
 ## local
-from ._fields_protocol import FieldsProtocol
+## direct-name import, not the usual module import: `_snapshot_fields/__init__.py`
+## re-exports this file's own contents, so `from .. import fields_protocol` would need
+## the package fully resolved while it is still mid-import -- a real circular dependency
+from ..fields_protocol import FieldsProtocol
+from ..readers.read_boxes import read_expanded_box
 
 ##
 ## === DERIVE CLASS
@@ -46,18 +54,58 @@ class _DeriveMHDFields:
         grad_order: int = 2,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
-        """Compute Lorentz force: `curl[vec(b)] x vec(b)`."""
-        j_vfield_3d = self.compute_current_density_vfield(
+        """
+        Compute Lorentz force: `curl[vec(b)] x vec(b)`.
+
+        By default, computes current density and reads `vec(b)` as two separate steps
+        (the second is a cache hit, since both resolve to the same cached `vec(b)`).
+        `use_chunked_reader=True` instead computes the Lorentz force box-by-box via
+        `_compute_chunked_derived_vfield`: `vec(b)` and current density each only ever
+        exist as one box's worth of data, crossed immediately into that box's Lorentz
+        force; only the returned field is ever a full-domain array. Composing the
+        already-chunked `compute_current_density_vfield` with a second
+        `load_3d_magnetic_vfield` call would both read `vec(b)` twice and hold `vec(b)`
+        and current density as full arrays simultaneously for no reason, since the cross
+        product never needs more than one box of each at once.
+        """
+        if not use_chunked_reader:
+            j_vfield_3d = self.compute_current_density_vfield(
+                grad_order=grad_order,
+                amr_level=amr_level,
+            )
+            b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
+            return field_operators.compute_vfield_cross_product(
+                f_vfield_3d=j_vfield_3d,
+                g_vfield_3d=b_vfield_3d,
+                field_name="lorentz_force",
+                latex_label=r"(\nabla\times\vec{b})\times\vec{b}",
+            )
+        cell_widths_3d = self.load_3d_uniform_domain(amr_level=amr_level).cell_widths
+
+        def local_compute_fn(
+            expanded_b_varray: numpy.ndarray,
+            num_extra_cells: int,
+        ) -> numpy.ndarray:
+            box_b_varray = read_expanded_box.trim_expanded_box(expanded_b_varray, num_extra_cells)
+            local_curl_varray = farray_operators.compute_varray_curl(
+                expanded_b_varray,
+                cell_widths_3d=cell_widths_3d,
+            )
+            box_j_varray = read_expanded_box.trim_expanded_box(local_curl_varray, num_extra_cells)
+            return farray_operators.compute_varray_cross_product(
+                f_varray_3d=box_j_varray,
+                g_varray_3d=box_b_varray,
+            )
+
+        return self._compute_chunked_derived_vfield(
+            field_name="magnetic",
             grad_order=grad_order,
             amr_level=amr_level,
-        )
-        b_vfield_3d = self.load_3d_magnetic_vfield(amr_level=amr_level)
-        return field_operators.compute_vfield_cross_product(
-            f_vfield_3d=j_vfield_3d,
-            g_vfield_3d=b_vfield_3d,
-            field_name="lorentz_force",
-            latex_label=r"(\nabla\times\vec{b})\times\vec{b}",
+            local_compute_fn=local_compute_fn,
+            output_field_name="lorentz_force",
+            output_latex_label=r"(\nabla\times\vec{b})\times\vec{b}",
         )
 
     def compute_lorentz_force_sfield(

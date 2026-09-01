@@ -15,8 +15,12 @@ from jormi.ww_fields.fields_3d import (
 from jormi.ww_validation import validate_types
 
 ## local
-from ._fields_protocol import FieldsProtocol
-from ._read_fields import HelmholtzKineticEnergy
+## direct-name import, not the usual module import: `_snapshot_fields/__init__.py`
+## re-exports this file's own contents, so `from .. import fields_protocol`/`read_fields`
+## would need the package fully resolved while it is still mid-import -- a real circular
+## dependency
+from ..fields_protocol import FieldsProtocol
+from ..read_fields import HelmholtzKineticEnergy
 
 ##
 ## === DERIVE CLASS
