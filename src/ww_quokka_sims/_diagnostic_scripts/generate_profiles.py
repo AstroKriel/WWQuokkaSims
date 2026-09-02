@@ -36,10 +36,10 @@ from ww_quokka_sims._script_tools import (
     field_registry,
 )
 from ww_quokka_sims.sim_io import (
-    field_profiles,
     find_snapshots,
     load_snapshot,
 )
+from ww_quokka_sims.sim_io.field_diagnostics import profiles
 
 ##
 ## === DATA CLASSES
@@ -330,7 +330,7 @@ class GenerateCompProfiles:
             file_path = self._data_file_path(axis_label=axis_label, padded_index=padded_index, data_dir=data_dir)
             if is_scalar:
                 comp_profile = comp_profiles[0]
-                field_profiles.ScalarProfile(
+                profiles.ScalarProfile(
                     field_name=self.field_name,
                     field_label=comp_profile.comp_label,
                     step_time=step_time,
@@ -343,14 +343,14 @@ class GenerateCompProfiles:
             else:
                 components = {
                     comp_profile.comp_name:
-                    field_profiles.ComponentArrays(
+                    profiles.ComponentArrays(
                         position=comp_profile.get_domain(axis_index=axis_index),
                         field_value=comp_profile.get_values(axis_index=axis_index),
                         label=comp_profile.comp_label,
                     )
                     for comp_profile in comp_profiles
                 }
-                field_profiles.VectorProfile(
+                profiles.VectorProfile(
                     field_name=self.field_name,
                     step_time=step_time,
                     step_index=step_index,
@@ -374,7 +374,7 @@ class GenerateCompProfiles:
             y_array_by_axis: list[numpy.ndarray] = []
             comp_label = ""
             for path in data_paths:
-                scalar_profile = field_profiles.ScalarProfile.load_from_file(path)
+                scalar_profile = profiles.ScalarProfile.load_from_file(path)
                 x_array_by_axis.append(scalar_profile.position)
                 y_array_by_axis.append(scalar_profile.field_value)
                 comp_label = scalar_profile.field_label
@@ -392,7 +392,7 @@ class GenerateCompProfiles:
                 ),
             ]
             return comp_profiles, step_time
-        vector_profiles = [field_profiles.VectorProfile.load_from_file(path) for path in data_paths]
+        vector_profiles = [profiles.VectorProfile.load_from_file(path) for path in data_paths]
         comp_keys = sorted(vector_profiles[0].components.keys())
         per_comp_x: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
         per_comp_y: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
