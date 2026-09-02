@@ -6,10 +6,8 @@
 
 ## local
 from .. import param_groups
+from .. import scheme_lookup
 from .. import write_params
-
-## import scheme_lookup directly from its module file, not via the package __init__, to avoid a static import cycle
-import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
 
 ##
 ## === CONSTANTS

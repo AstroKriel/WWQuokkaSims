@@ -12,10 +12,10 @@ from pathlib import Path
 from ww_quokka_sims.sim_io.sim_params import (
     _format_params,
     param_groups,
+    scheme_lookup,
     sim_types,
     write_params,
 )
-from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 
 ##
 ## === TEST RENDER PRIMITIVES

@@ -16,7 +16,6 @@ from . import field_loop as field_loop
 from . import mhd_quirk as mhd_quirk
 from . import orszag_tang as orszag_tang
 from . import ryu_jones_2a_shock_tube as ryu_jones_2a_shock_tube
-from . import scheme_lookup as scheme_lookup
 from . import slow_wave_convergence as slow_wave_convergence
 from . import slow_wave_correctness as slow_wave_correctness
 
