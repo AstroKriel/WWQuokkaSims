@@ -24,7 +24,7 @@ from . import param_groups
 @dataclass(frozen=True)
 class SimParams:
     """
-    One full `write_sim_params_toml` call's worth of dataclasses, plus a `write` convenience method.
+    One full `write_sim_params_toml` call's worth of dataclasses, plus a `save_to_file` convenience method.
 
     Fields
     ---
@@ -48,7 +48,7 @@ class SimParams:
     setup_params: param_groups.SetupParams | None = None
     amr_verbosity: int = 1
 
-    def write(
+    def save_to_file(
         self,
         *,
         output_path: str | Path,
