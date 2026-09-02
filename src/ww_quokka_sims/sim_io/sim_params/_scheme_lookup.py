@@ -12,7 +12,7 @@ from typing import cast
 from jormi.ww_validation import validate_enums
 
 ##
-## === SCHEME ENUMS
+## === RECONSTRUCTION SCHEME
 ##
 
 
@@ -23,26 +23,6 @@ class ReconstructionScheme(IntEnum):
     PLM = 2
     PPM = 3
     PPM_EP = 5
-
-
-class EMFComputeScheme(StrEnum):
-    """`mhd.emf_compute_scheme` by compute-scheme key."""
-
-    Q26 = "Quokka2026"
-    FS17 = "FelkerStone2017"
-    B25 = "Balsara2025"
-
-
-class EMFAveragingScheme(StrEnum):
-    """`mhd.emf_averaging_scheme` by averaging-scheme key."""
-
-    B25 = "Balsara2025"
-    LD04 = "LondrilloDelZanna2004"
-
-
-##
-## === KEY RESOLUTION
-##
 
 
 def resolve_reconstruction_scheme(
@@ -58,6 +38,19 @@ def resolve_reconstruction_scheme(
     )
 
 
+##
+## === EMF COMPUTE SCHEME
+##
+
+
+class EMFComputeScheme(StrEnum):
+    """`mhd.emf_compute_scheme` by compute-scheme key."""
+
+    Q26 = "Quokka2026"
+    FS17 = "FelkerStone2017"
+    B25 = "Balsara2025"
+
+
 def resolve_emf_compute_scheme(
     key: str,
 ) -> EMFComputeScheme:
@@ -69,6 +62,18 @@ def resolve_emf_compute_scheme(
             valid_enums=EMFComputeScheme,
         ),
     )
+
+
+##
+## === EMF AVERAGING SCHEME
+##
+
+
+class EMFAveragingScheme(StrEnum):
+    """`mhd.emf_averaging_scheme` by averaging-scheme key."""
+
+    B25 = "Balsara2025"
+    LD04 = "LondrilloDelZanna2004"
 
 
 def resolve_emf_averaging_scheme(
