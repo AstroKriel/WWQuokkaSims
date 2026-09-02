@@ -6,7 +6,7 @@
 
 ## local
 from .. import param_groups
-from .. import write_param_groups
+from .. import write_params
 
 ## import scheme_lookup directly from its module file, not via the package __init__, to avoid a static import cycle
 import ww_quokka_sims.sim_io.sim_params.sim_types.scheme_lookup as scheme_lookup
@@ -38,10 +38,10 @@ def build_sim_params(
     max_time_steps: int = 20_000,
     snapshot_index_interval: int = 100,
     checkpoint_index_interval: int = -1,
-) -> write_param_groups.SimParams:
+) -> write_params.SimParams:
     """Build the full parameter set for one `AlfvenWaveCircular` fixed-resolution correctness run."""
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key).value
-    return write_param_groups.SimParams(
+    return write_params.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=domain_lo,
             domain_hi=domain_hi,

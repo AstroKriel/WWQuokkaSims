@@ -10,10 +10,10 @@ from pathlib import Path
 
 ## local
 from ww_quokka_sims.sim_io.sim_params import (
-    _render_param_groups,
+    _format_params,
     param_groups,
     sim_types,
-    write_param_groups,
+    write_params,
 )
 from ww_quokka_sims.sim_io.sim_params.sim_types import scheme_lookup
 
@@ -27,7 +27,7 @@ class RenderTests(unittest.TestCase):
     def test_expand_per_axis_scalar(
         self,
     ):
-        lines = _render_param_groups.expand_per_axis(16, key_prefix="amr.blocking_factor")
+        lines = _format_params.expand_per_axis(16, key_prefix="amr.blocking_factor")
         self.assertEqual(
             lines,
             [
@@ -40,7 +40,7 @@ class RenderTests(unittest.TestCase):
     def test_expand_per_axis_tuple(
         self,
     ):
-        lines = _render_param_groups.expand_per_axis((16, 8, 8), key_prefix="amr.blocking_factor")
+        lines = _format_params.expand_per_axis((16, 8, 8), key_prefix="amr.blocking_factor")
         self.assertEqual(
             lines,
             [
@@ -54,7 +54,7 @@ class RenderTests(unittest.TestCase):
         self,
     ):
         for value in (16, (16, 8, 8)):
-            lines = _render_param_groups.expand_per_axis(value, key_prefix="amr.blocking_factor")
+            lines = _format_params.expand_per_axis(value, key_prefix="amr.blocking_factor")
             self.assertTrue(all("_x" in line or "_y" in line or "_z" in line for line in lines))
             self.assertFalse(any(line.startswith("amr.blocking_factor =") for line in lines))
 
@@ -62,12 +62,12 @@ class RenderTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            _render_param_groups.expand_per_axis(
+            _format_params.expand_per_axis(
                 (16, 8),  # pyright: ignore[reportArgumentType]
                 key_prefix="amr.blocking_factor",
             )
         with self.assertRaises(ValueError):
-            _render_param_groups.expand_per_axis(
+            _format_params.expand_per_axis(
                 (16, 8, 8, 4),  # pyright: ignore[reportArgumentType]
                 key_prefix="amr.blocking_factor",
             )
@@ -76,26 +76,26 @@ class RenderTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            _render_param_groups.expand_per_axis(0, key_prefix="amr.blocking_factor")
+            _format_params.expand_per_axis(0, key_prefix="amr.blocking_factor")
         with self.assertRaises(ValueError):
-            _render_param_groups.expand_per_axis(-1, key_prefix="amr.blocking_factor")
+            _format_params.expand_per_axis(-1, key_prefix="amr.blocking_factor")
 
     def test_format_value_list_of_floats(
         self,
     ):
-        self.assertEqual(_render_param_groups.format_value([0.0, 1.0, 1.0]), "[0.0, 1.0, 1.0]")
+        self.assertEqual(_format_params.format_value([0.0, 1.0, 1.0]), "[0.0, 1.0, 1.0]")
 
     def test_format_value_string(
         self,
     ):
-        self.assertEqual(_render_param_groups.format_value("Quokka2026"), '"Quokka2026"')
+        self.assertEqual(_format_params.format_value("Quokka2026"), '"Quokka2026"')
 
     def test_format_value_int_not_python_bool(
         self,
     ):
         ## AMReX booleans are bare 0/1, never Python's True/False
-        self.assertEqual(_render_param_groups.format_value(True), "1")
-        self.assertEqual(_render_param_groups.format_value(0), "0")
+        self.assertEqual(_format_params.format_value(True), "1")
+        self.assertEqual(_format_params.format_value(0), "0")
 
 
 ##
@@ -381,11 +381,11 @@ class GuardrailTests(_DefaultWriteKwargsTestCase):
     def test_refuses_to_overwrite_by_default(
         self,
     ):
-        write_param_groups.write_sim_params_toml(
+        write_params.write_sim_params_toml(
             **self._base_kwargs(),  # pyright: ignore[reportArgumentType]
         )
         with self.assertRaises(FileExistsError):
-            write_param_groups.write_sim_params_toml(
+            write_params.write_sim_params_toml(
                 **self._base_kwargs(),  # pyright: ignore[reportArgumentType]
             )
 
@@ -394,25 +394,25 @@ class GuardrailTests(_DefaultWriteKwargsTestCase):
     ):
         kwargs = self._base_kwargs(output_path=Path("not_sim_params.toml"))
         with self.assertRaises(ValueError):
-            write_param_groups.write_sim_params_toml(
+            write_params.write_sim_params_toml(
                 **kwargs,  # pyright: ignore[reportArgumentType]
             )
 
     def test_param_group_order_and_setup_last(
         self,
     ):
-        file_path = write_param_groups.write_sim_params_toml(
+        file_path = write_params.write_sim_params_toml(
             **self._base_kwargs(),  # pyright: ignore[reportArgumentType]
         )
         rendered_group_titles = [line for line in file_path.read_text().splitlines() if line.startswith("##")]
         expected_group_titles = (
-            write_param_groups._ParamGroupTitle.GEOMETRY,
-            write_param_groups._ParamGroupTitle.RESOLUTION,
-            write_param_groups._ParamGroupTitle.VERBOSITY,
-            write_param_groups._ParamGroupTitle.OUTPUT,
-            write_param_groups._ParamGroupTitle.TIME_INTEGRATION,
-            write_param_groups._ParamGroupTitle.HYDRO,
-            write_param_groups._ParamGroupTitle.MHD,
+            write_params._ParamGroupTitle.GEOMETRY,
+            write_params._ParamGroupTitle.RESOLUTION,
+            write_params._ParamGroupTitle.VERBOSITY,
+            write_params._ParamGroupTitle.OUTPUT,
+            write_params._ParamGroupTitle.TIME_INTEGRATION,
+            write_params._ParamGroupTitle.HYDRO,
+            write_params._ParamGroupTitle.MHD,
         )
         self.assertEqual(rendered_group_titles, [f"## {title}" for title in expected_group_titles])
 
@@ -434,7 +434,7 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
                 boundary_conditions=("ext_dir", "periodic", "periodic"),
             ),
         )
-        file_path = write_param_groups.write_sim_params_toml(
+        file_path = write_params.write_sim_params_toml(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()
@@ -451,7 +451,7 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
                 checkpoint_prefix="checkpoints/chk",
             ),
         )
-        file_path = write_param_groups.write_sim_params_toml(
+        file_path = write_params.write_sim_params_toml(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()
@@ -472,7 +472,7 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
                 derived_vars=("magnetic_divergence", ),
             ),
         )
-        file_path = write_param_groups.write_sim_params_toml(
+        file_path = write_params.write_sim_params_toml(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()
@@ -494,7 +494,7 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
                 num_refinement_buffer_cells=2,
             ),
         )
-        file_path = write_param_groups.write_sim_params_toml(
+        file_path = write_params.write_sim_params_toml(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()
@@ -505,7 +505,7 @@ class WriteContentTests(_DefaultWriteKwargsTestCase):
         self,
     ):
         kwargs = self._base_kwargs(amr_verbosity=0)
-        file_path = write_param_groups.write_sim_params_toml(
+        file_path = write_params.write_sim_params_toml(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()

@@ -12,7 +12,7 @@ from jormi.ww_validation import validate_types
 ##
 
 _AXES = ("x", "y", "z")
-_RENDERABLE_TYPES = (bool, str, int, float, list, tuple)
+_FORMATTABLE_TYPES = (bool, str, int, float, list, tuple)
 
 ##
 ## === VALUE FORMATTING
@@ -22,11 +22,11 @@ _RENDERABLE_TYPES = (bool, str, int, float, list, tuple)
 def format_value(
     value: object,
 ) -> str:
-    """Render one scalar/list/tuple value the way AMReX's `sim_params.toml` files are hand-written."""
+    """Format one scalar/list/tuple value the way AMReX's `sim_params.toml` files are hand-written."""
     validate_types.ensure_type(
         param=value,
         param_name="<value>",
-        valid_types=_RENDERABLE_TYPES,
+        valid_types=_FORMATTABLE_TYPES,
     )
     if isinstance(value, bool):
         ## AMReX booleans are written as bare 0/1, never Python's True/False
@@ -38,12 +38,12 @@ def format_value(
     return str(value)
 
 
-def render_key_value(
+def format_key_value(
     *,
     key: str,
     value: object,
 ) -> str:
-    """Render one `key = value` line."""
+    """Format one `key = value` line."""
     return f"{key} = {format_value(value)}"
 
 
@@ -80,7 +80,7 @@ def expand_per_axis(
         )
         per_axis = (value, value, value)
     return [
-        render_key_value(
+        format_key_value(
             key=f"{key_prefix}_{axis}",
             value=per_axis[axis_index],
         ) for axis_index, axis in enumerate(_AXES)
@@ -88,30 +88,30 @@ def expand_per_axis(
 
 
 ##
-## === PARAM GROUP RENDERING
+## === PARAM GROUP FORMATTING
 ##
 
 
-def render_param_group(
+def format_param_group(
     *,
     group_title: str,
     assignment_lines: list[str],
 ) -> str:
-    """Render one `## <group_title>` param group from already-formatted `key = value` assignment lines."""
+    """Format one `## <group_title>` param group from already-formatted `key = value` assignment lines."""
     return "\n".join([f"## {group_title}", *assignment_lines])
 
 
-def render_param_groups(
+def format_param_groups(
     param_groups: list[tuple[str, list[str]]],
 ) -> str:
     """Join `(group_title, assignment_lines)` param groups in order, blank-line separated, trailing newline."""
-    rendered = [
-        render_param_group(
+    formatted = [
+        format_param_group(
             group_title=group_title,
             assignment_lines=assignment_lines,
         ) for group_title, assignment_lines in param_groups
     ]
-    return "\n\n".join(rendered) + "\n"
+    return "\n\n".join(formatted) + "\n"
 
 
 ## } MODULE

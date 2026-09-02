@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from enum import Enum
 
-from .. import write_param_groups
+from .. import write_params
 from . import alfven_wave_circular_convergence as alfven_wave_circular_convergence
 from . import alfven_wave_circular_correctness as alfven_wave_circular_correctness
 from . import alfven_wave_linear_convergence as alfven_wave_linear_convergence
@@ -50,13 +50,13 @@ class ProblemKey(Enum):
     @property
     def build_sim_params(
         self,
-    ) -> Callable[..., write_param_groups.SimParams]:
+    ) -> Callable[..., write_params.SimParams]:
         return self.value.build_sim_params
 
 
 def resolve_sim_params_builder(
     problem_key: ProblemKey | str,
-) -> Callable[..., write_param_groups.SimParams]:
+) -> Callable[..., write_params.SimParams]:
     """Resolve `problem_key` (a `ProblemKey` member or its string value) to its profile's `build_sim_params`."""
     if isinstance(problem_key, ProblemKey):
         return problem_key.build_sim_params
