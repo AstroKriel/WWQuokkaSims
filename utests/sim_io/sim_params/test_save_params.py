@@ -13,7 +13,7 @@ from ww_quokka_sims.sim_io.sim_params import (
     _format_params,
     _param_groups,
     _scheme_lookup,
-    sim_types,
+    problem_setups,
     _save_params,
 )
 
@@ -524,14 +524,14 @@ class SimTypesTests(unittest.TestCase):
         self,
     ):
         self.assertIs(
-            sim_types.resolve_sim_params_builder(sim_types.ProblemSetup.BLAST_WAVE),
-            sim_types.blast_wave.build_sim_params,
+            problem_setups.resolve_sim_params_builder(problem_setups.ProblemSetup.BLAST_WAVE),
+            problem_setups.blast_wave.build_sim_params,
         )
 
     def test_profile_minimal_call_uses_documented_defaults(
         self,
     ):
-        sim_params = sim_types.blast_wave.build_sim_params(
+        sim_params = problem_setups.blast_wave.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction_order_key="ppm",
@@ -550,7 +550,7 @@ class SimTypesTests(unittest.TestCase):
     def test_profile_override_threads_through(
         self,
     ):
-        sim_params = sim_types.blast_wave.build_sim_params(
+        sim_params = problem_setups.blast_wave.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction_order_key="ppm",
@@ -566,7 +566,7 @@ class SimTypesTests(unittest.TestCase):
     def test_convergence_profile_omits_run_sim_key(
         self,
     ):
-        sim_params = sim_types.alfven_wave_linear_convergence.build_sim_params(
+        sim_params = problem_setups.alfven_wave_linear_convergence.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction_order_key="ppm",
@@ -581,7 +581,7 @@ class SimTypesTests(unittest.TestCase):
     def test_correctness_profile_renders_run_sim_setup_keys(
         self,
     ):
-        sim_params = sim_types.alfven_wave_linear_correctness.build_sim_params(
+        sim_params = problem_setups.alfven_wave_linear_correctness.build_sim_params(
             compute_scheme_key="q26",
             averaging_scheme_key="b25",
             reconstruction_order_key="ppm",
@@ -600,7 +600,7 @@ class SimTypesTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(TypeError):
-            sim_types.alfven_wave_linear_correctness.build_sim_params(  # pyright: ignore[reportCallIssue]
+            problem_setups.alfven_wave_linear_correctness.build_sim_params(  # pyright: ignore[reportCallIssue]
                 compute_scheme_key="q26",
                 averaging_scheme_key="b25",
                 reconstruction_order_key="ppm",

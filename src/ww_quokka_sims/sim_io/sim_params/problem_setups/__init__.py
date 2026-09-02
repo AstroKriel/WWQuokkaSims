@@ -21,7 +21,7 @@ from . import vortex_orszag_tang as vortex_orszag_tang
 
 
 class ProblemSetup(Enum):
-    """Each member's value is the module defining that specific problem setup; add one member per new file added under `sim_types/`."""
+    """Each member's value is the module defining that specific problem setup; add one member per new file added under `problem_setups/`."""
 
     ALFVEN_WAVE_CIRCULAR_CONVERGENCE = alfven_wave_circular_convergence
     ALFVEN_WAVE_CIRCULAR_CORRECTNESS = alfven_wave_circular_correctness
