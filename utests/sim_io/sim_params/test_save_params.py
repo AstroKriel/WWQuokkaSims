@@ -381,11 +381,11 @@ class GuardrailTests(_DefaultSaveKwargsTestCase):
     def test_refuses_to_overwrite_by_default(
         self,
     ):
-        _save_params.save_sim_params_toml(
+        _save_params.save_sim_params(
             **self._base_kwargs(),  # pyright: ignore[reportArgumentType]
         )
         with self.assertRaises(FileExistsError):
-            _save_params.save_sim_params_toml(
+            _save_params.save_sim_params(
                 **self._base_kwargs(),  # pyright: ignore[reportArgumentType]
             )
 
@@ -394,14 +394,14 @@ class GuardrailTests(_DefaultSaveKwargsTestCase):
     ):
         kwargs = self._base_kwargs(output_path=Path("not_sim_params.toml"))
         with self.assertRaises(ValueError):
-            _save_params.save_sim_params_toml(
+            _save_params.save_sim_params(
                 **kwargs,  # pyright: ignore[reportArgumentType]
             )
 
     def test_param_group_order_and_setup_last(
         self,
     ):
-        file_path = _save_params.save_sim_params_toml(
+        file_path = _save_params.save_sim_params(
             **self._base_kwargs(),  # pyright: ignore[reportArgumentType]
         )
         rendered_group_titles = [line for line in file_path.read_text().splitlines() if line.startswith("##")]
@@ -434,7 +434,7 @@ class SaveContentTests(_DefaultSaveKwargsTestCase):
                 boundary_conditions=("ext_dir", "periodic", "periodic"),
             ),
         )
-        file_path = _save_params.save_sim_params_toml(
+        file_path = _save_params.save_sim_params(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()
@@ -451,7 +451,7 @@ class SaveContentTests(_DefaultSaveKwargsTestCase):
                 checkpoint_prefix="checkpoints/chk",
             ),
         )
-        file_path = _save_params.save_sim_params_toml(
+        file_path = _save_params.save_sim_params(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()
@@ -472,7 +472,7 @@ class SaveContentTests(_DefaultSaveKwargsTestCase):
                 derived_vars=("magnetic_divergence", ),
             ),
         )
-        file_path = _save_params.save_sim_params_toml(
+        file_path = _save_params.save_sim_params(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()
@@ -494,7 +494,7 @@ class SaveContentTests(_DefaultSaveKwargsTestCase):
                 num_refinement_buffer_cells=2,
             ),
         )
-        file_path = _save_params.save_sim_params_toml(
+        file_path = _save_params.save_sim_params(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()
@@ -505,7 +505,7 @@ class SaveContentTests(_DefaultSaveKwargsTestCase):
         self,
     ):
         kwargs = self._base_kwargs(amr_verbosity=0)
-        file_path = _save_params.save_sim_params_toml(
+        file_path = _save_params.save_sim_params(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )
         file_content = file_path.read_text()

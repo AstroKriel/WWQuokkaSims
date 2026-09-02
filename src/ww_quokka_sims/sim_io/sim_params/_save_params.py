@@ -24,7 +24,7 @@ from . import _param_groups
 @dataclass(frozen=True)
 class SimParams:
     """
-    One full `save_sim_params_toml` call's worth of dataclasses, plus a `save_to_file` convenience method.
+    One full `save_sim_params` call's worth of dataclasses, plus a `save_to_file` convenience method.
 
     Fields
     ---
@@ -55,7 +55,7 @@ class SimParams:
         overwrite: bool = False,
         verbose: bool = True,
     ) -> Path:
-        return save_sim_params_toml(
+        return save_sim_params(
             output_path=output_path,
             geometry_params=self.geometry_params,
             resolution_params=self.resolution_params,
@@ -112,7 +112,7 @@ class _ParamGroupTitle:
 ##
 
 
-def _build_geometry_lines(
+def _build_geometry_section(
     geometry_params: _param_groups.GeometryParams,
 ) -> list[str]:
     assignment_lines = [
@@ -142,7 +142,7 @@ def _build_geometry_lines(
     return assignment_lines
 
 
-def _build_resolution_lines(
+def _build_resolution_section(
     resolution_params: _param_groups.ResolutionParams,
 ) -> list[str]:
     assignment_lines = [
@@ -169,7 +169,7 @@ def _build_resolution_lines(
     return assignment_lines
 
 
-def _build_output_lines(
+def _build_output_section(
     output_file_params: _param_groups.OutputFileParams,
 ) -> list[str]:
     assignment_lines: list[str] = []
@@ -225,7 +225,7 @@ def _build_output_lines(
     return assignment_lines
 
 
-def _build_time_integration_lines(
+def _build_time_integration_section(
     time_integration_params: _param_groups.TimeIntegrationParams,
 ) -> list[str]:
     assignment_lines = [
@@ -252,7 +252,7 @@ def _build_time_integration_lines(
     return assignment_lines
 
 
-def _build_hydro_lines(
+def _build_hydro_section(
     hydro_params: _param_groups.HydroParams,
 ) -> list[str]:
     assignment_lines = [
@@ -275,7 +275,7 @@ def _build_hydro_lines(
     return assignment_lines
 
 
-def _build_mhd_lines(
+def _build_mhd_section(
     mhd_params: _param_groups.MHDParams,
 ) -> list[str]:
     assignment_lines = [
@@ -302,7 +302,7 @@ def _build_mhd_lines(
     return assignment_lines
 
 
-def _build_setup_lines(
+def _build_setup_section(
     setup_params: _param_groups.SetupParams,
 ) -> list[str]:
     return [
@@ -318,7 +318,7 @@ def _build_setup_lines(
 ##
 
 
-def save_sim_params_toml(
+def save_sim_params(
     *,
     output_path: str | Path,
     geometry_params: _param_groups.GeometryParams,
@@ -366,8 +366,8 @@ def save_sim_params_toml(
             f"sim_params.toml already exists (pass `overwrite=True` to replace it): {output_path}.",
         )
     param_group_entries: list[tuple[str, list[str]]] = [
-        (_ParamGroupTitle.GEOMETRY, _build_geometry_lines(geometry_params)),
-        (_ParamGroupTitle.RESOLUTION, _build_resolution_lines(resolution_params)),
+        (_ParamGroupTitle.GEOMETRY, _build_geometry_section(geometry_params)),
+        (_ParamGroupTitle.RESOLUTION, _build_resolution_section(resolution_params)),
         (
             _ParamGroupTitle.VERBOSITY,
             [
@@ -377,13 +377,13 @@ def save_sim_params_toml(
                 ),
             ],
         ),
-        (_ParamGroupTitle.OUTPUT, _build_output_lines(output_file_params)),
-        (_ParamGroupTitle.TIME_INTEGRATION, _build_time_integration_lines(time_integration_params)),
-        (_ParamGroupTitle.HYDRO, _build_hydro_lines(hydro_params)),
-        (_ParamGroupTitle.MHD, _build_mhd_lines(mhd_params)),
+        (_ParamGroupTitle.OUTPUT, _build_output_section(output_file_params)),
+        (_ParamGroupTitle.TIME_INTEGRATION, _build_time_integration_section(time_integration_params)),
+        (_ParamGroupTitle.HYDRO, _build_hydro_section(hydro_params)),
+        (_ParamGroupTitle.MHD, _build_mhd_section(mhd_params)),
     ]
     if setup_params is not None:
-        param_group_entries.append((setup_params.group_title, _build_setup_lines(setup_params)))
+        param_group_entries.append((setup_params.group_title, _build_setup_section(setup_params)))
     manage_io.create_directory(
         directory=output_path.parent,
         verbose=verbose,
