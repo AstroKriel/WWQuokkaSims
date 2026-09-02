@@ -45,10 +45,3 @@ class ProblemSetup(Enum):
         self,
     ) -> Callable[..., _save_params.SimParams]:
         return self.value.build_sim_params
-
-
-def resolve_sim_params_builder(
-    problem_setup: ProblemSetup,
-) -> Callable[..., _save_params.SimParams]:
-    """Resolve `problem_setup` to its profile's `build_sim_params`."""
-    return problem_setup.build_sim_params

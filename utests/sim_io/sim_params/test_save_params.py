@@ -513,20 +513,12 @@ class SaveContentTests(_DefaultSaveKwargsTestCase):
 
 
 ##
-## === TEST SIM TYPES CAPABILITY
+## === TEST PROBLEM SETUPS CAPABILITY
 ## doesn't verify any real Quokka problem's domain values, only the tool's own mechanics
 ##
 
 
-class SimTypesTests(unittest.TestCase):
-
-    def test_resolve_sim_params_builder_returns_registered_function(
-        self,
-    ):
-        self.assertIs(
-            problem_setups.resolve_sim_params_builder(problem_setups.ProblemSetup.BLAST_WAVE),
-            problem_setups.blast_wave.build_sim_params,
-        )
+class ProblemSetupsTests(unittest.TestCase):
 
     def test_profile_minimal_call_uses_documented_defaults(
         self,
