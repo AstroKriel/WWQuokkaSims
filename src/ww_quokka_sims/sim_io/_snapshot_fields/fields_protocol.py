@@ -6,12 +6,14 @@
 
 ## stdlib
 from collections.abc import Callable, Iterator
+from pathlib import Path
 from typing import Protocol
 
 ## third-party
 import numpy
 
 ## personal
+from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import (
     domain_models,
     field_models,
@@ -21,7 +23,7 @@ from jormi.ww_fields.fields_3d import (
 ## direct-name import, not the usual module import: `_snapshot_fields/__init__.py`
 ## re-exports this file's own contents, so `from . import read_fields` would need the
 ## package fully resolved while it is still mid-import -- a real circular dependency
-from .read_fields import HelmholtzKineticEnergy
+from .read_fields import FieldKey, HelmholtzKineticEnergy, LRUCache
 
 ##
 ## === PROTOCOL
@@ -42,6 +44,9 @@ class FieldsProtocol(Protocol):
     ## --- QuokkaSnapshot
     ##
 
+    snapshot_dir: Path
+    _field_cache: LRUCache
+
     @property
     def sim_time(
         self,
@@ -54,6 +59,62 @@ class FieldsProtocol(Protocol):
         force_periodicity: bool = True,
         amr_level: int = 0,
     ) -> domain_models.UniformDomain_3D:
+        ...
+
+    def _resolve_sfield_key(
+        self,
+        field_name: str,
+    ) -> FieldKey:
+        ...
+
+    def _get_sfield_key(
+        self,
+        field_name: str,
+    ) -> FieldKey:
+        ...
+
+    def _get_vfield_key_lookup(
+        self,
+        field_name: str,
+    ) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
+        ...
+
+    def is_field_key_available(
+        self,
+        *,
+        field_key: FieldKey,
+    ) -> bool:
+        ...
+
+    def load_3d_sfield(
+        self,
+        *,
+        field_key: FieldKey,
+        field_name: str,
+        latex_label: str,
+        amr_level: int = 0,
+        use_chunked_reader: bool = False,
+    ) -> field_models.ScalarField_3D:
+        ...
+
+    def load_3d_vfield(
+        self,
+        *,
+        vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, FieldKey],
+        field_name: str,
+        latex_label: str,
+        amr_level: int = 0,
+        use_chunked_reader: bool = False,
+    ) -> field_models.VectorField_3D:
+        ...
+
+    def _field_cache_key(
+        self,
+        field_name: str,
+        *,
+        amr_level: int,
+        use_chunked_reader: bool = False,
+    ) -> str:
         ...
 
     def load_3d_density_sfield(
@@ -191,6 +252,14 @@ class FieldsProtocol(Protocol):
         *,
         amr_level: int = 0,
     ) -> field_models.VectorField_3D:
+        ...
+
+    def compute_div_b_sfield(
+        self,
+        grad_order: int = 2,
+        *,
+        amr_level: int = 0,
+    ) -> field_models.ScalarField_3D:
         ...
 
     def compute_current_density_vfield(
