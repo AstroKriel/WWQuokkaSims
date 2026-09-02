@@ -12,7 +12,7 @@ import numpy
 
 ## local
 from . import base_reader
-from ... import read_fields
+from ..._snapshot_fields import read_fields
 
 ##
 ## === PUBLIC FUNCTIONS

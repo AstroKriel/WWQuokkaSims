@@ -15,7 +15,7 @@ from jormi.ww_io import manage_log
 
 ## local
 from ww_quokka_sims._script_tools import cli
-from ww_quokka_sims.sim_io import load_snapshot
+from ww_quokka_sims.sim_io.snapshots import load_snapshot
 
 ##
 ## === SCRIPT INTERFACE

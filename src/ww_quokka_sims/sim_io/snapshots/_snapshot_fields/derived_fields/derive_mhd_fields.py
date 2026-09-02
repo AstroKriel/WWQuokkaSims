@@ -20,7 +20,7 @@ from jormi.ww_fields.fields_3d import (
 ## re-exports this file's own contents, so `from .. import fields_protocol` would need
 ## the package fully resolved while it is still mid-import -- a real circular dependency
 from ..fields_protocol import FieldsProtocol
-from ..readers.read_boxes import read_expanded_box
+from ..._snapshot_readers.read_boxes import read_expanded_box
 
 ##
 ## === DERIVE CLASS

@@ -29,8 +29,8 @@ from jormi.ww_validation import validate_types
 ## local
 from . import _snapshot_fields
 from ._snapshot_fields import FieldKey as FieldKey  # explicit re-export so pyright treats it as public API
-from ._snapshot_fields.readers import read_whole_domain
-from ._snapshot_fields.readers.read_boxes import read_box, read_expanded_box
+from ._snapshot_readers import read_whole_domain
+from ._snapshot_readers.read_boxes import read_box, read_expanded_box
 
 ##
 ## === SNAPSHOT OPERATOR CLASS

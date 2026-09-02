@@ -17,10 +17,10 @@ from jormi.ww_fields import cartesian_axes
 ## local
 ## direct-name import, not the usual module import: this file is reachable from
 ## `_snapshot_fields/__init__.py` (via `derive_magnetic_fields.py`/`derive_mhd_fields.py`),
-## so `from ... import read_fields` would need that package fully resolved while it is
-## still mid-import -- a real circular dependency
+## so `from ..._snapshot_fields import read_fields` would need that package fully resolved
+## while it is still mid-import -- a real circular dependency
 from . import base_reader
-from ...read_fields import FieldKey
+from ..._snapshot_fields.read_fields import FieldKey
 
 ##
 ## === PUBLIC FUNCTIONS

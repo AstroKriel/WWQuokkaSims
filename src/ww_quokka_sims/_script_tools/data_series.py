@@ -26,7 +26,7 @@ from jormi.ww_validation import (
 )
 
 ## local
-from ww_quokka_sims.sim_io import load_snapshot
+from ww_quokka_sims.sim_io.snapshots import load_snapshot
 
 ##
 ## === DATA CLASSES

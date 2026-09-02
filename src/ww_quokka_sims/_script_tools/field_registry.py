@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from jormi.ww_fields.fields_3d import field_models
 
 ## local
-from ww_quokka_sims.sim_io import load_snapshot
+from ww_quokka_sims.sim_io.snapshots import load_snapshot
 
 ##
 ## === DEFAULT COLORMAPS

@@ -31,7 +31,7 @@ from ww_quokka_sims._script_tools import (
     data_series,
     field_registry,
 )
-from ww_quokka_sims.sim_io import find_snapshots
+from ww_quokka_sims.sim_io.snapshots import find_snapshots
 
 ##
 ## === FIGURE RENDERING

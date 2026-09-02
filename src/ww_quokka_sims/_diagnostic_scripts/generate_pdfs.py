@@ -36,7 +36,7 @@ from ww_quokka_sims._script_tools import (
     cli,
     field_registry,
 )
-from ww_quokka_sims.sim_io import (
+from ww_quokka_sims.sim_io.snapshots import (
     find_snapshots,
     load_snapshot,
 )
