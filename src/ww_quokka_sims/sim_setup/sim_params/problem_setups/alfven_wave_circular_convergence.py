@@ -19,6 +19,7 @@ _IS_BOUNDARY_PERIODIC = (1, 1, 1)
 _NUM_CELLS = (64, 8, 8)
 _BLOCKING_FACTOR = 8
 _MAX_GRID_SIZE = 128
+_AMR_VERBOSITY = _param_groups.AmrVerbosity.SILENT
 _SNAPSHOT_INDEX_INTERVAL = -1
 _CFL = 0.3
 _USE_REFLUX = 0
@@ -27,7 +28,6 @@ _INTEGRATOR_ORDER = 2
 _USE_DUAL_ENERGY = 0
 _MACHINE_PRECISION_TARGET = 0
 _NX_MAX = 2048
-_AMR_VERBOSITY = 0
 
 ##
 ## === PROGRAM MAIN
@@ -53,6 +53,7 @@ def build_sim_params(
             blocking_factor=_BLOCKING_FACTOR,
             max_grid_size=_MAX_GRID_SIZE,
         ),
+        verbosity_params=_param_groups.VerbosityParams(level=_AMR_VERBOSITY),
         output_file_params=_param_groups.OutputFileParams(
             snapshot_index_interval=_SNAPSHOT_INDEX_INTERVAL,
         ),
@@ -77,7 +78,6 @@ def build_sim_params(
                 "nx_max": _NX_MAX,
             },
         ),
-        amr_verbosity=_AMR_VERBOSITY,
     )
 
 

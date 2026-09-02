@@ -20,33 +20,32 @@ from . import _param_groups
 ## === PARAMETER BUNDLE
 ##
 
+_DEFAULT_VERBOSITY_PARAMS = _param_groups.VerbosityParams()
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, kw_only=True)
 class SimParams:
     """
     One full `save_sim_params` call's worth of dataclasses, plus a `save_to_file` convenience method.
 
-    Fields
+    Fields, in the order they are written to file
     ---
-    - `geometry_params`, `resolution_params`, `output_file_params`, `time_integration_params`,
-      `hydro_params`, `mhd_params`:
+    - `geometry_params`, `resolution_params`, `verbosity_params`, `output_file_params`,
+      `time_integration_params`, `hydro_params`, `mhd_params`:
         See the matching dataclass in `sim_params._param_groups`.
 
     - `setup_params`:
         Problem-specific parameters; omit for problem types with none.
-
-    - `amr_verbosity`:
-        AMReX's own `amr.v` logging verbosity; omit for Quokka's default.
     """
 
     geometry_params: _param_groups.GeometryParams
     resolution_params: _param_groups.ResolutionParams
+    verbosity_params: _param_groups.VerbosityParams = _DEFAULT_VERBOSITY_PARAMS
     output_file_params: _param_groups.OutputFileParams
     time_integration_params: _param_groups.TimeIntegrationParams
     hydro_params: _param_groups.HydroParams
     mhd_params: _param_groups.MHDParams
     setup_params: _param_groups.SetupParams | None = None
-    amr_verbosity: int = 1
 
     def save_to_file(
         self,
@@ -59,12 +58,12 @@ class SimParams:
             output_path=output_path,
             geometry_params=self.geometry_params,
             resolution_params=self.resolution_params,
+            verbosity_params=self.verbosity_params,
             output_file_params=self.output_file_params,
             time_integration_params=self.time_integration_params,
             hydro_params=self.hydro_params,
             mhd_params=self.mhd_params,
             setup_params=self.setup_params,
-            amr_verbosity=self.amr_verbosity,
             overwrite=overwrite,
             verbose=verbose,
         )
@@ -167,6 +166,17 @@ def _build_resolution_section(
             ),
         )
     return assignment_lines
+
+
+def _build_verbosity_section(
+    verbosity_params: _param_groups.VerbosityParams,
+) -> list[str]:
+    return [
+        _format_params.format_key_value(
+            key="amr.v",
+            value=verbosity_params.level,
+        ),
+    ]
 
 
 def _build_output_section(
@@ -323,12 +333,12 @@ def save_sim_params(
     output_path: str | Path,
     geometry_params: _param_groups.GeometryParams,
     resolution_params: _param_groups.ResolutionParams,
+    verbosity_params: _param_groups.VerbosityParams = _DEFAULT_VERBOSITY_PARAMS,
     output_file_params: _param_groups.OutputFileParams,
     time_integration_params: _param_groups.TimeIntegrationParams,
     hydro_params: _param_groups.HydroParams,
     mhd_params: _param_groups.MHDParams,
     setup_params: _param_groups.SetupParams | None = None,
-    amr_verbosity: int = 1,
     overwrite: bool = False,
     verbose: bool = True,
 ) -> Path:
@@ -342,16 +352,9 @@ def save_sim_params(
 
     Parameters
     ---
-    - `amr_verbosity`:
-        AMReX's own `amr.v` logging verbosity.
-
     - `overwrite`:
         Raise if `output_path` already exists and this is `False`.
     """
-    validate_types.ensure_finite_int(
-        param=amr_verbosity,
-        param_name="amr_verbosity",
-    )
     validate_types.ensure_bool(
         param=overwrite,
         param_name="overwrite",
@@ -368,15 +371,7 @@ def save_sim_params(
     param_group_entries: list[tuple[str, list[str]]] = [
         (_ParamGroupTitle.GEOMETRY, _build_geometry_section(geometry_params)),
         (_ParamGroupTitle.RESOLUTION, _build_resolution_section(resolution_params)),
-        (
-            _ParamGroupTitle.VERBOSITY,
-            [
-                _format_params.format_key_value(
-                    key="amr.v",
-                    value=amr_verbosity,
-                ),
-            ],
-        ),
+        (_ParamGroupTitle.VERBOSITY, _build_verbosity_section(verbosity_params)),
         (_ParamGroupTitle.OUTPUT, _build_output_section(output_file_params)),
         (_ParamGroupTitle.TIME_INTEGRATION, _build_time_integration_section(time_integration_params)),
         (_ParamGroupTitle.HYDRO, _build_hydro_section(hydro_params)),

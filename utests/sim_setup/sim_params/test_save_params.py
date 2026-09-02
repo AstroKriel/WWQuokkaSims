@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 ## local
-from ww_quokka_sims.sim_io.sim_params import (
+from ww_quokka_sims.sim_setup.sim_params import (
     _format_params,
     _param_groups,
     _scheme_lookup,
@@ -504,7 +504,9 @@ class SaveContentTests(_DefaultSaveKwargsTestCase):
     def test_writes_amr_verbosity(
         self,
     ):
-        kwargs = self._base_kwargs(amr_verbosity=0)
+        kwargs = self._base_kwargs(
+            verbosity_params=_param_groups.VerbosityParams(level=_param_groups.AmrVerbosity.SILENT),
+        )
         file_path = _save_params.save_sim_params(
             **kwargs,  # pyright: ignore[reportArgumentType]
         )

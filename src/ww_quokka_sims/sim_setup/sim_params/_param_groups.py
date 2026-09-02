@@ -6,6 +6,7 @@
 
 ## stdlib
 from dataclasses import dataclass, field
+from enum import IntEnum
 from typing import Any
 
 ## personal
@@ -221,6 +222,36 @@ class ResolutionParams:
                     f"enabled (AMReX requirement), got max_grid_size={grid_size}, "
                     f"blocking_factor={block_size} on axis {axis}.",
                 )
+
+
+##
+## === VERBOSITY
+##
+
+
+class AmrVerbosity(IntEnum):
+    """
+    `amr.v`, AMReX's own `Amr`/`AmrMesh` logging verbosity. Each level unlocks an additional class
+    of messages on top of the previous one; `DEBUG` mainly surfaces restart/checkpoint file-header
+    internals, not a generically "more detailed" run log.
+    """
+
+    SILENT = 0
+    STANDARD = 1
+    DETAILED = 2
+    DEBUG = 3
+
+
+@dataclass(frozen=True)
+class VerbosityParams:
+    """
+    Fields
+    ---
+    - `level`:
+        AMReX's own `amr.v` logging verbosity; omit for Quokka's default.
+    """
+
+    level: AmrVerbosity = AmrVerbosity.STANDARD
 
 
 ##
