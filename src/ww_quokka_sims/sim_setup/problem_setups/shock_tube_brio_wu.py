@@ -5,9 +5,9 @@
 ##
 
 ## local
-from .. import _param_groups
-from .. import _scheme_lookup
-from .. import _save_params
+from .._sim_params import param_groups
+from .._sim_params import save_params
+from .._sim_params import scheme_lookup
 
 ##
 ## === CONSTANTS
@@ -43,21 +43,21 @@ def build_sim_params(
     checkpoint_index_interval: int | None = None,
     checkpoint_time_interval: float | None = None,
     checkpoint_prefix: str | None = None,
-) -> _save_params.SimParams:
+) -> save_params.SimParams:
     """Build the full parameter set for one run."""
-    reconstruction_order = _scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
-    return _save_params.SimParams(
-        geometry_params=_param_groups.GeometryParams(
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
+    return save_params.SimParams(
+        geometry_params=param_groups.GeometryParams(
             domain_lo=_DOMAIN_LO,
             domain_hi=_DOMAIN_HI,
             boundary_conditions=_BOUNDARY_CONDITIONS,
         ),
-        resolution_params=_param_groups.ResolutionParams(
+        resolution_params=param_groups.ResolutionParams(
             num_cells=num_cells,
             blocking_factor=blocking_factor,
             max_grid_size=max_grid_size,
         ),
-        output_file_params=_param_groups.OutputFileParams(
+        output_file_params=param_groups.OutputFileParams(
             snapshot_prefix=snapshot_prefix,
             snapshot_index_interval=snapshot_index_interval,
             snapshot_time_interval=snapshot_time_interval,
@@ -65,21 +65,21 @@ def build_sim_params(
             checkpoint_time_interval=checkpoint_time_interval,
             checkpoint_prefix=checkpoint_prefix,
         ),
-        time_integration_params=_param_groups.TimeIntegrationParams(
+        time_integration_params=param_groups.TimeIntegrationParams(
             cfl=cfl,
             use_reflux=use_reflux,
             use_subcycle=use_subcycle,
             stop_time=stop_time,
             max_time_steps=max_time_steps,
         ),
-        hydro_params=_param_groups.HydroParams(
+        hydro_params=param_groups.HydroParams(
             integrator_order=_INTEGRATOR_ORDER,
             reconstruction_order=reconstruction_order,
             use_dual_energy=use_dual_energy,
         ),
-        mhd_params=_param_groups.MHDParams(
-            emf_compute_scheme=_scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
-            emf_averaging_scheme=_scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
+        mhd_params=param_groups.MHDParams(
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
             reconstruction_order=reconstruction_order,
         ),
     )

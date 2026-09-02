@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from enum import Enum
 
-from .. import _save_params
+from .._sim_params import save_params
 from . import alfven_wave_circular_convergence as alfven_wave_circular_convergence
 from . import alfven_wave_circular_correctness as alfven_wave_circular_correctness
 from . import alfven_wave_linear_convergence as alfven_wave_linear_convergence
@@ -43,5 +43,18 @@ class ProblemSetup(Enum):
     @property
     def build_sim_params(
         self,
-    ) -> Callable[..., _save_params.SimParams]:
+    ) -> Callable[..., save_params.SimParams]:
         return self.value.build_sim_params
+
+
+def _ensure_problem_setups_define_build_sim_params() -> None:
+    for problem_setup in ProblemSetup:
+        build_sim_params = getattr(problem_setup.value, "build_sim_params", None)
+        if not callable(build_sim_params):
+            raise TypeError(
+                f"problem setup module `{problem_setup.value.__name__}` must define a callable "
+                f"`build_sim_params`, got {build_sim_params!r}.",
+            )
+
+
+_ensure_problem_setups_define_build_sim_params()

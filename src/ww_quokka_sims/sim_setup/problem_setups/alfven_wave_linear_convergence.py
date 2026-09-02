@@ -5,9 +5,9 @@
 ##
 
 ## local
-from .. import _param_groups
-from .. import _scheme_lookup
-from .. import _save_params
+from .._sim_params import param_groups
+from .._sim_params import save_params
+from .._sim_params import scheme_lookup
 
 ##
 ## === CONSTANTS
@@ -43,40 +43,40 @@ def build_sim_params(
     num_modes_y: int,
     num_modes_z: int,
     angle_between_k_b0: float,
-) -> _save_params.SimParams:
+) -> save_params.SimParams:
     """Build the full parameter set for one Richardson-convergence-sweep combination."""
-    reconstruction_order = _scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
-    return _save_params.SimParams(
-        geometry_params=_param_groups.GeometryParams(
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
+    return save_params.SimParams(
+        geometry_params=param_groups.GeometryParams(
             domain_lo=_DOMAIN_LO,
             domain_hi=_DOMAIN_HI,
             is_boundary_periodic=_IS_BOUNDARY_PERIODIC,
         ),
-        resolution_params=_param_groups.ResolutionParams(
+        resolution_params=param_groups.ResolutionParams(
             num_cells=_NUM_CELLS,
             blocking_factor=_BLOCKING_FACTOR,
             max_grid_size=_MAX_GRID_SIZE,
         ),
-        output_file_params=_param_groups.OutputFileParams(
+        output_file_params=param_groups.OutputFileParams(
             snapshot_index_interval=_SNAPSHOT_INDEX_INTERVAL,
         ),
-        time_integration_params=_param_groups.TimeIntegrationParams(
+        time_integration_params=param_groups.TimeIntegrationParams(
             cfl=_CFL,
             use_reflux=_USE_REFLUX,
             use_subcycle=_USE_SUBCYCLE,
             use_tracers=_USE_TRACERS,
         ),
-        hydro_params=_param_groups.HydroParams(
+        hydro_params=param_groups.HydroParams(
             integrator_order=_INTEGRATOR_ORDER,
             reconstruction_order=reconstruction_order,
             use_dual_energy=_USE_DUAL_ENERGY,
         ),
-        mhd_params=_param_groups.MHDParams(
-            emf_compute_scheme=_scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
-            emf_averaging_scheme=_scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
+        mhd_params=param_groups.MHDParams(
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
             reconstruction_order=reconstruction_order,
         ),
-        setup_params=_param_groups.SetupParams(
+        setup_params=param_groups.SetupParams(
             param_values={
                 "num_modes_x": num_modes_x,
                 "num_modes_y": num_modes_y,
