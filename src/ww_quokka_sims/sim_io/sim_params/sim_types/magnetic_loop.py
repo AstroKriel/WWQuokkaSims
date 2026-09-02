@@ -13,7 +13,8 @@ from .. import write_params
 ## === CONSTANTS
 ##
 
-PROBLEM_KEY = "FieldLoop"
+_BOUNDARY_CONDITIONS = ("periodic", "periodic", "periodic")
+_INTEGRATOR_ORDER = 2
 
 ##
 ## === PROGRAM MAIN
@@ -58,17 +59,17 @@ def build_sim_params(
     derived_vars: tuple[str, ...] | None = ("magnetic_divergence", ),
 ) -> write_params.SimParams:
     """
-    Build the full parameter set for one `FieldLoop` run.
+    Build the full parameter set for one run.
 
     Not validated here: `loop_radius > 0`, `region_lo_* < region_hi_*`, and `refine_based_on`
     validity are all checked by Quokka itself, with clear abort messages.
     """
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key).value
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
     return write_params.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=domain_lo,
             domain_hi=domain_hi,
-            boundary_conditions=("periodic", "periodic", "periodic"),
+            boundary_conditions=_BOUNDARY_CONDITIONS,
         ),
         resolution_params=param_groups.ResolutionParams(
             num_cells=num_cells,
@@ -93,13 +94,13 @@ def build_sim_params(
             max_time_steps=max_time_steps,
         ),
         hydro_params=param_groups.HydroParams(
-            integrator_order=2,
+            integrator_order=_INTEGRATOR_ORDER,
             reconstruction_order=reconstruction_order,
             use_dual_energy=use_dual_energy,
         ),
         mhd_params=param_groups.MHDParams(
-            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
-            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value,
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
             reconstruction_order=reconstruction_order,
         ),
         setup_params=param_groups.SetupParams(

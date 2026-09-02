@@ -13,11 +13,10 @@ from .. import write_params
 ## === CONSTANTS
 ##
 
-PROBLEM_KEY = "CurrentSheet"
-
 _DOMAIN_LO = (-0.5, -0.5, -0.5)
 _DOMAIN_HI = (0.5, 0.5, 0.5)
 _BOUNDARY_CONDITIONS = ("periodic", "periodic", "periodic")
+_INTEGRATOR_ORDER = 2
 
 ##
 ## === PROGRAM MAIN
@@ -45,8 +44,8 @@ def build_sim_params(
     checkpoint_time_interval: float | None = 1.0,
     checkpoint_prefix: str | None = "chk",
 ) -> write_params.SimParams:
-    """Build the full parameter set for one `CurrentSheet` run."""
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key).value
+    """Build the full parameter set for one run."""
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
     return write_params.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=_DOMAIN_LO,
@@ -74,14 +73,14 @@ def build_sim_params(
             max_time_steps=max_time_steps,
         ),
         hydro_params=param_groups.HydroParams(
-            integrator_order=2,
+            integrator_order=_INTEGRATOR_ORDER,
             reconstruction_order=reconstruction_order,
             ## Quokka requires use_dual_energy=0 whenever resistivity is nonzero
-            use_dual_energy=0 if resistivity is not None else None,
+            use_dual_energy=0 if (resistivity is not None) else None,
         ),
         mhd_params=param_groups.MHDParams(
-            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
-            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value,
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
             reconstruction_order=reconstruction_order,
             resistivity=resistivity,
         ),

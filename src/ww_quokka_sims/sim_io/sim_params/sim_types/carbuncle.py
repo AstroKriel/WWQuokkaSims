@@ -13,11 +13,13 @@ from .. import write_params
 ## === CONSTANTS
 ##
 
-PROBLEM_KEY = "OrszagTang"
-
-_DOMAIN_LO = (-0.5, -0.5, -0.5)
-_DOMAIN_HI = (0.5, 0.5, 0.5)
-_BOUNDARY_CONDITIONS = ("periodic", "periodic", "periodic")
+_DOMAIN_LO = (0.0, 0.0, 0.0)
+_DOMAIN_HI = (1.0, 1.0, 1.0)
+_BOUNDARY_CONDITIONS = ("ext_dir", "periodic", "periodic")
+_CFL = 0.4
+_STOP_TIME = 0.4
+_MAX_TIME_STEPS = 2000
+_INTEGRATOR_ORDER = 2
 
 ##
 ## === PROGRAM MAIN
@@ -29,24 +31,18 @@ def build_sim_params(
     compute_scheme_key: str,
     averaging_scheme_key: str,
     reconstruction_order_key: str,
-    num_cells: tuple[int, int, int] = (1024, 1024, 8),
-    blocking_factor: int | tuple[int, int, int] = (32, 32, 8),
-    max_grid_size: int | tuple[int, int, int] = (128, 128, 8),
-    max_time_steps: int = 100_000,
-    cfl: float = 0.2,
-    stop_time: float = 1.0,
-    use_reflux: int | None = None,
-    use_subcycle: int | None = None,
-    use_dual_energy: int | None = None,
+    num_cells: tuple[int, int, int] = (128, 128, 8),
+    blocking_factor: int | tuple[int, int, int] = (16, 16, 8),
+    max_grid_size: int | tuple[int, int, int] = 32,
     snapshot_prefix: str = "snapshots/plt",
-    snapshot_index_interval: int | None = None,
-    snapshot_time_interval: float | None = 0.05,
-    checkpoint_index_interval: int | None = None,
+    snapshot_index_interval: int | None = 25,
+    snapshot_time_interval: float | None = None,
+    checkpoint_index_interval: int | None = -1,
     checkpoint_time_interval: float | None = None,
     checkpoint_prefix: str | None = None,
 ) -> write_params.SimParams:
-    """Build the full parameter set for one `OrszagTang` run."""
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key).value
+    """Build the full parameter set for one run."""
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
     return write_params.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=_DOMAIN_LO,
@@ -67,20 +63,17 @@ def build_sim_params(
             checkpoint_prefix=checkpoint_prefix,
         ),
         time_integration_params=param_groups.TimeIntegrationParams(
-            cfl=cfl,
-            use_reflux=use_reflux,
-            use_subcycle=use_subcycle,
-            stop_time=stop_time,
-            max_time_steps=max_time_steps,
+            cfl=_CFL,
+            stop_time=_STOP_TIME,
+            max_time_steps=_MAX_TIME_STEPS,
         ),
         hydro_params=param_groups.HydroParams(
-            integrator_order=2,
+            integrator_order=_INTEGRATOR_ORDER,
             reconstruction_order=reconstruction_order,
-            use_dual_energy=use_dual_energy,
         ),
         mhd_params=param_groups.MHDParams(
-            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
-            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value,
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
             reconstruction_order=reconstruction_order,
         ),
     )

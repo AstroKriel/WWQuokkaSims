@@ -13,11 +13,20 @@ from .. import write_params
 ## === CONSTANTS
 ##
 
-PROBLEM_KEY = "FastWave-Convergence"
-
 _DOMAIN_LO = (0.0, 0.0, 0.0)
 _DOMAIN_HI = (1.0, 1.0, 1.0)
+_IS_BOUNDARY_PERIODIC = (1, 1, 1)
 _NUM_CELLS = (128, 8, 8)
+_BLOCKING_FACTOR = (16, 8, 8)
+_MAX_GRID_SIZE = 128
+_SNAPSHOT_INDEX_INTERVAL = -1
+_CFL = 0.3
+_USE_REFLUX = 0
+_USE_SUBCYCLE = 0
+_USE_TRACERS = 1
+_INTEGRATOR_ORDER = 2
+_USE_DUAL_ENERGY = 0
+_MACHINE_PRECISION_TARGET = 0
 _NX_MAX = 2048
 
 ##
@@ -35,36 +44,36 @@ def build_sim_params(
     num_modes_z: int,
     angle_between_k_b0: float,
 ) -> write_params.SimParams:
-    """Build the full parameter set for one `FastWaveConvergence` Richardson-convergence-sweep combination."""
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key).value
+    """Build the full parameter set for one Richardson-convergence-sweep combination."""
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
     return write_params.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=_DOMAIN_LO,
             domain_hi=_DOMAIN_HI,
-            is_boundary_periodic=(1, 1, 1),
+            is_boundary_periodic=_IS_BOUNDARY_PERIODIC,
         ),
         resolution_params=param_groups.ResolutionParams(
             num_cells=_NUM_CELLS,
-            blocking_factor=(16, 8, 8),
-            max_grid_size=128,
+            blocking_factor=_BLOCKING_FACTOR,
+            max_grid_size=_MAX_GRID_SIZE,
         ),
         output_file_params=param_groups.OutputFileParams(
-            snapshot_index_interval=-1,
+            snapshot_index_interval=_SNAPSHOT_INDEX_INTERVAL,
         ),
         time_integration_params=param_groups.TimeIntegrationParams(
-            cfl=0.3,
-            use_reflux=0,
-            use_subcycle=0,
-            use_tracers=1,
+            cfl=_CFL,
+            use_reflux=_USE_REFLUX,
+            use_subcycle=_USE_SUBCYCLE,
+            use_tracers=_USE_TRACERS,
         ),
         hydro_params=param_groups.HydroParams(
-            integrator_order=2,
+            integrator_order=_INTEGRATOR_ORDER,
             reconstruction_order=reconstruction_order,
-            use_dual_energy=0,
+            use_dual_energy=_USE_DUAL_ENERGY,
         ),
         mhd_params=param_groups.MHDParams(
-            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key).value,
-            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key).value,
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
             reconstruction_order=reconstruction_order,
         ),
         setup_params=param_groups.SetupParams(
@@ -73,7 +82,7 @@ def build_sim_params(
                 "num_modes_y": num_modes_y,
                 "num_modes_z": num_modes_z,
                 "angle_between_k_b0": angle_between_k_b0,
-                "machine_precision_target": 0,
+                "machine_precision_target": _MACHINE_PRECISION_TARGET,
                 "nx_max": _NX_MAX,
             },
         ),

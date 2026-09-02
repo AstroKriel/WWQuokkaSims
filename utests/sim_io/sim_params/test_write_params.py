@@ -108,13 +108,13 @@ class SchemeLookupTests(unittest.TestCase):
     def test_reconstruction_resolves_by_key(
         self,
     ):
-        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme("ppm_ep").value, 5)
-        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme("pcm").value, 1)
+        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme("ppm_ep"), 5)
+        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme("pcm"), 1)
 
     def test_emf_compute_scheme_resolves_by_key(
         self,
     ):
-        self.assertEqual(scheme_lookup.resolve_emf_compute_scheme("q26").value, "Quokka2026")
+        self.assertEqual(scheme_lookup.resolve_emf_compute_scheme("q26"), "Quokka2026")
 
     def test_invalid_key_raises_with_valid_options_listed(
         self,
@@ -523,14 +523,10 @@ class SimTypesTests(unittest.TestCase):
     def test_resolve_sim_params_builder_returns_registered_function(
         self,
     ):
-        self.assertIs(sim_types.resolve_sim_params_builder("MHDBlast"), sim_types.blast_wave.build_sim_params)
-
-    def test_resolve_sim_params_builder_raises_on_unknown_problem_name(
-        self,
-    ):
-        with self.assertRaises(ValueError) as ctx:
-            sim_types.resolve_sim_params_builder("NotAProblem")
-        self.assertIn("NotAProblem", str(ctx.exception))
+        self.assertIs(
+            sim_types.resolve_sim_params_builder(sim_types.ProblemKey.MHD_BLAST),
+            sim_types.blast_wave.build_sim_params,
+        )
 
     def test_profile_minimal_call_uses_documented_defaults(
         self,

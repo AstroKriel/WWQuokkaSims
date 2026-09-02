@@ -5,7 +5,7 @@
 ##
 
 ## stdlib
-from enum import Enum
+from enum import IntEnum, StrEnum
 from typing import cast
 
 ## personal
@@ -16,7 +16,7 @@ from jormi.ww_validation import validate_enums
 ##
 
 
-class ReconstructionScheme(int, Enum):
+class ReconstructionScheme(IntEnum):
     """`hydro.reconstruction_order` / `mhd.emf_reconstruction_order` by reconstruction key."""
 
     PCM = 1
@@ -25,7 +25,7 @@ class ReconstructionScheme(int, Enum):
     PPM_EP = 5
 
 
-class EMFComputeScheme(str, Enum):
+class EMFComputeScheme(StrEnum):
     """`mhd.emf_compute_scheme` by compute-scheme key."""
 
     Q26 = "Quokka2026"
@@ -33,7 +33,7 @@ class EMFComputeScheme(str, Enum):
     B25 = "Balsara2025"
 
 
-class EMFAveragingScheme(str, Enum):
+class EMFAveragingScheme(StrEnum):
     """`mhd.emf_averaging_scheme` by averaging-scheme key."""
 
     B25 = "Balsara2025"
