@@ -32,7 +32,7 @@ quokka-generate-vi-evolution = "ww_quokka_sims._diagnostic_scripts.generate_vi_e
 quokka-inspect-snapshot = "ww_quokka_sims._diagnostic_scripts.inspect_snapshot:main"
 
 [tool.uv.sources]
-jormi = { git = "https://github.com/AstroKriel/PythonHelpers.git", rev = "5f34734daa617085fecf96b451d7d01392d81766" }
+jormi = { git = "https://github.com/AstroKriel/PythonHelpers.git", rev = "712c9cad182360adb229a63a09222a0cddf35b61" }
 
 [dependency-groups]
 dev = [
