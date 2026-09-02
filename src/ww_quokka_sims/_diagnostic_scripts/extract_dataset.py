@@ -31,7 +31,6 @@ from ww_quokka_sims._script_tools import (
     field_registry,
 )
 from ww_quokka_sims.sim_io import (
-    domain_cache,
     find_snapshots,
     load_snapshot,
 )
@@ -363,17 +362,6 @@ class ScriptInterface:
         index_width = find_snapshots.get_max_index_width(
             snapshot_dirs=snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
-        )
-        with load_snapshot.QuokkaSnapshot(
-                snapshot_dir=snapshot_dirs[0],
-                verbose=False,
-        ) as snapshot:
-            uniform_domain_3d = snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
-        domain_cache.save_domain(
-            uniform_domain_3d=uniform_domain_3d,
-            amr_level=self.amr_level,
-            data_dir=data_dir,
-            overwrite=self.overwrite,
         )
         return ResolvedInputs(
             snapshot_dirs=snapshot_dirs,
