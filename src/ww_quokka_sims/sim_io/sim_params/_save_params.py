@@ -14,7 +14,7 @@ from jormi.ww_validation import validate_types
 
 ## local
 from . import _format_params
-from . import param_groups
+from . import _param_groups
 
 ##
 ## === PARAMETER BUNDLE
@@ -24,13 +24,13 @@ from . import param_groups
 @dataclass(frozen=True)
 class SimParams:
     """
-    One full `write_sim_params_toml` call's worth of dataclasses, plus a `save_to_file` convenience method.
+    One full `save_sim_params_toml` call's worth of dataclasses, plus a `save_to_file` convenience method.
 
     Fields
     ---
     - `geometry_params`, `resolution_params`, `output_file_params`, `time_integration_params`,
       `hydro_params`, `mhd_params`:
-        See the matching dataclass in `sim_params.param_groups`.
+        See the matching dataclass in `sim_params._param_groups`.
 
     - `setup_params`:
         Problem-specific parameters; omit for problem types with none.
@@ -39,13 +39,13 @@ class SimParams:
         AMReX's own `amr.v` logging verbosity; omit for Quokka's default.
     """
 
-    geometry_params: param_groups.GeometryParams
-    resolution_params: param_groups.ResolutionParams
-    output_file_params: param_groups.OutputFileParams
-    time_integration_params: param_groups.TimeIntegrationParams
-    hydro_params: param_groups.HydroParams
-    mhd_params: param_groups.MHDParams
-    setup_params: param_groups.SetupParams | None = None
+    geometry_params: _param_groups.GeometryParams
+    resolution_params: _param_groups.ResolutionParams
+    output_file_params: _param_groups.OutputFileParams
+    time_integration_params: _param_groups.TimeIntegrationParams
+    hydro_params: _param_groups.HydroParams
+    mhd_params: _param_groups.MHDParams
+    setup_params: _param_groups.SetupParams | None = None
     amr_verbosity: int = 1
 
     def save_to_file(
@@ -55,7 +55,7 @@ class SimParams:
         overwrite: bool = False,
         verbose: bool = True,
     ) -> Path:
-        return write_sim_params_toml(
+        return save_sim_params_toml(
             output_path=output_path,
             geometry_params=self.geometry_params,
             resolution_params=self.resolution_params,
@@ -113,7 +113,7 @@ class _ParamGroupTitle:
 
 
 def _build_geometry_lines(
-    geometry_params: param_groups.GeometryParams,
+    geometry_params: _param_groups.GeometryParams,
 ) -> list[str]:
     assignment_lines = [
         _format_params.format_key_value(
@@ -143,7 +143,7 @@ def _build_geometry_lines(
 
 
 def _build_resolution_lines(
-    resolution_params: param_groups.ResolutionParams,
+    resolution_params: _param_groups.ResolutionParams,
 ) -> list[str]:
     assignment_lines = [
         _format_params.format_key_value(
@@ -170,7 +170,7 @@ def _build_resolution_lines(
 
 
 def _build_output_lines(
-    output_file_params: param_groups.OutputFileParams,
+    output_file_params: _param_groups.OutputFileParams,
 ) -> list[str]:
     assignment_lines: list[str] = []
     if output_file_params.checkpoint_index_interval is not None:
@@ -226,7 +226,7 @@ def _build_output_lines(
 
 
 def _build_time_integration_lines(
-    time_integration_params: param_groups.TimeIntegrationParams,
+    time_integration_params: _param_groups.TimeIntegrationParams,
 ) -> list[str]:
     assignment_lines = [
         _format_params.format_key_value(
@@ -253,7 +253,7 @@ def _build_time_integration_lines(
 
 
 def _build_hydro_lines(
-    hydro_params: param_groups.HydroParams,
+    hydro_params: _param_groups.HydroParams,
 ) -> list[str]:
     assignment_lines = [
         _format_params.format_key_value(
@@ -276,7 +276,7 @@ def _build_hydro_lines(
 
 
 def _build_mhd_lines(
-    mhd_params: param_groups.MHDParams,
+    mhd_params: _param_groups.MHDParams,
 ) -> list[str]:
     assignment_lines = [
         _format_params.format_key_value(
@@ -303,7 +303,7 @@ def _build_mhd_lines(
 
 
 def _build_setup_lines(
-    setup_params: param_groups.SetupParams,
+    setup_params: _param_groups.SetupParams,
 ) -> list[str]:
     return [
         _format_params.format_key_value(
@@ -318,22 +318,22 @@ def _build_setup_lines(
 ##
 
 
-def write_sim_params_toml(
+def save_sim_params_toml(
     *,
     output_path: str | Path,
-    geometry_params: param_groups.GeometryParams,
-    resolution_params: param_groups.ResolutionParams,
-    output_file_params: param_groups.OutputFileParams,
-    time_integration_params: param_groups.TimeIntegrationParams,
-    hydro_params: param_groups.HydroParams,
-    mhd_params: param_groups.MHDParams,
-    setup_params: param_groups.SetupParams | None = None,
+    geometry_params: _param_groups.GeometryParams,
+    resolution_params: _param_groups.ResolutionParams,
+    output_file_params: _param_groups.OutputFileParams,
+    time_integration_params: _param_groups.TimeIntegrationParams,
+    hydro_params: _param_groups.HydroParams,
+    mhd_params: _param_groups.MHDParams,
+    setup_params: _param_groups.SetupParams | None = None,
     amr_verbosity: int = 1,
     overwrite: bool = False,
     verbose: bool = True,
 ) -> Path:
     """
-    Write a Quokka `sim_params.toml` file.
+    Save a Quokka `sim_params.toml` file.
 
     Not real nested TOML: it is AMReX ParmParse-style flat dotted keys grouped under
     `## <group_title>` comments, in a fixed param group order (`geometry, resolution,
@@ -391,7 +391,7 @@ def write_sim_params_toml(
     output_path.write_text(_format_params.format_param_groups(param_group_entries))
     if verbose:
         manage_log.log_action(
-            title="Write sim_params.toml",
+            title="Save sim_params.toml",
             outcome=manage_log.ActionOutcome.SUCCESS,
             message="Saved sim_params.toml.",
             notes={"file": str(output_path)},

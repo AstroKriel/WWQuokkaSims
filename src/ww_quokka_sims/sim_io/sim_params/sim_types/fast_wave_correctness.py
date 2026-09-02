@@ -5,9 +5,9 @@
 ##
 
 ## local
-from .. import param_groups
-from .. import scheme_lookup
-from .. import write_params
+from .. import _param_groups
+from .. import _scheme_lookup
+from .. import _save_params
 
 ##
 ## === CONSTANTS
@@ -44,45 +44,45 @@ def build_sim_params(
     cfl: float = 0.3,
     snapshot_index_interval: int = 100,
     checkpoint_index_interval: int = -1,
-) -> write_params.SimParams:
+) -> _save_params.SimParams:
     """
     Build the full parameter set for one fixed-resolution correctness run.
 
     `stop_time`/`max_time_steps` have no default: the right `stop_time` (one wave period) depends
     on `num_modes_x/y/z`/`angle_between_k_b0`, so a fixed default would silently be wrong.
     """
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
-    return write_params.SimParams(
-        geometry_params=param_groups.GeometryParams(
+    reconstruction_order = _scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
+    return _save_params.SimParams(
+        geometry_params=_param_groups.GeometryParams(
             domain_lo=domain_lo,
             domain_hi=domain_hi,
             boundary_conditions=_BOUNDARY_CONDITIONS,
         ),
-        resolution_params=param_groups.ResolutionParams(
+        resolution_params=_param_groups.ResolutionParams(
             num_cells=num_cells,
             blocking_factor=blocking_factor,
             max_grid_size=max_grid_size,
         ),
-        output_file_params=param_groups.OutputFileParams(
+        output_file_params=_param_groups.OutputFileParams(
             snapshot_prefix=_SNAPSHOT_PREFIX,
             snapshot_index_interval=snapshot_index_interval,
             checkpoint_index_interval=checkpoint_index_interval,
         ),
-        time_integration_params=param_groups.TimeIntegrationParams(
+        time_integration_params=_param_groups.TimeIntegrationParams(
             cfl=cfl,
             stop_time=stop_time,
             max_time_steps=max_time_steps,
         ),
-        hydro_params=param_groups.HydroParams(
+        hydro_params=_param_groups.HydroParams(
             integrator_order=_INTEGRATOR_ORDER,
             reconstruction_order=reconstruction_order,
         ),
-        mhd_params=param_groups.MHDParams(
-            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
-            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
+        mhd_params=_param_groups.MHDParams(
+            emf_compute_scheme=_scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
+            emf_averaging_scheme=_scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
             reconstruction_order=reconstruction_order,
         ),
-        setup_params=param_groups.SetupParams(
+        setup_params=_param_groups.SetupParams(
             param_values={
                 "run_sim": _RUN_SIM,
                 "run_convergence": _RUN_CONVERGENCE,
