@@ -40,10 +40,11 @@ from jormi.ww_plots import (
 from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims._script_tools import (
+from ww_quokka_sims._scripts.snapshot_tools import (
     cli,
     field_registry,
 )
+from ww_quokka_sims.sim_io.field_diagnostics import slices
 from ww_quokka_sims.sim_io.snapshots import (
     find_snapshots,
     load_snapshot,
@@ -55,7 +56,7 @@ from ww_quokka_sims.sim_io.snapshots import (
 
 
 @dataclass(frozen=True)
-class FieldArgs:
+class ResolvedFieldArgs:
     field_name: str
     field_loader: Callable
     cmap_name: str
@@ -80,7 +81,7 @@ class WorkerArgs(NamedTuple):
     overwrite: bool
     hide_annotations: bool
     amr_level: int = 0
-    plot_log10: bool = False
+    apply_log10_plot: bool = False
 
 
 @dataclass(frozen=True)
@@ -107,43 +108,11 @@ class FieldComp:
     comp_axis: cartesian_axes.CartesianAxis_3D | None = None
 
 
-AxisBounds = tuple[tuple[float, float], tuple[float, float]]  # ((xmin, xmax), (ymin, ymax))
-
-
-@dataclass(frozen=True)
-class SlicedField:
-    """A single 2D slice, self-contained enough to plot without the raw snapshot or uniform_domain."""
-
-    sarray_2d: numpy.ndarray
-    axis_bounds: AxisBounds
-    min_value: float
-    max_value: float
-
-
-Row = tuple[str, dict[cartesian_axes.CartesianAxis_3D, SlicedField]]  # (comp_label, {axis: SlicedField})
+Row = tuple[str, dict[cartesian_axes.CartesianAxis_3D, slices.SlicedField]]  # (comp_label, {axis: SlicedField})
 
 ##
 ## === FIELD PROCESSING
 ##
-
-
-def _parse_axes(
-    *,
-    axes: tuple[str, ...] | list[str] | None,
-) -> tuple[cartesian_axes.CartesianAxis_3D, ...]:
-    if axes is None:
-        return tuple(cartesian_axes.DEFAULT_3D_AXES_ORDER)
-    parsed_axes: list[cartesian_axes.CartesianAxis_3D] = []
-    for axis_name in validate_types.as_tuple(param=axes):
-        try:
-            parsed_axes.append(
-                cartesian_axes.as_axis(
-                    axis=axis_name,
-                ),
-            )
-        except (TypeError, ValueError):
-            raise ValueError("Provide one or more axes (via -a/-c) from: x_0, x_1, x_2")
-    return tuple(parsed_axes)
 
 
 def _axis_to_index(
@@ -156,7 +125,7 @@ def get_slice_bounds(
     *,
     uniform_domain: domain_models.UniformDomain_3D,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
-) -> AxisBounds:
+) -> slices.AxisBounds:
     """Return physical bounds of the two plane axes (i.e. those not being sliced)."""
     (x0_min, x0_max), (x1_min, x1_max), (x2_min, x2_max) = uniform_domain.domain_bounds
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X2:
@@ -204,7 +173,11 @@ def slice_field(
     sarray_3d: numpy.ndarray,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
     uniform_domain: domain_models.UniformDomain_3D,
-) -> SlicedField:
+    comp_label: str,
+    step_time: float,
+    step_index: int,
+    amr_level: int,
+) -> slices.SlicedField:
     num_cells_x0, num_cells_x1, num_cells_x2 = sarray_3d.shape
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X2:
         sarray_2d = sarray_3d[:, :, num_cells_x2 // 2]
@@ -217,11 +190,15 @@ def slice_field(
         axis_to_slice=axis_to_slice,
     )
     min_value, max_value = _compute_min_max(sarray_2d)
-    return SlicedField(
+    return slices.SlicedField(
         sarray_2d=sarray_2d,
         axis_bounds=axis_bounds,
         min_value=min_value,
         max_value=max_value,
+        comp_label=comp_label,
+        step_time=step_time,
+        step_index=step_index,
+        amr_level=amr_level,
     )
 
 
@@ -233,21 +210,21 @@ def slice_field(
 @dataclass(frozen=True)
 class GenerateFieldSlices:
     snapshot_tag: str
-    field_args: FieldArgs
+    field_args: ResolvedFieldArgs
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
     save_data: bool
     save_figure: bool
     overwrite: bool = False
     hide_annotations: bool = False
-    plot_log10: bool = False
+    apply_log10_plot: bool = False
 
     @staticmethod
     def plot_slice(
         *,
         ax: manage_figure.Panel,
         step_time: float,
-        field_slice: SlicedField,
+        field_slice: slices.SlicedField,
         plane_label: str,
         comp_label: str,
         cmap_name: str,
@@ -357,6 +334,8 @@ class GenerateFieldSlices:
         *,
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
+        step_time: float,
+        step_index: int,
     ) -> list[Row]:
         return [
             (
@@ -366,6 +345,10 @@ class GenerateFieldSlices:
                         sarray_3d=field_comp.sarray_3d,
                         axis_to_slice=axis_to_slice,
                         uniform_domain=uniform_domain,
+                        comp_label=field_comp.label,
+                        step_time=step_time,
+                        step_index=step_index,
+                        amr_level=self.field_args.amr_level,
                     )
                     for axis_to_slice in self.axes_to_slice
                 },
@@ -426,7 +409,7 @@ class GenerateFieldSlices:
         padded_index: str,
     ) -> str:
         field_name = self.field_args.field_name
-        plot_name = f"log10_{field_name}" if self.plot_log10 else field_name
+        plot_name = f"log10_{field_name}" if self.apply_log10_plot else field_name
         return f"{plot_name}-slice-index={padded_index}.png"
 
     def _find_saved_comp_axes(
@@ -470,23 +453,17 @@ class GenerateFieldSlices:
                     sarray_3d=field_comp.sarray_3d,
                     axis_to_slice=axis_to_slice,
                     uniform_domain=uniform_domain,
+                    comp_label=field_comp.label,
+                    step_time=step_time,
+                    step_index=step_index,
+                    amr_level=self.field_args.amr_level,
                 )
                 file_name = self._data_file_name(
                     comp_axis=field_comp.comp_axis,
                     axis_to_slice=axis_to_slice,
                     padded_index=padded_index,
                 )
-                numpy.savez(
-                    data_dir / file_name,
-                    sarray_2d=field_slice.sarray_2d,
-                    axis_bounds=numpy.array(field_slice.axis_bounds),
-                    comp_label=field_comp.label,
-                    min_value=field_slice.min_value,
-                    max_value=field_slice.max_value,
-                    step_time=step_time,
-                    step_index=step_index,
-                    amr_level=self.field_args.amr_level,
-                )
+                field_slice.save_to_file(data_dir / file_name)
 
     def _load_saved_rows(
         self,
@@ -498,24 +475,14 @@ class GenerateFieldSlices:
         rows: list[Row] = []
         step_time: float | None = None
         for comp_axis in comp_axes:
-            sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, SlicedField] = {}
+            sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, slices.SlicedField] = {}
             comp_label = ""
             for axis_to_slice in self.axes_to_slice:
                 file_name = self._data_file_name(comp_axis=comp_axis, axis_to_slice=axis_to_slice, padded_index=padded_index)
-                with numpy.load(data_dir / file_name) as npz:
-                    saved_bounds = npz["axis_bounds"]
-                    axis_bounds: AxisBounds = (
-                        (float(saved_bounds[0][0]), float(saved_bounds[0][1])),
-                        (float(saved_bounds[1][0]), float(saved_bounds[1][1])),
-                    )
-                    sliced_by_axis[axis_to_slice] = SlicedField(
-                        sarray_2d=npz["sarray_2d"],
-                        axis_bounds=axis_bounds,
-                        min_value=float(npz["min_value"]),
-                        max_value=float(npz["max_value"]),
-                    )
-                    comp_label = str(npz["comp_label"])
-                    step_time = float(npz["step_time"])
+                field_slice = slices.SlicedField.load_from_file(data_dir / file_name)
+                sliced_by_axis[axis_to_slice] = field_slice
+                comp_label = field_slice.comp_label
+                step_time = field_slice.step_time
             rows.append((comp_label, sliced_by_axis))
         assert step_time is not None
         return rows, step_time
@@ -530,20 +497,24 @@ class GenerateFieldSlices:
         figures_dir: Path,
         verbose: bool,
     ) -> None:
-        if self.plot_log10:
+        if self.apply_log10_plot:
             log10_rows: list[Row] = []
             for comp_label, sliced_by_axis in rows:
                 if all(numpy.all(field_slice.sarray_2d == 0) for field_slice in sliced_by_axis.values()):
                     continue
-                log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, SlicedField] = {}
+                log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, slices.SlicedField] = {}
                 for axis_to_slice, field_slice in sliced_by_axis.items():
                     log10_sarray_2d = compute_array_stats.compute_safe_log10(numpy.abs(field_slice.sarray_2d))
                     min_value, max_value = _compute_min_max(log10_sarray_2d)
-                    log10_sliced_by_axis[axis_to_slice] = SlicedField(
+                    log10_sliced_by_axis[axis_to_slice] = slices.SlicedField(
                         sarray_2d=log10_sarray_2d,
                         axis_bounds=field_slice.axis_bounds,
                         min_value=min_value,
                         max_value=max_value,
+                        comp_label=field_slice.comp_label,
+                        step_time=field_slice.step_time,
+                        step_index=field_slice.step_index,
+                        amr_level=field_slice.amr_level,
                     )
                 log10_rows.append((rf"$\log_{{10}}({comp_label.strip('$')})$", log10_sliced_by_axis))
             rows = log10_rows
@@ -643,6 +614,8 @@ class GenerateFieldSlices:
             rows = self._rows_from_field_comps(
                 field_comps=field_comps,
                 uniform_domain=snapshot_data.uniform_domain,
+                step_time=snapshot_data.step_time,
+                step_index=step_index,
             )
             self._render_figure(
                 rows=rows,
@@ -668,15 +641,15 @@ def generate_fields_in_serial(
     save_figure: bool,
     overwrite: bool = False,
     hide_annotations: bool = False,
-    plot_log10: bool = False,
+    apply_log10_plot: bool = False,
     amr_level: int = 0,
 ) -> None:
     for field_name in fields_to_plot:
-        field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
-        field_args = FieldArgs(
+        registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
+        field_args = ResolvedFieldArgs(
             field_name=field_name,
-            field_loader=field_meta.loader,
-            cmap_name=field_meta.cmap,
+            field_loader=registered_field.loader,
+            cmap_name=registered_field.cmap,
             amr_level=amr_level,
         )
         generate_field_slices = GenerateFieldSlices(
@@ -688,7 +661,7 @@ def generate_fields_in_serial(
             save_figure=save_figure,
             overwrite=overwrite,
             hide_annotations=hide_annotations,
-            plot_log10=plot_log10,
+            apply_log10_plot=apply_log10_plot,
         )
         for snapshot_dir in snapshot_dirs:
             generate_field_slices.generate_snapshot(
@@ -705,7 +678,7 @@ def _generate_snapshot_worker(
 ) -> None:
     """Positional-only signature required so WorkerArgs elements survive multiprocessing pickling."""
     worker_args = WorkerArgs(*user_args)
-    field_args = FieldArgs(
+    field_args = ResolvedFieldArgs(
         field_name=worker_args.field_name,
         field_loader=worker_args.field_loader,
         cmap_name=worker_args.cmap_name,
@@ -720,7 +693,7 @@ def _generate_snapshot_worker(
         save_figure=worker_args.save_figure,
         overwrite=worker_args.overwrite,
         hide_annotations=worker_args.hide_annotations,
-        plot_log10=worker_args.plot_log10,
+        apply_log10_plot=worker_args.apply_log10_plot,
     )
     generate_field_slices.generate_snapshot(
         snapshot_dir=Path(worker_args.snapshot_dir),
@@ -745,23 +718,23 @@ def generate_fields_in_parallel(
     save_figure: bool,
     overwrite: bool = False,
     hide_annotations: bool = False,
-    plot_log10: bool = False,
+    apply_log10_plot: bool = False,
     amr_level: int = 0,
     num_workers: int | None = None,
 ) -> None:
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_plot:
-        field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
+        registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
         for snapshot_dir in snapshot_dirs:
             grouped_args.append(
                 WorkerArgs(
                     snapshot_dir=str(snapshot_dir),
                     snapshot_tag=snapshot_tag,
                     field_name=field_name,
-                    field_loader=field_meta.loader,
+                    field_loader=registered_field.loader,
                     comps_to_plot=comps_to_plot,
                     axes_to_slice=axes_to_slice,
-                    cmap_name=field_meta.cmap,
+                    cmap_name=registered_field.cmap,
                     data_dir=str(data_dir),
                     figures_dir=str(figures_dir),
                     index_width=index_width,
@@ -770,7 +743,7 @@ def generate_fields_in_parallel(
                     overwrite=overwrite,
                     hide_annotations=hide_annotations,
                     amr_level=amr_level,
-                    plot_log10=plot_log10,
+                    apply_log10_plot=apply_log10_plot,
                 ),
             )
     parallel_dispatch.run_in_parallel(
@@ -784,139 +757,98 @@ def generate_fields_in_parallel(
 
 
 ##
-## === SCRIPT INTERFACE
+## === ANIMATION
+##
+## `--animate` stitches already-saved figures into an MP4; unlike the rest of this script, it
+## needs no snapshot source at all, so it stays outside `DiagnosticPipeline`.
 ##
 
 
-@dataclass(frozen=True)
-class ResolvedInputs:
-    snapshot_dirs: list[Path]
-    data_dir: Path
-    figures_dir: Path
-    index_width: int
+def _resolve_animate_figures_dir(
+    *,
+    figures_dir: Path | None,
+    data_dir: Path | None,
+    input_dir: Path | None,
+) -> Path:
+    resolved_figures_dir = figures_dir if figures_dir is not None else (data_dir if data_dir is not None else input_dir)
+    if resolved_figures_dir is None:
+        raise ValueError("`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.")
+    return resolved_figures_dir
+
+
+def _animate_saved_figures(
+    *,
+    figures_dir: Path,
+    fields_to_plot: tuple[str, ...],
+    apply_log10_plot: bool = False,
+) -> None:
+    for field_name in fields_to_plot:
+        plot_name = f"log10_{field_name}" if apply_log10_plot else field_name
+        fig_paths = manage_io.filter_directory(
+            figures_dir,
+            prefix=f"{plot_name}-slice-index=",
+            suffix=".png",
+            include_folders=False,
+        )
+        if len(fig_paths) < 3:
+            manage_log.log_hint(
+                text=(
+                    f"Skipping animation for `{plot_name}`: "
+                    f"only found {len(fig_paths)} frame(s), but need at least 3."
+                ),
+            )
+            continue
+        video_path = figures_dir / f"{plot_name}-slices.mp4"
+        manage_figure.animate_frames_to_video(
+            frames_dir=figures_dir,
+            video_path=video_path,
+            pattern=f"{plot_name}-slice-index=*.png",
+            frames_per_second=60,
+            timeout_seconds=120,
+        )
+
+
+##
+## === DIAGNOSTIC PIPELINE
+##
 
 
 @final
-class ScriptInterface:
+class DiagnosticPipeline:
 
     def __init__(
         self,
         *,
-        input_dir: Path | None,
-        snapshot_tag: str,
-        fields_to_plot: tuple[str, ...] | list[str] | None,
-        comps_to_plot: tuple[str, ...] | list[str] | None,
-        axes_to_slice: tuple[str, ...] | list[str] | None,
-        amr_level: int = 0,
-        save_data: bool,
-        save_figure: bool,
-        overwrite: bool = False,
-        data_dir: Path | None = None,
-        figures_dir: Path | None = None,
+        snapshot_args: cli.SnapshotArgs,
+        field_comp_axes_args: cli.FieldCompAxesArgs,
+        diagnostic_output_args: cli.DiagnosticOutputArgs,
         num_workers: int | None = None,
-        animate: bool = False,
         hide_annotations: bool = False,
-        plot_log10: bool = False,
+        apply_log10_plot: bool = False,
     ):
-        validate_types.ensure_nonempty_string(
-            param=snapshot_tag,
-            param_name="snapshot_tag",
-        )
-        if not animate:
-            cli.ensure_save_flag_selected(
-                save_figure=save_figure,
-                save_data=save_data,
-            )
-        if (save_data or save_figure) and (input_dir is None):
-            raise ValueError("`--input-dir` is required with `--save-data`/`--save-figure`.")
         field_registry.validate_fields(
-            field_names=fields_to_plot,
+            field_names=field_comp_axes_args.fields,
             allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
         )
-        self.input_dir = Path(input_dir) if input_dir is not None else None
-        self.snapshot_tag = snapshot_tag
-        self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
-        self.comps_to_plot = _parse_axes(axes=comps_to_plot)
-        self.axes_to_slice = _parse_axes(axes=axes_to_slice)
-        self.amr_level = amr_level
-        self.save_data = save_data
-        self.save_figure = save_figure
-        self.overwrite = bool(overwrite)
-        self.data_dir = Path(data_dir) if data_dir is not None else None
-        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
+        self.snapshot_args = snapshot_args
+        self.fields_to_plot = validate_types.as_tuple(param=field_comp_axes_args.fields)
+        self.comps_to_plot = cli.parse_axes(axes=field_comp_axes_args.comps)
+        self.axes_to_slice = cli.parse_axes(axes=field_comp_axes_args.axes)
+        self.amr_level = field_comp_axes_args.amr_level
+        self.diagnostic_output_args = diagnostic_output_args
         self.num_workers = num_workers
-        self.animate = bool(animate)
-        self.hide_annotations = bool(hide_annotations)
-        self.plot_log10 = bool(plot_log10)
-
-    def _animate_fields(
-        self,
-        *,
-        figures_dir: Path,
-    ) -> None:
-        for field_name in self.fields_to_plot:
-            plot_name = f"log10_{field_name}" if self.plot_log10 else field_name
-            fig_paths = manage_io.filter_directory(
-                figures_dir,
-                prefix=f"{plot_name}-slice-index=",
-                suffix=".png",
-                include_folders=False,
-            )
-            if len(fig_paths) < 3:
-                manage_log.log_hint(
-                    text=(
-                        f"Skipping animation for `{plot_name}`: "
-                        f"only found {len(fig_paths)} frame(s), but need at least 3."
-                    ),
-                )
-                continue
-            video_path = figures_dir / f"{plot_name}-slices.mp4"
-            manage_figure.animate_frames_to_video(
-                frames_dir=figures_dir,
-                video_path=video_path,
-                pattern=f"{plot_name}-slice-index=*.png",
-                frames_per_second=60,
-                timeout_seconds=120,
-            )
-
-    def _resolve_inputs(
-        self,
-    ) -> ResolvedInputs | None:
-        ## input_dir is required whenever save_data/save_figure is set (checked in __init__)
-        assert self.input_dir is not None
-        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
-            input_dir=self.input_dir,
-            snapshot_tag=self.snapshot_tag,
-            max_elems=100,
-        )
-        if not snapshot_dirs:
-            return None
-        data_dir = cli.resolve_output_dir(
-            output_dir=self.data_dir,
-            default_dir=snapshot_dirs[0].parent,
-        )
-        figures_dir = cli.resolve_output_dir(
-            output_dir=self.figures_dir,
-            default_dir=data_dir,
-        )
-        index_width = find_snapshots.get_max_index_width(
-            snapshot_dirs=snapshot_dirs,
-            snapshot_tag=self.snapshot_tag,
-        )
-        return ResolvedInputs(
-            snapshot_dirs=snapshot_dirs,
-            data_dir=data_dir,
-            figures_dir=figures_dir,
-            index_width=index_width,
-        )
+        self.hide_annotations = hide_annotations
+        self.apply_log10_plot = apply_log10_plot
 
     def _generate_fields(
         self,
-        resolved_inputs: ResolvedInputs,
+        resolved_inputs: cli.ResolvedInputs,
     ) -> None:
+        assert resolved_inputs.figures_dir is not None
+        assert resolved_inputs.index_width is not None
         if (self.num_workers != 1) and (len(resolved_inputs.snapshot_dirs) > 5):
             generate_fields_in_parallel(
-                snapshot_tag=self.snapshot_tag,
+                snapshot_tag=self.snapshot_args.snapshot_tag,
                 fields_to_plot=self.fields_to_plot,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
@@ -924,17 +856,17 @@ class ScriptInterface:
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
                 index_width=resolved_inputs.index_width,
-                save_data=self.save_data,
-                save_figure=self.save_figure,
-                overwrite=self.overwrite,
+                save_data=self.diagnostic_output_args.save_data,
+                save_figure=self.diagnostic_output_args.save_figure,
+                overwrite=self.diagnostic_output_args.overwrite,
                 hide_annotations=self.hide_annotations,
-                plot_log10=self.plot_log10,
+                apply_log10_plot=self.apply_log10_plot,
                 amr_level=self.amr_level,
                 num_workers=self.num_workers,
             )
         else:
             generate_fields_in_serial(
-                snapshot_tag=self.snapshot_tag,
+                snapshot_tag=self.snapshot_args.snapshot_tag,
                 fields_to_plot=self.fields_to_plot,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
@@ -942,35 +874,24 @@ class ScriptInterface:
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
                 index_width=resolved_inputs.index_width,
-                save_data=self.save_data,
-                save_figure=self.save_figure,
-                overwrite=self.overwrite,
+                save_data=self.diagnostic_output_args.save_data,
+                save_figure=self.diagnostic_output_args.save_figure,
+                overwrite=self.diagnostic_output_args.overwrite,
                 hide_annotations=self.hide_annotations,
-                plot_log10=self.plot_log10,
+                apply_log10_plot=self.apply_log10_plot,
                 amr_level=self.amr_level,
             )
-
-    def _resolve_animate_dir(
-        self,
-        figures_dir: Path | None,
-    ) -> Path:
-        default_figures_dir = self.data_dir if self.data_dir is not None else self.input_dir
-        resolved_figures_dir = figures_dir if figures_dir is not None else default_figures_dir
-        if resolved_figures_dir is None:
-            raise ValueError("`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.")
-        return resolved_figures_dir
 
     def run(
         self,
     ) -> None:
-        figures_dir = self.figures_dir
-        if self.save_data or self.save_figure:
-            resolved_inputs = self._resolve_inputs()
-            if resolved_inputs is not None:
-                self._generate_fields(resolved_inputs)
-                figures_dir = resolved_inputs.figures_dir
-        if self.animate:
-            self._animate_fields(figures_dir=self._resolve_animate_dir(figures_dir))
+        resolved_inputs = cli.resolve_inputs(
+            snapshot_args=self.snapshot_args,
+            output_args=self.diagnostic_output_args,
+            max_elems=100,
+        )
+        if resolved_inputs is not None:
+            self._generate_fields(resolved_inputs)
 
 
 ##
@@ -982,54 +903,66 @@ def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_figure.set_figure_params()
     parser = argparse.ArgumentParser(
-        description="Generate midplane slices of Quokka field components: figures and/or extracted data.",
+        description="Generate midplane slices of Quokka snapshots.",
         parents=[
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
                 allow_slicing=True,
-                allow_output=True,
+                allow_write=True,
+                allow_figures=True,
                 allow_parallel=True,
             ),
         ],
     )
     parser.add_argument(
-        "--plot-log10",
+        "--apply-log10-plot",
         action="store_true",
         default=False,
-        help="Apply log10(|field|) to the plotted field (does not affect saved NPZ slices).",
+        help="Apply log10(|field|) to the plotted field (does not affect the saved `.npz` data slices).",
     )
     parser.add_argument(
         "--no-annotations",
         action="store_true",
         default=False,
-        help="Hide text annotations: min/max values, sim time, and field label (default: False).",
+        help="Hide metadata annotations: min/max values, sim time, and field label (default: False).",
     )
     parser.add_argument(
         "--animate",
         action="store_true",
         default=False,
-        help="Animate figures exist under --figures-dir into an MP4 (default: False).",
+        help="Animate figures that exist under --figures-dir into an MP4 (default: False).",
     )
     user_args = parser.parse_args()
-    script_interface = ScriptInterface(
-        input_dir=user_args.input_dir,
-        snapshot_tag=user_args.tag,
-        fields_to_plot=user_args.fields,
-        comps_to_plot=user_args.comps,
-        axes_to_slice=user_args.axes,
-        save_data=user_args.save_data,
-        save_figure=user_args.save_figure,
-        overwrite=user_args.overwrite,
-        data_dir=user_args.data_dir,
-        figures_dir=user_args.figures_dir,
-        animate=user_args.animate,
-        hide_annotations=user_args.no_annotations,
-        num_workers=user_args.num_workers,
-        plot_log10=user_args.plot_log10,
-        amr_level=user_args.amr_level,
+    if not (user_args.save_data or user_args.save_figure or user_args.animate):
+        raise ValueError("must pass `--save-figure`, `--save-data`, and/or `--animate`; none was given.")
+    field_registry.validate_fields(
+        field_names=user_args.fields,
+        allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
     )
-    script_interface.run()
+    if user_args.save_data or user_args.save_figure:
+        if user_args.input_dir is None:
+            raise ValueError("`--input-dir` is required with `--save-data`/`--save-figure`.")
+        diagnostic_pipeline = DiagnosticPipeline(
+            snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
+            field_comp_axes_args=cli.FieldCompAxesArgs.from_user_args(user_args),
+            diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args),
+            num_workers=user_args.num_workers,
+            hide_annotations=user_args.no_annotations,
+            apply_log10_plot=user_args.apply_log10_plot,
+        )
+        diagnostic_pipeline.run()
+    if user_args.animate:
+        figures_dir = _resolve_animate_figures_dir(
+            figures_dir=user_args.figures_dir,
+            data_dir=user_args.data_dir,
+            input_dir=user_args.input_dir,
+        )
+        _animate_saved_figures(
+            figures_dir=figures_dir,
+            fields_to_plot=validate_types.as_tuple(param=user_args.fields),
+            apply_log10_plot=user_args.apply_log10_plot,
+        )
 
 
 ##

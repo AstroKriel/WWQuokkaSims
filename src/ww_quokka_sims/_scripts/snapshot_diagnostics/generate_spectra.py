@@ -8,7 +8,6 @@
 import argparse
 
 from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
 from typing import final, get_args
 
@@ -17,53 +16,25 @@ import numpy
 
 ## personal
 from jormi.ww_fields.fields_3d import compute_spectra, field_models
-from jormi.ww_io import json_io, manage_log
+from jormi.ww_io import manage_log
 from jormi.ww_plots import (
     add_color,
     annotate_panel,
     manage_figure,
     style_figure,
 )
-from jormi.ww_validation import (
-    validate_arrays,
-    validate_types,
-)
+from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims._script_tools import (
+from ww_quokka_sims._scripts.snapshot_tools import (
     cli,
     field_registry,
 )
+from ww_quokka_sims.sim_io.field_diagnostics import spectra
 from ww_quokka_sims.sim_io.snapshots import (
     find_snapshots,
     load_snapshot,
 )
-
-##
-## === DATA CLASSES
-##
-
-
-@dataclass(frozen=True)
-class SpectraData:
-    step_time: float
-    step_index: int
-    latex_label: str
-    log10_k_bin_centers: numpy.ndarray
-    log10_spectrum: numpy.ndarray
-
-    def __post_init__(
-        self,
-    ) -> None:
-        validate_arrays.ensure_array(array=self.log10_k_bin_centers)
-        validate_arrays.ensure_array(array=self.log10_spectrum)
-        validate_arrays.ensure_1d(array=self.log10_k_bin_centers)
-        validate_arrays.ensure_1d(array=self.log10_spectrum)
-        validate_arrays.ensure_same_shape(
-            array_a=self.log10_k_bin_centers,
-            array_b=self.log10_spectrum,
-        )
-
 
 ##
 ## === FIELD PROCESSING
@@ -84,6 +55,7 @@ class ComputeSpectra:
         save_data: bool,
         data_dir: Path,
         overwrite: bool = False,
+        amr_level: int = 0,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -92,40 +64,20 @@ class ComputeSpectra:
         self.index_width = index_width
         self.save_data = save_data
         self.data_dir = data_dir
-        self.overwrite = bool(overwrite)
+        self.overwrite = overwrite
+        self.amr_level = amr_level
 
-    def _save_incremental(
+    def _data_file_path(
         self,
         *,
-        output_dict: dict,
-    ) -> None:
-        self.data_dir.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-        json_io.save_dict_to_json_file(
-            file_path=self.data_dir / f"{self.field_name}-spectra.json",
-            input_dict=output_dict,
-            overwrite=True,
-            verbose=False,
-        )
+        padded_index: str,
+    ) -> Path:
+        return self.data_dir / f"{self.field_name}-spectrum-index={padded_index}.json"
 
     def run(
         self,
-    ) -> list[SpectraData]:
-        field_spectra: list[SpectraData] = []
-        output_dict: dict = {}
-        cached_entries: dict = {}
-        ## read whatever's already cached whenever it's there, regardless of save_data this run,
-        ## so a --save-figure-only run still gets the cheap reuse; only writing is save_data-gated
-        existing_path = self.data_dir / f"{self.field_name}-spectra.json"
-        if (not self.overwrite) and existing_path.exists():
-            cached_entries = json_io.read_json_file_into_dict(
-                file_path=existing_path,
-                verbose=False,
-            )
-            output_dict = dict(cached_entries)
-
+    ) -> list[spectra.SpectraData]:
+        field_spectra: list[spectra.SpectraData] = []
         for snapshot_dir in self.snapshot_dirs:
             step_index = int(
                 find_snapshots.get_step_index_string(
@@ -134,26 +86,20 @@ class ComputeSpectra:
                 ),
             )
             padded_index = f"{step_index:0{self.index_width}d}"
+            data_path = self._data_file_path(padded_index=padded_index)
 
-            ## skip snapshots already computed in a prior (e.g. killed/interrupted) run
-            if padded_index in cached_entries:
-                cached = cached_entries[padded_index]
-                field_spectra.append(
-                    SpectraData(
-                        step_time=cached["step_time"],
-                        step_index=step_index,
-                        latex_label=cached.get("latex_label", ""),
-                        log10_k_bin_centers=numpy.array(cached["log10_k_bin_centers"]),
-                        log10_spectrum=numpy.array(cached["log10_spectrum"]),
-                    ),
-                )
+            ## skip snapshots already computed in a prior (e.g. killed/interrupted) run, whether
+            ## or not save_data is set this run, so a --save-figure-only run still gets the cheap
+            ## reuse; each snapshot's file is independent, so a crash never risks earlier ones
+            if (not self.overwrite) and data_path.exists():
+                field_spectra.append(spectra.SpectraData.load_from_file(data_path))
                 continue
 
             with load_snapshot.QuokkaSnapshot(
                     snapshot_dir=snapshot_dir,
                     verbose=False,
             ) as snapshot:
-                field = self.field_loader(snapshot)
+                field = self.field_loader(snapshot, amr_level=self.amr_level)
             spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
             step_time = field.sim_time
             assert step_time is not None
@@ -169,7 +115,7 @@ class ComputeSpectra:
                     value=0.0,
                 ),
             )
-            spectra_data = SpectraData(
+            spectra_data = spectra.SpectraData(
                 step_time=step_time,
                 step_index=step_index,
                 latex_label=field.latex_label,
@@ -177,16 +123,14 @@ class ComputeSpectra:
                 log10_spectrum=log10_spectrum,
             )
             field_spectra.append(spectra_data)
-            ## save after every snapshot, not just at the end, so a killed/interrupted
-            ## run still leaves usable partial data on disk
+            ## save immediately, one file per snapshot, so a killed/interrupted run still
+            ## leaves every already-completed snapshot independently usable and resumable
             if self.save_data:
-                output_dict[padded_index] = {
-                    "step_time": spectra_data.step_time,
-                    "latex_label": spectra_data.latex_label,
-                    "log10_k_bin_centers": spectra_data.log10_k_bin_centers,
-                    "log10_spectrum": spectra_data.log10_spectrum,
-                }
-                self._save_incremental(output_dict=output_dict)
+                self.data_dir.mkdir(
+                    parents=True,
+                    exist_ok=True,
+                )
+                spectra_data.save_to_file(data_path)
 
         field_spectra.sort(key=lambda s: s.step_time)
         return field_spectra
@@ -214,6 +158,7 @@ class GenerateSpectra:
         save_data: bool,
         save_figure: bool,
         overwrite: bool = False,
+        amr_level: int = 0,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -225,7 +170,8 @@ class GenerateSpectra:
         self.cmap_name = cmap_name
         self.save_data = save_data
         self.save_figure = save_figure
-        self.overwrite = bool(overwrite)
+        self.overwrite = overwrite
+        self.amr_level = amr_level
 
     @staticmethod
     def _style_ax(
@@ -240,7 +186,7 @@ class GenerateSpectra:
     def _plot_snapshot(
         *,
         ax: manage_figure.Panel,
-        spectra_data: SpectraData,
+        spectra_data: spectra.SpectraData,
         color: annotate_panel.ColorType,
     ) -> None:
         ax.plot(
@@ -254,7 +200,7 @@ class GenerateSpectra:
     def _plot_series(
         *,
         ax: manage_figure.Panel,
-        field_spectra: list[SpectraData],
+        field_spectra: list[spectra.SpectraData],
         cmap_name: str,
     ) -> None:
         palette = add_color.make_palette(
@@ -298,7 +244,7 @@ class GenerateSpectra:
     def _save_snapshot_figure(
         self,
         *,
-        spectra_data: SpectraData,
+        spectra_data: spectra.SpectraData,
         figure_path: Path,
     ) -> None:
         fig, ax = manage_figure.create_figure()
@@ -320,7 +266,7 @@ class GenerateSpectra:
     def _save_summary_figure(
         self,
         *,
-        field_spectra: list[SpectraData],
+        field_spectra: list[spectra.SpectraData],
         figures_dir: Path,
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
@@ -361,6 +307,7 @@ class GenerateSpectra:
             save_data=self.save_data,
             data_dir=self.data_dir,
             overwrite=self.overwrite,
+            amr_level=self.amr_level,
         )
         field_spectra = compute.run()
         if not field_spectra:
@@ -378,107 +325,60 @@ class GenerateSpectra:
 
 
 ##
-## === SCRIPT INTERFACE
+## === DIAGNOSTIC PIPELINE
 ##
 
 
-@dataclass(frozen=True)
-class ResolvedInputs:
-    snapshot_dirs: list[Path]
-    data_dir: Path
-    figures_dir: Path
-    index_width: int
-
-
 @final
-class ScriptInterface:
+class DiagnosticPipeline:
 
     def __init__(
         self,
         *,
-        input_dir: Path,
-        snapshot_tag: str,
-        fields_to_plot: tuple[str, ...] | list[str] | None,
-        save_data: bool,
-        save_figure: bool,
-        overwrite: bool = False,
-        data_dir: Path | None = None,
-        figures_dir: Path | None = None,
+        snapshot_args: cli.SnapshotArgs,
+        field_args: cli.FieldArgs,
+        diagnostic_output_args: cli.DiagnosticOutputArgs,
     ):
-        validate_types.ensure_nonempty_string(
-            param=snapshot_tag,
-            param_name="snapshot_tag",
-        )
-        cli.ensure_save_flag_selected(
-            save_figure=save_figure,
-            save_data=save_data,
-        )
         field_registry.validate_fields(
-            field_names=fields_to_plot,
+            field_names=field_args.fields,
             allowed_types=get_args(field_models.AnyField_3D),
         )
-        self.input_dir = Path(input_dir)
-        self.snapshot_tag = snapshot_tag
-        self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
-        self.save_data = save_data
-        self.save_figure = save_figure
-        self.overwrite = bool(overwrite)
-        self.data_dir = Path(data_dir) if data_dir is not None else None
-        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
-
-    def _resolve_inputs(
-        self,
-    ) -> ResolvedInputs | None:
-        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
-            input_dir=self.input_dir,
-            snapshot_tag=self.snapshot_tag,
-        )
-        if not snapshot_dirs:
-            return None
-        data_dir = cli.resolve_output_dir(
-            output_dir=self.data_dir,
-            default_dir=snapshot_dirs[0].parent,
-        )
-        figures_dir = cli.resolve_output_dir(
-            output_dir=self.figures_dir,
-            default_dir=data_dir,
-        )
-        index_width = find_snapshots.get_max_index_width(
-            snapshot_dirs=snapshot_dirs,
-            snapshot_tag=self.snapshot_tag,
-        )
-        return ResolvedInputs(
-            snapshot_dirs=snapshot_dirs,
-            data_dir=data_dir,
-            figures_dir=figures_dir,
-            index_width=index_width,
-        )
+        self.snapshot_args = snapshot_args
+        self.fields_to_plot = validate_types.as_tuple(param=field_args.fields)
+        self.amr_level = field_args.amr_level
+        self.diagnostic_output_args = diagnostic_output_args
 
     def _generate_fields(
         self,
-        resolved_inputs: ResolvedInputs,
+        resolved_inputs: cli.ResolvedInputs,
     ) -> None:
+        assert resolved_inputs.figures_dir is not None
+        assert resolved_inputs.index_width is not None
         for field_name in self.fields_to_plot:
-            field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
+            registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
             generator = GenerateSpectra(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
-                snapshot_tag=self.snapshot_tag,
+                snapshot_tag=self.snapshot_args.snapshot_tag,
                 index_width=resolved_inputs.index_width,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
-                field_loader=field_meta.loader,
-                cmap_name=field_meta.cmap,
-                save_data=self.save_data,
-                save_figure=self.save_figure,
-                overwrite=self.overwrite,
+                field_loader=registered_field.loader,
+                cmap_name=registered_field.cmap,
+                save_data=self.diagnostic_output_args.save_data,
+                save_figure=self.diagnostic_output_args.save_figure,
+                overwrite=self.diagnostic_output_args.overwrite,
+                amr_level=self.amr_level,
             )
             generator.run()
 
     def run(
         self,
     ) -> None:
-        resolved_inputs = self._resolve_inputs()
+        resolved_inputs = cli.resolve_inputs(
+            snapshot_args=self.snapshot_args,
+            output_args=self.diagnostic_output_args,
+        )
         if resolved_inputs is not None:
             self._generate_fields(resolved_inputs)
 
@@ -492,26 +392,22 @@ def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_figure.set_figure_params()
     user_args = argparse.ArgumentParser(
-        description="Generate power spectra of Quokka scalar fields: figures and/or extracted data.",
+        description="Generate power spectra of Quokka snapshots.",
         parents=[
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=False,
-                allow_output=True,
+                allow_write=True,
+                allow_figures=True,
             ),
         ],
     ).parse_args()
-    script_interface = ScriptInterface(
-        input_dir=user_args.input_dir,
-        snapshot_tag=user_args.tag,
-        fields_to_plot=user_args.fields,
-        save_data=user_args.save_data,
-        save_figure=user_args.save_figure,
-        overwrite=user_args.overwrite,
-        data_dir=user_args.data_dir,
-        figures_dir=user_args.figures_dir,
+    diagnostic_pipeline = DiagnosticPipeline(
+        snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
+        field_args=cli.FieldArgs.from_user_args(user_args),
+        diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args),
     )
-    script_interface.run()
+    diagnostic_pipeline.run()
 
 
 ##

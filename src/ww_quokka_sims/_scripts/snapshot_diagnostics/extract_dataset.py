@@ -26,7 +26,7 @@ from jormi.ww_io import manage_log
 from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims._script_tools import (
+from ww_quokka_sims._scripts.snapshot_tools import (
     cli,
     field_registry,
 )
@@ -41,7 +41,7 @@ from ww_quokka_sims.sim_io.snapshots import (
 
 
 @dataclass(frozen=True)
-class FieldArgs:
+class ResolvedFieldArgs:
     field_name: str
     field_loader: Callable
     amr_level: int = 0
@@ -64,25 +64,6 @@ class WorkerArgs(NamedTuple):
 ##
 ## === FIELD PROCESSING
 ##
-
-
-def _parse_axes(
-    *,
-    axes: tuple[str, ...] | list[str] | None,
-) -> tuple[cartesian_axes.CartesianAxis_3D, ...]:
-    if axes is None:
-        return tuple(cartesian_axes.DEFAULT_3D_AXES_ORDER)
-    parsed_axes: list[cartesian_axes.CartesianAxis_3D] = []
-    for axis_name in validate_types.as_tuple(param=axes):
-        try:
-            parsed_axes.append(
-                cartesian_axes.as_axis(
-                    axis=axis_name,
-                ),
-            )
-        except (TypeError, ValueError):
-            raise ValueError("Provide one or more components (via -c) from: x_0, x_1, x_2")
-    return tuple(parsed_axes)
 
 
 def _axis_to_index(
@@ -110,7 +91,7 @@ def _get_step_time(
 @dataclass(frozen=True)
 class FieldExtractor:
     snapshot_tag: str
-    field_args: FieldArgs
+    field_args: ResolvedFieldArgs
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...]
     overwrite: bool = False
 
@@ -222,12 +203,12 @@ def extract_fields_in_serial(
     amr_level: int = 0,
 ) -> None:
     for field_name in fields_to_extract:
-        field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
+        registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
         field_extractor = FieldExtractor(
             snapshot_tag=snapshot_tag,
-            field_args=FieldArgs(
+            field_args=ResolvedFieldArgs(
                 field_name=field_name,
-                field_loader=field_meta.loader,
+                field_loader=registered_field.loader,
                 amr_level=amr_level,
             ),
             comps_to_extract=comps_to_extract,
@@ -248,7 +229,7 @@ def _extract_snapshot_worker(
     worker_args = WorkerArgs(*user_args)
     field_extractor = FieldExtractor(
         snapshot_tag=worker_args.snapshot_tag,
-        field_args=FieldArgs(
+        field_args=ResolvedFieldArgs(
             field_name=worker_args.field_name,
             field_loader=worker_args.field_loader,
             amr_level=worker_args.amr_level,
@@ -277,14 +258,14 @@ def extract_fields_in_parallel(
 ) -> None:
     grouped_args: list[WorkerArgs] = []
     for field_name in fields_to_extract:
-        field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
+        registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
         for snapshot_dir in snapshot_dirs:
             grouped_args.append(
                 WorkerArgs(
                     snapshot_dir=str(snapshot_dir),
                     snapshot_tag=snapshot_tag,
                     field_name=field_name,
-                    field_loader=field_meta.loader,
+                    field_loader=registered_field.loader,
                     comps_to_extract=comps_to_extract,
                     data_dir=str(data_dir),
                     index_width=index_width,
@@ -303,104 +284,68 @@ def extract_fields_in_parallel(
 
 
 ##
-## === SCRIPT INTERFACE
+## === DATASET PIPELINE
 ##
 
 
-@dataclass(frozen=True)
-class ResolvedInputs:
-    snapshot_dirs: list[Path]
-    data_dir: Path
-    index_width: int
-
-
 @final
-class ScriptInterface:
+class DatasetPipeline:
 
     def __init__(
         self,
         *,
-        input_dir: Path,
-        snapshot_tag: str,
-        fields_to_extract: tuple[str, ...] | list[str] | None,
-        comps_to_extract: tuple[str, ...] | list[str] | None,
-        data_dir: Path | None = None,
+        snapshot_args: cli.SnapshotArgs,
+        field_comp_args: cli.FieldCompArgs,
+        data_output_args: cli.DataOutputArgs,
         num_workers: int | None = None,
-        overwrite: bool = False,
-        amr_level: int = 0,
     ):
-        validate_types.ensure_nonempty_string(
-            param=snapshot_tag,
-            param_name="snapshot_tag",
-        )
         field_registry.validate_fields(
-            field_names=fields_to_extract,
+            field_names=field_comp_args.fields,
             allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
         )
-        self.input_dir = Path(input_dir)
-        self.snapshot_tag = snapshot_tag
-        self.fields_to_extract = validate_types.as_tuple(param=fields_to_extract)
-        self.comps_to_extract = _parse_axes(axes=comps_to_extract)
-        self.data_dir = Path(data_dir) if data_dir is not None else None
+        self.snapshot_args = snapshot_args
+        self.fields_to_extract = validate_types.as_tuple(param=field_comp_args.fields)
+        self.comps_to_extract = cli.parse_axes(axes=field_comp_args.comps)
+        self.amr_level = field_comp_args.amr_level
+        self.data_output_args = data_output_args
         self.num_workers = num_workers
-        self.overwrite = bool(overwrite)
-        self.amr_level = amr_level
-
-    def _resolve_inputs(
-        self,
-    ) -> ResolvedInputs | None:
-        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
-            input_dir=self.input_dir,
-            snapshot_tag=self.snapshot_tag,
-        )
-        if not snapshot_dirs:
-            return None
-        data_dir = cli.resolve_output_dir(
-            output_dir=self.data_dir,
-            default_dir=snapshot_dirs[0].parent,
-        )
-        index_width = find_snapshots.get_max_index_width(
-            snapshot_dirs=snapshot_dirs,
-            snapshot_tag=self.snapshot_tag,
-        )
-        return ResolvedInputs(
-            snapshot_dirs=snapshot_dirs,
-            data_dir=data_dir,
-            index_width=index_width,
-        )
 
     def _extract_fields(
         self,
-        resolved_inputs: ResolvedInputs,
+        resolved_inputs: cli.ResolvedInputs,
     ) -> None:
+        assert resolved_inputs.index_width is not None
         if (self.num_workers != 1) and (len(resolved_inputs.snapshot_dirs) > 5):
             extract_fields_in_parallel(
-                snapshot_tag=self.snapshot_tag,
+                snapshot_tag=self.snapshot_args.snapshot_tag,
                 fields_to_extract=self.fields_to_extract,
                 comps_to_extract=self.comps_to_extract,
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 data_dir=resolved_inputs.data_dir,
                 index_width=resolved_inputs.index_width,
-                overwrite=self.overwrite,
+                overwrite=self.data_output_args.overwrite,
                 amr_level=self.amr_level,
                 num_workers=self.num_workers,
             )
         else:
             extract_fields_in_serial(
-                snapshot_tag=self.snapshot_tag,
+                snapshot_tag=self.snapshot_args.snapshot_tag,
                 fields_to_extract=self.fields_to_extract,
                 comps_to_extract=self.comps_to_extract,
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 data_dir=resolved_inputs.data_dir,
                 index_width=resolved_inputs.index_width,
-                overwrite=self.overwrite,
+                overwrite=self.data_output_args.overwrite,
                 amr_level=self.amr_level,
             )
 
     def run(
         self,
     ) -> None:
-        resolved_inputs = self._resolve_inputs()
+        resolved_inputs = cli.resolve_inputs(
+            snapshot_args=self.snapshot_args,
+            output_args=self.data_output_args,
+        )
         if resolved_inputs is not None:
             self._extract_fields(resolved_inputs)
 
@@ -418,37 +363,19 @@ def main():
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
+                allow_write=True,
                 allow_parallel=True,
             ),
         ],
     )
-    parser.add_argument(
-        "--data-dir",
-        type=lambda path: Path(path).expanduser().resolve(),
-        default=None,
-        help="Output directory for extracted data; defaults to the parent directory of the snapshot.",
-    )
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        default=False,
-        help=(
-            "Redo snapshots whose output already exists, instead of skipping them; "
-            "default: False (resume where a prior run left off)."
-        ),
-    )
     user_args = parser.parse_args()
-    script_interface = ScriptInterface(
-        input_dir=user_args.input_dir,
-        snapshot_tag=user_args.tag,
-        fields_to_extract=user_args.fields,
-        comps_to_extract=user_args.comps,
-        data_dir=user_args.data_dir,
+    dataset_pipeline = DatasetPipeline(
+        snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
+        field_comp_args=cli.FieldCompArgs.from_user_args(user_args),
+        data_output_args=cli.DataOutputArgs.from_user_args(user_args),
         num_workers=user_args.num_workers,
-        overwrite=user_args.overwrite,
-        amr_level=user_args.amr_level,
     )
-    script_interface.run()
+    dataset_pipeline.run()
 
 
 ##

@@ -8,7 +8,6 @@
 import argparse
 
 from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
 from typing import final
 
@@ -19,88 +18,25 @@ import numpy
 from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_models
-from jormi.ww_io import json_io, manage_log
+from jormi.ww_io import manage_log
 from jormi.ww_plots import (
     add_color,
     annotate_panel,
     manage_figure,
     style_figure,
 )
-from jormi.ww_validation import (
-    validate_arrays,
-    validate_types,
-)
+from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims._script_tools import (
+from ww_quokka_sims._scripts.snapshot_tools import (
     cli,
     field_registry,
 )
+from ww_quokka_sims.sim_io.field_diagnostics import pdfs
 from ww_quokka_sims.sim_io.snapshots import (
     find_snapshots,
     load_snapshot,
 )
-
-##
-## === DATA CLASSES
-##
-
-
-@dataclass(frozen=True)
-class PDFData:
-    step_time: float
-    step_index: int
-    grouped_bin_centers: list[numpy.ndarray]
-    grouped_densities: list[numpy.ndarray]
-    comp_labels: list[str]
-
-    def __post_init__(
-        self,
-    ) -> None:
-        ## container validation
-        validate_types.ensure_sequence(
-            param=self.grouped_bin_centers,
-            valid_seq_types=(list, tuple),
-            param_name="grouped_bin_centers",
-            seq_length=len(self.comp_labels),
-        )
-        validate_types.ensure_sequence(
-            param=self.grouped_densities,
-            valid_seq_types=(list, tuple),
-            param_name="grouped_densities",
-            seq_length=len(self.comp_labels),
-        )
-        ## validate each comp-array
-        for (bin_centers, densities) in zip(self.grouped_bin_centers, self.grouped_densities):
-            validate_arrays.ensure_array(array=bin_centers)
-            validate_arrays.ensure_array(array=densities)
-            validate_arrays.ensure_1d(array=bin_centers)
-            validate_arrays.ensure_1d(array=densities)
-            validate_arrays.ensure_same_shape(
-                array_a=bin_centers,
-                array_b=densities,
-            )
-
-    @property
-    def num_comps(
-        self,
-    ) -> int:
-        return len(self.comp_labels)
-
-    @property
-    def is_scalar(
-        self,
-    ) -> bool:
-        return self.num_comps == 1
-
-    def get_pdf(
-        self,
-        comp_index: int = 0,
-    ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        if (comp_index < 0) or (comp_index >= self.num_comps):
-            raise IndexError(f"comp_index {comp_index} out of range [0, {self.num_comps - 1}]")
-        return self.grouped_bin_centers[comp_index], self.grouped_densities[comp_index]
-
 
 ##
 ## === FIELD PROCESSING
@@ -117,30 +53,32 @@ class ComputePDFs:
         field_loader: Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         num_bins: int,
-        log10_binning: bool = False,
+        use_log10_bins: bool = False,
+        amr_level: int = 0,
     ):
         self.field_name = field_name
         self.field_loader = field_loader
         self.comps_to_plot = comps_to_plot
         self.num_bins = num_bins
-        self.log10_binning = log10_binning
+        self.use_log10_bins = use_log10_bins
+        self.amr_level = amr_level
 
     @staticmethod
     def _estimate_pdf(
         *,
         field_data: numpy.ndarray,
         num_bins: int,
-        log10_binning: bool,
+        use_log10_bins: bool,
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
         """Return (bin_centers, log10_densities); zero and negative bins are masked.
 
-        When `log10_binning` is set, bins are placed in log10-space of the field itself (not
+        When `use_log10_bins` is set, bins are placed in log10-space of the field itself (not
         just the density axis), since fields spanning orders of magnitude (eg. current density)
         get almost all of their linearly-spaced bins wasted on the rare, large-valued tail,
         leaving the bulk of the distribution unresolved in a single bin.
         """
         values = field_data.ravel()
-        if log10_binning:
+        if use_log10_bins:
             ## non-positive entries become NaN (no divide-by-zero/invalid-value warning), and are
             ## then dropped by `estimate_pdf`'s own finite-value mask below
             values = compute_array_stats.compute_safe_log10(values)
@@ -163,7 +101,7 @@ class ComputePDFs:
         self,
         field: field_models.VectorField_3D,
         step_index: int,
-    ) -> PDFData:
+    ) -> pdfs.PDFData:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
                 f"Vector field `{self.field_name}` requires at least one component to plot; none provided.",
@@ -180,37 +118,39 @@ class ComputePDFs:
             bin_centers, densities = self._estimate_pdf(
                 field_data=comp_data,
                 num_bins=self.num_bins,
-                log10_binning=self.log10_binning,
+                use_log10_bins=self.use_log10_bins,
             )
             grouped_bin_centers.append(bin_centers)
             grouped_densities.append(densities)
-        return PDFData(
+        return pdfs.PDFData(
             step_time=step_time,
             step_index=step_index,
             grouped_bin_centers=grouped_bin_centers,
             grouped_densities=grouped_densities,
             comp_labels=comp_labels,
+            use_log10_bins=self.use_log10_bins,
         )
 
     def _compute_sfield_pdf(
         self,
         field: field_models.ScalarField_3D,
         step_index: int,
-    ) -> PDFData:
+    ) -> pdfs.PDFData:
         field_models.ensure_3d_sfield(field)
         step_time = field.sim_time
         assert step_time is not None
         bin_centers, densities = self._estimate_pdf(
             field_data=field.fdata.farray,
             num_bins=self.num_bins,
-            log10_binning=self.log10_binning,
+            use_log10_bins=self.use_log10_bins,
         )
-        return PDFData(
+        return pdfs.PDFData(
             step_time=step_time,
             step_index=step_index,
             grouped_bin_centers=[bin_centers],
             grouped_densities=[densities],
             comp_labels=[field_models.get_label(field)],
+            use_log10_bins=self.use_log10_bins,
         )
 
     def compute_snapshot(
@@ -218,7 +158,7 @@ class ComputePDFs:
         *,
         snapshot_dir: Path,
         snapshot_tag: str,
-    ) -> PDFData:
+    ) -> pdfs.PDFData:
         step_index = int(
             find_snapshots.get_step_index_string(
                 snapshot_dir=snapshot_dir,
@@ -229,7 +169,7 @@ class ComputePDFs:
                 snapshot_dir=snapshot_dir,
                 verbose=False,
         ) as snapshot:
-            field = self.field_loader(snapshot)
+            field = self.field_loader(snapshot, amr_level=self.amr_level)
         if isinstance(field, field_models.ScalarField_3D):
             return self._compute_sfield_pdf(
                 field=field,
@@ -267,7 +207,8 @@ class GeneratePDFs:
         save_data: bool,
         save_figure: bool,
         overwrite: bool = False,
-        log10_binning: bool = False,
+        use_log10_bins: bool = False,
+        amr_level: int = 0,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -281,8 +222,9 @@ class GeneratePDFs:
         self.num_bins = int(num_bins)
         self.save_data = save_data
         self.save_figure = save_figure
-        self.overwrite = bool(overwrite)
-        self.log10_binning = log10_binning
+        self.overwrite = overwrite
+        self.use_log10_bins = use_log10_bins
+        self.amr_level = amr_level
 
     def _data_name(
         self,
@@ -290,10 +232,10 @@ class GeneratePDFs:
         """Filename stem, tagged with `log10_` when bins are log10-spaced.
 
         The filename is a hint for humans browsing the directory, not the source of truth (it can
-        be renamed); the saved `log10_binning` flag and `log10_bin_centers` key inside the file
+        be renamed); the saved `use_log10_bins` flag and `log10_bin_centers` key inside the file
         itself are what downstream code should actually check.
         """
-        return f"log10_{self.field_name}" if self.log10_binning else self.field_name
+        return f"log10_{self.field_name}" if self.use_log10_bins else self.field_name
 
     def _data_file_path(
         self,
@@ -316,11 +258,11 @@ class GeneratePDFs:
         *,
         axs_grid: manage_figure.PanelGrid,
         comp_labels: list[str],
-        log10_binning: bool,
+        use_log10_bins: bool,
     ) -> None:
         for comp_index, label in enumerate(comp_labels):
             ax = axs_grid[0][comp_index]
-            x_label = rf"$\log_{{10}}($ {label} $)$" if log10_binning else rf"$x \equiv$ {label}"
+            x_label = rf"$\log_{{10}}($ {label} $)$" if use_log10_bins else rf"$x \equiv$ {label}"
             ax.set_xlabel(x_label)
             if comp_index == 0:
                 ax.set_ylabel(r"$\log_{10}\big(p(x)\big)$")
@@ -329,7 +271,7 @@ class GeneratePDFs:
     def _plot_snapshot(
         *,
         axs_grid: manage_figure.PanelGrid,
-        pdf_data: PDFData,
+        pdf_data: pdfs.PDFData,
         color: annotate_panel.ColorType,
     ) -> None:
         for comp_index in range(pdf_data.num_comps):
@@ -348,7 +290,7 @@ class GeneratePDFs:
     def _plot_series(
         *,
         axs_grid: manage_figure.PanelGrid,
-        field_pdfs: list[PDFData],
+        field_pdfs: list[pdfs.PDFData],
         cmap_name: str,
     ) -> None:
         palette = add_color.make_palette(
@@ -381,52 +323,15 @@ class GeneratePDFs:
             label=r"snapshot index",
         )
 
-    def _pdf_data_to_dict(
-        self,
-        pdf_data: PDFData,
-    ) -> dict:
-        output_dict: dict = {
-            "step_time": pdf_data.step_time,
-            "step_index": pdf_data.step_index,
-            "log10_binning": self.log10_binning,
-        }
-        bin_centers_key = "log10_bin_centers" if self.log10_binning else "bin_centers"
-        for comp_index, comp_label in enumerate(pdf_data.comp_labels):
-            bin_centers, densities = pdf_data.get_pdf(comp_index)
-            output_dict[comp_label] = {
-                bin_centers_key: bin_centers,
-                "log10_density": densities,
-            }
-        return output_dict
-
-    def _load_pdf_data(
-        self,
-        *,
-        file_path: Path,
-    ) -> PDFData:
-        input_dict = json_io.read_json_file_into_dict(
-            file_path=file_path,
-            verbose=False,
-        )
-        bin_centers_key = "log10_bin_centers" if self.log10_binning else "bin_centers"
-        comp_labels = [key for key in input_dict if key not in ("step_time", "step_index", "log10_binning")]
-        return PDFData(
-            step_time=input_dict["step_time"],
-            step_index=input_dict["step_index"],
-            grouped_bin_centers=[numpy.array(input_dict[comp_label][bin_centers_key]) for comp_label in comp_labels],
-            grouped_densities=[numpy.array(input_dict[comp_label]["log10_density"]) for comp_label in comp_labels],
-            comp_labels=comp_labels,
-        )
-
     def _save_pdf(
         self,
         *,
-        pdf_data: PDFData,
+        pdf_data: pdfs.PDFData,
         data_dir: Path,
     ) -> None:
         """Save one snapshot's PDF to its own file, mirroring `generate_slices.py`'s one-file-per-
         snapshot convention (rather than one file aggregating every snapshot) -- each file is
-        self-contained (carries its own `step_time`/`log10_binning`), so results already on disk
+        self-contained (carries its own `step_time`/`use_log10_bins`), so results already on disk
         are immediately usable even if a later snapshot in the run fails or the job is cut off.
         """
         data_dir.mkdir(
@@ -434,17 +339,12 @@ class GeneratePDFs:
             exist_ok=True,
         )
         padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
-        json_io.save_dict_to_json_file(
-            file_path=self._data_file_path(data_dir=data_dir, padded_index=padded_index),
-            input_dict=self._pdf_data_to_dict(pdf_data),
-            overwrite=True,
-            verbose=False,
-        )
+        pdf_data.save_to_file(self._data_file_path(data_dir=data_dir, padded_index=padded_index))
 
     def _save_snapshot_figure(
         self,
         *,
-        pdf_data: PDFData,
+        pdf_data: pdfs.PDFData,
         figure_path: Path,
     ) -> None:
         fig, axs_grid = manage_figure.create_figure_grid(
@@ -459,7 +359,7 @@ class GeneratePDFs:
         self._style_axs(
             axs_grid=axs_grid,
             comp_labels=pdf_data.comp_labels,
-            log10_binning=self.log10_binning,
+            use_log10_bins=self.use_log10_bins,
         )
         manage_figure.save_figure(
             figure=fig,
@@ -500,7 +400,7 @@ class GeneratePDFs:
                     f"building figure from saved data, skipping the raw snapshot."
                 ),
             )
-            pdf_data = self._load_pdf_data(file_path=data_path)
+            pdf_data = pdfs.PDFData.load_from_file(data_path)
             self._save_snapshot_figure(pdf_data=pdf_data, figure_path=figure_path)
             return
 
@@ -514,16 +414,16 @@ class GeneratePDFs:
         self,
         *,
         data_dir: Path,
-    ) -> list[PDFData]:
+    ) -> list[pdfs.PDFData]:
         paths = sorted(data_dir.glob(f"{self._data_name()}-pdf-index=*.json"))
-        field_pdfs = [self._load_pdf_data(file_path=path) for path in paths]
+        field_pdfs = [pdfs.PDFData.load_from_file(path) for path in paths]
         field_pdfs.sort(key=lambda pdf_data: pdf_data.step_time)
         return field_pdfs
 
     def _save_summary_figure(
         self,
         *,
-        field_pdfs: list[PDFData],
+        field_pdfs: list[pdfs.PDFData],
         figures_dir: Path,
     ) -> None:
         """Combined overlay across every saved snapshot; always rebuilt fresh from whatever is on
@@ -549,7 +449,7 @@ class GeneratePDFs:
         self._style_axs(
             axs_grid=axs_grid,
             comp_labels=field_pdfs[0].comp_labels,
-            log10_binning=self.log10_binning,
+            use_log10_bins=self.use_log10_bins,
         )
         fig_path = figures_dir / f"{self._data_name()}-pdfs-summary.png"
         manage_figure.save_figure(
@@ -567,7 +467,8 @@ class GeneratePDFs:
                 field_loader=self.field_loader,
                 comps_to_plot=self.comps_to_plot,
                 num_bins=self.num_bins,
-                log10_binning=self.log10_binning,
+                use_log10_bins=self.use_log10_bins,
+                amr_level=self.amr_level,
             )
             for snapshot_dir in self.snapshot_dirs:
                 self._process_snapshot(
@@ -591,120 +492,68 @@ class GeneratePDFs:
 
 
 ##
-## === SCRIPT INTERFACE
+## === DIAGNOSTIC PIPELINE
 ##
 
 
-@dataclass(frozen=True)
-class ResolvedInputs:
-    snapshot_dirs: list[Path]
-    data_dir: Path
-    figures_dir: Path
-    index_width: int
-
-
 @final
-class ScriptInterface:
+class DiagnosticPipeline:
 
     def __init__(
         self,
         *,
-        input_dir: Path,
-        snapshot_tag: str,
-        fields_to_plot: tuple[str, ...] | list[str] | None,
-        comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
-        save_data: bool,
-        save_figure: bool,
-        num_bins: int = 15,
-        log10_binning: bool = False,
-        overwrite: bool = False,
-        data_dir: Path | None = None,
-        figures_dir: Path | None = None,
+        snapshot_args: cli.SnapshotArgs,
+        field_comp_args: cli.FieldCompArgs,
+        diagnostic_output_args: cli.DiagnosticOutputArgs,
+        num_bins: int = 20,
+        use_log10_bins: bool = False,
     ):
-        validate_types.ensure_nonempty_string(
-            param=snapshot_tag,
-            param_name="snapshot_tag",
-        )
-        cli.ensure_save_flag_selected(
-            save_figure=save_figure,
-            save_data=save_data,
-        )
         field_registry.validate_fields(
-            field_names=fields_to_plot,
+            field_names=field_comp_args.fields,
             allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
         )
-        if comps_to_plot is None:
-            comps_to_plot = cartesian_axes.DEFAULT_3D_AXES_ORDER
-        elif not set(comps_to_plot).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):
-            raise ValueError("Provide one or more components (via -c) from: x_0, x_1, x_2")
-        self.input_dir = Path(input_dir)
-        self.snapshot_tag = snapshot_tag
-        self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
-        self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
-        self.save_data = save_data
-        self.save_figure = save_figure
+        self.snapshot_args = snapshot_args
+        self.fields_to_plot = validate_types.as_tuple(param=field_comp_args.fields)
+        self.comps_to_plot = cli.parse_axes(axes=field_comp_args.comps)
+        self.amr_level = field_comp_args.amr_level
+        self.diagnostic_output_args = diagnostic_output_args
         self.num_bins = int(num_bins)
-        self.log10_binning = log10_binning
-        self.overwrite = bool(overwrite)
-        self.data_dir = Path(data_dir) if data_dir is not None else None
-        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
-
-    def _resolve_inputs(
-        self,
-    ) -> ResolvedInputs | None:
-        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
-            input_dir=self.input_dir,
-            snapshot_tag=self.snapshot_tag,
-        )
-        if not snapshot_dirs:
-            return None
-        data_dir = cli.resolve_output_dir(
-            output_dir=self.data_dir,
-            default_dir=snapshot_dirs[0].parent,
-        )
-        figures_dir = cli.resolve_output_dir(
-            output_dir=self.figures_dir,
-            default_dir=data_dir,
-        )
-        index_width = find_snapshots.get_max_index_width(
-            snapshot_dirs=snapshot_dirs,
-            snapshot_tag=self.snapshot_tag,
-        )
-        return ResolvedInputs(
-            snapshot_dirs=snapshot_dirs,
-            data_dir=data_dir,
-            figures_dir=figures_dir,
-            index_width=index_width,
-        )
+        self.use_log10_bins = use_log10_bins
 
     def _generate_fields(
         self,
-        resolved_inputs: ResolvedInputs,
+        resolved_inputs: cli.ResolvedInputs,
     ) -> None:
+        assert resolved_inputs.figures_dir is not None
+        assert resolved_inputs.index_width is not None
         for field_name in self.fields_to_plot:
-            field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
+            registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
             generator = GeneratePDFs(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
-                snapshot_tag=self.snapshot_tag,
+                snapshot_tag=self.snapshot_args.snapshot_tag,
                 index_width=resolved_inputs.index_width,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
-                cmap_name=field_meta.cmap,
-                field_loader=field_meta.loader,
+                cmap_name=registered_field.cmap,
+                field_loader=registered_field.loader,
                 num_bins=self.num_bins,
-                save_data=self.save_data,
-                save_figure=self.save_figure,
-                overwrite=self.overwrite,
-                log10_binning=self.log10_binning,
+                save_data=self.diagnostic_output_args.save_data,
+                save_figure=self.diagnostic_output_args.save_figure,
+                overwrite=self.diagnostic_output_args.overwrite,
+                use_log10_bins=self.use_log10_bins,
+                amr_level=self.amr_level,
             )
             generator.run()
 
     def run(
         self,
     ) -> None:
-        resolved_inputs = self._resolve_inputs()
+        resolved_inputs = cli.resolve_inputs(
+            snapshot_args=self.snapshot_args,
+            output_args=self.diagnostic_output_args,
+        )
         if resolved_inputs is not None:
             self._generate_fields(resolved_inputs)
 
@@ -718,49 +567,38 @@ def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_figure.set_figure_params()
     parser = argparse.ArgumentParser(
-        description="Generate PDFs of Quokka field components: figures and/or extracted data.",
+        description="Generate PDFs of Quokka snapshots.",
         parents=[
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
                 allow_slicing=False,
-                allow_output=True,
+                allow_write=True,
+                allow_figures=True,
             ),
         ],
     )
     parser.add_argument(
         "--num-bins",
         type=int,
-        default=15,
-        help="Number of histogram bins for the PDF estimate; default: 15.",
+        default=20,
+        help="Number of discrete histogram bins for the PDF estimate (default: 20).",
     )
     parser.add_argument(
-        "--log10-bins",
+        "--use-log10-bins",
         action="store_true",
         default=False,
-        help=(
-            "Take log10 of the field values themselves before binning, rather than binning the "
-            "raw values on a linear scale; default: False. Recommended for fields spanning orders "
-            "of magnitude (eg. current density), where linear bins waste most of their resolution "
-            "on the rare, large-valued tail and leave the bulk of the distribution unresolved in "
-            "a single bin."
-        ),
+        help="Bin the log10(|field|) values rather than the raw-field values (default: False).",
     )
     user_args = parser.parse_args()
-    script_interface = ScriptInterface(
-        input_dir=user_args.input_dir,
-        snapshot_tag=user_args.tag,
-        fields_to_plot=user_args.fields,
-        comps_to_plot=user_args.comps,
-        save_data=user_args.save_data,
-        save_figure=user_args.save_figure,
+    diagnostic_pipeline = DiagnosticPipeline(
+        snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
+        field_comp_args=cli.FieldCompArgs.from_user_args(user_args),
+        diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args),
         num_bins=user_args.num_bins,
-        log10_binning=user_args.log10_bins,
-        overwrite=user_args.overwrite,
-        data_dir=user_args.data_dir,
-        figures_dir=user_args.figures_dir,
+        use_log10_bins=user_args.use_log10_bins,
     )
-    script_interface.run()
+    diagnostic_pipeline.run()
 
 
 ##

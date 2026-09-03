@@ -12,7 +12,7 @@ from typing import get_args
 from jormi.ww_fields.fields_3d import field_models
 
 ## local
-from ww_quokka_sims._script_tools import field_registry
+from ww_quokka_sims._scripts.snapshot_tools import field_registry
 
 ##
 ## === TEST SUITES
@@ -58,7 +58,7 @@ class TestGetFieldType(unittest.TestCase):
         ## Field type to field_models.AnyField_3D, this catches it here rather
         ## than at some downstream script's runtime dispatch
         known_types = get_args(field_models.AnyField_3D)
-        for field_name in field_registry.QUOKKA_FIELD_LOOKUP:
+        for field_name in field_registry.REGISTERED_FIELD_LOOKUP:
             with self.subTest(field_name=field_name):
                 self.assertIn(
                     field_registry.get_field_type(field_name),

@@ -31,7 +31,7 @@ from jormi.ww_plots import (
 from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims._script_tools import (
+from ww_quokka_sims._scripts.snapshot_tools import (
     cli,
     field_registry,
 )
@@ -116,7 +116,7 @@ class ComputeCompProfiles:
             return y_min + (numpy.arange(num_cells_y) + 0.5) * cell_width_y
         if ax_idx == 2:
             return z_min + (numpy.arange(num_cells_z) + 0.5) * cell_width_z
-        raise ValueError("axis must be one of: x_0, x_1, x_2")
+        raise ValueError(f"axis must be one of: {cli.AXIS_LABELS_TEXT}")
 
     @staticmethod
     def _extract_1d_midplane_profile(
@@ -135,7 +135,7 @@ class ComputeCompProfiles:
             return data_3d[slice_index_x, :, slice_index_z]
         if ax_idx == 2:
             return data_3d[slice_index_x, slice_index_y, :]
-        raise ValueError("axis must be one of: x_0, x_1, x_2")
+        raise ValueError(f"axis must be one of: {cli.AXIS_LABELS_TEXT}")
 
     def _compute_scalar_profiles(
         self,
@@ -291,7 +291,7 @@ class GenerateCompProfiles:
         self.cmap_name = cmap_name
         self.save_data = save_data
         self.save_figure = save_figure
-        self.overwrite = bool(overwrite)
+        self.overwrite = overwrite
         self.amr_level = amr_level
 
     def _data_file_path(
@@ -676,116 +676,53 @@ class GenerateCompProfiles:
 
 
 ##
-## === SCRIPT INTERFACE
+## === DIAGNOSTIC PIPELINE
 ##
 
 
-@dataclass(frozen=True)
-class ResolvedInputs:
-    snapshot_dirs: list[Path]
-    data_dir: Path
-    figures_dir: Path
-    index_width: int
-
-
 @final
-class ScriptInterface:
+class DiagnosticPipeline:
 
     def __init__(
         self,
         *,
-        input_dir: Path,
-        snapshot_tag: str,
-        fields_to_plot: list[str],
-        comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
-        axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...] | list[cartesian_axes.AxisLike_3D] | None,
-        save_data: bool,
-        save_figure: bool,
-        overwrite: bool = False,
-        data_dir: Path | None = None,
-        figures_dir: Path | None = None,
-        amr_level: int = 0,
+        snapshot_args: cli.SnapshotArgs,
+        field_comp_axes_args: cli.FieldCompAxesArgs,
+        diagnostic_output_args: cli.DiagnosticOutputArgs,
     ):
-        validate_types.ensure_nonempty_string(
-            param=snapshot_tag,
-            param_name="snapshot_tag",
-        )
-        cli.ensure_save_flag_selected(
-            save_figure=save_figure,
-            save_data=save_data,
-        )
         field_registry.validate_fields(
-            field_names=fields_to_plot,
+            field_names=field_comp_axes_args.fields,
             allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
         )
-        if comps_to_plot is None:
-            comps_to_plot = cartesian_axes.DEFAULT_3D_AXES_ORDER
-        elif not set(comps_to_plot).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):
-            raise ValueError("Provide one or more components (via -c) from: x_0, x_1, x_2")
-        if axes_to_slice is None:
-            axes_to_slice = cartesian_axes.DEFAULT_3D_AXES_ORDER
-        elif not set(axes_to_slice).issubset(set(cartesian_axes.DEFAULT_3D_AXES_ORDER)):
-            raise ValueError("Provide one or more axes (via -a) from: x_0, x_1, x_2")
-        self.input_dir = Path(input_dir)
-        self.snapshot_tag = snapshot_tag
-        self.fields_to_plot = validate_types.as_tuple(param=fields_to_plot)
-        self.comps_to_plot = validate_types.as_tuple(param=comps_to_plot)
-        self.axes_to_slice = validate_types.as_tuple(param=axes_to_slice)
-        self.save_data = save_data
-        self.save_figure = save_figure
-        self.overwrite = bool(overwrite)
-        self.data_dir = Path(data_dir) if data_dir is not None else None
-        self.figures_dir = Path(figures_dir) if figures_dir is not None else None
-        self.amr_level = amr_level
-
-    def _resolve_inputs(
-        self,
-    ) -> ResolvedInputs | None:
-        snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
-            input_dir=self.input_dir,
-            snapshot_tag=self.snapshot_tag,
-        )
-        if not snapshot_dirs:
-            return None
-        data_dir = cli.resolve_output_dir(
-            output_dir=self.data_dir,
-            default_dir=snapshot_dirs[0].parent,
-        )
-        figures_dir = cli.resolve_output_dir(
-            output_dir=self.figures_dir,
-            default_dir=data_dir,
-        )
-        index_width = find_snapshots.get_max_index_width(
-            snapshot_dirs=snapshot_dirs,
-            snapshot_tag=self.snapshot_tag,
-        )
-        return ResolvedInputs(
-            snapshot_dirs=snapshot_dirs,
-            data_dir=data_dir,
-            figures_dir=figures_dir,
-            index_width=index_width,
-        )
+        self.snapshot_args = snapshot_args
+        self.fields_to_plot = validate_types.as_tuple(param=field_comp_axes_args.fields)
+        self.comps_to_plot = cli.parse_axes(axes=field_comp_axes_args.comps)
+        self.axes_to_slice = cli.parse_axes(axes=field_comp_axes_args.axes)
+        self.amr_level = field_comp_axes_args.amr_level
+        self.diagnostic_output_args = diagnostic_output_args
 
     def _generate_fields(
         self,
-        resolved_inputs: ResolvedInputs,
+        resolved_inputs: cli.ResolvedInputs,
     ) -> None:
+        assert resolved_inputs.figures_dir is not None
+        assert resolved_inputs.index_width is not None
         for field_name in self.fields_to_plot:
-            field_meta = field_registry.QUOKKA_FIELD_LOOKUP[field_name]
+            registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
             generate_comp_profiles = GenerateCompProfiles(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
-                snapshot_tag=self.snapshot_tag,
+                snapshot_tag=self.snapshot_args.snapshot_tag,
                 index_width=resolved_inputs.index_width,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
-                field_loader=field_meta.loader,
-                cmap_name=field_meta.cmap,
-                save_data=self.save_data,
-                save_figure=self.save_figure,
-                overwrite=self.overwrite,
+                field_loader=registered_field.loader,
+                cmap_name=registered_field.cmap,
+                save_data=self.diagnostic_output_args.save_data,
+                save_figure=self.diagnostic_output_args.save_figure,
+                overwrite=self.diagnostic_output_args.overwrite,
                 amr_level=self.amr_level,
             )
             generate_comp_profiles.run()
@@ -793,7 +730,10 @@ class ScriptInterface:
     def run(
         self,
     ) -> None:
-        resolved_inputs = self._resolve_inputs()
+        resolved_inputs = cli.resolve_inputs(
+            snapshot_args=self.snapshot_args,
+            output_args=self.diagnostic_output_args,
+        )
         if resolved_inputs is not None:
             self._generate_fields(resolved_inputs)
 
@@ -807,30 +747,23 @@ def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_figure.set_figure_params()
     user_args = argparse.ArgumentParser(
-        description="Generate midplane profiles of Quokka field components: figures and/or extracted data.",
+        description="Generate midplane profiles of Quokka snapshots.",
         parents=[
             cli.base_parser(
                 num_dirs=1,
                 allow_vfields=True,
                 allow_slicing=True,
-                allow_output=True,
+                allow_write=True,
+                allow_figures=True,
             ),
         ],
     ).parse_args()
-    script_interface = ScriptInterface(
-        input_dir=user_args.input_dir,
-        snapshot_tag=user_args.tag,
-        fields_to_plot=user_args.fields,
-        comps_to_plot=user_args.comps,
-        axes_to_slice=user_args.axes,
-        save_data=user_args.save_data,
-        save_figure=user_args.save_figure,
-        overwrite=user_args.overwrite,
-        data_dir=user_args.data_dir,
-        figures_dir=user_args.figures_dir,
-        amr_level=user_args.amr_level,
+    diagnostic_pipeline = DiagnosticPipeline(
+        snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
+        field_comp_axes_args=cli.FieldCompAxesArgs.from_user_args(user_args),
+        diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args),
     )
-    script_interface.run()
+    diagnostic_pipeline.run()
 
 
 ##
