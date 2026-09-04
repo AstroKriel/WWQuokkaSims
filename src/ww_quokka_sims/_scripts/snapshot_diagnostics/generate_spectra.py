@@ -298,7 +298,7 @@ class GenerateSpectra:
         self,
     ) -> None:
         ## compute the isotropic power spectrum for each snapshot; saved incrementally as each completes
-        compute = ComputeSpectra(
+        compute_spectra = ComputeSpectra(
             snapshot_dirs=self.snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
             field_name=self.field_name,
@@ -309,7 +309,7 @@ class GenerateSpectra:
             overwrite=self.overwrite,
             amr_level=self.amr_level,
         )
-        field_spectra = compute.run()
+        field_spectra = compute_spectra.run()
         if not field_spectra:
             return
         if not self.save_figure:
@@ -356,7 +356,7 @@ class DiagnosticPipeline:
         assert resolved_inputs.index_width is not None
         for field_name in self.fields_to_plot:
             registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
-            generator = GenerateSpectra(
+            generate_spectra = GenerateSpectra(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 snapshot_tag=self.snapshot_args.snapshot_tag,
                 index_width=resolved_inputs.index_width,
@@ -370,7 +370,7 @@ class DiagnosticPipeline:
                 overwrite=self.diagnostic_output_args.overwrite,
                 amr_level=self.amr_level,
             )
-            generator.run()
+            generate_spectra.run()
 
     def run(
         self,

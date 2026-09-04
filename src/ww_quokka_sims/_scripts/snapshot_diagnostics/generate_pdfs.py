@@ -528,7 +528,7 @@ class DiagnosticPipeline:
         assert resolved_inputs.index_width is not None
         for field_name in self.fields_to_plot:
             registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
-            generator = GeneratePDFs(
+            generate_pdfs = GeneratePDFs(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 snapshot_tag=self.snapshot_args.snapshot_tag,
                 index_width=resolved_inputs.index_width,
@@ -545,7 +545,7 @@ class DiagnosticPipeline:
                 use_log10_bins=self.use_log10_bins,
                 amr_level=self.amr_level,
             )
-            generator.run()
+            generate_pdfs.run()
 
     def run(
         self,
