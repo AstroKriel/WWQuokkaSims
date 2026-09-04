@@ -309,7 +309,7 @@ class DiagnosticPipeline:
         statistic_fn = _STATISTIC_LOOKUP[self.statistic_name]
         for field_name in self.fields_to_plot:
             registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
-            loader = LoadTimeSeries(
+            load_time_series = LoadTimeSeries(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 field_name=field_name,
                 field_loader=registered_field.loader,
@@ -320,7 +320,7 @@ class DiagnosticPipeline:
                 overwrite=self.diagnostic_output_args.overwrite,
                 amr_level=self.amr_level,
             )
-            field_series = loader.run()
+            field_series = load_time_series.run()
             generate_time_series = GenerateTimeSeries(
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
