@@ -48,7 +48,7 @@ _STATISTIC_LOOKUP: dict[str, Callable[[field_models.ScalarField_3D], float]] = {
 }
 
 ##
-## === FIELD PROCESSING
+## === TIME SERIES
 ##
 
 
@@ -63,7 +63,7 @@ class ResolvedFieldArgs:
 
 
 @final
-class LoadTimeSeries:
+class GenerateTimeSeries:
 
     def __init__(
         self,
@@ -73,10 +73,14 @@ class LoadTimeSeries:
         field_loader: Callable,
         statistic_name: str,
         statistic_fn: Callable[[field_models.ScalarField_3D], float],
+        data_dir: Path,
+        figures_dir: Path,
+        save_data: bool,
+        save_figure: bool,
         num_workers: int | None = None,
-        data_dir: Path | None = None,
         overwrite: bool = False,
         amr_level: int = 0,
+        apply_log10_plot: bool = False,
     ):
         validate_types.ensure_nonempty_string(
             param=field_name,
@@ -87,22 +91,24 @@ class LoadTimeSeries:
         self.field_loader = field_loader
         self.statistic_name = statistic_name
         self.statistic_fn = statistic_fn
-        self.num_workers = num_workers
         self.data_dir = data_dir
+        self.figures_dir = figures_dir
+        self.save_data = save_data
+        self.save_figure = save_figure
+        self.num_workers = num_workers
         self.overwrite = overwrite
         self.amr_level = amr_level
+        self.apply_log10_plot = apply_log10_plot
 
     def _cache_file_path(
         self,
         snapshot_dir: Path,
-    ) -> Path | None:
+    ) -> Path:
         """Per-snapshot resume-cache path, hidden under `.cache/` so it is never mistaken for real output."""
-        if self.data_dir is None:
-            return None
         return self.data_dir / ".cache" / "time_series" / self.statistic_name / f"{self.field_name}-{snapshot_dir.name}.json"
 
     @staticmethod
-    def load_snapshot(
+    def _compute_snapshot_point(
         field_args: ResolvedFieldArgs,
     ) -> time_series.TimePoint:
         with load_snapshot.QuokkaSnapshot(
@@ -128,7 +134,7 @@ class LoadTimeSeries:
             data_point.save_to_file(field_args.cache_file_path)
         return data_point
 
-    def run(
+    def _compute_field_series(
         self,
     ) -> time_series.TimeSeries:
         data_points: list[time_series.TimePoint] = []
@@ -136,7 +142,7 @@ class LoadTimeSeries:
         for snapshot_dir in self.snapshot_dirs:
             snapshot_dir = Path(snapshot_dir)
             cache_file_path = self._cache_file_path(snapshot_dir)
-            if (cache_file_path is not None) and (not self.overwrite) and cache_file_path.exists():
+            if (not self.overwrite) and cache_file_path.exists():
                 data_points.append(time_series.TimePoint.load_from_file(cache_file_path))
                 continue
             pending_field_args.append(
@@ -152,11 +158,9 @@ class LoadTimeSeries:
         if not pending_field_args:
             return time_series.TimeSeries(points=data_points)
 
-        ## load each pending snapshot in parallel if there are enough to justify it, else serial;
-        ## either way, `load_snapshot` above persists each result itself as it completes
         if (self.num_workers != 1) and (len(pending_field_args) > 5):
             new_points: list[time_series.TimePoint] = parallel_dispatch.run_in_parallel(
-                worker_fn=LoadTimeSeries.load_snapshot,
+                worker_fn=GenerateTimeSeries._compute_snapshot_point,
                 grouped_args=pending_field_args,
                 num_workers=self.num_workers,
                 timeout_seconds=120,
@@ -166,50 +170,21 @@ class LoadTimeSeries:
             data_points.extend(new_points)
         else:
             for field_args in pending_field_args:
-                data_points.append(LoadTimeSeries.load_snapshot(field_args=field_args))
+                data_points.append(GenerateTimeSeries._compute_snapshot_point(field_args=field_args))
         return time_series.TimeSeries(points=data_points)
-
-
-##
-## === FIGURE RENDERING
-##
-
-
-@final
-class GenerateTimeSeries:
-
-    def __init__(
-        self,
-        *,
-        data_dir: Path,
-        figures_dir: Path,
-        field_name: str,
-        statistic_name: str,
-        save_data: bool,
-        save_figure: bool,
-        apply_log10_plot: bool = False,
-    ):
-        self.data_dir = data_dir
-        self.figures_dir = figures_dir
-        self.field_name = field_name
-        self.statistic_name = statistic_name
-        self.save_data = save_data
-        self.save_figure = save_figure
-        self.apply_log10_plot = apply_log10_plot
 
     def _save_series(
         self,
         *,
         field_series: time_series.TimeSeries,
-        data_dir: Path,
     ) -> None:
-        data_dir.mkdir(
+        self.data_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
         time_array, values_array = field_series.get_sorted_arrays()
         json_io.save_dict_to_json_file(
-            file_path=data_dir / f"{self.field_name}-{self.statistic_name}-time_series.json",
+            file_path=self.data_dir / f"{self.field_name}-{self.statistic_name}-time_series.json",
             input_dict={
                 "sim_times": time_array,
                 "values": values_array,
@@ -220,15 +195,10 @@ class GenerateTimeSeries:
 
     def run(
         self,
-        *,
-        field_series: time_series.TimeSeries,
     ) -> None:
-        ## optionally write the time series data to JSON
+        field_series = self._compute_field_series()
         if self.save_data:
-            self._save_series(
-                field_series=field_series,
-                data_dir=self.data_dir,
-            )
+            self._save_series(field_series=field_series)
         if not self.save_figure:
             return
         fig, ax = manage_figure.create_figure()
@@ -309,28 +279,22 @@ class DiagnosticPipeline:
         statistic_fn = _STATISTIC_LOOKUP[self.statistic_name]
         for field_name in self.fields_to_plot:
             registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
-            load_time_series = LoadTimeSeries(
+            generate_time_series = GenerateTimeSeries(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 field_name=field_name,
                 field_loader=registered_field.loader,
                 statistic_name=self.statistic_name,
                 statistic_fn=statistic_fn,
-                num_workers=self.num_workers,
-                data_dir=resolved_inputs.data_dir,
-                overwrite=self.diagnostic_output_args.overwrite,
-                amr_level=self.amr_level,
-            )
-            field_series = load_time_series.run()
-            generate_time_series = GenerateTimeSeries(
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
-                field_name=field_name,
-                statistic_name=self.statistic_name,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,
+                num_workers=self.num_workers,
+                overwrite=self.diagnostic_output_args.overwrite,
+                amr_level=self.amr_level,
                 apply_log10_plot=self.apply_log10_plot,
             )
-            generate_time_series.run(field_series=field_series)
+            generate_time_series.run()
 
     def run(
         self,
