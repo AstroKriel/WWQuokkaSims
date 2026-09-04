@@ -310,7 +310,7 @@ class DatasetPipeline:
         self.data_output_args = data_output_args
         self.num_workers = num_workers
 
-    def _extract_fields(
+    def _pipeline(
         self,
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
@@ -347,7 +347,7 @@ class DatasetPipeline:
             output_args=self.data_output_args,
         )
         if resolved_inputs is not None:
-            self._extract_fields(resolved_inputs)
+            self._pipeline(resolved_inputs)
 
 
 ##

@@ -840,7 +840,7 @@ class DiagnosticPipeline:
         self.hide_annotations = hide_annotations
         self.apply_log10_plot = apply_log10_plot
 
-    def _generate_fields(
+    def _pipeline(
         self,
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
@@ -891,7 +891,7 @@ class DiagnosticPipeline:
             max_elems=100,
         )
         if resolved_inputs is not None:
-            self._generate_fields(resolved_inputs)
+            self._pipeline(resolved_inputs)
 
 
 ##

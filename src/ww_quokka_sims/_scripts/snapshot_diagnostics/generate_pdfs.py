@@ -520,7 +520,7 @@ class DiagnosticPipeline:
         self.num_bins = int(num_bins)
         self.use_log10_bins = use_log10_bins
 
-    def _generate_fields(
+    def _pipeline(
         self,
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
@@ -555,7 +555,7 @@ class DiagnosticPipeline:
             output_args=self.diagnostic_output_args,
         )
         if resolved_inputs is not None:
-            self._generate_fields(resolved_inputs)
+            self._pipeline(resolved_inputs)
 
 
 ##

@@ -348,7 +348,7 @@ class DiagnosticPipeline:
         self.amr_level = field_args.amr_level
         self.diagnostic_output_args = diagnostic_output_args
 
-    def _generate_fields(
+    def _pipeline(
         self,
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
@@ -380,7 +380,7 @@ class DiagnosticPipeline:
             output_args=self.diagnostic_output_args,
         )
         if resolved_inputs is not None:
-            self._generate_fields(resolved_inputs)
+            self._pipeline(resolved_inputs)
 
 
 ##

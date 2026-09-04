@@ -271,7 +271,7 @@ class DiagnosticPipeline:
         self.num_workers = num_workers
         self.apply_log10_plot = apply_log10_plot
 
-    def _generate_fields(
+    def _pipeline(
         self,
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
@@ -305,7 +305,7 @@ class DiagnosticPipeline:
             allow_index_width=False,
         )
         if resolved_inputs is not None:
-            self._generate_fields(resolved_inputs)
+            self._pipeline(resolved_inputs)
 
 
 ##
