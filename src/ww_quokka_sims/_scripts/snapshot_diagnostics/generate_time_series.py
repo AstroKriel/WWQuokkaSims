@@ -39,10 +39,10 @@ from ww_quokka_sims.sim_io.field_diagnostics import time_series
 from ww_quokka_sims.sim_io.snapshots import load_snapshot
 
 ##
-## === REDUCTIONS
+## === STATISTICS
 ##
 
-_REDUCTION_LOOKUP: dict[str, Callable[[field_models.ScalarField_3D], float]] = {
+_STATISTIC_LOOKUP: dict[str, Callable[[field_models.ScalarField_3D], float]] = {
     "total": field_operators.compute_sfield_volume_integral,
     "rms": field_operators.compute_sfield_rms,
 }
@@ -57,7 +57,7 @@ class ResolvedFieldArgs:
     snapshot_dir: Path
     field_name: str
     field_loader: Callable
-    reduction_fn: Callable
+    statistic_fn: Callable
     cache_file_path: Path | None = None
     amr_level: int = 0
 
@@ -71,8 +71,8 @@ class LoadTimeSeries:
         snapshot_dirs: list[Path],
         field_name: str,
         field_loader: Callable,
-        reduction_name: str,
-        reduction_fn: Callable[[field_models.ScalarField_3D], float],
+        statistic_name: str,
+        statistic_fn: Callable[[field_models.ScalarField_3D], float],
         num_workers: int | None = None,
         data_dir: Path | None = None,
         overwrite: bool = False,
@@ -85,8 +85,8 @@ class LoadTimeSeries:
         self.snapshot_dirs = sorted(snapshot_dirs)
         self.field_name = field_name
         self.field_loader = field_loader
-        self.reduction_name = reduction_name
-        self.reduction_fn = reduction_fn
+        self.statistic_name = statistic_name
+        self.statistic_fn = statistic_fn
         self.num_workers = num_workers
         self.data_dir = data_dir
         self.overwrite = overwrite
@@ -99,7 +99,7 @@ class LoadTimeSeries:
         """Per-snapshot resume-cache path, hidden under `.cache/` so it is never mistaken for real output."""
         if self.data_dir is None:
             return None
-        return self.data_dir / ".cache" / "time_series" / self.reduction_name / f"{self.field_name}-{snapshot_dir.name}.json"
+        return self.data_dir / ".cache" / "time_series" / self.statistic_name / f"{self.field_name}-{snapshot_dir.name}.json"
 
     @staticmethod
     def load_snapshot(
@@ -117,11 +117,11 @@ class LoadTimeSeries:
         sim_time = sfield_3d.sim_time
         if (sim_time is None) or (not numpy.isfinite(sim_time)):
             raise ValueError(f"invalid sim_time for field: {sim_time!r}.")
-        reduced_value = field_args.reduction_fn(sfield_3d)
+        statistic_value = field_args.statistic_fn(sfield_3d)
         data_point = time_series.TimePoint(
             sim_time=float(sim_time),
             latex_label=sfield_3d.latex_label,
-            value=float(reduced_value),
+            value=float(statistic_value),
         )
         if field_args.cache_file_path is not None:
             field_args.cache_file_path.parent.mkdir(parents=True, exist_ok=True)
@@ -144,7 +144,7 @@ class LoadTimeSeries:
                     snapshot_dir=snapshot_dir,
                     field_name=self.field_name,
                     field_loader=self.field_loader,
-                    reduction_fn=self.reduction_fn,
+                    statistic_fn=self.statistic_fn,
                     cache_file_path=cache_file_path,
                     amr_level=self.amr_level,
                 ),
@@ -184,7 +184,7 @@ class GenerateTimeSeries:
         data_dir: Path,
         figures_dir: Path,
         field_name: str,
-        reduction_name: str,
+        statistic_name: str,
         save_data: bool,
         save_figure: bool,
         apply_log10_plot: bool = False,
@@ -192,7 +192,7 @@ class GenerateTimeSeries:
         self.data_dir = data_dir
         self.figures_dir = figures_dir
         self.field_name = field_name
-        self.reduction_name = reduction_name
+        self.statistic_name = statistic_name
         self.save_data = save_data
         self.save_figure = save_figure
         self.apply_log10_plot = apply_log10_plot
@@ -209,7 +209,7 @@ class GenerateTimeSeries:
         )
         time_array, values_array = field_series.get_sorted_arrays()
         json_io.save_dict_to_json_file(
-            file_path=data_dir / f"{self.field_name}-{self.reduction_name}-time_series.json",
+            file_path=data_dir / f"{self.field_name}-{self.statistic_name}-time_series.json",
             input_dict={
                 "sim_times": time_array,
                 "values": values_array,
@@ -245,11 +245,11 @@ class GenerateTimeSeries:
             return
         plot_values = values_array
         ylabel = f"${field_series.latex_label}$"
-        fig_name = f"{self.field_name}-{self.reduction_name}-time_series.png"
+        fig_name = f"{self.field_name}-{self.statistic_name}-time_series.png"
         if self.apply_log10_plot:
             plot_values = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
             ylabel = rf"$\log_{{10}}\big({field_series.latex_label}\big)$"
-            fig_name = f"log10_{self.field_name}-{self.reduction_name}-time_series.png"
+            fig_name = f"log10_{self.field_name}-{self.statistic_name}-time_series.png"
         ax.plot(
             time_array,
             plot_values,
@@ -283,7 +283,7 @@ class DiagnosticPipeline:
         snapshot_args: cli.SnapshotArgs,
         field_args: cli.FieldArgs,
         diagnostic_output_args: cli.DiagnosticOutputArgs,
-        reduction_name: str,
+        statistic_name: str,
         num_workers: int | None = None,
         apply_log10_plot: bool = False,
     ):
@@ -291,13 +291,13 @@ class DiagnosticPipeline:
             field_names=field_args.fields,
             allowed_types=(field_models.ScalarField_3D, ),
         )
-        if reduction_name not in _REDUCTION_LOOKUP:
-            raise ValueError(f"unknown reduction `{reduction_name}`; expected one of {sorted(_REDUCTION_LOOKUP)}.")
+        if statistic_name not in _STATISTIC_LOOKUP:
+            raise ValueError(f"unknown statistic `{statistic_name}`; expected one of {sorted(_STATISTIC_LOOKUP)}.")
         self.snapshot_args = snapshot_args
         self.fields_to_plot = validate_types.as_tuple(param=field_args.fields)
         self.amr_level = field_args.amr_level
         self.diagnostic_output_args = diagnostic_output_args
-        self.reduction_name = reduction_name
+        self.statistic_name = statistic_name
         self.num_workers = num_workers
         self.apply_log10_plot = apply_log10_plot
 
@@ -306,15 +306,15 @@ class DiagnosticPipeline:
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
         assert resolved_inputs.figures_dir is not None
-        reduction_fn = _REDUCTION_LOOKUP[self.reduction_name]
+        statistic_fn = _STATISTIC_LOOKUP[self.statistic_name]
         for field_name in self.fields_to_plot:
             registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
             loader = LoadTimeSeries(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 field_name=field_name,
                 field_loader=registered_field.loader,
-                reduction_name=self.reduction_name,
-                reduction_fn=reduction_fn,
+                statistic_name=self.statistic_name,
+                statistic_fn=statistic_fn,
                 num_workers=self.num_workers,
                 data_dir=resolved_inputs.data_dir,
                 overwrite=self.diagnostic_output_args.overwrite,
@@ -325,7 +325,7 @@ class DiagnosticPipeline:
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
-                reduction_name=self.reduction_name,
+                statistic_name=self.statistic_name,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,
                 apply_log10_plot=self.apply_log10_plot,
@@ -371,18 +371,18 @@ def main():
         help="Apply log10(|field|) to the plotted field (does not affect the saved `.json` datasets).",
     )
     parser.add_argument(
-        "--reduction",
+        "--statistic",
         type=str,
-        choices=sorted(_REDUCTION_LOOKUP.keys()),
+        choices=sorted(_STATISTIC_LOOKUP.keys()),
         default="total",
-        help="Reduction applied to each snapshot's field before building its time series.",
+        help="Statistic applied to each snapshot's field before building its time series.",
     )
     user_args = parser.parse_args()
     diagnostic_pipeline = DiagnosticPipeline(
         snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
         field_args=cli.FieldArgs.from_user_args(user_args),
         diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args),
-        reduction_name=user_args.reduction,
+        statistic_name=user_args.statistic,
         num_workers=user_args.num_workers,
         apply_log10_plot=user_args.apply_log10_plot,
     )
