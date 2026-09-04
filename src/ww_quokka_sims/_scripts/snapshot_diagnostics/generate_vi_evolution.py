@@ -82,14 +82,10 @@ class LoadTimeSeries:
         self,
         snapshot_dir: Path,
     ) -> Path | None:
-        """Resume cache, one file per snapshot; separate from whatever final output format the
-        calling script writes via its own --save-data (this is purely to avoid recomputing a
-        snapshot's volume integral on a rerun, not a user-facing artifact). Each snapshot's file
-        is independent, so a crash never risks a previously-completed snapshot's result.
-        """
+        """Per-snapshot resume-cache path, hidden under `.cache/` so it is never mistaken for real output."""
         if self.data_dir is None:
             return None
-        return self.data_dir / f"{self.field_name}-{snapshot_dir.name}.json"
+        return self.data_dir / ".cache" / "time_series" / f"{self.field_name}-{snapshot_dir.name}.json"
 
     @staticmethod
     def load_snapshot(
@@ -114,9 +110,6 @@ class LoadTimeSeries:
             value=float(vi_value),
         )
         if field_args.cache_file_path is not None:
-            ## saved by the worker itself (not the orchestrating run() below), so this holds
-            ## whether the snapshot was dispatched serially or in a parallel worker process;
-            ## each snapshot's result is persisted the moment it's computed, never batched
             field_args.cache_file_path.parent.mkdir(parents=True, exist_ok=True)
             data_point.save_to_file(field_args.cache_file_path)
         return data_point
