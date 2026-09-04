@@ -26,7 +26,7 @@ quokka-generate-pdfs = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_pd
 quokka-generate-profiles = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_profiles:main"
 quokka-generate-slices = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_slices:main"
 quokka-generate-spectra = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_spectra:main"
-quokka-generate-vi-evolution = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_vi_evolution:main"
+quokka-generate-time-series = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_time_series:main"
 quokka-inspect-snapshot = "ww_quokka_sims._scripts.snapshot_diagnostics.inspect_snapshot:main"
 
 [tool.uv.sources]
