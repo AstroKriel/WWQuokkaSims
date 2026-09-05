@@ -5,10 +5,9 @@
 ##
 
 ## stdlib
+import collections
+import dataclasses
 import typing
-
-from collections import OrderedDict
-from dataclasses import dataclass
 
 ## personal
 from jormi.ww_fields import cartesian_axes
@@ -29,7 +28,7 @@ _BOXLIB_XYZ_LABELS: dict[cartesian_axes.CartesianAxis_3D, str] = {
 }
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class HelmholtzKineticEnergy:
     """Helmholtz-decomposed kinetic energy fields: divergent, solenoidal, and bulk."""
 
@@ -103,7 +102,7 @@ YT_SFIELD_KEYS: dict[str, dict[str, typing.Any]] = {
 class LRUCache:
     """LRU cache for field objects, keyed by cache key."""
 
-    _cache_lookup: OrderedDict[str, field_models.ScalarField_3D | field_models.VectorField_3D]
+    _cache_lookup: collections.OrderedDict[str, field_models.ScalarField_3D | field_models.VectorField_3D]
     _max_size: int
 
     def __init__(
@@ -117,7 +116,7 @@ class LRUCache:
             require_positive=True,
             allow_zero=False,
         )
-        self._cache_lookup = OrderedDict()
+        self._cache_lookup = collections.OrderedDict()
         self._max_size = int(max_size)
 
     def get_cached_field(

@@ -6,11 +6,11 @@
 
 ## stdlib
 import argparse
+import dataclasses
+import pathlib
 import typing
 
-from collections.abc import Callable
-from dataclasses import dataclass
-from pathlib import Path
+from collections import abc as collections_abc
 
 ## third-party
 import numpy
@@ -37,10 +37,10 @@ from ww_quokka_sims.sim_io.snapshots import (
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ResolvedFieldArgs:
     field_name: str
-    field_loader: Callable
+    field_loader: collections_abc.Callable
     amr_level: int = 0
 
 
@@ -50,7 +50,7 @@ class WorkerArgs(typing.NamedTuple):
     snapshot_dir: str
     snapshot_tag: str
     field_name: str
-    field_loader: Callable
+    field_loader: collections_abc.Callable
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...]
     data_dir: str
     index_width: int
@@ -85,7 +85,7 @@ def _get_step_time(
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class FieldExtractor:
     snapshot_tag: str
     field_args: ResolvedFieldArgs
@@ -105,7 +105,7 @@ class FieldExtractor:
     def _load_field(
         self,
         *,
-        snapshot_dir: Path,
+        snapshot_dir: pathlib.Path,
     ) -> field_models.AnyField_3D:
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
@@ -124,7 +124,7 @@ class FieldExtractor:
         step_time: float,
         step_index: int,
         index_width: int,
-        data_dir: Path,
+        data_dir: pathlib.Path,
     ) -> None:
         field_name = self.field_args.field_name
         file_name = self._expected_file_name(step_index=step_index, index_width=index_width)
@@ -165,8 +165,8 @@ class FieldExtractor:
     def extract_snapshot(
         self,
         *,
-        snapshot_dir: Path,
-        data_dir: Path,
+        snapshot_dir: pathlib.Path,
+        data_dir: pathlib.Path,
         index_width: int,
     ) -> None:
         step_index = int(
@@ -193,8 +193,8 @@ def extract_fields_in_serial(
     snapshot_tag: str,
     fields_to_extract: tuple[str, ...],
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...],
-    snapshot_dirs: list[Path],
-    data_dir: Path,
+    snapshot_dirs: list[pathlib.Path],
+    data_dir: pathlib.Path,
     index_width: int,
     overwrite: bool = False,
     amr_level: int = 0,
@@ -235,8 +235,8 @@ def _extract_snapshot_worker(
         overwrite=worker_args.overwrite,
     )
     field_extractor.extract_snapshot(
-        snapshot_dir=Path(worker_args.snapshot_dir),
-        data_dir=Path(worker_args.data_dir),
+        snapshot_dir=pathlib.Path(worker_args.snapshot_dir),
+        data_dir=pathlib.Path(worker_args.data_dir),
         index_width=int(worker_args.index_width),
     )
 
@@ -246,8 +246,8 @@ def extract_fields_in_parallel(
     snapshot_tag: str,
     fields_to_extract: tuple[str, ...],
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...],
-    snapshot_dirs: list[Path],
-    data_dir: Path,
+    snapshot_dirs: list[pathlib.Path],
+    data_dir: pathlib.Path,
     index_width: int,
     overwrite: bool = False,
     amr_level: int = 0,

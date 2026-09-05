@@ -5,8 +5,8 @@
 ##
 
 ## stdlib
-from dataclasses import dataclass
-from pathlib import Path
+import dataclasses
+import pathlib
 
 ## third-party
 import numpy
@@ -18,7 +18,7 @@ import numpy
 AxisBounds = tuple[tuple[float, float], tuple[float, float]]  # ((xmin, xmax), (ymin, ymax))
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class SlicedField:
     """A single 2D slice, self-contained enough to plot without the raw snapshot or uniform_domain."""
 
@@ -33,7 +33,7 @@ class SlicedField:
 
     def save_to_file(
         self,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> None:
         numpy.savez(
             file_path,
@@ -50,7 +50,7 @@ class SlicedField:
     @classmethod
     def load_from_file(
         cls,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> "SlicedField":
         with numpy.load(file_path) as npz:
             saved_bounds = npz["axis_bounds"]

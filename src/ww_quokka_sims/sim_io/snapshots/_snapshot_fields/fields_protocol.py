@@ -5,10 +5,10 @@
 ##
 
 ## stdlib
+import pathlib
 import typing
 
-from collections.abc import Callable, Iterator
-from pathlib import Path
+from collections import abc as collections_abc
 
 ## third-party
 import numpy
@@ -45,7 +45,7 @@ class FieldsProtocol(typing.Protocol):
     ## --- QuokkaSnapshot
     ##
 
-    snapshot_dir: Path
+    snapshot_dir: pathlib.Path
     _field_cache: LRUCache
 
     @property
@@ -159,7 +159,7 @@ class FieldsProtocol(typing.Protocol):
         field_name: str,
         num_extra_cells: int,
         amr_level: int = 0,
-    ) -> Iterator[tuple[numpy.ndarray, tuple[slice, slice, slice]]]:
+    ) -> collections_abc.Iterator[tuple[numpy.ndarray, tuple[slice, slice, slice]]]:
         ...
 
     def _compute_chunked_derived_vfield(
@@ -168,7 +168,7 @@ class FieldsProtocol(typing.Protocol):
         field_name: str,
         grad_order: int,
         amr_level: int,
-        local_compute_fn: Callable[[numpy.ndarray, int], numpy.ndarray],
+        local_compute_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
         output_field_name: str,
         output_latex_label: str,
     ) -> field_models.VectorField_3D:

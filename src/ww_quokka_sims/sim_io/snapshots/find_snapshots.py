@@ -5,7 +5,7 @@
 ##
 
 ## stdlib
-from pathlib import Path
+import pathlib
 
 ## third-party
 import numpy
@@ -21,12 +21,12 @@ from jormi.ww_validation import validate_types
 
 def looks_like_boxlib_dir(
     *,
-    snapshot_dir: Path,
+    snapshot_dir: pathlib.Path,
 ) -> bool:
     """Return `True` iff `snapshot_dir` contains a boxlib `Header` file and `Level_0` subdirectory."""
     validate_types.ensure_type(
         param=snapshot_dir,
-        valid_types=Path,
+        valid_types=pathlib.Path,
     )
     if not snapshot_dir.exists() or not snapshot_dir.is_dir():
         return False
@@ -37,7 +37,7 @@ def looks_like_boxlib_dir(
 
 def get_step_index_string(
     *,
-    snapshot_dir: Path,
+    snapshot_dir: pathlib.Path,
     snapshot_tag: str,
 ) -> str:
     """Extract the step-index string from a snapshot directory named `<snapshot_tag><step_index_string>`."""
@@ -55,9 +55,9 @@ def get_step_index_string(
 
 def get_latest_snapshot_dirs(
     *,
-    sim_dir: Path,
+    sim_dir: pathlib.Path,
     snapshot_tag: str,
-) -> list[Path]:
+) -> list[pathlib.Path]:
     """Return all snapshot directories under `sim_dir` matching `snapshot_tag`; sorted by ascending step index."""
     snapshot_dirs = [
         sub_dir for sub_dir in sim_dir.iterdir()
@@ -76,10 +76,10 @@ def get_latest_snapshot_dirs(
 
 def resolve_snapshot_dirs(
     *,
-    input_dir: Path,
+    input_dir: pathlib.Path,
     snapshot_tag: str,
     max_elems: int | None = None,
-) -> list[Path]:
+) -> list[pathlib.Path]:
     """
     Resolve `input_dir` to an ordered list of snapshot directories.
 
@@ -103,7 +103,7 @@ def resolve_snapshot_dirs(
 
 def get_max_index_width(
     *,
-    snapshot_dirs: list[Path],
+    snapshot_dirs: list[pathlib.Path],
     snapshot_tag: str,
 ) -> int:
     """Return the character width of the widest step-index string across `snapshot_dirs`."""
@@ -121,10 +121,10 @@ def get_max_index_width(
 
 def find_npz_near_time(
     *,
-    extracted_dir: Path,
+    extracted_dir: pathlib.Path,
     glob_pattern: str,
     target_time: float,
-) -> Path:
+) -> pathlib.Path:
     """Return the `extracted_dir` file matching `glob_pattern` whose `step_time` is nearest `target_time`."""
     npz_paths = sorted(extracted_dir.glob(glob_pattern))
     if not npz_paths:

@@ -5,9 +5,10 @@
 ##
 
 ## stdlib
+import dataclasses
 import inspect
-from collections.abc import Callable
-from dataclasses import dataclass
+
+from collections import abc as collections_abc
 
 ## personal
 from jormi.ww_fields.fields_3d import field_models
@@ -27,9 +28,9 @@ DIVERGING_CMAP = "cmr.iceburn"
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class RegisteredField:
-    loader: Callable
+    loader: collections_abc.Callable
     cmap: str
 
 

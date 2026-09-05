@@ -5,8 +5,8 @@
 ##
 
 ## stdlib
-from dataclasses import dataclass
-from pathlib import Path
+import dataclasses
+import pathlib
 
 ## personal
 from jormi.ww_io import manage_io, manage_log
@@ -23,7 +23,7 @@ from . import param_groups
 _DEFAULT_VERBOSITY_PARAMS = param_groups.VerbosityParams()
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclasses.dataclass(frozen=True, kw_only=True)
 class SimParams:
     """
     One full `save_sim_params` call's worth of dataclasses, plus a `save_to_file` convenience method.
@@ -50,10 +50,10 @@ class SimParams:
     def save_to_file(
         self,
         *,
-        output_path: str | Path,
+        output_path: str | pathlib.Path,
         overwrite: bool = False,
         verbose: bool = True,
-    ) -> Path:
+    ) -> pathlib.Path:
         return save_sim_params(
             output_path=output_path,
             geometry_params=self.geometry_params,
@@ -75,14 +75,14 @@ class SimParams:
 
 
 def _ensure_path_is_valid(
-    output_path: str | Path,
-) -> Path:
-    """Ensure `output_path` is a valid `sim_params.toml` path and return it as an absolute Path."""
+    output_path: str | pathlib.Path,
+) -> pathlib.Path:
+    """Ensure `output_path` is a valid `sim_params.toml` path and return it as an absolute path."""
     validate_types.ensure_not_none(
         param=output_path,
         param_name="output_path",
     )
-    output_path = Path(output_path).absolute()
+    output_path = pathlib.Path(output_path).absolute()
     if output_path.name != "sim_params.toml":
         raise ValueError(
             f"file must be named `sim_params.toml` (matches `tools/run_sim.sh`'s bare-filename convention), "
@@ -330,7 +330,7 @@ def _build_setup_section(
 
 def save_sim_params(
     *,
-    output_path: str | Path,
+    output_path: str | pathlib.Path,
     geometry_params: param_groups.GeometryParams,
     resolution_params: param_groups.ResolutionParams,
     verbosity_params: param_groups.VerbosityParams = _DEFAULT_VERBOSITY_PARAMS,
@@ -341,7 +341,7 @@ def save_sim_params(
     setup_params: param_groups.SetupParams | None = None,
     overwrite: bool = False,
     verbose: bool = True,
-) -> Path:
+) -> pathlib.Path:
     """
     Save a Quokka `sim_params.toml` file.
 

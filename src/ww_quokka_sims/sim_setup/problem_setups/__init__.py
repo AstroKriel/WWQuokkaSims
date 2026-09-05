@@ -1,5 +1,6 @@
-from collections.abc import Callable
-from enum import Enum
+import enum
+
+from collections import abc as collections_abc
 
 from .._sim_params import save_params
 from . import alfven_wave_circular_convergence as alfven_wave_circular_convergence
@@ -20,7 +21,7 @@ from . import vortex_balsara as vortex_balsara
 from . import vortex_orszag_tang as vortex_orszag_tang
 
 
-class ProblemSetup(Enum):
+class ProblemSetup(enum.Enum):
     """Each member's value is the module defining that specific problem setup; add one member per new file added under `problem_setups/`."""
 
     ALFVEN_WAVE_CIRCULAR_CONVERGENCE = alfven_wave_circular_convergence
@@ -43,7 +44,7 @@ class ProblemSetup(Enum):
     @property
     def build_sim_params(
         self,
-    ) -> Callable[..., save_params.SimParams]:
+    ) -> collections_abc.Callable[..., save_params.SimParams]:
         return self.value.build_sim_params
 
 

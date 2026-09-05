@@ -5,12 +5,12 @@
 ##
 
 ## stdlib
+import dataclasses
 import inspect
+import pathlib
 import typing
 
-from collections.abc import Callable
-from dataclasses import dataclass
-from pathlib import Path
+from collections import abc as collections_abc
 
 ## third-party
 import numpy
@@ -31,7 +31,7 @@ from ww_quokka_sims.sim_io.snapshots import load_snapshot
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class TimePoint:
     sim_time: float
     value: float
@@ -40,7 +40,7 @@ class TimePoint:
     def save_to_file(
         self,
         *,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> None:
         json_io.save_dict_to_json_file(
             file_path=file_path,
@@ -57,7 +57,7 @@ class TimePoint:
     def load_from_file(
         cls,
         *,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> "TimePoint":
         data = json_io.read_json_file_into_dict(
             file_path=file_path,
@@ -84,7 +84,7 @@ class TimePoint:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class TimeSeries:
     """An in-memory collection of `TimePoint`s, one per snapshot; assembled by loading however many
     of the underlying per-snapshot files already exist, not itself saved as one file.
@@ -118,10 +118,10 @@ class TimeSeries:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Statistic:
     name: str
-    compute_fn: Callable[[field_models.ScalarField_3D], float]
+    compute_fn: collections_abc.Callable[[field_models.ScalarField_3D], float]
     valid_field_types: tuple[type, ...] = (field_models.ScalarField_3D, )
 
     def __post_init__(
@@ -152,14 +152,14 @@ class Statistic:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class TimePointArgs:
-    snapshot_dir: Path
+    snapshot_dir: pathlib.Path
     field_name: str
-    field_loader: Callable
+    field_loader: collections_abc.Callable
     statistic: Statistic
     amr_level: int = 0
-    cache_file_path: Path | None = None
+    cache_file_path: pathlib.Path | None = None
 
 
 @typing.final
@@ -168,12 +168,12 @@ class GenerateTimeSeries:
     def __init__(
         self,
         *,
-        snapshot_dirs: list[Path],
+        snapshot_dirs: list[pathlib.Path],
         field_name: str,
-        field_loader: Callable,
+        field_loader: collections_abc.Callable,
         statistic: Statistic,
-        data_dir: Path,
-        figures_dir: Path,
+        data_dir: pathlib.Path,
+        figures_dir: pathlib.Path,
         save_data: bool,
         save_figure: bool,
         num_workers: int | None = None,
@@ -201,8 +201,8 @@ class GenerateTimeSeries:
     def _get_cache_file_path(
         self,
         *,
-        snapshot_dir: Path,
-    ) -> Path:
+        snapshot_dir: pathlib.Path,
+    ) -> pathlib.Path:
         """Per-snapshot resume-cache path, hidden under `.cache/` so it is never mistaken for real output."""
         return self.data_dir / ".cache" / "time_series" / self.statistic.name / f"{self.field_name}-{snapshot_dir.name}.json"
 
@@ -235,7 +235,7 @@ class GenerateTimeSeries:
         time_points: list[TimePoint] = []
         time_series_args: list[TimePointArgs] = []
         for snapshot_dir in self.snapshot_dirs:
-            snapshot_dir = Path(snapshot_dir)
+            snapshot_dir = pathlib.Path(snapshot_dir)
             cache_file_path = self._get_cache_file_path(snapshot_dir=snapshot_dir)
             if not(self.overwrite) and cache_file_path.exists():
                 time_point = TimePoint.load_from_file(file_path=cache_file_path)

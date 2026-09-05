@@ -6,10 +6,10 @@
 
 ## stdlib
 import argparse
+import pathlib
 import typing
 
-from collections.abc import Callable
-from pathlib import Path
+from collections import abc as collections_abc
 
 ## third-party
 import numpy
@@ -47,13 +47,13 @@ class ComputeSpectra:
     def __init__(
         self,
         *,
-        snapshot_dirs: list[Path],
+        snapshot_dirs: list[pathlib.Path],
         snapshot_tag: str,
         field_name: str,
-        field_loader: Callable,
+        field_loader: collections_abc.Callable,
         index_width: int,
         save_data: bool,
-        data_dir: Path,
+        data_dir: pathlib.Path,
         overwrite: bool = False,
         amr_level: int = 0,
     ):
@@ -71,7 +71,7 @@ class ComputeSpectra:
         self,
         *,
         padded_index: str,
-    ) -> Path:
+    ) -> pathlib.Path:
         return self.data_dir / f"{self.field_name}-spectrum-index={padded_index}.json"
 
     def run(
@@ -147,13 +147,13 @@ class GenerateSpectra:
     def __init__(
         self,
         *,
-        snapshot_dirs: list[Path],
+        snapshot_dirs: list[pathlib.Path],
         snapshot_tag: str,
         index_width: int,
-        data_dir: Path,
-        figures_dir: Path,
+        data_dir: pathlib.Path,
+        figures_dir: pathlib.Path,
         field_name: str,
-        field_loader: Callable,
+        field_loader: collections_abc.Callable,
         cmap_name: str,
         save_data: bool,
         save_figure: bool,
@@ -236,16 +236,16 @@ class GenerateSpectra:
     def _snapshot_figure_file_path(
         self,
         *,
-        figures_dir: Path,
+        figures_dir: pathlib.Path,
         padded_index: str,
-    ) -> Path:
+    ) -> pathlib.Path:
         return figures_dir / f"{self.field_name}-spectrum-index={padded_index}.png"
 
     def _save_snapshot_figure(
         self,
         *,
         spectra_data: spectra.SpectraData,
-        figure_path: Path,
+        figure_path: pathlib.Path,
     ) -> None:
         fig, ax = manage_figure.create_figure()
         self._plot_snapshot(
@@ -267,7 +267,7 @@ class GenerateSpectra:
         self,
         *,
         field_spectra: list[spectra.SpectraData],
-        figures_dir: Path,
+        figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
         fig, ax = manage_figure.create_figure()

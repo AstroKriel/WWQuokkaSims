@@ -6,9 +6,8 @@
 
 ## stdlib
 import argparse
-
-from dataclasses import dataclass
-from pathlib import Path
+import dataclasses
+import pathlib
 
 ## personal
 from jormi import ww_lists
@@ -30,14 +29,14 @@ AXIS_LABELS_TEXT = ww_lists.as_string(elems=list(cartesian_axes.VALID_3D_AXIS_LA
 ##
 
 
-@dataclass(
+@dataclasses.dataclass(
     frozen=True,
     kw_only=True,
 )
 class SnapshotArgs:
     """Bound from `--input-dir`/`--tag`; present on every script that scans a directory of snapshots."""
 
-    input_dir: Path
+    input_dir: pathlib.Path
     snapshot_tag: str
 
     def __post_init__(
@@ -59,7 +58,7 @@ class SnapshotArgs:
         )
 
 
-@dataclass(
+@dataclasses.dataclass(
     frozen=True,
     kw_only=True,
 )
@@ -67,7 +66,7 @@ class DataOutputArgs:
     """Bound from `--data-dir`/`--overwrite`; added by `base_parser(allow_write=True)`."""
 
     overwrite: bool = False
-    data_dir: Path | None = None
+    data_dir: pathlib.Path | None = None
 
     @classmethod
     def from_user_args(
@@ -80,7 +79,7 @@ class DataOutputArgs:
         )
 
 
-@dataclass(
+@dataclasses.dataclass(
     frozen=True,
     kw_only=True,
 )
@@ -89,7 +88,7 @@ class DiagnosticOutputArgs(DataOutputArgs):
 
     save_data: bool
     save_figure: bool
-    figures_dir: Path | None = None
+    figures_dir: pathlib.Path | None = None
 
     def __post_init__(
         self,
@@ -113,7 +112,7 @@ class DiagnosticOutputArgs(DataOutputArgs):
         )
 
 
-@dataclass(
+@dataclasses.dataclass(
     frozen=True,
     kw_only=True,
 )
@@ -138,7 +137,7 @@ class FieldArgs:
         )
 
 
-@dataclass(
+@dataclasses.dataclass(
     frozen=True,
     kw_only=True,
 )
@@ -167,7 +166,7 @@ class FieldCompArgs(FieldArgs):
         )
 
 
-@dataclass(
+@dataclasses.dataclass(
     frozen=True,
     kw_only=True,
 )
@@ -268,23 +267,23 @@ def base_parser(
     if num_dirs == 1:
         parser.add_argument(
             "--input-dir",
-            type=lambda path: Path(path).expanduser().resolve(),
+            type=lambda path: pathlib.Path(path).expanduser().resolve(),
             default=None,
             help=(
-                "Path to a directory containing snapshot dirs (matched by --tag), or to a single snapshot dir."
+                "pathlib.Path to a directory containing snapshot dirs (matched by --tag), or to a single snapshot dir."
             ),
         )
         if allow_write:
             parser.add_argument(
                 "--data-dir",
-                type=lambda path: Path(path).expanduser().resolve(),
+                type=lambda path: pathlib.Path(path).expanduser().resolve(),
                 default=None,
                 help="Output directory for data written to disk; defaults to the parent directory of the snapshot.",
             )
         if allow_figures:
             parser.add_argument(
                 "--figures-dir",
-                type=lambda path: Path(path).expanduser().resolve(),
+                type=lambda path: pathlib.Path(path).expanduser().resolve(),
                 default=None,
                 help="Output directory for figures (used with --save-figure); defaults to --data-dir.",
             )
@@ -292,21 +291,21 @@ def base_parser(
         for dir_index in range(1, num_dirs + 1):
             parser.add_argument(
                 f"--input-dir-{dir_index}",
-                type=lambda path: Path(path).expanduser().resolve(),
+                type=lambda path: pathlib.Path(path).expanduser().resolve(),
                 required=True,
                 help=f"Input directory {dir_index} of {num_dirs}.",
             )
         if allow_write:
             parser.add_argument(
                 "--data-dir",
-                type=lambda path: Path(path).expanduser().resolve(),
+                type=lambda path: pathlib.Path(path).expanduser().resolve(),
                 required=True,
                 help="Output directory for data written to disk.",
             )
         if allow_figures:
             parser.add_argument(
                 "--figures-dir",
-                type=lambda path: Path(path).expanduser().resolve(),
+                type=lambda path: pathlib.Path(path).expanduser().resolve(),
                 default=None,
                 help="Output directory for figures (used with --save-figure); defaults to --data-dir.",
             )
@@ -390,9 +389,9 @@ def base_parser(
 
 def resolve_output_dir(
     *,
-    output_dir: Path | None,
-    default_dir: Path,
-) -> Path:
+    output_dir: pathlib.Path | None,
+    default_dir: pathlib.Path,
+) -> pathlib.Path:
     """Resolve `output_dir` to `default_dir` if unset, creating it if needed."""
     resolved_dir = output_dir if output_dir is not None else default_dir
     resolved_dir.mkdir(
@@ -417,13 +416,13 @@ def _ensure_save_flag_selected(
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ResolvedInputs:
     """`figures_dir`/`index_width` are `None` unless the caller opted into resolving them."""
 
-    snapshot_dirs: list[Path]
-    data_dir: Path
-    figures_dir: Path | None = None
+    snapshot_dirs: list[pathlib.Path]
+    data_dir: pathlib.Path
+    figures_dir: pathlib.Path | None = None
     index_width: int | None = None
 
 

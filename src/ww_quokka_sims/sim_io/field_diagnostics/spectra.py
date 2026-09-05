@@ -5,8 +5,8 @@
 ##
 
 ## stdlib
-from dataclasses import dataclass
-from pathlib import Path
+import dataclasses
+import pathlib
 
 ## third-party
 import numpy
@@ -20,7 +20,7 @@ from jormi.ww_validation import validate_arrays, validate_types
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class SpectraData:
     step_time: float
     step_index: int
@@ -42,7 +42,7 @@ class SpectraData:
 
     def save_to_file(
         self,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> None:
         json_io.save_dict_to_json_file(
             file_path=file_path,
@@ -60,7 +60,7 @@ class SpectraData:
     @classmethod
     def load_from_file(
         cls,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> "SpectraData":
         data = json_io.read_json_file_into_dict(
             file_path=file_path,

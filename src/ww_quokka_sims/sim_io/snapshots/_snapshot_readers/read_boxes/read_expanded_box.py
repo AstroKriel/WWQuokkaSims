@@ -7,7 +7,7 @@
 ## stdlib
 import typing
 
-from collections.abc import Iterator
+from collections import abc as collections_abc
 
 ## third-party
 import numpy
@@ -63,7 +63,7 @@ def load_expanded_vfield_boxes(
     yt_dataset: typing.Any,
     vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, FieldKey],
     num_extra_cells: int,
-) -> Iterator[tuple[numpy.ndarray, tuple[slice, slice, slice]]]:
+) -> collections_abc.Iterator[tuple[numpy.ndarray, tuple[slice, slice, slice]]]:
     """
     For each amr_level=0 box, yield an expanded raw vector-field block (its own cells
     plus `num_extra_cells` of correctly-stitched, periodic-boundary-aware neighbor data)

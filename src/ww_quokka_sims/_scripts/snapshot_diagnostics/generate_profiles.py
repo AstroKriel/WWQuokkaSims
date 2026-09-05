@@ -6,11 +6,11 @@
 
 ## stdlib
 import argparse
+import dataclasses
+import pathlib
 import typing
 
-from collections.abc import Callable
-from dataclasses import dataclass
-from pathlib import Path
+from collections import abc as collections_abc
 
 ## third-party
 import numpy
@@ -46,7 +46,7 @@ from ww_quokka_sims.sim_io.field_diagnostics import profiles
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class CompProfile:
     step_time: float
     step_index: int
@@ -89,7 +89,7 @@ class ComputeCompProfiles:
         self,
         *,
         field_name: str,
-        field_loader: Callable,
+        field_loader: collections_abc.Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
         amr_level: int = 0,
@@ -223,7 +223,7 @@ class ComputeCompProfiles:
     def compute_snapshot(
         self,
         *,
-        snapshot_dir: Path,
+        snapshot_dir: pathlib.Path,
         snapshot_tag: str,
     ) -> list[CompProfile]:
         step_index = int(
@@ -264,16 +264,16 @@ class GenerateCompProfiles:
     def __init__(
         self,
         *,
-        snapshot_dirs: list[Path],
+        snapshot_dirs: list[pathlib.Path],
         snapshot_tag: str,
         index_width: int,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
-        field_loader: Callable,
+        field_loader: collections_abc.Callable,
         cmap_name: str,
-        data_dir: Path,
-        figures_dir: Path,
+        data_dir: pathlib.Path,
+        figures_dir: pathlib.Path,
         save_data: bool,
         save_figure: bool,
         overwrite: bool = False,
@@ -299,23 +299,23 @@ class GenerateCompProfiles:
         *,
         axis_label: str,
         padded_index: str,
-        data_dir: Path,
-    ) -> Path:
+        data_dir: pathlib.Path,
+    ) -> pathlib.Path:
         return data_dir / f"{self.field_name}-axis={axis_label}-index={padded_index}-amr_level={self.amr_level}.json"
 
     def _snapshot_figure_file_path(
         self,
         *,
-        figures_dir: Path,
+        figures_dir: pathlib.Path,
         padded_index: str,
-    ) -> Path:
+    ) -> pathlib.Path:
         return figures_dir / f"{self.field_name}-profile-index={padded_index}.png"
 
     def _save_snapshot_data(
         self,
         *,
         comp_profiles: list[CompProfile],
-        data_dir: Path,
+        data_dir: pathlib.Path,
         padded_index: str,
     ) -> None:
         data_dir.mkdir(
@@ -362,7 +362,7 @@ class GenerateCompProfiles:
     def _load_snapshot_data(
         self,
         *,
-        data_paths: list[Path],
+        data_paths: list[pathlib.Path],
     ) -> tuple[list[CompProfile], float] | None:
         if not all(path.exists() for path in data_paths):
             return None
@@ -499,7 +499,7 @@ class GenerateCompProfiles:
         self,
         *,
         comp_profiles: list[CompProfile],
-        figure_path: Path,
+        figure_path: pathlib.Path,
     ) -> None:
         axis_labels = comp_profiles[0].axis_labels
         comp_labels = [comp_profile.comp_label for comp_profile in comp_profiles]
@@ -528,7 +528,7 @@ class GenerateCompProfiles:
         self,
         *,
         comp_profiles_lookup: dict[str, list[CompProfile]],
-        figures_dir: Path,
+        figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every saved snapshot; always rebuilt fresh from whatever is on
         disk (not from anything held in memory across the potentially-long per-snapshot loop above).
@@ -568,9 +568,9 @@ class GenerateCompProfiles:
         self,
         *,
         compute_comp_profiles: ComputeCompProfiles,
-        snapshot_dir: Path,
-        data_dir: Path,
-        figures_dir: Path,
+        snapshot_dir: pathlib.Path,
+        data_dir: pathlib.Path,
+        figures_dir: pathlib.Path,
         index_width: int,
     ) -> None:
         step_index = int(
@@ -618,7 +618,7 @@ class GenerateCompProfiles:
     def _load_all_saved_comp_profiles(
         self,
         *,
-        data_dir: Path,
+        data_dir: pathlib.Path,
     ) -> dict[str, list[CompProfile]]:
         first_axis_label = cartesian_axes.get_axis_label(self.axes_to_slice[0])
         pattern = f"{self.field_name}-axis={first_axis_label}-index=*-amr_level={self.amr_level}.json"

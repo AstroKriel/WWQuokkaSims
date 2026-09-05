@@ -5,10 +5,9 @@
 ##
 
 ## stdlib
+import dataclasses
+import pathlib
 import re
-
-from dataclasses import dataclass
-from pathlib import Path
 
 ## third-party
 import numpy
@@ -75,7 +74,7 @@ def _ensure_profile_arrays(
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ComponentArrays:
     position: NDArray[numpy.floating]
     field_value: NDArray[numpy.floating]
@@ -99,7 +98,7 @@ class ComponentArrays:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ScalarProfile:
     field_name: str
     field_label: str
@@ -143,7 +142,7 @@ class ScalarProfile:
 
     def save_to_file(
         self,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> None:
         json_io.save_dict_to_json_file(
             file_path=file_path,
@@ -164,7 +163,7 @@ class ScalarProfile:
     @classmethod
     def load_from_file(
         cls,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> "ScalarProfile":
         data = json_io.read_json_file_into_dict(
             file_path=file_path,
@@ -201,7 +200,7 @@ class ScalarProfile:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class VectorProfile:
     field_name: str
     step_time: float
@@ -243,7 +242,7 @@ class VectorProfile:
 
     def save_to_file(
         self,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> None:
         json_io.save_dict_to_json_file(
             file_path=file_path,
@@ -269,7 +268,7 @@ class VectorProfile:
     @classmethod
     def load_from_file(
         cls,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> "VectorProfile":
         data = json_io.read_json_file_into_dict(
             file_path=file_path,

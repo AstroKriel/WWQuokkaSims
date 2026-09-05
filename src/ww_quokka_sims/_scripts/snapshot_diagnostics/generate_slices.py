@@ -6,11 +6,11 @@
 
 ## stdlib
 import argparse
+import dataclasses
+import pathlib
 import typing
 
-from collections.abc import Callable
-from dataclasses import dataclass
-from pathlib import Path
+from collections import abc as collections_abc
 
 ## third-party
 import numpy
@@ -52,10 +52,10 @@ from ww_quokka_sims.sim_io.snapshots import (
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ResolvedFieldArgs:
     field_name: str
-    field_loader: Callable
+    field_loader: collections_abc.Callable
     cmap_name: str
     amr_level: int = 0
 
@@ -66,7 +66,7 @@ class WorkerArgs(typing.NamedTuple):
     snapshot_dir: str
     snapshot_tag: str
     field_name: str
-    field_loader: Callable
+    field_loader: collections_abc.Callable
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
     cmap_name: str
@@ -81,7 +81,7 @@ class WorkerArgs(typing.NamedTuple):
     apply_log10_plot: bool = False
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class SnapshotData:
     uniform_domain: domain_models.UniformDomain_3D
     field: field_models.AnyField_3D
@@ -98,7 +98,7 @@ class SnapshotData:
         return float(step_time)
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class FieldComp:
     sarray_3d: numpy.ndarray
     label: str
@@ -204,7 +204,7 @@ def slice_field(
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class GenerateFieldSlices:
     snapshot_tag: str
     field_args: ResolvedFieldArgs
@@ -274,7 +274,7 @@ class GenerateFieldSlices:
     def _load_snapshot(
         self,
         *,
-        snapshot_dir: Path,
+        snapshot_dir: pathlib.Path,
     ) -> SnapshotData:
         amr_level = self.field_args.amr_level
         with load_snapshot.QuokkaSnapshot(
@@ -413,7 +413,7 @@ class GenerateFieldSlices:
         self,
         *,
         padded_index: str,
-        data_dir: Path,
+        data_dir: pathlib.Path,
     ) -> list[cartesian_axes.CartesianAxis_3D | None] | None:
         """Return the comp identities of a complete saved dataset for this snapshot, without loading
         the raw field; `[None]` for a scalar field, `self.comps_to_plot` for a vector field, or `None`
@@ -442,7 +442,7 @@ class GenerateFieldSlices:
         step_time: float,
         step_index: int,
         padded_index: str,
-        data_dir: Path,
+        data_dir: pathlib.Path,
     ) -> None:
         for field_comp in field_comps:
             for axis_to_slice in self.axes_to_slice:
@@ -467,7 +467,7 @@ class GenerateFieldSlices:
         *,
         comp_axes: list[cartesian_axes.CartesianAxis_3D | None],
         padded_index: str,
-        data_dir: Path,
+        data_dir: pathlib.Path,
     ) -> tuple[list[Row], float]:
         rows: list[Row] = []
         step_time: float | None = None
@@ -491,7 +491,7 @@ class GenerateFieldSlices:
         step_time: float,
         step_index: int,
         padded_index: str,
-        figures_dir: Path,
+        figures_dir: pathlib.Path,
         verbose: bool,
     ) -> None:
         if self.apply_log10_plot:
@@ -548,9 +548,9 @@ class GenerateFieldSlices:
     def generate_snapshot(
         self,
         *,
-        snapshot_dir: Path,
-        data_dir: Path,
-        figures_dir: Path,
+        snapshot_dir: pathlib.Path,
+        data_dir: pathlib.Path,
+        figures_dir: pathlib.Path,
         index_width: int,
         verbose: bool,
     ) -> None:
@@ -630,9 +630,9 @@ def generate_fields_in_serial(
     fields_to_plot: tuple[str, ...],
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...],
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...],
-    snapshot_dirs: list[Path],
-    data_dir: Path,
-    figures_dir: Path,
+    snapshot_dirs: list[pathlib.Path],
+    data_dir: pathlib.Path,
+    figures_dir: pathlib.Path,
     index_width: int,
     save_data: bool,
     save_figure: bool,
@@ -693,9 +693,9 @@ def _generate_snapshot_worker(
         apply_log10_plot=worker_args.apply_log10_plot,
     )
     generate_field_slices.generate_snapshot(
-        snapshot_dir=Path(worker_args.snapshot_dir),
-        data_dir=Path(worker_args.data_dir),
-        figures_dir=Path(worker_args.figures_dir),
+        snapshot_dir=pathlib.Path(worker_args.snapshot_dir),
+        data_dir=pathlib.Path(worker_args.data_dir),
+        figures_dir=pathlib.Path(worker_args.figures_dir),
         index_width=int(worker_args.index_width),
         verbose=False,
     )
@@ -707,9 +707,9 @@ def generate_fields_in_parallel(
     fields_to_plot: tuple[str, ...],
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...],
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...],
-    snapshot_dirs: list[Path],
-    data_dir: Path,
-    figures_dir: Path,
+    snapshot_dirs: list[pathlib.Path],
+    data_dir: pathlib.Path,
+    figures_dir: pathlib.Path,
     index_width: int,
     save_data: bool,
     save_figure: bool,
@@ -763,10 +763,10 @@ def generate_fields_in_parallel(
 
 def _resolve_animate_figures_dir(
     *,
-    figures_dir: Path | None,
-    data_dir: Path | None,
-    input_dir: Path | None,
-) -> Path:
+    figures_dir: pathlib.Path | None,
+    data_dir: pathlib.Path | None,
+    input_dir: pathlib.Path | None,
+) -> pathlib.Path:
     resolved_figures_dir = figures_dir if figures_dir is not None else (data_dir if data_dir is not None else input_dir)
     if resolved_figures_dir is None:
         raise ValueError("`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.")
@@ -775,7 +775,7 @@ def _resolve_animate_figures_dir(
 
 def _animate_saved_figures(
     *,
-    figures_dir: Path,
+    figures_dir: pathlib.Path,
     fields_to_plot: tuple[str, ...],
     apply_log10_plot: bool = False,
 ) -> None:

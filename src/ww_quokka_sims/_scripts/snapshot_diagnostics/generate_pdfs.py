@@ -6,10 +6,10 @@
 
 ## stdlib
 import argparse
+import pathlib
 import typing
 
-from collections.abc import Callable
-from pathlib import Path
+from collections import abc as collections_abc
 
 ## third-party
 import numpy
@@ -50,7 +50,7 @@ class ComputePDFs:
         self,
         *,
         field_name: str,
-        field_loader: Callable,
+        field_loader: collections_abc.Callable,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         num_bins: int,
         use_log10_bins: bool = False,
@@ -156,7 +156,7 @@ class ComputePDFs:
     def compute_snapshot(
         self,
         *,
-        snapshot_dir: Path,
+        snapshot_dir: pathlib.Path,
         snapshot_tag: str,
     ) -> pdfs.PDFData:
         step_index = int(
@@ -194,15 +194,15 @@ class GeneratePDFs:
     def __init__(
         self,
         *,
-        snapshot_dirs: list[Path],
+        snapshot_dirs: list[pathlib.Path],
         snapshot_tag: str,
         index_width: int,
-        data_dir: Path,
-        figures_dir: Path,
+        data_dir: pathlib.Path,
+        figures_dir: pathlib.Path,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         cmap_name: str,
-        field_loader: Callable,
+        field_loader: collections_abc.Callable,
         num_bins: int,
         save_data: bool,
         save_figure: bool,
@@ -240,17 +240,17 @@ class GeneratePDFs:
     def _data_file_path(
         self,
         *,
-        data_dir: Path,
+        data_dir: pathlib.Path,
         padded_index: str,
-    ) -> Path:
+    ) -> pathlib.Path:
         return data_dir / f"{self._data_name()}-pdf-index={padded_index}.json"
 
     def _snapshot_figure_file_path(
         self,
         *,
-        figures_dir: Path,
+        figures_dir: pathlib.Path,
         padded_index: str,
-    ) -> Path:
+    ) -> pathlib.Path:
         return figures_dir / f"{self._data_name()}-pdf-index={padded_index}.png"
 
     @staticmethod
@@ -327,7 +327,7 @@ class GeneratePDFs:
         self,
         *,
         pdf_data: pdfs.PDFData,
-        data_dir: Path,
+        data_dir: pathlib.Path,
     ) -> None:
         """Save one snapshot's PDF to its own file, mirroring `generate_slices.py`'s one-file-per-
         snapshot convention (rather than one file aggregating every snapshot) -- each file is
@@ -345,7 +345,7 @@ class GeneratePDFs:
         self,
         *,
         pdf_data: pdfs.PDFData,
-        figure_path: Path,
+        figure_path: pathlib.Path,
     ) -> None:
         fig, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=1,
@@ -371,9 +371,9 @@ class GeneratePDFs:
         self,
         *,
         compute_pdfs: ComputePDFs,
-        snapshot_dir: Path,
-        data_dir: Path,
-        figures_dir: Path,
+        snapshot_dir: pathlib.Path,
+        data_dir: pathlib.Path,
+        figures_dir: pathlib.Path,
         index_width: int,
     ) -> None:
         step_index = int(
@@ -413,7 +413,7 @@ class GeneratePDFs:
     def _load_all_saved_pdfs(
         self,
         *,
-        data_dir: Path,
+        data_dir: pathlib.Path,
     ) -> list[pdfs.PDFData]:
         paths = sorted(data_dir.glob(f"{self._data_name()}-pdf-index=*.json"))
         field_pdfs = [pdfs.PDFData.load_from_file(path) for path in paths]
@@ -424,7 +424,7 @@ class GeneratePDFs:
         self,
         *,
         field_pdfs: list[pdfs.PDFData],
-        figures_dir: Path,
+        figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every saved snapshot; always rebuilt fresh from whatever is on
         disk (not from anything held in memory across the potentially-long per-snapshot loop above).

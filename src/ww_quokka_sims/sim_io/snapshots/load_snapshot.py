@@ -5,11 +5,11 @@
 ##
 
 ## stdlib
+import pathlib
+import types
 import typing
 
-from collections.abc import Callable, Iterator
-from pathlib import Path
-from types import TracebackType
+from collections import abc as collections_abc
 
 ## third-party
 import numpy
@@ -47,7 +47,7 @@ class QuokkaSnapshot(
 ):
     """Interface for loading Quokka snapshots with yt."""
 
-    snapshot_dir: Path
+    snapshot_dir: pathlib.Path
     verbose: bool
     _yt_dataset: typing.Any | None
     _in_context: bool
@@ -63,7 +63,7 @@ class QuokkaSnapshot(
     def __init__(
         self,
         *,
-        snapshot_dir: str | Path,
+        snapshot_dir: str | pathlib.Path,
         verbose: bool = True,
     ):
         """Initialise a snapshot handle without opening the underlying yt dataset."""
@@ -71,7 +71,7 @@ class QuokkaSnapshot(
             param=verbose,
             param_name="verbose",
         )
-        self.snapshot_dir = Path(snapshot_dir)
+        self.snapshot_dir = pathlib.Path(snapshot_dir)
         self.verbose = verbose
         self._yt_dataset = None
         self._in_context = False
@@ -94,7 +94,7 @@ class QuokkaSnapshot(
         self,
         _exc_type: type[BaseException] | None,
         _exc_value: BaseException | None,
-        _traceback: TracebackType | None,
+        _traceback: types.TracebackType | None,
     ) -> None:
         """Exit the context; close the yt dataset."""
         self._in_context = False
@@ -351,7 +351,7 @@ class QuokkaSnapshot(
         field_name: str,
         num_extra_cells: int,
         amr_level: int = 0,
-    ) -> Iterator[tuple[numpy.ndarray, tuple[slice, slice, slice]]]:
+    ) -> collections_abc.Iterator[tuple[numpy.ndarray, tuple[slice, slice, slice]]]:
         """
         Yield, for each amr_level=0 box, an expanded raw vector-field block (components
         stacked along axis 0, in x/y/z order) and the domain-index slices its own cells
@@ -388,7 +388,7 @@ class QuokkaSnapshot(
         field_name: str,
         grad_order: int,
         amr_level: int,
-        local_compute_fn: Callable[[numpy.ndarray, int], numpy.ndarray],
+        local_compute_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
         output_field_name: str,
         output_latex_label: str,
     ) -> field_models.VectorField_3D:

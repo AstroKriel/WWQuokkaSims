@@ -6,8 +6,7 @@
 
 ## stdlib
 import argparse
-
-from pathlib import Path
+import pathlib
 
 ## personal
 from jormi.ww_io import manage_log
@@ -34,7 +33,7 @@ def main():
             ),
         ],
     ).parse_args()
-    snapshot_dir = Path(user_args.input_dir).expanduser().resolve()
+    snapshot_dir = pathlib.Path(user_args.input_dir).expanduser().resolve()
     with load_snapshot.QuokkaSnapshot(
             snapshot_dir=snapshot_dir,
             verbose=True,

@@ -5,8 +5,8 @@
 ##
 
 ## stdlib
+import pathlib
 import unittest
-from pathlib import Path
 
 ## local
 from ww_quokka_sims.sim_setup._sim_params import (
@@ -308,12 +308,12 @@ class ModelValidationTests(unittest.TestCase):
 
 
 class _SavesSimParamsFileTestCase(unittest.TestCase):
-    test_file_path: Path  # pyright: ignore[reportUninitializedInstanceVariable]
+    test_file_path: pathlib.Path  # pyright: ignore[reportUninitializedInstanceVariable]
 
     def setUp(
         self,
     ):
-        self.test_file_path = Path("sim_params.toml")
+        self.test_file_path = pathlib.Path("sim_params.toml")
         if self.test_file_path.exists():
             self.test_file_path.unlink()
 
@@ -391,7 +391,7 @@ class GuardrailTests(_DefaultSaveKwargsTestCase):
     def test_rejects_non_sim_params_filename(
         self,
     ):
-        kwargs = self._base_kwargs(output_path=Path("not_sim_params.toml"))
+        kwargs = self._base_kwargs(output_path=pathlib.Path("not_sim_params.toml"))
         with self.assertRaises(ValueError):
             save_params.save_sim_params(
                 **kwargs,  # pyright: ignore[reportArgumentType]

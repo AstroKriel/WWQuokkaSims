@@ -5,10 +5,9 @@
 ##
 
 ## stdlib
+import dataclasses
+import enum
 import typing
-
-from dataclasses import dataclass, field
-from enum import IntEnum
 
 ## personal
 from jormi.ww_validation import validate_types
@@ -65,7 +64,7 @@ def _is_power_of_two(
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class GeometryParams:
     """
     Domain bounds and boundary conditions.
@@ -131,7 +130,7 @@ class GeometryParams:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class ResolutionParams:
     """
     Grid resolution and domain decomposition.
@@ -230,7 +229,7 @@ class ResolutionParams:
 ##
 
 
-class AmrVerbosity(IntEnum):
+class AmrVerbosity(enum.IntEnum):
     """
     `amr.v`, AMReX's own `Amr`/`AmrMesh` logging verbosity. Each level unlocks an additional class
     of messages on top of the previous one; `DEBUG` mainly surfaces restart/checkpoint file-header
@@ -243,7 +242,7 @@ class AmrVerbosity(IntEnum):
     DEBUG = 3
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class VerbosityParams:
     """
     Fields
@@ -260,7 +259,7 @@ class VerbosityParams:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class OutputFileParams:
     """
     Checkpoint and plotfile cadence. Quokka accepts index- and time-based cadence simultaneously
@@ -337,7 +336,7 @@ class OutputFileParams:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class TimeIntegrationParams:
     """
     CFL and stop-condition parameters.
@@ -386,7 +385,7 @@ class TimeIntegrationParams:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class HydroParams:
     """
     Reconstruction scheme: pcm=1, plm=2, ppm=3, ppm_ep=5. Quokka itself aborts with a clear
@@ -414,7 +413,7 @@ class HydroParams:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class MHDParams:
     """
     EMF reconstruction and averaging scheme; `resistivity` is only set for resistive-correctness
@@ -447,7 +446,7 @@ class MHDParams:
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class SetupParams:
     """
     Problem-specific parameters, rendered last under a caller-chosen param group title
@@ -467,7 +466,7 @@ class SetupParams:
         Prefix each key in `param_values` is rendered under, e.g. `"setup"` -> `setup.<key>`.
     """
 
-    param_values: dict[str, typing.Any] = field(default_factory=dict)
+    param_values: dict[str, typing.Any] = dataclasses.field(default_factory=dict)
     group_title: str = "problem setup"
     key_prefix: str = "setup"
 

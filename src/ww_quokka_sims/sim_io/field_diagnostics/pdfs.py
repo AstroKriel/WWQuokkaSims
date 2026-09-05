@@ -5,8 +5,8 @@
 ##
 
 ## stdlib
-from dataclasses import dataclass
-from pathlib import Path
+import dataclasses
+import pathlib
 
 ## third-party
 import numpy
@@ -20,7 +20,7 @@ from jormi.ww_validation import validate_arrays, validate_types
 ##
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class PDFData:
     step_time: float
     step_index: int
@@ -76,7 +76,7 @@ class PDFData:
 
     def save_to_file(
         self,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> None:
         bin_centers_key = "log10_bin_centers" if self.use_log10_bins else "bin_centers"
         output_dict: dict = {
@@ -100,7 +100,7 @@ class PDFData:
     @classmethod
     def load_from_file(
         cls,
-        file_path: Path,
+        file_path: pathlib.Path,
     ) -> "PDFData":
         input_dict = json_io.read_json_file_into_dict(
             file_path=file_path,
