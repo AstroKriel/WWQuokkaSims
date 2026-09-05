@@ -10,8 +10,6 @@ import dataclasses
 import pathlib
 import typing
 
-from collections import abc as collections_abc
-
 ## third-party
 import numpy
 
@@ -37,8 +35,7 @@ from ww_quokka_sims.sim_io.snapshots import (
 
 @dataclasses.dataclass(frozen=True)
 class ResolvedFieldArgs:
-    field_name: str
-    field_loader: collections_abc.Callable
+    registered_field: field_registry.RegisteredField
     amr_level: int = 0
 
 
@@ -47,8 +44,7 @@ class WorkerArgs(typing.NamedTuple):
 
     snapshot_dir: str
     snapshot_tag: str
-    field_name: str
-    field_loader: collections_abc.Callable
+    registered_field: field_registry.RegisteredField
     comps_to_extract: tuple[cartesian_axes.CartesianAxis_3D, ...]
     data_dir: str
     index_width: int
@@ -96,7 +92,7 @@ class FieldExtractor:
         step_index: int,
         index_width: int,
     ) -> str:
-        field_name = self.field_args.field_name
+        field_name = self.field_args.registered_field.name
         padded_index = f"{step_index:0{index_width}d}"
         return f"{field_name}-index={padded_index}-amr_level={self.field_args.amr_level}.npz"
 
@@ -109,7 +105,7 @@ class FieldExtractor:
                 snapshot_dir=snapshot_dir,
                 verbose=False,
         ) as snapshot:
-            field = self.field_args.field_loader(
+            field = self.field_args.registered_field.load(
                 snapshot,
                 amr_level=self.field_args.amr_level,
             )  # ScalarField_3D or VectorField_3D
@@ -124,7 +120,7 @@ class FieldExtractor:
         index_width: int,
         data_dir: pathlib.Path,
     ) -> None:
-        field_name = self.field_args.field_name
+        field_name = self.field_args.registered_field.name
         file_name = self._expected_file_name(step_index=step_index, index_width=index_width)
         if isinstance(field, field_models.ScalarField_3D):
             sarray_3d = field_models.extract_3d_sarray(
@@ -202,8 +198,7 @@ def extract_fields_in_serial(
         field_extractor = FieldExtractor(
             snapshot_tag=snapshot_tag,
             field_args=ResolvedFieldArgs(
-                field_name=field_name,
-                field_loader=registered_field.loader_fn,
+                registered_field=registered_field,
                 amr_level=amr_level,
             ),
             comps_to_extract=comps_to_extract,
@@ -225,8 +220,7 @@ def _extract_snapshot_worker(
     field_extractor = FieldExtractor(
         snapshot_tag=worker_args.snapshot_tag,
         field_args=ResolvedFieldArgs(
-            field_name=worker_args.field_name,
-            field_loader=worker_args.field_loader,
+            registered_field=worker_args.registered_field,
             amr_level=worker_args.amr_level,
         ),
         comps_to_extract=worker_args.comps_to_extract,
@@ -259,8 +253,7 @@ def extract_fields_in_parallel(
                 WorkerArgs(
                     snapshot_dir=str(snapshot_dir),
                     snapshot_tag=snapshot_tag,
-                    field_name=field_name,
-                    field_loader=registered_field.loader_fn,
+                    registered_field=registered_field,
                     comps_to_extract=comps_to_extract,
                     data_dir=str(data_dir),
                     index_width=index_width,
