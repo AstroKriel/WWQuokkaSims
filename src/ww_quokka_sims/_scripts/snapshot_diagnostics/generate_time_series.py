@@ -6,8 +6,7 @@
 
 ## stdlib
 import argparse
-
-from typing import final
+import typing
 
 ## personal
 from jormi.ww_fields.fields_3d import (
@@ -47,7 +46,7 @@ _STATISTIC_LOOKUP: dict[str, time_series.Statistic] = {
 ##
 
 
-@final
+@typing.final
 class DiagnosticPipeline:
 
     def __init__(

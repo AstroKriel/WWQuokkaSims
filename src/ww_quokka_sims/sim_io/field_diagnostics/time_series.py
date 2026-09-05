@@ -6,11 +6,11 @@
 
 ## stdlib
 import inspect
+import typing
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast, final, get_args, get_type_hints
 
 ## third-party
 import numpy
@@ -128,8 +128,8 @@ class Statistic:
         self,
     ) -> None:
         first_param_name = next(iter(inspect.signature(self.compute_fn).parameters))
-        declared_type = get_type_hints(self.compute_fn).get(first_param_name)
-        expected_types = get_args(declared_type) or (declared_type, )
+        declared_type = typing.get_type_hints(self.compute_fn).get(first_param_name)
+        expected_types = typing.get_args(declared_type) or (declared_type, )
         if not(set(self.valid_field_types) <= set(expected_types)):
             raise TypeError(
                 f"statistic `{self.name}`: valid_field_types {self.valid_field_types} is not a subset of "
@@ -144,7 +144,7 @@ class Statistic:
             raise TypeError(
                 f"statistic `{self.name}` expects {self.valid_field_types}, got {type(field_3d).__name__}.",
             )
-        return self.compute_fn(cast(field_models.ScalarField_3D, field_3d))
+        return self.compute_fn(typing.cast(field_models.ScalarField_3D, field_3d))
 
 
 ##
@@ -162,7 +162,7 @@ class TimePointArgs:
     cache_file_path: Path | None = None
 
 
-@final
+@typing.final
 class GenerateTimeSeries:
 
     def __init__(
