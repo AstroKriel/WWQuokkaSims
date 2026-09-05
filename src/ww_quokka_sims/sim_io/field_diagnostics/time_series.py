@@ -5,10 +5,12 @@
 ##
 
 ## stdlib
+import inspect
+
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast, final
+from typing import cast, final, get_args, get_type_hints
 
 ## third-party
 import numpy
@@ -121,6 +123,18 @@ class Statistic:
     name: str
     compute_fn: Callable[[field_models.ScalarField_3D], float]
     valid_field_types: tuple[type, ...] = (field_models.ScalarField_3D, )
+
+    def __post_init__(
+        self,
+    ) -> None:
+        first_param_name = next(iter(inspect.signature(self.compute_fn).parameters))
+        declared_type = get_type_hints(self.compute_fn).get(first_param_name)
+        expected_types = get_args(declared_type) or (declared_type, )
+        if not(set(self.valid_field_types) <= set(expected_types)):
+            raise TypeError(
+                f"statistic `{self.name}`: valid_field_types {self.valid_field_types} is not a subset of "
+                f"compute_fn's declared parameter type {expected_types}.",
+            )
 
     def compute_statistic(
         self,

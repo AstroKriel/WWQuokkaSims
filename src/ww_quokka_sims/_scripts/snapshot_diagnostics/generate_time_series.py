@@ -10,7 +10,10 @@ import argparse
 from typing import final
 
 ## personal
-from jormi.ww_fields.fields_3d import field_operators
+from jormi.ww_fields.fields_3d import (
+    field_models,
+    field_operators,
+)
 from jormi.ww_io import manage_log
 from jormi.ww_plots import style_figure
 from jormi.ww_validation import validate_types
@@ -27,8 +30,16 @@ from ww_quokka_sims.sim_io.field_diagnostics import time_series
 ##
 
 _STATISTIC_LOOKUP: dict[str, time_series.Statistic] = {
-    "total": time_series.Statistic(name="total", compute_fn=field_operators.compute_sfield_volume_integral),
-    "rms": time_series.Statistic(name="rms", compute_fn=field_operators.compute_sfield_rms),
+    "total": time_series.Statistic(
+        name="total",
+        compute_fn=field_operators.compute_sfield_volume_integral,
+        valid_field_types=(field_models.ScalarField_3D, ),
+    ),
+    "rms": time_series.Statistic(
+        name="rms",
+        compute_fn=field_operators.compute_sfield_rms,
+        valid_field_types=(field_models.ScalarField_3D, ),
+    ),
 }
 
 ##
