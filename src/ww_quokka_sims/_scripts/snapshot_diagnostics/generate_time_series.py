@@ -27,8 +27,8 @@ from ww_quokka_sims.sim_io.snapshots import field_registry
 ##
 
 _STATISTIC_LOOKUP: dict[str, time_series.FieldStatistic] = {
-    statistic.name: statistic
-    for statistic in (
+    field_statistic.name: field_statistic
+    for field_statistic in (
         time_series.FieldStatistic(
             name="total",
             compute_fn=field_operators.compute_sfield_volume_integral,
@@ -62,7 +62,7 @@ class DiagnosticPipeline:
             raise ValueError(
                 f"unknown statistic `{statistic_name}`; expected one of {sorted(_STATISTIC_LOOKUP)}."
             )
-        self.statistic = _STATISTIC_LOOKUP[statistic_name]
+        self.field_statistic = _STATISTIC_LOOKUP[statistic_name]
         field_registry.validate_fields(
             field_names=field_args.fields,
             allowed_types=(field_models.ScalarField_3D, ),
@@ -84,7 +84,7 @@ class DiagnosticPipeline:
             generate_time_series = time_series.GenerateTimeSeries(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 registered_field=registered_field,
-                statistic=self.statistic,
+                field_statistic=self.field_statistic,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
                 save_data=self.diagnostic_output_args.save_data,
