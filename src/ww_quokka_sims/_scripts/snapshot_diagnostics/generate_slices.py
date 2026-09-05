@@ -10,8 +10,6 @@ import dataclasses
 import pathlib
 import typing
 
-from collections import abc as collections_abc
-
 ## third-party
 import numpy
 
@@ -55,9 +53,7 @@ from ww_quokka_sims.sim_io.snapshots import (
 
 @dataclasses.dataclass(frozen=True)
 class ResolvedFieldArgs:
-    field_name: str
-    field_loader: collections_abc.Callable
-    expected_properties: field_registry.ExpectedProperties
+    registered_field: field_registry.RegisteredField
     amr_level: int = 0
 
 
@@ -66,11 +62,9 @@ class WorkerArgs(typing.NamedTuple):
 
     snapshot_dir: str
     snapshot_tag: str
-    field_name: str
-    field_loader: collections_abc.Callable
+    registered_field: field_registry.RegisteredField
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
-    expected_properties: field_registry.ExpectedProperties
     data_dir: str
     figures_dir: str
     index_width: int
@@ -283,7 +277,7 @@ class GenerateFieldSlices:
                 verbose=False,
         ) as snapshot:
             uniform_domain = snapshot.load_3d_uniform_domain(amr_level=amr_level)
-            field = self.field_args.field_loader(
+            field = self.field_args.registered_field.load(
                 snapshot,
                 amr_level=amr_level,
             )  # ScalarField_3D or VectorField_3D
@@ -297,7 +291,7 @@ class GenerateFieldSlices:
         *,
         field: field_models.AnyField_3D,
     ) -> list[FieldComp]:
-        field_name = self.field_args.field_name
+        field_name = self.field_args.registered_field.name
         if isinstance(field, field_models.ScalarField_3D):
             sarray_3d = field_models.extract_3d_sarray(
                 sfield_3d=field,
@@ -370,7 +364,7 @@ class GenerateFieldSlices:
                     plane_label=get_slice_plane_label(axis_to_slice),
                     comp_label=comp_label,
                     palette_config=field_palettes.resolve_palette_config(
-                        expected_properties=self.field_args.expected_properties,
+                        expected_properties=self.field_args.registered_field.expected_properties,
                     ),
                     hide_annotations=self.hide_annotations,
                 )
@@ -396,7 +390,7 @@ class GenerateFieldSlices:
         axis_to_slice: cartesian_axes.CartesianAxis_3D,
         padded_index: str,
     ) -> str:
-        field_name = self.field_args.field_name
+        field_name = self.field_args.registered_field.name
         comp_part = f"-comp={comp_axis.axis_label}" if comp_axis is not None else ""
         return (
             f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_index}"
@@ -408,7 +402,7 @@ class GenerateFieldSlices:
         *,
         padded_index: str,
     ) -> str:
-        field_name = self.field_args.field_name
+        field_name = self.field_args.registered_field.name
         plot_name = f"log10_{field_name}" if self.apply_log10_plot else field_name
         return f"{plot_name}-slice-index={padded_index}.png"
 
@@ -498,13 +492,15 @@ class GenerateFieldSlices:
         verbose: bool,
     ) -> None:
         if self.apply_log10_plot:
+            is_strictly_positive = self.field_args.registered_field.expected_properties.is_strictly_positive
             log10_rows: list[Row] = []
             for comp_label, sliced_by_axis in rows:
                 if all(numpy.all(field_slice.sarray_2d == 0) for field_slice in sliced_by_axis.values()):
                     continue
                 log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, slices.SlicedField] = {}
                 for axis_to_slice, field_slice in sliced_by_axis.items():
-                    log10_sarray_2d = compute_array_stats.compute_safe_log10(numpy.abs(field_slice.sarray_2d))
+                    sarray_2d = field_slice.sarray_2d if is_strictly_positive else numpy.abs(field_slice.sarray_2d)
+                    log10_sarray_2d = compute_array_stats.compute_safe_log10(sarray_2d)
                     min_value, max_value = _compute_min_max(log10_sarray_2d)
                     log10_sliced_by_axis[axis_to_slice] = slices.SlicedField(
                         sarray_2d=log10_sarray_2d,
@@ -521,7 +517,7 @@ class GenerateFieldSlices:
             if not rows:
                 manage_log.log_hint(
                     text=(
-                        f"Skipping `{self.field_args.field_name}` at snapshot {step_index}: "
+                        f"Skipping `{self.field_args.registered_field.name}` at snapshot {step_index}: "
                         f"all components are exactly zero, so there is no data to safely log10."
                     ),
                 )
@@ -578,7 +574,7 @@ class GenerateFieldSlices:
             assert saved_comp_axes is not None
             manage_log.log_hint(
                 text=(
-                    f"`{self.field_args.field_name}` at snapshot {step_index}: "
+                    f"`{self.field_args.registered_field.name}` at snapshot {step_index}: "
                     f"building figure from saved data, skipping the raw snapshot."
                 ),
             )
@@ -647,9 +643,7 @@ def generate_fields_in_serial(
     for field_name in fields_to_plot:
         registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
         field_args = ResolvedFieldArgs(
-            field_name=field_name,
-            field_loader=registered_field.loader_fn,
-            expected_properties=registered_field.expected_properties,
+            registered_field=registered_field,
             amr_level=amr_level,
         )
         generate_field_slices = GenerateFieldSlices(
@@ -679,9 +673,7 @@ def _generate_snapshot_worker(
     """Positional-only signature required so WorkerArgs elements survive multiprocessing pickling."""
     worker_args = WorkerArgs(*user_args)
     field_args = ResolvedFieldArgs(
-        field_name=worker_args.field_name,
-        field_loader=worker_args.field_loader,
-        expected_properties=worker_args.expected_properties,
+        registered_field=worker_args.registered_field,
         amr_level=worker_args.amr_level,
     )
     generate_field_slices = GenerateFieldSlices(
@@ -730,11 +722,9 @@ def generate_fields_in_parallel(
                 WorkerArgs(
                     snapshot_dir=str(snapshot_dir),
                     snapshot_tag=snapshot_tag,
-                    field_name=field_name,
-                    field_loader=registered_field.loader_fn,
+                    registered_field=registered_field,
                     comps_to_plot=comps_to_plot,
                     axes_to_slice=axes_to_slice,
-                    expected_properties=registered_field.expected_properties,
                     data_dir=str(data_dir),
                     figures_dir=str(figures_dir),
                     index_width=index_width,
@@ -919,7 +909,7 @@ def main():
         "--apply-log10-plot",
         action="store_true",
         default=False,
-        help="Apply log10(|field|) to the plotted field (does not affect the saved `.npz` data slices).",
+        help="Apply log10 to the plotted field, abs-valued unless it is strictly positive (does not affect the saved `.npz` data slices).",
     )
     parser.add_argument(
         "--no-annotations",
