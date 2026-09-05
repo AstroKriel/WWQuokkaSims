@@ -89,7 +89,7 @@ class TimeSeries:
     time_points: list[TimePoint]
 
     @property
-    def num_points(
+    def num_time_points(
         self,
     ) -> int:
         return len(self.time_points)
@@ -103,7 +103,7 @@ class TimeSeries:
     def get_sorted_time_points(
         self,
     ) -> list[TimePoint]:
-        return sorted(self.time_points, key=lambda point: point.sim_time)
+        return sorted(self.time_points, key=lambda time_point: time_point.sim_time)
 
 
 ##
@@ -196,13 +196,13 @@ class GenerateTimeSeries:
     def _compute_time_series(
         self,
     ) -> TimeSeries:
-        data_points: list[TimePoint] = []
+        data_time_points: list[TimePoint] = []
         pending_field_args: list[ResolvedFieldArgs] = []
         for snapshot_dir in self.snapshot_dirs:
             snapshot_dir = Path(snapshot_dir)
             cache_file_path = self._cache_file_path(snapshot_dir)
             if (not self.overwrite) and cache_file_path.exists():
-                data_points.append(TimePoint.load_from_file(cache_file_path))
+                data_time_points.append(TimePoint.load_from_file(cache_file_path))
                 continue
             pending_field_args.append(
                 ResolvedFieldArgs(
@@ -215,10 +215,10 @@ class GenerateTimeSeries:
                 ),
             )
         if not pending_field_args:
-            return TimeSeries(time_points=data_points)
+            return TimeSeries(time_points=data_time_points)
 
         if (self.num_workers != 1) and (len(pending_field_args) > 5):
-            new_points: list[TimePoint] = parallel_dispatch.run_in_parallel(
+            new_time_points: list[TimePoint] = parallel_dispatch.run_in_parallel(
                 worker_fn=GenerateTimeSeries._compute_time_point,
                 grouped_args=pending_field_args,
                 num_workers=self.num_workers,
@@ -226,11 +226,11 @@ class GenerateTimeSeries:
                 show_progress=True,
                 enable_plotting=True,
             )
-            data_points.extend(new_points)
+            data_time_points.extend(new_time_points)
         else:
             for field_args in pending_field_args:
-                data_points.append(GenerateTimeSeries._compute_time_point(field_args=field_args))
-        return TimeSeries(time_points=data_points)
+                data_time_points.append(GenerateTimeSeries._compute_time_point(field_args=field_args))
+        return TimeSeries(time_points=data_time_points)
 
     @staticmethod
     def _as_arrays(
@@ -241,8 +241,8 @@ class GenerateTimeSeries:
                 numpy.asarray([], dtype=float),
                 numpy.asarray([], dtype=float),
             )
-        time_array = validate_arrays.as_1d([point.sim_time for point in sorted_time_points])
-        values_array = validate_arrays.as_1d([point.value for point in sorted_time_points])
+        time_array = validate_arrays.as_1d([time_point.sim_time for time_point in sorted_time_points])
+        values_array = validate_arrays.as_1d([time_point.value for time_point in sorted_time_points])
         return (
             time_array,
             values_array,
