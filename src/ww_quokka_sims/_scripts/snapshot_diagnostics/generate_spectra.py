@@ -9,8 +9,6 @@ import argparse
 import pathlib
 import typing
 
-from collections import abc as collections_abc
-
 ## third-party
 import numpy
 
@@ -50,8 +48,7 @@ class ComputeSpectra:
         *,
         snapshot_dirs: list[pathlib.Path],
         snapshot_tag: str,
-        field_name: str,
-        field_loader: collections_abc.Callable,
+        registered_field: field_registry.RegisteredField,
         index_width: int,
         save_data: bool,
         data_dir: pathlib.Path,
@@ -60,8 +57,7 @@ class ComputeSpectra:
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
-        self.field_name = field_name
-        self.field_loader = field_loader
+        self.registered_field = registered_field
         self.index_width = index_width
         self.save_data = save_data
         self.data_dir = data_dir
@@ -73,7 +69,7 @@ class ComputeSpectra:
         *,
         padded_index: str,
     ) -> pathlib.Path:
-        return self.data_dir / f"{self.field_name}-spectrum-index={padded_index}.json"
+        return self.data_dir / f"{self.registered_field.name}-spectrum-index={padded_index}.json"
 
     def run(
         self,
@@ -100,7 +96,7 @@ class ComputeSpectra:
                     snapshot_dir=snapshot_dir,
                     verbose=False,
             ) as snapshot:
-                field = self.field_loader(snapshot, amr_level=self.amr_level)
+                field = self.registered_field.load(snapshot, amr_level=self.amr_level)
             spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
             step_time = field.sim_time
             assert step_time is not None
@@ -153,8 +149,7 @@ class GenerateSpectra:
         index_width: int,
         data_dir: pathlib.Path,
         figures_dir: pathlib.Path,
-        field_name: str,
-        field_loader: collections_abc.Callable,
+        registered_field: field_registry.RegisteredField,
         save_data: bool,
         save_figure: bool,
         overwrite: bool = False,
@@ -165,8 +160,7 @@ class GenerateSpectra:
         self.index_width = index_width
         self.data_dir = data_dir
         self.figures_dir = figures_dir
-        self.field_name = field_name
-        self.field_loader = field_loader
+        self.registered_field = registered_field
         self.save_data = save_data
         self.save_figure = save_figure
         self.overwrite = overwrite
@@ -237,7 +231,7 @@ class GenerateSpectra:
         figures_dir: pathlib.Path,
         padded_index: str,
     ) -> pathlib.Path:
-        return figures_dir / f"{self.field_name}-spectrum-index={padded_index}.png"
+        return figures_dir / f"{self.registered_field.name}-spectrum-index={padded_index}.png"
 
     def _save_snapshot_figure(
         self,
@@ -284,7 +278,7 @@ class GenerateSpectra:
             ax=ax,
             latex_label=field_spectra[0].latex_label,
         )
-        fig_path = figures_dir / f"{self.field_name}-spectra-summary.png"
+        fig_path = figures_dir / f"{self.registered_field.name}-spectra-summary.png"
         manage_figure.save_figure(
             figure=fig,
             figure_path=fig_path,
@@ -298,8 +292,7 @@ class GenerateSpectra:
         compute_spectra = ComputeSpectra(
             snapshot_dirs=self.snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
-            field_name=self.field_name,
-            field_loader=self.field_loader,
+            registered_field=self.registered_field,
             index_width=self.index_width,
             save_data=self.save_data,
             data_dir=self.data_dir,
@@ -359,8 +352,7 @@ class DiagnosticPipeline:
                 index_width=resolved_inputs.index_width,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
-                field_name=field_name,
-                field_loader=registered_field.loader_fn,
+                registered_field=registered_field,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,
                 overwrite=self.diagnostic_output_args.overwrite,
