@@ -99,7 +99,10 @@ class GeometryParams:
     ) -> None:
         _ensure_axis_triple(self.domain_lo, param_name="<domain_lo>")
         _ensure_axis_triple(self.domain_hi, param_name="<domain_hi>")
-        for axis, (domain_lo_value, domain_hi_value) in enumerate(zip(self.domain_lo, self.domain_hi)):
+        for axis, (domain_lo_value, domain_hi_value) in enumerate(zip(
+                self.domain_lo,
+                self.domain_hi,
+        ), ):
             if domain_lo_value >= domain_hi_value:
                 raise ValueError(
                     f"`<domain_lo>` must be less than `<domain_hi>` for every axis, but got "

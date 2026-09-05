@@ -113,9 +113,7 @@ class PDFData:
         )
         use_log10_bins = bool(input_dict["use_log10_bins"])
         bin_centers_key = "log10_bin_centers" if use_log10_bins else "bin_centers"
-        comp_labels = [
-            key for key in input_dict if key not in ("step_time", "step_index", "use_log10_bins")
-        ]
+        comp_labels = [key for key in input_dict if key not in ("step_time", "step_index", "use_log10_bins")]
         return cls(
             step_time=float(input_dict["step_time"]),
             step_index=int(input_dict["step_index"]),

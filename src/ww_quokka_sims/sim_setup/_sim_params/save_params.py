@@ -23,7 +23,10 @@ from . import param_groups
 _DEFAULT_VERBOSITY_PARAMS = param_groups.VerbosityParams()
 
 
-@dataclasses.dataclass(frozen=True, kw_only=True)
+@dataclasses.dataclass(
+    frozen=True,
+    kw_only=True,
+)
 class SimParams:
     """
     One full `save_sim_params` call's worth of dataclasses, plus a `save_to_file` convenience method.
@@ -153,10 +156,8 @@ def _build_resolution_section(
             key="amr.max_level",
             value=resolution_params.max_amr_levels,
         ),
-        *format_params.
-        expand_per_axis(resolution_params.blocking_factor, key_prefix="amr.blocking_factor"),
-        *format_params.
-        expand_per_axis(resolution_params.max_grid_size, key_prefix="amr.max_grid_size"),
+        *format_params.expand_per_axis(resolution_params.blocking_factor, key_prefix="amr.blocking_factor"),
+        *format_params.expand_per_axis(resolution_params.max_grid_size, key_prefix="amr.max_grid_size"),
     ]
     if resolution_params.num_refinement_buffer_cells is not None:
         assignment_lines.append(

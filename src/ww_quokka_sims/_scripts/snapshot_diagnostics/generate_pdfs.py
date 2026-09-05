@@ -331,7 +331,12 @@ class GeneratePDFs:
             exist_ok=True,
         )
         padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
-        pdf_data.save_to_file(self._data_file_path(data_dir=data_dir, padded_index=padded_index))
+        pdf_data.save_to_file(
+            self._data_file_path(
+                data_dir=data_dir,
+                padded_index=padded_index,
+            ),
+        )
 
     def _save_snapshot_figure(
         self,
@@ -375,8 +380,14 @@ class GeneratePDFs:
             ),
         )
         padded_index = f"{step_index:0{index_width}d}"
-        data_path = self._data_file_path(data_dir=data_dir, padded_index=padded_index)
-        figure_path = self._snapshot_figure_file_path(figures_dir=figures_dir, padded_index=padded_index)
+        data_path = self._data_file_path(
+            data_dir=data_dir,
+            padded_index=padded_index,
+        )
+        figure_path = self._snapshot_figure_file_path(
+            figures_dir=figures_dir,
+            padded_index=padded_index,
+        )
         data_exists = data_path.exists()
         data_needed = self.save_data and (self.overwrite or not data_exists)
         figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
@@ -393,14 +404,26 @@ class GeneratePDFs:
                 ),
             )
             pdf_data = pdfs.PDFData.load_from_file(data_path)
-            self._save_snapshot_figure(pdf_data=pdf_data, figure_path=figure_path)
+            self._save_snapshot_figure(
+                pdf_data=pdf_data,
+                figure_path=figure_path,
+            )
             return
 
-        pdf_data = compute_pdfs.compute_snapshot(snapshot_dir=snapshot_dir, snapshot_tag=self.snapshot_tag)
+        pdf_data = compute_pdfs.compute_snapshot(
+            snapshot_dir=snapshot_dir,
+            snapshot_tag=self.snapshot_tag,
+        )
         if data_needed:
-            self._save_pdf(pdf_data=pdf_data, data_dir=data_dir)
+            self._save_pdf(
+                pdf_data=pdf_data,
+                data_dir=data_dir,
+            )
         if figure_needed:
-            self._save_snapshot_figure(pdf_data=pdf_data, figure_path=figure_path)
+            self._save_snapshot_figure(
+                pdf_data=pdf_data,
+                figure_path=figure_path,
+            )
 
     def _load_all_saved_pdfs(
         self,
@@ -475,10 +498,14 @@ class GeneratePDFs:
         field_pdfs = self._load_all_saved_pdfs(data_dir=self.data_dir)
         if not field_pdfs:
             manage_log.log_hint(
-                text=f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
+                text=
+                f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
             )
             return
-        self._save_summary_figure(field_pdfs=field_pdfs, figures_dir=self.figures_dir)
+        self._save_summary_figure(
+            field_pdfs=field_pdfs,
+            figures_dir=self.figures_dir,
+        )
 
 
 ##

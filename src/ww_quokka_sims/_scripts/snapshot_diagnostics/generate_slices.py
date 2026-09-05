@@ -100,7 +100,8 @@ class FieldComp:
     comp_axis: cartesian_axes.CartesianAxis_3D | None = None
 
 
-Row = tuple[str, dict[cartesian_axes.CartesianAxis_3D, slices.SlicedField]]  # (comp_label, {axis: SlicedField})
+Row = tuple[str, dict[cartesian_axes.CartesianAxis_3D,
+                      slices.SlicedField]]  # (comp_label, {axis: SlicedField})
 
 ##
 ## === FIELD PROCESSING
@@ -333,7 +334,8 @@ class GenerateFieldSlices:
             (
                 field_comp.label,
                 {
-                    axis_to_slice: slice_field(
+                    axis_to_slice:
+                    slice_field(
                         sarray_3d=field_comp.sarray_3d,
                         axis_to_slice=axis_to_slice,
                         uniform_domain=uniform_domain,
@@ -344,7 +346,8 @@ class GenerateFieldSlices:
                     )
                     for axis_to_slice in self.axes_to_slice
                 },
-            ) for field_comp in field_comps
+            )
+            for field_comp in field_comps
         ]
 
     def _plot_rows(
@@ -417,15 +420,20 @@ class GenerateFieldSlices:
         if neither is fully present on disk.
         """
         scalar_paths = [
-            data_dir / self._data_file_name(comp_axis=None, axis_to_slice=axis_to_slice, padded_index=padded_index)
-            for axis_to_slice in self.axes_to_slice
+            data_dir / self._data_file_name(
+                comp_axis=None,
+                axis_to_slice=axis_to_slice,
+                padded_index=padded_index,
+            ) for axis_to_slice in self.axes_to_slice
         ]
         if all(path.exists() for path in scalar_paths):
             return [None]
         vector_paths = [
-            data_dir / self._data_file_name(comp_axis=comp_axis, axis_to_slice=axis_to_slice, padded_index=padded_index)
-            for comp_axis in self.comps_to_plot
-            for axis_to_slice in self.axes_to_slice
+            data_dir / self._data_file_name(
+                comp_axis=comp_axis,
+                axis_to_slice=axis_to_slice,
+                padded_index=padded_index,
+            ) for comp_axis in self.comps_to_plot for axis_to_slice in self.axes_to_slice
         ]
         if all(path.exists() for path in vector_paths):
             return list(self.comps_to_plot)
@@ -472,7 +480,11 @@ class GenerateFieldSlices:
             sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, slices.SlicedField] = {}
             comp_label = ""
             for axis_to_slice in self.axes_to_slice:
-                file_name = self._data_file_name(comp_axis=comp_axis, axis_to_slice=axis_to_slice, padded_index=padded_index)
+                file_name = self._data_file_name(
+                    comp_axis=comp_axis,
+                    axis_to_slice=axis_to_slice,
+                    padded_index=padded_index,
+                )
                 field_slice = slices.SlicedField.load_from_file(data_dir / file_name)
                 sliced_by_axis[axis_to_slice] = field_slice
                 comp_label = field_slice.comp_label
@@ -499,7 +511,9 @@ class GenerateFieldSlices:
                     continue
                 log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, slices.SlicedField] = {}
                 for axis_to_slice, field_slice in sliced_by_axis.items():
-                    sarray_2d = field_slice.sarray_2d if is_strictly_positive else numpy.abs(field_slice.sarray_2d)
+                    sarray_2d = field_slice.sarray_2d if is_strictly_positive else numpy.abs(
+                        field_slice.sarray_2d
+                    )
                     log10_sarray_2d = compute_array_stats.compute_safe_log10(sarray_2d)
                     min_value, max_value = _compute_min_max(log10_sarray_2d)
                     log10_sliced_by_axis[axis_to_slice] = slices.SlicedField(
@@ -562,7 +576,10 @@ class GenerateFieldSlices:
         padded_index = f"{step_index:0{index_width}d}"
         figure_path = figures_dir / self._figure_file_name(padded_index=padded_index)
         figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
-        saved_comp_axes = self._find_saved_comp_axes(padded_index=padded_index, data_dir=data_dir)
+        saved_comp_axes = self._find_saved_comp_axes(
+            padded_index=padded_index,
+            data_dir=data_dir,
+        )
         data_complete = saved_comp_axes is not None
         data_needed = self.save_data and (self.overwrite or not data_complete)
 
@@ -760,9 +777,13 @@ def _resolve_animate_figures_dir(
     data_dir: pathlib.Path | None,
     input_dir: pathlib.Path | None,
 ) -> pathlib.Path:
-    resolved_figures_dir = figures_dir if figures_dir is not None else (data_dir if data_dir is not None else input_dir)
+    resolved_figures_dir = figures_dir if figures_dir is not None else (
+        data_dir if data_dir is not None else input_dir
+    )
     if resolved_figures_dir is None:
-        raise ValueError("`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.")
+        raise ValueError(
+            "`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look."
+        )
     return resolved_figures_dir
 
 
@@ -909,7 +930,8 @@ def main():
         "--apply-log10-plot",
         action="store_true",
         default=False,
-        help="Apply log10 to the plotted field, abs-valued unless it is strictly positive (does not affect the saved `.npz` data slices).",
+        help=
+        "Apply log10 to the plotted field, abs-valued unless it is strictly positive (does not affect the saved `.npz` data slices).",
     )
     parser.add_argument(
         "--no-annotations",

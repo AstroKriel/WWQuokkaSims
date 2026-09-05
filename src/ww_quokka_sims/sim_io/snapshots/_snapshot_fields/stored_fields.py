@@ -44,7 +44,11 @@ class _LoadStoredFields:
         use_chunked_reader: bool = False,
     ) -> field_models.ScalarField_3D:
         """Load gas density: `rho`. See `_load_3d_sarray` for `use_chunked_reader`."""
-        cache_key = self._field_cache_key("density", amr_level=amr_level, use_chunked_reader=use_chunked_reader)
+        cache_key = self._field_cache_key(
+            "density",
+            amr_level=amr_level,
+            use_chunked_reader=use_chunked_reader,
+        )
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
@@ -69,7 +73,11 @@ class _LoadStoredFields:
         use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
         """Load momentum field: `vec(m) = rho vec(v)`. See `_load_3d_sarray` for `use_chunked_reader`."""
-        cache_key = self._field_cache_key("momentum", amr_level=amr_level, use_chunked_reader=use_chunked_reader)
+        cache_key = self._field_cache_key(
+            "momentum",
+            amr_level=amr_level,
+            use_chunked_reader=use_chunked_reader,
+        )
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.VectorField_3D):
             return cached_field
@@ -94,7 +102,11 @@ class _LoadStoredFields:
         use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
         """Load magnetic field: `vec(b)`. See `_load_3d_sarray` for `use_chunked_reader`."""
-        cache_key = self._field_cache_key("magnetic", amr_level=amr_level, use_chunked_reader=use_chunked_reader)
+        cache_key = self._field_cache_key(
+            "magnetic",
+            amr_level=amr_level,
+            use_chunked_reader=use_chunked_reader,
+        )
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.VectorField_3D):
             return cached_field

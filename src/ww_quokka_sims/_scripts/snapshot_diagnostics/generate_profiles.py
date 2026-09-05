@@ -234,7 +234,9 @@ class ComputeCompProfiles:
                 verbose=False,
         ) as quokka_snapshot:
             uniform_domain_3d = quokka_snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
-            field = self.registered_field.load(quokka_snapshot, amr_level=self.amr_level)  # ScalarField or VectorField
+            field = self.registered_field.load(
+                quokka_snapshot, amr_level=self.amr_level
+            )  # ScalarField or VectorField
         if isinstance(field, field_models.ScalarField_3D):
             return self._compute_scalar_profiles(
                 field=field,
@@ -320,7 +322,11 @@ class GenerateCompProfiles:
         step_index = comp_profiles[0].step_index
         for axis_index, axis in enumerate(comp_profiles[0].axis_labels):
             axis_label = cartesian_axes.get_axis_label(axis)
-            file_path = self._data_file_path(axis_label=axis_label, padded_index=padded_index, data_dir=data_dir)
+            file_path = self._data_file_path(
+                axis_label=axis_label,
+                padded_index=padded_index,
+                data_dir=data_dir,
+            )
             if is_scalar:
                 comp_profile = comp_profiles[0]
                 profiles.ScalarProfile(
@@ -359,7 +365,10 @@ class GenerateCompProfiles:
     ) -> tuple[list[CompProfile], float] | None:
         if not all(path.exists() for path in data_paths):
             return None
-        first_raw = json_io.read_json_file_into_dict(file_path=data_paths[0], verbose=False)
+        first_raw = json_io.read_json_file_into_dict(
+            file_path=data_paths[0],
+            verbose=False,
+        )
         step_time = 0.0
         step_index = 0
         if "field_comps" not in first_raw:
@@ -580,7 +589,10 @@ class GenerateCompProfiles:
                 data_dir=data_dir,
             ) for axis in self.axes_to_slice
         ]
-        figure_path = self._snapshot_figure_file_path(figures_dir=figures_dir, padded_index=padded_index)
+        figure_path = self._snapshot_figure_file_path(
+            figures_dir=figures_dir,
+            padded_index=padded_index,
+        )
         data_exists = all(path.exists() for path in data_paths)
         data_needed = self.save_data and (self.overwrite or not data_exists)
         figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
@@ -599,14 +611,27 @@ class GenerateCompProfiles:
                     ),
                 )
                 comp_profiles, _step_time = loaded
-                self._save_snapshot_figure(comp_profiles=comp_profiles, figure_path=figure_path)
+                self._save_snapshot_figure(
+                    comp_profiles=comp_profiles,
+                    figure_path=figure_path,
+                )
                 return
 
-        comp_profiles = compute_comp_profiles.compute_snapshot(snapshot_dir=snapshot_dir, snapshot_tag=self.snapshot_tag)
+        comp_profiles = compute_comp_profiles.compute_snapshot(
+            snapshot_dir=snapshot_dir,
+            snapshot_tag=self.snapshot_tag,
+        )
         if data_needed:
-            self._save_snapshot_data(comp_profiles=comp_profiles, data_dir=data_dir, padded_index=padded_index)
+            self._save_snapshot_data(
+                comp_profiles=comp_profiles,
+                data_dir=data_dir,
+                padded_index=padded_index,
+            )
         if figure_needed:
-            self._save_snapshot_figure(comp_profiles=comp_profiles, figure_path=figure_path)
+            self._save_snapshot_figure(
+                comp_profiles=comp_profiles,
+                figure_path=figure_path,
+            )
 
     def _load_all_saved_comp_profiles(
         self,
@@ -617,7 +642,10 @@ class GenerateCompProfiles:
         pattern = f"{self.registered_field.name}-axis={first_axis_label}-index=*-amr_level={self.amr_level}.json"
         comp_profiles_lookup: dict[str, list[CompProfile]] = {}
         for first_axis_path in sorted(data_dir.glob(pattern)):
-            raw = json_io.read_json_file_into_dict(file_path=first_axis_path, verbose=False)
+            raw = json_io.read_json_file_into_dict(
+                file_path=first_axis_path,
+                verbose=False,
+            )
             padded_index = f"{int(raw['step_index']):0{self.index_width}d}"
             data_paths = [
                 self._data_file_path(
@@ -661,10 +689,14 @@ class GenerateCompProfiles:
         comp_profiles_lookup = self._load_all_saved_comp_profiles(data_dir=self.data_dir)
         if not comp_profiles_lookup:
             manage_log.log_hint(
-                text=f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
+                text=
+                f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
             )
             return
-        self._save_summary_figure(comp_profiles_lookup=comp_profiles_lookup, figures_dir=self.figures_dir)
+        self._save_summary_figure(
+            comp_profiles_lookup=comp_profiles_lookup,
+            figures_dir=self.figures_dir,
+        )
 
 
 ##

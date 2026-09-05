@@ -189,11 +189,16 @@ class GenerateTimeSeries:
                 snapshot_dir=time_point_args.snapshot_dir,
                 verbose=False,
         ) as quokka_snapshot:
-            field_3d = time_point_args.registered_field.load(quokka_snapshot, amr_level=time_point_args.amr_level)
+            field_3d = time_point_args.registered_field.load(
+                quokka_snapshot, amr_level=time_point_args.amr_level
+            )
         assert isinstance(field_3d, field_models.ScalarField_3D)
         value = time_point_args.statistic.compute_statistic(field_3d)
         sim_time = field_3d.sim_time
-        validate_types.ensure_finite_float(param=sim_time, param_name="sim_time")
+        validate_types.ensure_finite_float(
+            param=sim_time,
+            param_name="sim_time",
+        )
         assert sim_time is not None
         time_point = TimePoint(
             sim_time=float(sim_time),
@@ -201,7 +206,10 @@ class GenerateTimeSeries:
             latex_label=field_3d.latex_label,
         )
         if time_point_args.cache_file_path is not None:
-            time_point_args.cache_file_path.parent.mkdir(parents=True, exist_ok=True)
+            time_point_args.cache_file_path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
             time_point.save_to_file(file_path=time_point_args.cache_file_path)
         return time_point
 
@@ -213,7 +221,7 @@ class GenerateTimeSeries:
         for snapshot_dir in self.snapshot_dirs:
             snapshot_dir = pathlib.Path(snapshot_dir)
             cache_file_path = self._get_cache_file_path(snapshot_dir=snapshot_dir)
-            if not(self.overwrite) and cache_file_path.exists():
+            if not (self.overwrite) and cache_file_path.exists():
                 time_point = TimePoint.load_from_file(file_path=cache_file_path)
                 time_points.append(time_point)
             else:
@@ -245,7 +253,7 @@ class GenerateTimeSeries:
     def _as_arrays(
         sorted_time_points: list[TimePoint],
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        if not(sorted_time_points):
+        if not (sorted_time_points):
             return (
                 numpy.asarray([], dtype=float),
                 numpy.asarray([], dtype=float),

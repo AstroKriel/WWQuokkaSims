@@ -150,7 +150,8 @@ class FieldCompArgs(FieldArgs):
     def __post_init__(
         self,
     ) -> None:
-        if (self.comps is not None) and not set(self.comps).issubset(set(cartesian_axes.VALID_3D_AXIS_LABELS)):
+        if (self.comps
+                is not None) and not set(self.comps).issubset(set(cartesian_axes.VALID_3D_AXIS_LABELS)):
             raise ValueError(f"Provide one or more components (via -c) from: {AXIS_LABELS_TEXT}")
 
     @classmethod
@@ -277,7 +278,8 @@ def base_parser(
                 "--data-dir",
                 type=lambda path: pathlib.Path(path).expanduser().resolve(),
                 default=None,
-                help="Output directory for data written to disk; defaults to the parent directory of the snapshot.",
+                help=
+                "Output directory for data written to disk; defaults to the parent directory of the snapshot.",
             )
         if allow_figures:
             parser.add_argument(

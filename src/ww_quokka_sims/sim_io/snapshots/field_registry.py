@@ -50,7 +50,10 @@ class RegisteredField:
         """Load this field from `quokka_snapshot`, warning if it breaks its own declared properties."""
         field = self.loader_fn(quokka_snapshot, amr_level=amr_level)
         if self.expected_properties.is_strictly_positive:
-            sarray_3d = field_models.extract_3d_sarray(sfield_3d=field, param_name=f"<{self.name}_sfield_3d>")
+            sarray_3d = field_models.extract_3d_sarray(
+                sfield_3d=field,
+                param_name=f"<{self.name}_sfield_3d>",
+            )
             if not numpy.all(sarray_3d >= 0):
                 manage_log.log_warning(
                     text=f"`{self.name}` is declared strictly positive but loaded values include negatives.",
@@ -64,107 +67,170 @@ REGISTERED_FIELD_LOOKUP = {
         RegisteredField(
             name="density",
             loader_fn=load_snapshot.QuokkaSnapshot.load_3d_density_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="velocity",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_vfield,
-            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            expected_properties=ExpectedProperties(
+                pivot_value=0.0,
+                is_strictly_positive=False,
+            ),
         ),
         RegisteredField(
             name="velocity_magnitude",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_magnitude_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="magnetic",
             loader_fn=load_snapshot.QuokkaSnapshot.load_3d_magnetic_vfield,
-            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            expected_properties=ExpectedProperties(
+                pivot_value=0.0,
+                is_strictly_positive=False,
+            ),
         ),
         RegisteredField(
             name="total_energy",
             loader_fn=load_snapshot.QuokkaSnapshot.load_3d_total_energy_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="internal_energy",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_internal_energy_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="kinetic_energy",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_kinetic_energy_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="kinetic_energy_compressive",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_div_kinetic_energy_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="kinetic_energy_solenoidal",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_sol_kinetic_energy_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="kinetic_energy_bulk",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_bulk_kinetic_energy_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="magnetic_energy",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_magnetic_energy_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="energy_ratio",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_energy_ratio_sfield,
-            expected_properties=ExpectedProperties(pivot_value=1.0, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=1.0,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="plasma_beta",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_plasma_beta_sfield,
-            expected_properties=ExpectedProperties(pivot_value=1.0, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=1.0,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="pressure",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_pressure_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="velocity_divergence",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_div_v_sfield,
-            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            expected_properties=ExpectedProperties(
+                pivot_value=0.0,
+                is_strictly_positive=False,
+            ),
         ),
         RegisteredField(
             name="velocity_gradient",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_gradient_r2tfield,
-            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            expected_properties=ExpectedProperties(
+                pivot_value=0.0,
+                is_strictly_positive=False,
+            ),
         ),
         RegisteredField(
             name="vorticity",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_vorticity_vfield,
-            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            expected_properties=ExpectedProperties(
+                pivot_value=0.0,
+                is_strictly_positive=False,
+            ),
         ),
         RegisteredField(
             name="vorticity_magnitude",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_vorticity_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="magnetic_divergence",
             loader_fn=load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_sfield,
-            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            expected_properties=ExpectedProperties(
+                pivot_value=0.0,
+                is_strictly_positive=False,
+            ),
         ),
         RegisteredField(
             name="current_density_magnitude",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_current_density_sfield,
-            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         ),
         RegisteredField(
             name="current_density",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_current_density_vfield,
-            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            expected_properties=ExpectedProperties(
+                pivot_value=0.0,
+                is_strictly_positive=False,
+            ),
         ),
     )
 }

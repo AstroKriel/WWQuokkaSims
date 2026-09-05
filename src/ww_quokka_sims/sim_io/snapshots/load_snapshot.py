@@ -409,11 +409,12 @@ class QuokkaSnapshot(
         uniform_domain_3d = self.load_3d_uniform_domain(amr_level=amr_level)
         out_varray_3d = numpy.full((3, *uniform_domain_3d.resolution), numpy.nan, dtype=numpy.float64)
         for expanded_varray, placement_slices in self._load_expanded_vfield_boxes(
-            field_name=field_name,
-            num_extra_cells=num_extra_cells,
-            amr_level=amr_level,
+                field_name=field_name,
+                num_extra_cells=num_extra_cells,
+                amr_level=amr_level,
         ):
-            out_varray_3d[(slice(None), *placement_slices)] = local_compute_fn(expanded_varray, num_extra_cells)
+            out_varray_3d[(slice(None), *placement_slices)
+                          ] = local_compute_fn(expanded_varray, num_extra_cells)
         if numpy.isnan(out_varray_3d).any():
             raise ValueError(
                 f"some cells were never written by any amr_level=0 box while computing"
@@ -474,7 +475,11 @@ class QuokkaSnapshot(
             param=latex_label,
             param_name="latex_label",
         )
-        sarray_3d = self._load_3d_sarray(field_key, amr_level=amr_level, use_chunked_reader=use_chunked_reader)
+        sarray_3d = self._load_3d_sarray(
+            field_key,
+            amr_level=amr_level,
+            use_chunked_reader=use_chunked_reader,
+        )
         uniform_domain_3d = self.load_3d_uniform_domain(amr_level=amr_level)
         return field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=sarray_3d,

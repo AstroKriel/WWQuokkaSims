@@ -59,7 +59,9 @@ class DiagnosticPipeline:
         apply_log10_plot: bool = False,
     ):
         if statistic_name not in _STATISTIC_LOOKUP:
-            raise ValueError(f"unknown statistic `{statistic_name}`; expected one of {sorted(_STATISTIC_LOOKUP)}.")
+            raise ValueError(
+                f"unknown statistic `{statistic_name}`; expected one of {sorted(_STATISTIC_LOOKUP)}."
+            )
         self.statistic = _STATISTIC_LOOKUP[statistic_name]
         field_registry.validate_fields(
             field_names=field_args.fields,
@@ -130,7 +132,8 @@ def main():
         "--apply-log10-plot",
         action="store_true",
         default=False,
-        help="Apply log10 to the plotted field, abs-valued unless it is strictly positive (does not affect the saved `.json` datasets).",
+        help=
+        "Apply log10 to the plotted field, abs-valued unless it is strictly positive (does not affect the saved `.json` datasets).",
     )
     parser.add_argument(
         "--statistic",

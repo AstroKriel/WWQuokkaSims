@@ -308,10 +308,19 @@ class GenerateSpectra:
         ## rebuilds since it's cheap relative to the per-snapshot compute above
         for spectra_data in field_spectra:
             padded_index = f"{spectra_data.step_index:0{self.index_width}d}"
-            figure_path = self._snapshot_figure_file_path(figures_dir=self.figures_dir, padded_index=padded_index)
+            figure_path = self._snapshot_figure_file_path(
+                figures_dir=self.figures_dir,
+                padded_index=padded_index,
+            )
             if self.overwrite or not figure_path.exists():
-                self._save_snapshot_figure(spectra_data=spectra_data, figure_path=figure_path)
-        self._save_summary_figure(field_spectra=field_spectra, figures_dir=self.figures_dir)
+                self._save_snapshot_figure(
+                    spectra_data=spectra_data,
+                    figure_path=figure_path,
+                )
+        self._save_summary_figure(
+            field_spectra=field_spectra,
+            figures_dir=self.figures_dir,
+        )
 
 
 ##

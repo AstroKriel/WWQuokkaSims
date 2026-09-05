@@ -121,7 +121,10 @@ class FieldExtractor:
         data_dir: pathlib.Path,
     ) -> None:
         field_name = self.field_args.registered_field.name
-        file_name = self._expected_file_name(step_index=step_index, index_width=index_width)
+        file_name = self._expected_file_name(
+            step_index=step_index,
+            index_width=index_width,
+        )
         if isinstance(field, field_models.ScalarField_3D):
             sarray_3d = field_models.extract_3d_sarray(
                 sfield_3d=field,
@@ -169,7 +172,10 @@ class FieldExtractor:
                 snapshot_tag=self.snapshot_tag,
             ),
         )
-        file_path = data_dir / self._expected_file_name(step_index=step_index, index_width=index_width)
+        file_path = data_dir / self._expected_file_name(
+            step_index=step_index,
+            index_width=index_width,
+        )
         if (not self.overwrite) and file_path.exists():
             return
         field = self._load_field(snapshot_dir=snapshot_dir)
