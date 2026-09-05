@@ -32,8 +32,8 @@ from ww_quokka_sims.sim_io.snapshots import load_snapshot
 @dataclass(frozen=True)
 class TimePoint:
     sim_time: float
-    latex_label: str
     value: float
+    latex_label: str
 
     def save_to_file(
         self,
@@ -43,8 +43,8 @@ class TimePoint:
             file_path=file_path,
             input_dict={
                 "sim_time": self.sim_time,
-                "latex_label": self.latex_label,
                 "value": self.value,
+                "latex_label": self.latex_label,
             },
             overwrite=True,
             verbose=False,
@@ -61,13 +61,17 @@ class TimePoint:
         )
         validate_types.ensure_dict_has_keys(
             param=data,
-            required_keys={"sim_time", "latex_label", "value"},
             param_name="<TimePoint JSON>",
+            required_keys={
+                "sim_time",
+                "value",
+                "latex_label",
+            },
         )
         return cls(
             sim_time=float(data["sim_time"]),
-            latex_label=data["latex_label"],
             value=float(data["value"]),
+            latex_label=data["latex_label"],
         )
 
 
@@ -174,7 +178,7 @@ class GenerateTimeSeries:
         return self.data_dir / ".cache" / "time_series" / self.statistic_name / f"{self.field_name}-{snapshot_dir.name}.json"
 
     @staticmethod
-    def _compute_snapshot_point(
+    def _compute_time_point(
         field_args: ResolvedFieldArgs,
     ) -> TimePoint:
         with load_snapshot.QuokkaSnapshot(
@@ -189,16 +193,16 @@ class GenerateTimeSeries:
         sim_time = sfield_3d.sim_time
         if (sim_time is None) or (not numpy.isfinite(sim_time)):
             raise ValueError(f"invalid sim_time for field: {sim_time!r}.")
-        statistic_value = field_args.statistic_fn(sfield_3d)
-        data_point = TimePoint(
+        value = field_args.statistic_fn(sfield_3d)
+        time_point = TimePoint(
             sim_time=float(sim_time),
+            value=float(value),
             latex_label=sfield_3d.latex_label,
-            value=float(statistic_value),
         )
         if field_args.cache_file_path is not None:
             field_args.cache_file_path.parent.mkdir(parents=True, exist_ok=True)
-            data_point.save_to_file(field_args.cache_file_path)
-        return data_point
+            time_point.save_to_file(field_args.cache_file_path)
+        return time_point
 
     def _compute_time_series(
         self,
@@ -226,7 +230,7 @@ class GenerateTimeSeries:
 
         if (self.num_workers != 1) and (len(pending_field_args) > 5):
             new_points: list[TimePoint] = parallel_dispatch.run_in_parallel(
-                worker_fn=GenerateTimeSeries._compute_snapshot_point,
+                worker_fn=GenerateTimeSeries._compute_time_point,
                 grouped_args=pending_field_args,
                 num_workers=self.num_workers,
                 timeout_seconds=120,
@@ -236,10 +240,10 @@ class GenerateTimeSeries:
             data_points.extend(new_points)
         else:
             for field_args in pending_field_args:
-                data_points.append(GenerateTimeSeries._compute_snapshot_point(field_args=field_args))
+                data_points.append(GenerateTimeSeries._compute_time_point(field_args=field_args))
         return TimeSeries(points=data_points)
 
-    def _save_series(
+    def _save(
         self,
         *,
         time_series: TimeSeries,
@@ -259,7 +263,7 @@ class GenerateTimeSeries:
             verbose=False,
         )
 
-    def _plot_series(
+    def _plot(
         self,
         *,
         time_series: TimeSeries,
@@ -306,10 +310,10 @@ class GenerateTimeSeries:
     ) -> None:
         time_series = self._compute_time_series()
         if self.save_data:
-            self._save_series(time_series=time_series)
+            self._save(time_series=time_series)
         if not self.save_figure:
             return
-        self._plot_series(time_series=time_series)
+        self._plot(time_series=time_series)
 
 
 ## } MODULE
