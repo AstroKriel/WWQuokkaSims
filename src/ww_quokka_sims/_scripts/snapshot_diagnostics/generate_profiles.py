@@ -10,8 +10,6 @@ import dataclasses
 import pathlib
 import typing
 
-from collections import abc as collections_abc
-
 ## third-party
 import numpy
 
@@ -89,14 +87,12 @@ class ComputeCompProfiles:
     def __init__(
         self,
         *,
-        field_name: str,
-        field_loader: collections_abc.Callable,
+        registered_field: field_registry.RegisteredField,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
         amr_level: int = 0,
     ):
-        self.field_name = field_name
-        self.field_loader = field_loader
+        self.registered_field = registered_field
         self.comps_to_plot = comps_to_plot
         self.axes_to_slice = axes_to_slice
         self.amr_level = amr_level
@@ -166,7 +162,7 @@ class ComputeCompProfiles:
             CompProfile(
                 step_time=step_time,
                 step_index=step_index,
-                comp_name=self.field_name,
+                comp_name=self.registered_field.name,
                 axis_labels=axis_labels,
                 comp_label=field_models.get_label(field),
                 x_array_by_axis=x_array_by_axis,
@@ -183,7 +179,7 @@ class ComputeCompProfiles:
     ) -> list[CompProfile]:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
-                f"Vector field `{self.field_name}` requires at least one component to plot; none provided.",
+                f"Vector field `{self.registered_field.name}` requires at least one component to plot; none provided.",
             )
         field_models.ensure_3d_vfield(field)
         step_time = field.sim_time
@@ -238,7 +234,7 @@ class ComputeCompProfiles:
                 verbose=False,
         ) as snapshot:
             uniform_domain_3d = snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
-            field = self.field_loader(snapshot, amr_level=self.amr_level)  # ScalarField or VectorField
+            field = self.registered_field.load(snapshot, amr_level=self.amr_level)  # ScalarField or VectorField
         if isinstance(field, field_models.ScalarField_3D):
             return self._compute_scalar_profiles(
                 field=field,
@@ -251,7 +247,7 @@ class ComputeCompProfiles:
                 uniform_domain_3d=uniform_domain_3d,
                 step_index=step_index,
             )
-        raise ValueError(f"{self.field_name} is an unrecognised field type.")
+        raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")
 
 
 ##
@@ -268,10 +264,9 @@ class GenerateCompProfiles:
         snapshot_dirs: list[pathlib.Path],
         snapshot_tag: str,
         index_width: int,
-        field_name: str,
+        registered_field: field_registry.RegisteredField,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
-        field_loader: collections_abc.Callable,
         data_dir: pathlib.Path,
         figures_dir: pathlib.Path,
         save_data: bool,
@@ -284,10 +279,9 @@ class GenerateCompProfiles:
         self.index_width = index_width
         self.data_dir = data_dir
         self.figures_dir = figures_dir
-        self.field_name = field_name
+        self.registered_field = registered_field
         self.comps_to_plot = comps_to_plot
         self.axes_to_slice = axes_to_slice
-        self.field_loader = field_loader
         self.save_data = save_data
         self.save_figure = save_figure
         self.overwrite = overwrite
@@ -300,7 +294,7 @@ class GenerateCompProfiles:
         padded_index: str,
         data_dir: pathlib.Path,
     ) -> pathlib.Path:
-        return data_dir / f"{self.field_name}-axis={axis_label}-index={padded_index}-amr_level={self.amr_level}.json"
+        return data_dir / f"{self.registered_field.name}-axis={axis_label}-index={padded_index}-amr_level={self.amr_level}.json"
 
     def _snapshot_figure_file_path(
         self,
@@ -308,7 +302,7 @@ class GenerateCompProfiles:
         figures_dir: pathlib.Path,
         padded_index: str,
     ) -> pathlib.Path:
-        return figures_dir / f"{self.field_name}-profile-index={padded_index}.png"
+        return figures_dir / f"{self.registered_field.name}-profile-index={padded_index}.png"
 
     def _save_snapshot_data(
         self,
@@ -321,7 +315,7 @@ class GenerateCompProfiles:
             parents=True,
             exist_ok=True,
         )
-        is_scalar = comp_profiles[0].comp_name == self.field_name
+        is_scalar = comp_profiles[0].comp_name == self.registered_field.name
         step_time = comp_profiles[0].step_time
         step_index = comp_profiles[0].step_index
         for axis_index, axis in enumerate(comp_profiles[0].axis_labels):
@@ -330,7 +324,7 @@ class GenerateCompProfiles:
             if is_scalar:
                 comp_profile = comp_profiles[0]
                 profiles.ScalarProfile(
-                    field_name=self.field_name,
+                    field_name=self.registered_field.name,
                     field_label=comp_profile.comp_label,
                     step_time=step_time,
                     step_index=step_index,
@@ -350,7 +344,7 @@ class GenerateCompProfiles:
                     for comp_profile in comp_profiles
                 }
                 profiles.VectorProfile(
-                    field_name=self.field_name,
+                    field_name=self.registered_field.name,
                     step_time=step_time,
                     step_index=step_index,
                     profile_axis=axis_label,
@@ -383,7 +377,7 @@ class GenerateCompProfiles:
                 CompProfile(
                     step_time=step_time,
                     step_index=step_index,
-                    comp_name=self.field_name,
+                    comp_name=self.registered_field.name,
                     axis_labels=list(self.axes_to_slice),
                     comp_label=comp_label,
                     x_array_by_axis=x_array_by_axis,
@@ -556,7 +550,7 @@ class GenerateCompProfiles:
             comp_labels=comp_labels,
             axis_labels=axis_labels,
         )
-        fig_path = figures_dir / f"{self.field_name}-profiles-summary.png"
+        fig_path = figures_dir / f"{self.registered_field.name}-profiles-summary.png"
         manage_figure.save_figure(
             figure=fig,
             figure_path=fig_path,
@@ -600,7 +594,7 @@ class GenerateCompProfiles:
                 ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot
                 manage_log.log_hint(
                     text=(
-                        f"`{self.field_name}` at snapshot {step_index}: "
+                        f"`{self.registered_field.name}` at snapshot {step_index}: "
                         f"building figure from saved data, skipping the raw snapshot."
                     ),
                 )
@@ -620,7 +614,7 @@ class GenerateCompProfiles:
         data_dir: pathlib.Path,
     ) -> dict[str, list[CompProfile]]:
         first_axis_label = cartesian_axes.get_axis_label(self.axes_to_slice[0])
-        pattern = f"{self.field_name}-axis={first_axis_label}-index=*-amr_level={self.amr_level}.json"
+        pattern = f"{self.registered_field.name}-axis={first_axis_label}-index=*-amr_level={self.amr_level}.json"
         comp_profiles_lookup: dict[str, list[CompProfile]] = {}
         for first_axis_path in sorted(data_dir.glob(pattern)):
             raw = json_io.read_json_file_into_dict(file_path=first_axis_path, verbose=False)
@@ -647,8 +641,7 @@ class GenerateCompProfiles:
     ) -> None:
         if self.save_data or self.save_figure:
             compute_comp_profiles = ComputeCompProfiles(
-                field_name=self.field_name,
-                field_loader=self.field_loader,
+                registered_field=self.registered_field,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
                 amr_level=self.amr_level,
@@ -668,7 +661,7 @@ class GenerateCompProfiles:
         comp_profiles_lookup = self._load_all_saved_comp_profiles(data_dir=self.data_dir)
         if not comp_profiles_lookup:
             manage_log.log_hint(
-                text=f"Skipping summary figure for `{self.field_name}`: no saved data found in {self.data_dir}.",
+                text=f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
             )
             return
         self._save_summary_figure(comp_profiles_lookup=comp_profiles_lookup, figures_dir=self.figures_dir)
@@ -714,10 +707,9 @@ class DiagnosticPipeline:
                 index_width=resolved_inputs.index_width,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
-                field_name=field_name,
+                registered_field=registered_field,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
-                field_loader=registered_field.loader_fn,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,
                 overwrite=self.diagnostic_output_args.overwrite,
