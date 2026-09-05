@@ -12,7 +12,7 @@ import unittest
 from jormi.ww_fields.fields_3d import field_models
 
 ## local
-from ww_quokka_sims._scripts.snapshot_tools import field_registry
+from ww_quokka_sims.sim_io.snapshots import field_registry
 
 ##
 ## === TEST SUITES

@@ -18,11 +18,9 @@ from jormi.ww_plots import style_figure
 from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims._scripts.snapshot_tools import (
-    cli,
-    field_registry,
-)
+from ww_quokka_sims._scripts.snapshot_tools import cli
 from ww_quokka_sims.sim_io.field_diagnostics import time_series
+from ww_quokka_sims.sim_io.snapshots import field_registry
 
 ##
 ## === STATISTICS

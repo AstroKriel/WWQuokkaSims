@@ -23,11 +23,9 @@ from jormi.ww_io import manage_log
 from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims._scripts.snapshot_tools import (
-    cli,
-    field_registry,
-)
+from ww_quokka_sims._scripts.snapshot_tools import cli
 from ww_quokka_sims.sim_io.snapshots import (
+    field_registry,
     find_snapshots,
     load_snapshot,
 )

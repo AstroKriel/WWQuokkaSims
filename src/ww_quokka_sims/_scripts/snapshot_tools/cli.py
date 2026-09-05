@@ -15,8 +15,7 @@ from jormi.ww_fields import cartesian_axes
 from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims._scripts.snapshot_tools import field_registry
-from ww_quokka_sims.sim_io.snapshots import find_snapshots
+from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots
 
 ##
 ## === CONSTANTS

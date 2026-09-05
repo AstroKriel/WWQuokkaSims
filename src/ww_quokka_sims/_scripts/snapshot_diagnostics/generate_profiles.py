@@ -33,13 +33,14 @@ from jormi.ww_validation import validate_types
 ## local
 from ww_quokka_sims._scripts.snapshot_tools import (
     cli,
-    field_registry,
+    field_palettes,
 )
+from ww_quokka_sims.sim_io.field_diagnostics import profiles
 from ww_quokka_sims.sim_io.snapshots import (
+    field_registry,
     find_snapshots,
     load_snapshot,
 )
-from ww_quokka_sims.sim_io.field_diagnostics import profiles
 
 ##
 ## === DATA CLASSES
@@ -465,7 +466,7 @@ class GenerateCompProfiles:
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialConfig(
-                palette_name=field_registry.SEQUENTIAL_PALETTE_NAME,
+                palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
             value_range=(

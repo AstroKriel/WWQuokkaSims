@@ -39,10 +39,11 @@ from jormi.ww_validation import validate_types
 ## local
 from ww_quokka_sims._scripts.snapshot_tools import (
     cli,
-    field_registry,
+    field_palettes,
 )
 from ww_quokka_sims.sim_io.field_diagnostics import slices
 from ww_quokka_sims.sim_io.snapshots import (
+    field_registry,
     find_snapshots,
     load_snapshot,
 )
@@ -368,7 +369,7 @@ class GenerateFieldSlices:
                     field_slice=sliced_by_axis[axis_to_slice],
                     plane_label=get_slice_plane_label(axis_to_slice),
                     comp_label=comp_label,
-                    palette_config=field_registry.resolve_palette_config(
+                    palette_config=field_palettes.resolve_palette_config(
                         expected_properties=self.field_args.expected_properties,
                     ),
                     hide_annotations=self.hide_annotations,

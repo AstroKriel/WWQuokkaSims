@@ -10,19 +10,15 @@ import inspect
 
 from collections import abc as collections_abc
 
+## third-party
+import numpy
+
 ## personal
 from jormi.ww_fields.fields_3d import field_models
-from jormi.ww_plots import add_color
+from jormi.ww_io import manage_log
 
 ## local
 from ww_quokka_sims.sim_io.snapshots import load_snapshot
-
-##
-## === DEFAULT PALETTES
-##
-
-SEQUENTIAL_PALETTE_NAME = "cmr.lavender"
-DIVERGING_PALETTE_NAME = "cmr.iceburn"
 
 ##
 ## === FIELD REGISTRY
@@ -44,6 +40,22 @@ class RegisteredField:
     name: str
     loader_fn: collections_abc.Callable
     expected_properties: ExpectedProperties
+
+    def load(
+        self,
+        snapshot: load_snapshot.QuokkaSnapshot,
+        *,
+        amr_level: int = 0,
+    ) -> field_models.AnyField_3D:
+        """Load this field from `snapshot`, warning if it breaks its own declared properties."""
+        field = self.loader_fn(snapshot, amr_level=amr_level)
+        if self.expected_properties.is_strictly_positive:
+            sarray_3d = field_models.extract_3d_sarray(sfield_3d=field, param_name=f"<{self.name}_sfield_3d>")
+            if not numpy.all(sarray_3d >= 0):
+                manage_log.log_warning(
+                    text=f"`{self.name}` is declared strictly positive but loaded values include negatives.",
+                )
+        return field
 
 
 REGISTERED_FIELD_LOOKUP = {
@@ -158,23 +170,6 @@ REGISTERED_FIELD_LOOKUP = {
 }
 
 ##
-## === PALETTE
-##
-
-
-def resolve_palette_config(
-    *,
-    expected_properties: ExpectedProperties,
-) -> add_color.PaletteConfig:
-    """Choose a sequential or diverging palette, centred at `pivot_value` when the field has one."""
-    if expected_properties.pivot_value is None:
-        return add_color.SequentialConfig(palette_name=SEQUENTIAL_PALETTE_NAME)
-    return add_color.DivergingConfig(
-        mid_value=expected_properties.pivot_value,
-        palette_name=DIVERGING_PALETTE_NAME,
-    )
-
-##
 ## === VALIDATION
 ##
 
@@ -202,7 +197,7 @@ def validate_fields(
         REGISTERED_FIELD_LOOKUP.keys(),
     )
     if not field_names or not set(field_names).issubset(valid_field_names):
-        raise ValueError(f"Provide fields via --fields from: {sorted(valid_field_names)}.")
+        raise ValueError(f"`field_names` must be a non-empty subset of: {sorted(valid_field_names)}.")
     if allowed_types is None:
         return
     for field_name in field_names:
