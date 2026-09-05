@@ -178,12 +178,12 @@ class GenerateTimeSeries:
                 verbose=False,
         ) as snapshot:
             sfield_3d = time_point_args.field_loader(snapshot, amr_level=time_point_args.amr_level)
-        if not isinstance(sfield_3d, field_models.ScalarField_3D):
+        if not(isinstance(sfield_3d, field_models.ScalarField_3D)):
             raise TypeError(
                 f"expected ScalarField_3D from `{time_point_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
             )
         sim_time = sfield_3d.sim_time
-        if (sim_time is None) or (not numpy.isfinite(sim_time)):
+        if (sim_time is None) or (not(numpy.isfinite(sim_time))):
             raise ValueError(f"invalid sim_time for field: {sim_time!r}.")
         value = time_point_args.statistic_fn(sfield_3d)
         time_point = TimePoint(
@@ -238,7 +238,7 @@ class GenerateTimeSeries:
     def _as_arrays(
         sorted_time_points: list[TimePoint],
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        if not sorted_time_points:
+        if not(sorted_time_points):
             return (
                 numpy.asarray([], dtype=float),
                 numpy.asarray([], dtype=float),
