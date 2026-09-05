@@ -81,8 +81,7 @@ class DiagnosticPipeline:
             registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
             generate_time_series = time_series.GenerateTimeSeries(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
-                field_name=field_name,
-                field_loader=registered_field.loader_fn,
+                registered_field=registered_field,
                 statistic=self.statistic,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
@@ -131,7 +130,7 @@ def main():
         "--apply-log10-plot",
         action="store_true",
         default=False,
-        help="Apply log10(|field|) to the plotted field (does not affect the saved `.json` datasets).",
+        help="Apply log10 to the plotted field, abs-valued unless it is strictly positive (does not affect the saved `.json` datasets).",
     )
     parser.add_argument(
         "--statistic",

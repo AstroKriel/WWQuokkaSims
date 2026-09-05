@@ -23,7 +23,7 @@ from jormi.ww_plots import annotate_panel, manage_figure
 from jormi.ww_validation import validate_arrays, validate_types
 
 ## local
-from ww_quokka_sims.sim_io.snapshots import load_snapshot
+from ww_quokka_sims.sim_io.snapshots import field_registry, load_snapshot
 
 ##
 ## === TIME POINT
@@ -137,8 +137,7 @@ class Statistic:
 @dataclasses.dataclass(frozen=True)
 class TimePointArgs:
     snapshot_dir: pathlib.Path
-    field_name: str
-    field_loader: collections_abc.Callable
+    registered_field: field_registry.RegisteredField
     statistic: Statistic
     amr_level: int = 0
     cache_file_path: pathlib.Path | None = None
@@ -151,8 +150,7 @@ class GenerateTimeSeries:
         self,
         *,
         snapshot_dirs: list[pathlib.Path],
-        field_name: str,
-        field_loader: collections_abc.Callable,
+        registered_field: field_registry.RegisteredField,
         statistic: Statistic,
         data_dir: pathlib.Path,
         figures_dir: pathlib.Path,
@@ -163,13 +161,8 @@ class GenerateTimeSeries:
         amr_level: int = 0,
         apply_log10_plot: bool = False,
     ):
-        validate_types.ensure_nonempty_string(
-            param=field_name,
-            param_name="field_name",
-        )
         self.snapshot_dirs = sorted(snapshot_dirs)
-        self.field_name = field_name
-        self.field_loader = field_loader
+        self.registered_field = registered_field
         self.statistic = statistic
         self.data_dir = data_dir
         self.figures_dir = figures_dir
@@ -186,7 +179,7 @@ class GenerateTimeSeries:
         snapshot_dir: pathlib.Path,
     ) -> pathlib.Path:
         """Per-snapshot resume-cache path, hidden under `.cache/` so it is never mistaken for real output."""
-        return self.data_dir / ".cache" / "time_series" / self.statistic.name / f"{self.field_name}-{snapshot_dir.name}.json"
+        return self.data_dir / ".cache" / "time_series" / self.statistic.name / f"{self.registered_field.name}-{snapshot_dir.name}.json"
 
     @staticmethod
     def _compute_time_point(
@@ -196,7 +189,8 @@ class GenerateTimeSeries:
                 snapshot_dir=time_point_args.snapshot_dir,
                 verbose=False,
         ) as snapshot:
-            field_3d = time_point_args.field_loader(snapshot, amr_level=time_point_args.amr_level)
+            field_3d = time_point_args.registered_field.load(snapshot, amr_level=time_point_args.amr_level)
+        assert isinstance(field_3d, field_models.ScalarField_3D)
         value = time_point_args.statistic.compute_statistic(field_3d)
         sim_time = field_3d.sim_time
         validate_types.ensure_finite_float(param=sim_time, param_name="sim_time")
@@ -225,8 +219,7 @@ class GenerateTimeSeries:
             else:
                 time_point_args = TimePointArgs(
                     snapshot_dir=snapshot_dir,
-                    field_name=self.field_name,
-                    field_loader=self.field_loader,
+                    registered_field=self.registered_field,
                     statistic=self.statistic,
                     amr_level=self.amr_level,
                     cache_file_path=cache_file_path,
@@ -275,7 +268,7 @@ class GenerateTimeSeries:
         )
         time_array, values_array = self._as_arrays(time_series.get_sorted_time_points())
         json_io.save_dict_to_json_file(
-            file_path=self.data_dir / f"{self.field_name}-{self.statistic.name}-time_series.json",
+            file_path=self.data_dir / f"{self.registered_field.name}-{self.statistic.name}-time_series.json",
             input_dict={
                 "sim_times": time_array,
                 "values": values_array,
@@ -304,11 +297,14 @@ class GenerateTimeSeries:
             return
         plot_values = values_array
         ylabel = f"${time_series.latex_label}$"
-        fig_name = f"{self.field_name}-{self.statistic.name}-time_series.png"
+        fig_name = f"{self.registered_field.name}-{self.statistic.name}-time_series.png"
         if self.apply_log10_plot:
-            plot_values = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
+            if self.registered_field.expected_properties.is_strictly_positive:
+                plot_values = compute_array_stats.compute_safe_log10(values_array)
+            else:
+                plot_values = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
             ylabel = rf"$\log_{{10}}\big({time_series.latex_label}\big)$"
-            fig_name = f"log10_{self.field_name}-{self.statistic.name}-time_series.png"
+            fig_name = f"log10_{self.registered_field.name}-{self.statistic.name}-time_series.png"
         ax.plot(
             time_array,
             plot_values,
