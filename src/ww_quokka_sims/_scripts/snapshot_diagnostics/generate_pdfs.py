@@ -9,8 +9,6 @@ import argparse
 import pathlib
 import typing
 
-from collections import abc as collections_abc
-
 ## third-party
 import numpy
 
@@ -50,15 +48,13 @@ class ComputePDFs:
     def __init__(
         self,
         *,
-        field_name: str,
-        field_loader: collections_abc.Callable,
+        registered_field: field_registry.RegisteredField,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         num_bins: int,
         use_log10_bins: bool = False,
         amr_level: int = 0,
     ):
-        self.field_name = field_name
-        self.field_loader = field_loader
+        self.registered_field = registered_field
         self.comps_to_plot = comps_to_plot
         self.num_bins = num_bins
         self.use_log10_bins = use_log10_bins
@@ -105,7 +101,7 @@ class ComputePDFs:
     ) -> pdfs.PDFData:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
-                f"Vector field `{self.field_name}` requires at least one component to plot; none provided.",
+                f"Vector field `{self.registered_field.name}` requires at least one component to plot; none provided.",
             )
         field_models.ensure_3d_vfield(field)
         step_time = field.sim_time
@@ -170,7 +166,7 @@ class ComputePDFs:
                 snapshot_dir=snapshot_dir,
                 verbose=False,
         ) as snapshot:
-            field = self.field_loader(snapshot, amr_level=self.amr_level)
+            field = self.registered_field.load(snapshot, amr_level=self.amr_level)
         if isinstance(field, field_models.ScalarField_3D):
             return self._compute_sfield_pdf(
                 field=field,
@@ -181,7 +177,7 @@ class ComputePDFs:
                 field=field,
                 step_index=step_index,
             )
-        raise ValueError(f"{self.field_name} is an unrecognised field type.")
+        raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")
 
 
 ##
@@ -200,9 +196,8 @@ class GeneratePDFs:
         index_width: int,
         data_dir: pathlib.Path,
         figures_dir: pathlib.Path,
-        field_name: str,
+        registered_field: field_registry.RegisteredField,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
-        field_loader: collections_abc.Callable,
         num_bins: int,
         save_data: bool,
         save_figure: bool,
@@ -215,9 +210,8 @@ class GeneratePDFs:
         self.index_width = index_width
         self.data_dir = data_dir
         self.figures_dir = figures_dir
-        self.field_name = field_name
+        self.registered_field = registered_field
         self.comps_to_plot = comps_to_plot
-        self.field_loader = field_loader
         self.num_bins = int(num_bins)
         self.save_data = save_data
         self.save_figure = save_figure
@@ -234,7 +228,7 @@ class GeneratePDFs:
         be renamed); the saved `use_log10_bins` flag and `log10_bin_centers` key inside the file
         itself are what downstream code should actually check.
         """
-        return f"log10_{self.field_name}" if self.use_log10_bins else self.field_name
+        return f"log10_{self.registered_field.name}" if self.use_log10_bins else self.registered_field.name
 
     def _data_file_path(
         self,
@@ -394,7 +388,7 @@ class GeneratePDFs:
             ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot
             manage_log.log_hint(
                 text=(
-                    f"`{self.field_name}` at snapshot {step_index}: "
+                    f"`{self.registered_field.name}` at snapshot {step_index}: "
                     f"building figure from saved data, skipping the raw snapshot."
                 ),
             )
@@ -460,8 +454,7 @@ class GeneratePDFs:
     ) -> None:
         if self.save_data or self.save_figure:
             compute_pdfs = ComputePDFs(
-                field_name=self.field_name,
-                field_loader=self.field_loader,
+                registered_field=self.registered_field,
                 comps_to_plot=self.comps_to_plot,
                 num_bins=self.num_bins,
                 use_log10_bins=self.use_log10_bins,
@@ -482,7 +475,7 @@ class GeneratePDFs:
         field_pdfs = self._load_all_saved_pdfs(data_dir=self.data_dir)
         if not field_pdfs:
             manage_log.log_hint(
-                text=f"Skipping summary figure for `{self.field_name}`: no saved data found in {self.data_dir}.",
+                text=f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
             )
             return
         self._save_summary_figure(field_pdfs=field_pdfs, figures_dir=self.figures_dir)
@@ -531,9 +524,8 @@ class DiagnosticPipeline:
                 index_width=resolved_inputs.index_width,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
-                field_name=field_name,
+                registered_field=registered_field,
                 comps_to_plot=self.comps_to_plot,
-                field_loader=registered_field.loader_fn,
                 num_bins=self.num_bins,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,
