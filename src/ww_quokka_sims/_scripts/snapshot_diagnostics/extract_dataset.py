@@ -205,7 +205,7 @@ def extract_fields_in_serial(
             snapshot_tag=snapshot_tag,
             field_args=ResolvedFieldArgs(
                 field_name=field_name,
-                field_loader=registered_field.loader,
+                field_loader=registered_field.loader_fn,
                 amr_level=amr_level,
             ),
             comps_to_extract=comps_to_extract,
@@ -262,7 +262,7 @@ def extract_fields_in_parallel(
                     snapshot_dir=str(snapshot_dir),
                     snapshot_tag=snapshot_tag,
                     field_name=field_name,
-                    field_loader=registered_field.loader,
+                    field_loader=registered_field.loader_fn,
                     comps_to_extract=comps_to_extract,
                     data_dir=str(data_dir),
                     index_width=index_width,

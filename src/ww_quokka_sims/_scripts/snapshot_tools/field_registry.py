@@ -31,7 +31,7 @@ DIVERGING_CMAP = "cmr.iceburn"
 @dataclasses.dataclass(frozen=True)
 class RegisteredField:
     name: str
-    loader: collections_abc.Callable
+    loader_fn: collections_abc.Callable
     cmap: str
 
 
@@ -40,107 +40,107 @@ REGISTERED_FIELD_LOOKUP = {
     for registered_field in (
         RegisteredField(
             name="density",
-            loader=load_snapshot.QuokkaSnapshot.load_3d_density_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.load_3d_density_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="velocity",
-            loader=load_snapshot.QuokkaSnapshot.compute_velocity_vfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_vfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="velocity_magnitude",
-            loader=load_snapshot.QuokkaSnapshot.compute_velocity_magnitude_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_magnitude_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="magnetic",
-            loader=load_snapshot.QuokkaSnapshot.load_3d_magnetic_vfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.load_3d_magnetic_vfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="total_energy",
-            loader=load_snapshot.QuokkaSnapshot.load_3d_total_energy_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.load_3d_total_energy_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="internal_energy",
-            loader=load_snapshot.QuokkaSnapshot.compute_internal_energy_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_internal_energy_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="kinetic_energy",
-            loader=load_snapshot.QuokkaSnapshot.compute_kinetic_energy_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_kinetic_energy_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="kinetic_energy_compressive",
-            loader=load_snapshot.QuokkaSnapshot.compute_div_kinetic_energy_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_div_kinetic_energy_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="kinetic_energy_solenoidal",
-            loader=load_snapshot.QuokkaSnapshot.compute_sol_kinetic_energy_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_sol_kinetic_energy_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="kinetic_energy_bulk",
-            loader=load_snapshot.QuokkaSnapshot.compute_bulk_kinetic_energy_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_bulk_kinetic_energy_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="magnetic_energy",
-            loader=load_snapshot.QuokkaSnapshot.compute_magnetic_energy_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_magnetic_energy_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="energy_ratio",
-            loader=load_snapshot.QuokkaSnapshot.compute_energy_ratio_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_energy_ratio_sfield,
             cmap=DIVERGING_CMAP,
         ),
         RegisteredField(
             name="plasma_beta",
-            loader=load_snapshot.QuokkaSnapshot.compute_plasma_beta_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_plasma_beta_sfield,
             cmap=DIVERGING_CMAP,
         ),
         RegisteredField(
             name="pressure",
-            loader=load_snapshot.QuokkaSnapshot.compute_pressure_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_pressure_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="velocity_divergence",
-            loader=load_snapshot.QuokkaSnapshot.compute_div_v_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_div_v_sfield,
             cmap=DIVERGING_CMAP,
         ),
         RegisteredField(
             name="velocity_gradient",
-            loader=load_snapshot.QuokkaSnapshot.compute_velocity_gradient_r2tfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_gradient_r2tfield,
             cmap=DIVERGING_CMAP,
         ),
         RegisteredField(
             name="vorticity",
-            loader=load_snapshot.QuokkaSnapshot.compute_vorticity_vfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_vorticity_vfield,
             cmap=DIVERGING_CMAP,
         ),
         RegisteredField(
             name="vorticity_magnitude",
-            loader=load_snapshot.QuokkaSnapshot.compute_vorticity_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_vorticity_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="magnetic_divergence",
-            loader=load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_sfield,
             cmap=DIVERGING_CMAP,
         ),
         RegisteredField(
             name="current_density_magnitude",
-            loader=load_snapshot.QuokkaSnapshot.compute_current_density_sfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_current_density_sfield,
             cmap=SEQUENTIAL_CMAP,
         ),
         RegisteredField(
             name="current_density",
-            loader=load_snapshot.QuokkaSnapshot.compute_current_density_vfield,
+            loader_fn=load_snapshot.QuokkaSnapshot.compute_current_density_vfield,
             cmap=DIVERGING_CMAP,
         ),
     )
@@ -156,8 +156,8 @@ def get_field_type(
 ) -> type[field_models.AnyField_3D]:
     """Return the concrete field type `field_name` resolves to, read off its loader's return-type
     annotation. Doesn't load any data or call the loader."""
-    loader = REGISTERED_FIELD_LOOKUP[field_name].loader
-    return_type = inspect.signature(loader).return_annotation
+    loader_fn = REGISTERED_FIELD_LOOKUP[field_name].loader_fn
+    return_type = inspect.signature(loader_fn).return_annotation
     if not isinstance(return_type, type):
         raise TypeError(f"loader for `{field_name}` has no return-type annotation.")
     return return_type

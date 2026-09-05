@@ -718,7 +718,7 @@ class DiagnosticPipeline:
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
-                field_loader=registered_field.loader,
+                field_loader=registered_field.loader_fn,
                 cmap_name=registered_field.cmap,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,

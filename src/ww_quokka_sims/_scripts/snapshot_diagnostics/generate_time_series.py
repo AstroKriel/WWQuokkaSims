@@ -86,7 +86,7 @@ class DiagnosticPipeline:
             generate_time_series = time_series.GenerateTimeSeries(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 field_name=field_name,
-                field_loader=registered_field.loader,
+                field_loader=registered_field.loader_fn,
                 statistic=self.statistic,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,

@@ -363,7 +363,7 @@ class DiagnosticPipeline:
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
-                field_loader=registered_field.loader,
+                field_loader=registered_field.loader_fn,
                 cmap_name=registered_field.cmap,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,

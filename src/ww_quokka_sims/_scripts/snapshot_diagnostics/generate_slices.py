@@ -645,7 +645,7 @@ def generate_fields_in_serial(
         registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
         field_args = ResolvedFieldArgs(
             field_name=field_name,
-            field_loader=registered_field.loader,
+            field_loader=registered_field.loader_fn,
             cmap_name=registered_field.cmap,
             amr_level=amr_level,
         )
@@ -728,7 +728,7 @@ def generate_fields_in_parallel(
                     snapshot_dir=str(snapshot_dir),
                     snapshot_tag=snapshot_tag,
                     field_name=field_name,
-                    field_loader=registered_field.loader,
+                    field_loader=registered_field.loader_fn,
                     comps_to_plot=comps_to_plot,
                     axes_to_slice=axes_to_slice,
                     cmap_name=registered_field.cmap,
