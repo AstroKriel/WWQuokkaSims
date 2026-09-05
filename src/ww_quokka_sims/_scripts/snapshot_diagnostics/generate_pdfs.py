@@ -201,7 +201,6 @@ class GeneratePDFs:
         figures_dir: pathlib.Path,
         field_name: str,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
-        cmap_name: str,
         field_loader: collections_abc.Callable,
         num_bins: int,
         save_data: bool,
@@ -217,7 +216,6 @@ class GeneratePDFs:
         self.figures_dir = figures_dir
         self.field_name = field_name
         self.comps_to_plot = comps_to_plot
-        self.cmap_name = cmap_name
         self.field_loader = field_loader
         self.num_bins = int(num_bins)
         self.save_data = save_data
@@ -291,11 +289,10 @@ class GeneratePDFs:
         *,
         axs_grid: manage_figure.PanelGrid,
         field_pdfs: list[pdfs.PDFData],
-        cmap_name: str,
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialConfig(
-                palette_name=cmap_name,
+                palette_name=field_registry.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
             value_range=(
@@ -444,7 +441,6 @@ class GeneratePDFs:
             self._plot_series(
                 axs_grid=axs_grid,
                 field_pdfs=field_pdfs,
-                cmap_name=self.cmap_name,
             )
         self._style_axs(
             axs_grid=axs_grid,
@@ -536,7 +532,6 @@ class DiagnosticPipeline:
                 figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
                 comps_to_plot=self.comps_to_plot,
-                cmap_name=registered_field.cmap,
                 field_loader=registered_field.loader_fn,
                 num_bins=self.num_bins,
                 save_data=self.diagnostic_output_args.save_data,

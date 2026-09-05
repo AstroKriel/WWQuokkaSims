@@ -154,7 +154,6 @@ class GenerateSpectra:
         figures_dir: pathlib.Path,
         field_name: str,
         field_loader: collections_abc.Callable,
-        cmap_name: str,
         save_data: bool,
         save_figure: bool,
         overwrite: bool = False,
@@ -167,7 +166,6 @@ class GenerateSpectra:
         self.figures_dir = figures_dir
         self.field_name = field_name
         self.field_loader = field_loader
-        self.cmap_name = cmap_name
         self.save_data = save_data
         self.save_figure = save_figure
         self.overwrite = overwrite
@@ -201,11 +199,10 @@ class GenerateSpectra:
         *,
         ax: manage_figure.Panel,
         field_spectra: list[spectra.SpectraData],
-        cmap_name: str,
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialConfig(
-                palette_name=cmap_name,
+                palette_name=field_registry.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
             value_range=(
@@ -281,7 +278,6 @@ class GenerateSpectra:
             self._plot_series(
                 ax=ax,
                 field_spectra=field_spectra,
-                cmap_name=self.cmap_name,
             )
         self._style_ax(
             ax=ax,
@@ -364,7 +360,6 @@ class DiagnosticPipeline:
                 figures_dir=resolved_inputs.figures_dir,
                 field_name=field_name,
                 field_loader=registered_field.loader_fn,
-                cmap_name=registered_field.cmap,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,
                 overwrite=self.diagnostic_output_args.overwrite,

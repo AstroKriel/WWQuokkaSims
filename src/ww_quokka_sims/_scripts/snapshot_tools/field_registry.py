@@ -12,16 +12,17 @@ from collections import abc as collections_abc
 
 ## personal
 from jormi.ww_fields.fields_3d import field_models
+from jormi.ww_plots import add_color
 
 ## local
 from ww_quokka_sims.sim_io.snapshots import load_snapshot
 
 ##
-## === DEFAULT COLORMAPS
+## === DEFAULT PALETTES
 ##
 
-SEQUENTIAL_CMAP = "cmr.lavender"
-DIVERGING_CMAP = "cmr.iceburn"
+SEQUENTIAL_PALETTE_NAME = "cmr.lavender"
+DIVERGING_PALETTE_NAME = "cmr.iceburn"
 
 ##
 ## === FIELD REGISTRY
@@ -29,10 +30,20 @@ DIVERGING_CMAP = "cmr.iceburn"
 
 
 @dataclasses.dataclass(frozen=True)
+class ExpectedProperties:
+    """Declared facts about a field's values, used to derive presentation choices instead of
+    guessing them (e.g., a cmap centred at `pivot_value`, or whether `log10` is safe to apply
+    directly). Leaves room for more properties as new needs come up."""
+
+    pivot_value: float | None
+    is_strictly_positive: bool
+
+
+@dataclasses.dataclass(frozen=True)
 class RegisteredField:
     name: str
     loader_fn: collections_abc.Callable
-    cmap: str
+    expected_properties: ExpectedProperties
 
 
 REGISTERED_FIELD_LOOKUP = {
@@ -41,110 +52,127 @@ REGISTERED_FIELD_LOOKUP = {
         RegisteredField(
             name="density",
             loader_fn=load_snapshot.QuokkaSnapshot.load_3d_density_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="velocity",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_vfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
         ),
         RegisteredField(
             name="velocity_magnitude",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_magnitude_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="magnetic",
             loader_fn=load_snapshot.QuokkaSnapshot.load_3d_magnetic_vfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
         ),
         RegisteredField(
             name="total_energy",
             loader_fn=load_snapshot.QuokkaSnapshot.load_3d_total_energy_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="internal_energy",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_internal_energy_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="kinetic_energy",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_kinetic_energy_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="kinetic_energy_compressive",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_div_kinetic_energy_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="kinetic_energy_solenoidal",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_sol_kinetic_energy_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="kinetic_energy_bulk",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_bulk_kinetic_energy_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="magnetic_energy",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_magnetic_energy_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="energy_ratio",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_energy_ratio_sfield,
-            cmap=DIVERGING_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=1.0, is_strictly_positive=True),
         ),
         RegisteredField(
             name="plasma_beta",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_plasma_beta_sfield,
-            cmap=DIVERGING_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=1.0, is_strictly_positive=True),
         ),
         RegisteredField(
             name="pressure",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_pressure_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="velocity_divergence",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_div_v_sfield,
-            cmap=DIVERGING_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
         ),
         RegisteredField(
             name="velocity_gradient",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_gradient_r2tfield,
-            cmap=DIVERGING_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
         ),
         RegisteredField(
             name="vorticity",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_vorticity_vfield,
-            cmap=DIVERGING_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
         ),
         RegisteredField(
             name="vorticity_magnitude",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_vorticity_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="magnetic_divergence",
             loader_fn=load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_sfield,
-            cmap=DIVERGING_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
         ),
         RegisteredField(
             name="current_density_magnitude",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_current_density_sfield,
-            cmap=SEQUENTIAL_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=None, is_strictly_positive=True),
         ),
         RegisteredField(
             name="current_density",
             loader_fn=load_snapshot.QuokkaSnapshot.compute_current_density_vfield,
-            cmap=DIVERGING_CMAP,
+            expected_properties=ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
         ),
     )
 }
+
+##
+## === PALETTE
+##
+
+
+def resolve_palette_config(
+    *,
+    expected_properties: ExpectedProperties,
+) -> add_color.PaletteConfig:
+    """Choose a sequential or diverging palette, centred at `pivot_value` when the field has one."""
+    if expected_properties.pivot_value is None:
+        return add_color.SequentialConfig(palette_name=SEQUENTIAL_PALETTE_NAME)
+    return add_color.DivergingConfig(
+        mid_value=expected_properties.pivot_value,
+        palette_name=DIVERGING_PALETTE_NAME,
+    )
 
 ##
 ## === VALIDATION

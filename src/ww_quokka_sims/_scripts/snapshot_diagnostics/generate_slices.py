@@ -56,7 +56,7 @@ from ww_quokka_sims.sim_io.snapshots import (
 class ResolvedFieldArgs:
     field_name: str
     field_loader: collections_abc.Callable
-    cmap_name: str
+    expected_properties: field_registry.ExpectedProperties
     amr_level: int = 0
 
 
@@ -69,7 +69,7 @@ class WorkerArgs(typing.NamedTuple):
     field_loader: collections_abc.Callable
     comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...]
     axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...]
-    cmap_name: str
+    expected_properties: field_registry.ExpectedProperties
     data_dir: str
     figures_dir: str
     index_width: int
@@ -224,7 +224,7 @@ class GenerateFieldSlices:
         field_slice: slices.SlicedField,
         plane_label: str,
         comp_label: str,
-        cmap_name: str,
+        palette_config: add_color.PaletteConfig,
         hide_annotations: bool = False,
     ) -> None:
         plot_data.plot_2d_array(
@@ -234,7 +234,7 @@ class GenerateFieldSlices:
             data_aspect_ratio="equal",
             axis_ranges=field_slice.axis_bounds,
             colorbar_range=(field_slice.min_value, field_slice.max_value),
-            palette_config=add_color.SequentialConfig(palette_name=cmap_name),
+            palette_config=palette_config,
             add_colorbar=True,
             colorbar_label=comp_label,
             colorbar_side="right",
@@ -368,7 +368,9 @@ class GenerateFieldSlices:
                     field_slice=sliced_by_axis[axis_to_slice],
                     plane_label=get_slice_plane_label(axis_to_slice),
                     comp_label=comp_label,
-                    cmap_name=self.field_args.cmap_name,
+                    palette_config=field_registry.resolve_palette_config(
+                        expected_properties=self.field_args.expected_properties,
+                    ),
                     hide_annotations=self.hide_annotations,
                 )
 
@@ -646,7 +648,7 @@ def generate_fields_in_serial(
         field_args = ResolvedFieldArgs(
             field_name=field_name,
             field_loader=registered_field.loader_fn,
-            cmap_name=registered_field.cmap,
+            expected_properties=registered_field.expected_properties,
             amr_level=amr_level,
         )
         generate_field_slices = GenerateFieldSlices(
@@ -678,7 +680,7 @@ def _generate_snapshot_worker(
     field_args = ResolvedFieldArgs(
         field_name=worker_args.field_name,
         field_loader=worker_args.field_loader,
-        cmap_name=worker_args.cmap_name,
+        expected_properties=worker_args.expected_properties,
         amr_level=worker_args.amr_level,
     )
     generate_field_slices = GenerateFieldSlices(
@@ -731,7 +733,7 @@ def generate_fields_in_parallel(
                     field_loader=registered_field.loader_fn,
                     comps_to_plot=comps_to_plot,
                     axes_to_slice=axes_to_slice,
-                    cmap_name=registered_field.cmap,
+                    expected_properties=registered_field.expected_properties,
                     data_dir=str(data_dir),
                     figures_dir=str(figures_dir),
                     index_width=index_width,

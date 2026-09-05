@@ -271,7 +271,6 @@ class GenerateCompProfiles:
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
         field_loader: collections_abc.Callable,
-        cmap_name: str,
         data_dir: pathlib.Path,
         figures_dir: pathlib.Path,
         save_data: bool,
@@ -288,7 +287,6 @@ class GenerateCompProfiles:
         self.comps_to_plot = comps_to_plot
         self.axes_to_slice = axes_to_slice
         self.field_loader = field_loader
-        self.cmap_name = cmap_name
         self.save_data = save_data
         self.save_figure = save_figure
         self.overwrite = overwrite
@@ -467,7 +465,7 @@ class GenerateCompProfiles:
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialConfig(
-                palette_name=field_registry.SEQUENTIAL_CMAP,
+                palette_name=field_registry.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
             value_range=(
@@ -719,7 +717,6 @@ class DiagnosticPipeline:
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
                 field_loader=registered_field.loader_fn,
-                cmap_name=registered_field.cmap,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,
                 overwrite=self.diagnostic_output_args.overwrite,
