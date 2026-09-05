@@ -118,7 +118,7 @@ class TimeSeries:
 
 
 @dataclasses.dataclass(frozen=True)
-class Statistic:
+class FieldStatistic:
     name: str
     compute_fn: collections_abc.Callable[[field_models.ScalarField_3D], float]
 
@@ -138,7 +138,7 @@ class Statistic:
 class TimePointArgs:
     snapshot_dir: pathlib.Path
     registered_field: field_registry.RegisteredField
-    statistic: Statistic
+    statistic: FieldStatistic
     amr_level: int = 0
     cache_file_path: pathlib.Path | None = None
 
@@ -151,7 +151,7 @@ class GenerateTimeSeries:
         *,
         snapshot_dirs: list[pathlib.Path],
         registered_field: field_registry.RegisteredField,
-        statistic: Statistic,
+        statistic: FieldStatistic,
         data_dir: pathlib.Path,
         figures_dir: pathlib.Path,
         save_data: bool,

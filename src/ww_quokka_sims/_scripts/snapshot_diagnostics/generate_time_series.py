@@ -26,14 +26,14 @@ from ww_quokka_sims.sim_io.snapshots import field_registry
 ## === STATISTICS
 ##
 
-_STATISTIC_LOOKUP: dict[str, time_series.Statistic] = {
+_STATISTIC_LOOKUP: dict[str, time_series.FieldStatistic] = {
     statistic.name: statistic
     for statistic in (
-        time_series.Statistic(
+        time_series.FieldStatistic(
             name="total",
             compute_fn=field_operators.compute_sfield_volume_integral,
         ),
-        time_series.Statistic(
+        time_series.FieldStatistic(
             name="rms",
             compute_fn=field_operators.compute_sfield_rms,
         ),
