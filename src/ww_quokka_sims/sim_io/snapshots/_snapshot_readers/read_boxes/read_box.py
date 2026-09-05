@@ -5,7 +5,7 @@
 ##
 
 ## stdlib
-from typing import Any
+import typing
 
 ## third-party
 import numpy
@@ -21,7 +21,7 @@ from ..._snapshot_fields import read_fields
 
 def load_sarray(
     *,
-    yt_dataset: Any,
+    yt_dataset: typing.Any,
     field_key: read_fields.FieldKey,
 ) -> numpy.ndarray:
     """

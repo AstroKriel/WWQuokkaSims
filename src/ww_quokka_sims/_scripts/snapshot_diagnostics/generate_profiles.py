@@ -6,11 +6,11 @@
 
 ## stdlib
 import argparse
+import typing
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import final
 
 ## third-party
 import numpy
@@ -82,7 +82,7 @@ class CompProfile:
 ##
 
 
-@final
+@typing.final
 class ComputeCompProfiles:
 
     def __init__(
@@ -258,7 +258,7 @@ class ComputeCompProfiles:
 ##
 
 
-@final
+@typing.final
 class GenerateCompProfiles:
 
     def __init__(
@@ -680,7 +680,7 @@ class GenerateCompProfiles:
 ##
 
 
-@final
+@typing.final
 class DiagnosticPipeline:
 
     def __init__(

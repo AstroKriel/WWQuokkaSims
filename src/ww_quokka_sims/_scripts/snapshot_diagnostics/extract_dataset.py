@@ -6,14 +6,11 @@
 
 ## stdlib
 import argparse
+import typing
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    NamedTuple,
-    final,
-)
 
 ## third-party
 import numpy
@@ -47,7 +44,7 @@ class ResolvedFieldArgs:
     amr_level: int = 0
 
 
-class WorkerArgs(NamedTuple):
+class WorkerArgs(typing.NamedTuple):
     """Flat, pickleable argument bundle passed to the parallel extraction worker."""
 
     snapshot_dir: str
@@ -288,7 +285,7 @@ def extract_fields_in_parallel(
 ##
 
 
-@final
+@typing.final
 class DatasetPipeline:
 
     def __init__(

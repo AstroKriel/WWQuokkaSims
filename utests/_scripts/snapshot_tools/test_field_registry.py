@@ -5,8 +5,8 @@
 ##
 
 ## stdlib
+import typing
 import unittest
-from typing import get_args
 
 ## personal
 from jormi.ww_fields.fields_3d import field_models
@@ -57,7 +57,7 @@ class TestGetFieldType(unittest.TestCase):
         ## if a new rank is ever added to a loader without adding the matching
         ## Field type to field_models.AnyField_3D, this catches it here rather
         ## than at some downstream script's runtime dispatch
-        known_types = get_args(field_models.AnyField_3D)
+        known_types = typing.get_args(field_models.AnyField_3D)
         for field_name in field_registry.REGISTERED_FIELD_LOOKUP:
             with self.subTest(field_name=field_name):
                 self.assertIn(

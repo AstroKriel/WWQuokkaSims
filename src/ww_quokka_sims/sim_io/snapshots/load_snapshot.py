@@ -5,10 +5,11 @@
 ##
 
 ## stdlib
+import typing
+
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from types import TracebackType
-from typing import Any
 
 ## third-party
 import numpy
@@ -48,10 +49,10 @@ class QuokkaSnapshot(
 
     snapshot_dir: Path
     verbose: bool
-    _yt_dataset: Any | None
+    _yt_dataset: typing.Any | None
     _in_context: bool
     _sim_time: float | None
-    _whole_domain_grid_cache: dict[int, Any]
+    _whole_domain_grid_cache: dict[int, typing.Any]
     _uniform_domain_3d_cache: dict[int, domain_models.UniformDomain_3D]
     _field_cache: _snapshot_fields.LRUCache
 
@@ -180,7 +181,7 @@ class QuokkaSnapshot(
         self,
         *,
         amr_level: int = 0,
-    ) -> Any:
+    ) -> typing.Any:
         """
         Return a covering grid spanning the whole domain at `amr_level`'s resolution.
 

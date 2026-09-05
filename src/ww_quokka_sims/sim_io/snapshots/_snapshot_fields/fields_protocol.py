@@ -5,9 +5,10 @@
 ##
 
 ## stdlib
+import typing
+
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Protocol
 
 ## third-party
 import numpy
@@ -30,7 +31,7 @@ from .read_fields import FieldKey, HelmholtzKineticEnergy, LRUCache
 ##
 
 
-class FieldsProtocol(Protocol):
+class FieldsProtocol(typing.Protocol):
     """
     Protocol declaring the interface that `_Derive*` classes interact via.
 

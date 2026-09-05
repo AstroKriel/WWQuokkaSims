@@ -5,9 +5,10 @@
 ##
 
 ## stdlib
+import typing
+
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Any, TypeAlias
 
 ## personal
 from jormi.ww_fields import cartesian_axes
@@ -18,7 +19,7 @@ from jormi.ww_validation import validate_types
 ## === DATA STRUCTURES
 ##
 
-FieldKey: TypeAlias = tuple[str, str]
+FieldKey: typing.TypeAlias = tuple[str, str]
 
 ## boxlib uses "x-", "y-", "z-" prefixes for vector component field names
 _BOXLIB_XYZ_LABELS: dict[cartesian_axes.CartesianAxis_3D, str] = {
@@ -68,7 +69,7 @@ def create_boxlib_vkeys(
     }
 
 
-YT_VFIELD_KEYS: dict[str, dict[str, Any]] = {
+YT_VFIELD_KEYS: dict[str, dict[str, typing.Any]] = {
     "momentum": {
         "keys": create_boxlib_vkeys("GasMomentum"),
         "description": "Momentum density components: vec(m) = rho * vec(v)",
@@ -79,7 +80,7 @@ YT_VFIELD_KEYS: dict[str, dict[str, Any]] = {
     },
 }
 
-YT_SFIELD_KEYS: dict[str, dict[str, Any]] = {
+YT_SFIELD_KEYS: dict[str, dict[str, typing.Any]] = {
     "density": {
         "key": ("boxlib", "gasDensity"),
         "description": "Gas density field",

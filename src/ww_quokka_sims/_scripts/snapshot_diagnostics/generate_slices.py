@@ -6,14 +6,11 @@
 
 ## stdlib
 import argparse
+import typing
 
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    NamedTuple,
-    final,
-)
 
 ## third-party
 import numpy
@@ -63,7 +60,7 @@ class ResolvedFieldArgs:
     amr_level: int = 0
 
 
-class WorkerArgs(NamedTuple):
+class WorkerArgs(typing.NamedTuple):
     """Flat, pickleable argument bundle passed to the parallel slice-render worker."""
 
     snapshot_dir: str
@@ -813,7 +810,7 @@ def _animate_saved_figures(
 ##
 
 
-@final
+@typing.final
 class DiagnosticPipeline:
 
     def __init__(

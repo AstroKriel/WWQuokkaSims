@@ -5,8 +5,9 @@
 ##
 
 ## stdlib
+import typing
+
 from collections.abc import Iterator
-from typing import Any
 
 ## third-party
 import numpy
@@ -17,8 +18,8 @@ import numpy
 
 
 def extract_amr_level_0_boxes(
-    yt_dataset: Any,
-) -> Iterator[tuple[Any, tuple[slice, slice, slice]]]:
+    yt_dataset: typing.Any,
+) -> Iterator[tuple[typing.Any, tuple[slice, slice, slice]]]:
     """
     Yield each amr_level=0 box (a yt `AMRGridPatch`) alongside the domain-index slices
     its own cells belong to, computed from its left edge and the domain's cell grid.

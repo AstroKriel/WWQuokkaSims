@@ -5,8 +5,9 @@
 ##
 
 ## stdlib
+import typing
+
 from collections.abc import Iterator
-from typing import Any
 
 ## third-party
 import numpy
@@ -59,7 +60,7 @@ def trim_expanded_box(
 
 def load_expanded_vfield_boxes(
     *,
-    yt_dataset: Any,
+    yt_dataset: typing.Any,
     vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, FieldKey],
     num_extra_cells: int,
 ) -> Iterator[tuple[numpy.ndarray, tuple[slice, slice, slice]]]:

@@ -5,8 +5,9 @@
 ##
 
 ## stdlib
+import typing
+
 from enum import IntEnum, StrEnum
-from typing import cast
 
 ## personal
 from jormi.ww_validation import validate_enums
@@ -29,7 +30,7 @@ def resolve_reconstruction_scheme(
     key: str,
 ) -> ReconstructionScheme:
     """Resolve `key` (a name, value, or shorthand combination-name key) to a `ReconstructionScheme` member."""
-    return cast(
+    return typing.cast(
         ReconstructionScheme,
         validate_enums.resolve_member(
             member=key,
@@ -55,7 +56,7 @@ def resolve_emf_compute_scheme(
     key: str,
 ) -> EMFComputeScheme:
     """Resolve `key` (a name, value, or shorthand combination-name key) to an `EMFComputeScheme` member."""
-    return cast(
+    return typing.cast(
         EMFComputeScheme,
         validate_enums.resolve_member(
             member=key,
@@ -80,7 +81,7 @@ def resolve_emf_averaging_scheme(
     key: str,
 ) -> EMFAveragingScheme:
     """Resolve `key` (a name, value, or shorthand combination-name key) to an `EMFAveragingScheme` member."""
-    return cast(
+    return typing.cast(
         EMFAveragingScheme,
         validate_enums.resolve_member(
             member=key,

@@ -6,10 +6,10 @@
 
 ## stdlib
 import argparse
+import typing
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import final
 
 ## third-party
 import numpy
@@ -43,7 +43,7 @@ from ww_quokka_sims.sim_io.snapshots import (
 ##
 
 
-@final
+@typing.final
 class ComputePDFs:
 
     def __init__(
@@ -188,7 +188,7 @@ class ComputePDFs:
 ##
 
 
-@final
+@typing.final
 class GeneratePDFs:
 
     def __init__(
@@ -496,7 +496,7 @@ class GeneratePDFs:
 ##
 
 
-@final
+@typing.final
 class DiagnosticPipeline:
 
     def __init__(

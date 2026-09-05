@@ -5,7 +5,7 @@
 ##
 
 ## stdlib
-from typing import Any
+import typing
 
 ## third-party
 import numpy
@@ -20,9 +20,9 @@ from .._snapshot_fields import read_fields
 
 def initialize_whole_domain_grid(
     *,
-    yt_dataset: Any,
+    yt_dataset: typing.Any,
     amr_level: int,
-) -> Any:
+) -> typing.Any:
     """
     Return a yt covering grid spanning the whole domain at `amr_level`'s resolution.
 
@@ -41,7 +41,7 @@ def initialize_whole_domain_grid(
 
 def load_sarray(
     *,
-    whole_domain_grid: Any,
+    whole_domain_grid: typing.Any,
     field_key: read_fields.FieldKey,
 ) -> numpy.ndarray:
     """Read one scalar field out of an already-built whole-domain grid as a plain 3D array."""

@@ -5,9 +5,10 @@
 ##
 
 ## stdlib
+import typing
+
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Any
 
 ## personal
 from jormi.ww_validation import validate_types
@@ -466,7 +467,7 @@ class SetupParams:
         Prefix each key in `param_values` is rendered under, e.g. `"setup"` -> `setup.<key>`.
     """
 
-    param_values: dict[str, Any] = field(default_factory=dict)
+    param_values: dict[str, typing.Any] = field(default_factory=dict)
     group_title: str = "problem setup"
     key_prefix: str = "setup"
 

@@ -6,10 +6,10 @@
 
 ## stdlib
 import argparse
+import typing
 
 from collections.abc import Callable
 from pathlib import Path
-from typing import final, get_args
 
 ## third-party
 import numpy
@@ -41,7 +41,7 @@ from ww_quokka_sims.sim_io.snapshots import (
 ##
 
 
-@final
+@typing.final
 class ComputeSpectra:
 
     def __init__(
@@ -141,7 +141,7 @@ class ComputeSpectra:
 ##
 
 
-@final
+@typing.final
 class GenerateSpectra:
 
     def __init__(
@@ -329,7 +329,7 @@ class GenerateSpectra:
 ##
 
 
-@final
+@typing.final
 class DiagnosticPipeline:
 
     def __init__(
@@ -341,7 +341,7 @@ class DiagnosticPipeline:
     ):
         field_registry.validate_fields(
             field_names=field_args.fields,
-            allowed_types=get_args(field_models.AnyField_3D),
+            allowed_types=typing.get_args(field_models.AnyField_3D),
         )
         self.snapshot_args = snapshot_args
         self.fields_to_plot = validate_types.as_tuple(param=field_args.fields)
