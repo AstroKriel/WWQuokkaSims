@@ -186,8 +186,8 @@ class GenerateTimeSeries:
                 f"expected ScalarField_3D from `{time_point_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
             )
         sim_time = sfield_3d.sim_time
-        if (sim_time is None) or (not(numpy.isfinite(sim_time))):
-            raise ValueError(f"invalid sim_time for field: {sim_time!r}.")
+        validate_types.ensure_finite_float(param=sim_time, param_name="sim_time")
+        assert sim_time is not None
         value = time_point_args.statistic_fn(sfield_3d)
         time_point = TimePoint(
             sim_time=float(sim_time),
