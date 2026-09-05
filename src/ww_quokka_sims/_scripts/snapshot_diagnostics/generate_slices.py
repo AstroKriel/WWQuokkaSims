@@ -317,7 +317,7 @@ class GenerateFieldSlices:
         return [
             FieldComp(
                 sarray_3d=varray_3d[_axis_to_index(comp_axis)],
-                label=field_models.get_vcomp_label(field, comp_axis=comp_axis),
+                label=field_models.get_vcomp_label(vfield_3d=field, comp_axis=comp_axis),
                 comp_axis=comp_axis,
             ) for comp_axis in self.comps_to_plot
         ]
@@ -796,7 +796,7 @@ def _animate_saved_figures(
     for field_name in fields_to_plot:
         plot_name = f"log10_{field_name}" if apply_log10_plot else field_name
         fig_paths = manage_io.filter_directory(
-            figures_dir,
+            directory=figures_dir,
             prefix=f"{plot_name}-slice-index=",
             suffix=".png",
             include_folders=False,

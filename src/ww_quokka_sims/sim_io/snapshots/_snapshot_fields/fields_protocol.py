@@ -111,8 +111,8 @@ class FieldsProtocol(typing.Protocol):
 
     def _field_cache_key(
         self,
-        field_name: str,
         *,
+        field_name: str,
         amr_level: int,
         use_chunked_reader: bool = False,
     ) -> str:

@@ -188,7 +188,7 @@ class ComputeCompProfiles:
         axis_labels = list(self.axes_to_slice)
         comp_profiles: list[CompProfile] = []
         for comp_name in comp_names:
-            comp_label = field_models.get_vcomp_label(field, comp_axis=comp_name)
+            comp_label = field_models.get_vcomp_label(vfield_3d=field, comp_axis=comp_name)
             x_array_by_axis: list[numpy.ndarray] = []
             y_array_by_axis: list[numpy.ndarray] = []
             for axis_to_slice in axis_labels:

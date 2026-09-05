@@ -88,12 +88,18 @@ class _DeriveMHDFields:
             expanded_b_varray: numpy.ndarray,
             num_extra_cells: int,
         ) -> numpy.ndarray:
-            box_b_varray = read_expanded_box.trim_expanded_box(expanded_b_varray, num_extra_cells)
+            box_b_varray = read_expanded_box.trim_expanded_box(
+                expanded_farray=expanded_b_varray,
+                num_extra_cells=num_extra_cells,
+            )
             local_curl_varray = farray_operators.compute_varray_curl(
-                expanded_b_varray,
+                varray_3d=expanded_b_varray,
                 cell_widths_3d=cell_widths_3d,
             )
-            box_j_varray = read_expanded_box.trim_expanded_box(local_curl_varray, num_extra_cells)
+            box_j_varray = read_expanded_box.trim_expanded_box(
+                expanded_farray=local_curl_varray,
+                num_extra_cells=num_extra_cells,
+            )
             return farray_operators.compute_varray_cross_product(
                 f_varray_3d=box_j_varray,
                 g_varray_3d=box_b_varray,

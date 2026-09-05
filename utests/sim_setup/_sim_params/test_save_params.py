@@ -26,7 +26,7 @@ class FormatTests(unittest.TestCase):
     def test_expand_per_axis_scalar(
         self,
     ):
-        lines = format_params.expand_per_axis(16, key_prefix="amr.blocking_factor")
+        lines = format_params.expand_per_axis(value=16, key_prefix="amr.blocking_factor")
         self.assertEqual(
             lines,
             [
@@ -39,7 +39,7 @@ class FormatTests(unittest.TestCase):
     def test_expand_per_axis_tuple(
         self,
     ):
-        lines = format_params.expand_per_axis((16, 8, 8), key_prefix="amr.blocking_factor")
+        lines = format_params.expand_per_axis(value=(16, 8, 8), key_prefix="amr.blocking_factor")
         self.assertEqual(
             lines,
             [
@@ -53,7 +53,7 @@ class FormatTests(unittest.TestCase):
         self,
     ):
         for value in (16, (16, 8, 8)):
-            lines = format_params.expand_per_axis(value, key_prefix="amr.blocking_factor")
+            lines = format_params.expand_per_axis(value=value, key_prefix="amr.blocking_factor")
             self.assertTrue(all("_x" in line or "_y" in line or "_z" in line for line in lines))
             self.assertFalse(any(line.startswith("amr.blocking_factor =") for line in lines))
 
@@ -62,12 +62,12 @@ class FormatTests(unittest.TestCase):
     ):
         with self.assertRaises(ValueError):
             format_params.expand_per_axis(
-                (16, 8),  # pyright: ignore[reportArgumentType]
+                value=(16, 8),  # pyright: ignore[reportArgumentType]
                 key_prefix="amr.blocking_factor",
             )
         with self.assertRaises(ValueError):
             format_params.expand_per_axis(
-                (16, 8, 8, 4),  # pyright: ignore[reportArgumentType]
+                value=(16, 8, 8, 4),  # pyright: ignore[reportArgumentType]
                 key_prefix="amr.blocking_factor",
             )
 
@@ -75,9 +75,9 @@ class FormatTests(unittest.TestCase):
         self,
     ):
         with self.assertRaises(ValueError):
-            format_params.expand_per_axis(0, key_prefix="amr.blocking_factor")
+            format_params.expand_per_axis(value=0, key_prefix="amr.blocking_factor")
         with self.assertRaises(ValueError):
-            format_params.expand_per_axis(-1, key_prefix="amr.blocking_factor")
+            format_params.expand_per_axis(value=-1, key_prefix="amr.blocking_factor")
 
     def test_format_value_list_of_floats(
         self,

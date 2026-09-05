@@ -136,10 +136,13 @@ class _DeriveMagneticFields:
             num_extra_cells: int,
         ) -> numpy.ndarray:
             local_curl_varray = farray_operators.compute_varray_curl(
-                expanded_b_varray,
+                varray_3d=expanded_b_varray,
                 cell_widths_3d=cell_widths_3d,
             )
-            return read_expanded_box.trim_expanded_box(local_curl_varray, num_extra_cells)
+            return read_expanded_box.trim_expanded_box(
+                expanded_farray=local_curl_varray,
+                num_extra_cells=num_extra_cells,
+            )
 
         return self._compute_chunked_derived_vfield(
             field_name="magnetic",

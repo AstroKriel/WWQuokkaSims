@@ -53,8 +53,8 @@ def format_key_value(
 
 
 def expand_per_axis(
-    value: int | tuple[int, int, int],
     *,
+    value: int | tuple[int, int, int],
     key_prefix: str,
 ) -> list[str]:
     """

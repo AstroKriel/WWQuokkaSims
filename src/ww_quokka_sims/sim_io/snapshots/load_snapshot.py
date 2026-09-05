@@ -305,8 +305,8 @@ class QuokkaSnapshot(
 
     def _load_3d_sarray(
         self,
-        field_key: FieldKey,
         *,
+        field_key: FieldKey,
         amr_level: int = 0,
         use_chunked_reader: bool = False,
     ) -> numpy.ndarray:
@@ -476,7 +476,7 @@ class QuokkaSnapshot(
             param_name="latex_label",
         )
         sarray_3d = self._load_3d_sarray(
-            field_key,
+            field_key=field_key,
             amr_level=amr_level,
             use_chunked_reader=use_chunked_reader,
         )

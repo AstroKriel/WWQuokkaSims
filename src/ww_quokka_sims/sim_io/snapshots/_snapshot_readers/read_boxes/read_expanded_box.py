@@ -40,6 +40,7 @@ def compute_num_extra_cells(
 
 
 def trim_expanded_box(
+    *,
     expanded_farray: numpy.ndarray,
     num_extra_cells: int,
 ) -> numpy.ndarray:
