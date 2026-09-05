@@ -196,13 +196,13 @@ class GenerateTimeSeries:
     def _compute_time_series(
         self,
     ) -> TimeSeries:
-        data_time_points: list[TimePoint] = []
+        time_points: list[TimePoint] = []
         pending_field_args: list[ResolvedFieldArgs] = []
         for snapshot_dir in self.snapshot_dirs:
             snapshot_dir = Path(snapshot_dir)
             cache_file_path = self._cache_file_path(snapshot_dir)
             if (not self.overwrite) and cache_file_path.exists():
-                data_time_points.append(TimePoint.load_from_file(cache_file_path))
+                time_points.append(TimePoint.load_from_file(cache_file_path))
                 continue
             pending_field_args.append(
                 ResolvedFieldArgs(
@@ -215,7 +215,7 @@ class GenerateTimeSeries:
                 ),
             )
         if not pending_field_args:
-            return TimeSeries(time_points=data_time_points)
+            return TimeSeries(time_points=time_points)
 
         if (self.num_workers != 1) and (len(pending_field_args) > 5):
             new_time_points: list[TimePoint] = parallel_dispatch.run_in_parallel(
@@ -226,11 +226,11 @@ class GenerateTimeSeries:
                 show_progress=True,
                 enable_plotting=True,
             )
-            data_time_points.extend(new_time_points)
+            time_points.extend(new_time_points)
         else:
             for field_args in pending_field_args:
-                data_time_points.append(GenerateTimeSeries._compute_time_point(field_args=field_args))
-        return TimeSeries(time_points=data_time_points)
+                time_points.append(GenerateTimeSeries._compute_time_point(field_args=field_args))
+        return TimeSeries(time_points=time_points)
 
     @staticmethod
     def _as_arrays(
