@@ -7,14 +7,10 @@
 ## stdlib
 import argparse
 
-from collections.abc import Callable
 from typing import final
 
 ## personal
-from jormi.ww_fields.fields_3d import (
-    field_models,
-    field_operators,
-)
+from jormi.ww_fields.fields_3d import field_operators
 from jormi.ww_io import manage_log
 from jormi.ww_plots import style_figure
 from jormi.ww_validation import validate_types
@@ -30,9 +26,9 @@ from ww_quokka_sims.sim_io.field_diagnostics import time_series
 ## === STATISTICS
 ##
 
-_STATISTIC_LOOKUP: dict[str, Callable[[field_models.ScalarField_3D], float]] = {
-    "total": field_operators.compute_sfield_volume_integral,
-    "rms": field_operators.compute_sfield_rms,
+_STATISTIC_LOOKUP: dict[str, time_series.Statistic] = {
+    "total": time_series.Statistic(name="total", compute_fn=field_operators.compute_sfield_volume_integral),
+    "rms": time_series.Statistic(name="rms", compute_fn=field_operators.compute_sfield_rms),
 }
 
 ##
@@ -53,17 +49,17 @@ class DiagnosticPipeline:
         num_workers: int | None = None,
         apply_log10_plot: bool = False,
     ):
-        field_registry.validate_fields(
-            field_names=field_args.fields,
-            allowed_types=(field_models.ScalarField_3D, ),
-        )
         if statistic_name not in _STATISTIC_LOOKUP:
             raise ValueError(f"unknown statistic `{statistic_name}`; expected one of {sorted(_STATISTIC_LOOKUP)}.")
+        self.statistic = _STATISTIC_LOOKUP[statistic_name]
+        field_registry.validate_fields(
+            field_names=field_args.fields,
+            allowed_types=self.statistic.valid_field_types,
+        )
         self.snapshot_args = snapshot_args
         self.fields_to_plot = validate_types.as_tuple(param=field_args.fields)
         self.amr_level = field_args.amr_level
         self.diagnostic_output_args = diagnostic_output_args
-        self.statistic_name = statistic_name
         self.num_workers = num_workers
         self.apply_log10_plot = apply_log10_plot
 
@@ -72,15 +68,13 @@ class DiagnosticPipeline:
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
         assert resolved_inputs.figures_dir is not None
-        statistic_fn = _STATISTIC_LOOKUP[self.statistic_name]
         for field_name in self.fields_to_plot:
             registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
             generate_time_series = time_series.GenerateTimeSeries(
                 snapshot_dirs=resolved_inputs.snapshot_dirs,
                 field_name=field_name,
                 field_loader=registered_field.loader,
-                statistic_name=self.statistic_name,
-                statistic_fn=statistic_fn,
+                statistic=self.statistic,
                 data_dir=resolved_inputs.data_dir,
                 figures_dir=resolved_inputs.figures_dir,
                 save_data=self.diagnostic_output_args.save_data,

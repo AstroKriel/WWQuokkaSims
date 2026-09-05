@@ -8,7 +8,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import final
+from typing import cast, final
 
 ## third-party
 import numpy
@@ -112,6 +112,28 @@ class TimeSeries:
 
 
 ##
+## === STATISTIC
+##
+
+
+@dataclass(frozen=True)
+class Statistic:
+    name: str
+    compute_fn: Callable[[field_models.ScalarField_3D], float]
+    valid_field_types: tuple[type, ...] = (field_models.ScalarField_3D, )
+
+    def compute(
+        self,
+        field_3d: field_models.AnyField_3D,
+    ) -> float:
+        if not(isinstance(field_3d, self.valid_field_types)):
+            raise TypeError(
+                f"statistic `{self.name}` expects {self.valid_field_types}, got {type(field_3d).__name__}.",
+            )
+        return self.compute_fn(cast(field_models.ScalarField_3D, field_3d))
+
+
+##
 ## === GENERATE TIME SERIES
 ##
 
@@ -121,7 +143,7 @@ class TimePointArgs:
     snapshot_dir: Path
     field_name: str
     field_loader: Callable
-    statistic_fn: Callable
+    statistic: Statistic
     amr_level: int = 0
     cache_file_path: Path | None = None
 
@@ -135,8 +157,7 @@ class GenerateTimeSeries:
         snapshot_dirs: list[Path],
         field_name: str,
         field_loader: Callable,
-        statistic_name: str,
-        statistic_fn: Callable[[field_models.ScalarField_3D], float],
+        statistic: Statistic,
         data_dir: Path,
         figures_dir: Path,
         save_data: bool,
@@ -153,8 +174,7 @@ class GenerateTimeSeries:
         self.snapshot_dirs = sorted(snapshot_dirs)
         self.field_name = field_name
         self.field_loader = field_loader
-        self.statistic_name = statistic_name
-        self.statistic_fn = statistic_fn
+        self.statistic = statistic
         self.data_dir = data_dir
         self.figures_dir = figures_dir
         self.save_data = save_data
@@ -170,7 +190,7 @@ class GenerateTimeSeries:
         snapshot_dir: Path,
     ) -> Path:
         """Per-snapshot resume-cache path, hidden under `.cache/` so it is never mistaken for real output."""
-        return self.data_dir / ".cache" / "time_series" / self.statistic_name / f"{self.field_name}-{snapshot_dir.name}.json"
+        return self.data_dir / ".cache" / "time_series" / self.statistic.name / f"{self.field_name}-{snapshot_dir.name}.json"
 
     @staticmethod
     def _compute_time_point(
@@ -181,14 +201,10 @@ class GenerateTimeSeries:
                 verbose=False,
         ) as snapshot:
             field_3d = time_point_args.field_loader(snapshot, amr_level=time_point_args.amr_level)
-        if not(isinstance(field_3d, field_models.ScalarField_3D)):
-            raise TypeError(
-                f"expected ScalarField_3D from `{time_point_args.field_loader.__name__}`, got {type(field_3d).__name__}.",
-            )
+        value = time_point_args.statistic.compute(field_3d)
         sim_time = field_3d.sim_time
         validate_types.ensure_finite_float(param=sim_time, param_name="sim_time")
         assert sim_time is not None
-        value = time_point_args.statistic_fn(field_3d)
         time_point = TimePoint(
             sim_time=float(sim_time),
             value=float(value),
@@ -215,7 +231,7 @@ class GenerateTimeSeries:
                     snapshot_dir=snapshot_dir,
                     field_name=self.field_name,
                     field_loader=self.field_loader,
-                    statistic_fn=self.statistic_fn,
+                    statistic=self.statistic,
                     amr_level=self.amr_level,
                     cache_file_path=cache_file_path,
                 )
@@ -263,7 +279,7 @@ class GenerateTimeSeries:
         )
         time_array, values_array = self._as_arrays(time_series.get_sorted_time_points())
         json_io.save_dict_to_json_file(
-            file_path=self.data_dir / f"{self.field_name}-{self.statistic_name}-time_series.json",
+            file_path=self.data_dir / f"{self.field_name}-{self.statistic.name}-time_series.json",
             input_dict={
                 "sim_times": time_array,
                 "values": values_array,
@@ -292,11 +308,11 @@ class GenerateTimeSeries:
             return
         plot_values = values_array
         ylabel = f"${time_series.latex_label}$"
-        fig_name = f"{self.field_name}-{self.statistic_name}-time_series.png"
+        fig_name = f"{self.field_name}-{self.statistic.name}-time_series.png"
         if self.apply_log10_plot:
             plot_values = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
             ylabel = rf"$\log_{{10}}\big({time_series.latex_label}\big)$"
-            fig_name = f"log10_{self.field_name}-{self.statistic_name}-time_series.png"
+            fig_name = f"log10_{self.field_name}-{self.statistic.name}-time_series.png"
         ax.plot(
             time_array,
             plot_values,
