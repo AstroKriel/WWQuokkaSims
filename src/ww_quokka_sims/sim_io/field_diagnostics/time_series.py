@@ -18,7 +18,7 @@ import numpy
 from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_fns import parallel_dispatch
-from jormi.ww_io import json_io
+from jormi.ww_io import json_io, manage_io
 from jormi.ww_plots import annotate_panel, manage_figure
 from jormi.ww_validation import validate_arrays, validate_types
 
@@ -194,7 +194,7 @@ class GenerateTimeSeries:
                 amr_level=time_point_args.amr_level,
             )
         assert isinstance(field_3d, field_models.ScalarField_3D)
-        value = time_point_args.field_statistic.compute_statistic(field_3d)
+        statistic = time_point_args.field_statistic.compute_statistic(field_3d)
         sim_time = field_3d.sim_time
         validate_types.ensure_finite_float(
             param=sim_time,
@@ -203,13 +203,13 @@ class GenerateTimeSeries:
         assert sim_time is not None
         time_point = TimePoint(
             sim_time=float(sim_time),
-            value=float(value),
+            value=float(statistic),
             latex_label=field_3d.latex_label,
         )
         if time_point_args.cache_file_path is not None:
-            time_point_args.cache_file_path.parent.mkdir(
-                parents=True,
-                exist_ok=True,
+            manage_io.create_directory(
+                directory=time_point_args.cache_file_path.parent,
+                verbose=False,
             )
             time_point.save_to_file(file_path=time_point_args.cache_file_path)
         return time_point
@@ -271,9 +271,9 @@ class GenerateTimeSeries:
         *,
         time_series: TimeSeries,
     ) -> None:
-        self.data_dir.mkdir(
-            parents=True,
-            exist_ok=True,
+        manage_io.create_directory(
+            directory=self.data_dir,
+            verbose=False,
         )
         time_array, values_array = self._as_arrays(time_series.get_sorted_time_points())
         json_io.save_dict_to_json_file(

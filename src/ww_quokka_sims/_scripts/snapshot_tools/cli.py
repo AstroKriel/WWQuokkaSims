@@ -12,6 +12,7 @@ import pathlib
 ## personal
 from jormi import ww_lists
 from jormi.ww_fields import cartesian_axes
+from jormi.ww_io import manage_io
 from jormi.ww_validation import validate_types
 
 ## local
@@ -395,9 +396,9 @@ def resolve_output_dir(
 ) -> pathlib.Path:
     """Resolve `output_dir` to `default_dir` if unset, creating it if needed."""
     resolved_dir = output_dir if output_dir is not None else default_dir
-    resolved_dir.mkdir(
-        parents=True,
-        exist_ok=True,
+    manage_io.create_directory(
+        directory=resolved_dir,
+        verbose=False,
     )
     return resolved_dir
 

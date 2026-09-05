@@ -19,7 +19,7 @@ from jormi.ww_fields.fields_3d import (
     domain_models,
     field_models,
 )
-from jormi.ww_io import json_io, manage_log
+from jormi.ww_io import json_io, manage_io, manage_log
 from jormi.ww_plots import (
     add_color,
     annotate_panel,
@@ -314,9 +314,9 @@ class GenerateCompProfiles:
         data_dir: pathlib.Path,
         padded_index: str,
     ) -> None:
-        data_dir.mkdir(
-            parents=True,
-            exist_ok=True,
+        manage_io.create_directory(
+            directory=data_dir,
+            verbose=False,
         )
         is_scalar = comp_profiles[0].comp_name == self.registered_field.name
         step_time = comp_profiles[0].step_time

@@ -16,7 +16,7 @@ import numpy
 from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_models
-from jormi.ww_io import manage_log
+from jormi.ww_io import manage_io, manage_log
 from jormi.ww_plots import (
     add_color,
     annotate_panel,
@@ -326,9 +326,9 @@ class GeneratePDFs:
         self-contained (carries its own `step_time`/`use_log10_bins`), so results already on disk
         are immediately usable even if a later snapshot in the run fails or the job is cut off.
         """
-        data_dir.mkdir(
-            parents=True,
-            exist_ok=True,
+        manage_io.create_directory(
+            directory=data_dir,
+            verbose=False,
         )
         padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
         pdf_data.save_to_file(

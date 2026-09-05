@@ -14,7 +14,7 @@ import numpy
 
 ## personal
 from jormi.ww_fields.fields_3d import compute_spectra, field_models
-from jormi.ww_io import manage_log
+from jormi.ww_io import manage_io, manage_log
 from jormi.ww_plots import (
     add_color,
     annotate_panel,
@@ -123,9 +123,9 @@ class ComputeSpectra:
             ## save immediately, one file per snapshot, so a killed/interrupted run still
             ## leaves every already-completed snapshot independently usable and resumable
             if self.save_data:
-                self.data_dir.mkdir(
-                    parents=True,
-                    exist_ok=True,
+                manage_io.create_directory(
+                    directory=self.data_dir,
+                    verbose=False,
                 )
                 spectra_data.save_to_file(data_path)
 
