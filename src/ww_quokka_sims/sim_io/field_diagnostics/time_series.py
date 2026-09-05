@@ -115,7 +115,7 @@ class TimeSeries:
 
 
 @dataclass(frozen=True)
-class ResolvedFieldArgs:
+class TimePointArgs:
     snapshot_dir: Path
     field_name: str
     field_loader: Callable
@@ -171,44 +171,44 @@ class GenerateTimeSeries:
 
     @staticmethod
     def _compute_time_point(
-        field_args: ResolvedFieldArgs,
+        time_point_args: TimePointArgs,
     ) -> TimePoint:
         with load_snapshot.QuokkaSnapshot(
-                snapshot_dir=field_args.snapshot_dir,
+                snapshot_dir=time_point_args.snapshot_dir,
                 verbose=False,
         ) as snapshot:
-            sfield_3d = field_args.field_loader(snapshot, amr_level=field_args.amr_level)
+            sfield_3d = time_point_args.field_loader(snapshot, amr_level=time_point_args.amr_level)
         if not isinstance(sfield_3d, field_models.ScalarField_3D):
             raise TypeError(
-                f"expected ScalarField_3D from `{field_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
+                f"expected ScalarField_3D from `{time_point_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
             )
         sim_time = sfield_3d.sim_time
         if (sim_time is None) or (not numpy.isfinite(sim_time)):
             raise ValueError(f"invalid sim_time for field: {sim_time!r}.")
-        value = field_args.statistic_fn(sfield_3d)
+        value = time_point_args.statistic_fn(sfield_3d)
         time_point = TimePoint(
             sim_time=float(sim_time),
             value=float(value),
             latex_label=sfield_3d.latex_label,
         )
-        if field_args.cache_file_path is not None:
-            field_args.cache_file_path.parent.mkdir(parents=True, exist_ok=True)
-            time_point.save_to_file(field_args.cache_file_path)
+        if time_point_args.cache_file_path is not None:
+            time_point_args.cache_file_path.parent.mkdir(parents=True, exist_ok=True)
+            time_point.save_to_file(time_point_args.cache_file_path)
         return time_point
 
     def _compute_time_series(
         self,
     ) -> TimeSeries:
         time_points: list[TimePoint] = []
-        pending_field_args: list[ResolvedFieldArgs] = []
+        pending_time_point_args: list[TimePointArgs] = []
         for snapshot_dir in self.snapshot_dirs:
             snapshot_dir = Path(snapshot_dir)
             cache_file_path = self._get_cache_file_path(snapshot_dir)
             if (not self.overwrite) and cache_file_path.exists():
                 time_points.append(TimePoint.load_from_file(cache_file_path))
                 continue
-            pending_field_args.append(
-                ResolvedFieldArgs(
+            pending_time_point_args.append(
+                TimePointArgs(
                     snapshot_dir=snapshot_dir,
                     field_name=self.field_name,
                     field_loader=self.field_loader,
@@ -217,12 +217,12 @@ class GenerateTimeSeries:
                     cache_file_path=cache_file_path,
                 ),
             )
-        if not pending_field_args:
+        if not pending_time_point_args:
             return TimeSeries(time_points=time_points)
-        if (self.num_workers != 1) and (len(pending_field_args) > 5):
+        if (self.num_workers != 1) and (len(pending_time_point_args) > 5):
             new_time_points: list[TimePoint] = parallel_dispatch.run_in_parallel(
                 worker_fn=GenerateTimeSeries._compute_time_point,
-                grouped_args=pending_field_args,
+                grouped_args=pending_time_point_args,
                 num_workers=self.num_workers,
                 timeout_seconds=120,
                 show_progress=True,
@@ -230,8 +230,8 @@ class GenerateTimeSeries:
             )
             time_points.extend(new_time_points)
         else:
-            for field_args in pending_field_args:
-                time_points.append(GenerateTimeSeries._compute_time_point(field_args=field_args))
+            for time_point_args in pending_time_point_args:
+                time_points.append(GenerateTimeSeries._compute_time_point(time_point_args=time_point_args))
         return TimeSeries(time_points=time_points)
 
     @staticmethod
