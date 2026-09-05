@@ -120,13 +120,13 @@ class TimeSeries:
 @dataclasses.dataclass(frozen=True)
 class FieldStatistic:
     name: str
-    compute_fn: collections_abc.Callable[[field_models.ScalarField_3D], float]
+    _compute_fn: collections_abc.Callable[[field_models.ScalarField_3D], float]
 
     def compute_statistic(
         self,
         field_3d: field_models.ScalarField_3D,
     ) -> float:
-        return self.compute_fn(field_3d)
+        return self._compute_fn(field_3d)
 
 
 ##

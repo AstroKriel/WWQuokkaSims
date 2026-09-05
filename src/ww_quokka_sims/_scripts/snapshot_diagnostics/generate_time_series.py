@@ -31,11 +31,11 @@ _STATISTIC_LOOKUP: dict[str, time_series.FieldStatistic] = {
     for field_statistic in (
         time_series.FieldStatistic(
             name="total",
-            compute_fn=field_operators.compute_sfield_volume_integral,
+            _compute_fn=field_operators.compute_sfield_volume_integral,
         ),
         time_series.FieldStatistic(
             name="rms",
-            compute_fn=field_operators.compute_sfield_rms,
+            _compute_fn=field_operators.compute_sfield_rms,
         ),
     )
 }
