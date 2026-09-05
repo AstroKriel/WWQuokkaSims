@@ -37,6 +37,7 @@ class TimePoint:
 
     def save_to_file(
         self,
+        *,
         file_path: Path,
     ) -> None:
         json_io.save_dict_to_json_file(
@@ -53,6 +54,7 @@ class TimePoint:
     @classmethod
     def load_from_file(
         cls,
+        *,
         file_path: Path,
     ) -> "TimePoint":
         data = json_io.read_json_file_into_dict(
@@ -164,6 +166,7 @@ class GenerateTimeSeries:
 
     def _get_cache_file_path(
         self,
+        *,
         snapshot_dir: Path,
     ) -> Path:
         """Per-snapshot resume-cache path, hidden under `.cache/` so it is never mistaken for real output."""
@@ -193,36 +196,34 @@ class GenerateTimeSeries:
         )
         if time_point_args.cache_file_path is not None:
             time_point_args.cache_file_path.parent.mkdir(parents=True, exist_ok=True)
-            time_point.save_to_file(time_point_args.cache_file_path)
+            time_point.save_to_file(file_path=time_point_args.cache_file_path)
         return time_point
 
     def _compute_time_series(
         self,
     ) -> TimeSeries:
         time_points: list[TimePoint] = []
-        pending_time_point_args: list[TimePointArgs] = []
+        time_series_args: list[TimePointArgs] = []
         for snapshot_dir in self.snapshot_dirs:
             snapshot_dir = Path(snapshot_dir)
-            cache_file_path = self._get_cache_file_path(snapshot_dir)
-            if (not self.overwrite) and cache_file_path.exists():
-                time_points.append(TimePoint.load_from_file(cache_file_path))
-                continue
-            pending_time_point_args.append(
-                TimePointArgs(
+            cache_file_path = self._get_cache_file_path(snapshot_dir=snapshot_dir)
+            if not(self.overwrite) and cache_file_path.exists():
+                time_point = TimePoint.load_from_file(file_path=cache_file_path)
+                time_points.append(time_point)
+            else:
+                time_point_args = TimePointArgs(
                     snapshot_dir=snapshot_dir,
                     field_name=self.field_name,
                     field_loader=self.field_loader,
                     statistic_fn=self.statistic_fn,
                     amr_level=self.amr_level,
                     cache_file_path=cache_file_path,
-                ),
-            )
-        if not pending_time_point_args:
-            return TimeSeries(time_points=time_points)
-        if (self.num_workers != 1) and (len(pending_time_point_args) > 5):
+                )
+                time_series_args.append(time_point_args)
+        if (self.num_workers != 1) and (len(time_series_args) > 5):
             new_time_points: list[TimePoint] = parallel_dispatch.run_in_parallel(
                 worker_fn=GenerateTimeSeries._compute_time_point,
-                grouped_args=pending_time_point_args,
+                grouped_args=time_series_args,
                 num_workers=self.num_workers,
                 timeout_seconds=120,
                 show_progress=True,
@@ -230,8 +231,9 @@ class GenerateTimeSeries:
             )
             time_points.extend(new_time_points)
         else:
-            for time_point_args in pending_time_point_args:
-                time_points.append(GenerateTimeSeries._compute_time_point(time_point_args=time_point_args))
+            for time_point_args in time_series_args:
+                time_point = GenerateTimeSeries._compute_time_point(time_point_args=time_point_args)
+                time_points.append(time_point)
         return TimeSeries(time_points=time_points)
 
     @staticmethod
