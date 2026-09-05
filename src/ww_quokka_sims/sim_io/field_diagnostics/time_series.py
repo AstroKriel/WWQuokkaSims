@@ -122,7 +122,7 @@ class Statistic:
     compute_fn: Callable[[field_models.ScalarField_3D], float]
     valid_field_types: tuple[type, ...] = (field_models.ScalarField_3D, )
 
-    def compute(
+    def compute_statistic(
         self,
         field_3d: field_models.AnyField_3D,
     ) -> float:
@@ -201,7 +201,7 @@ class GenerateTimeSeries:
                 verbose=False,
         ) as snapshot:
             field_3d = time_point_args.field_loader(snapshot, amr_level=time_point_args.amr_level)
-        value = time_point_args.statistic.compute(field_3d)
+        value = time_point_args.statistic.compute_statistic(field_3d)
         sim_time = field_3d.sim_time
         validate_types.ensure_finite_float(param=sim_time, param_name="sim_time")
         assert sim_time is not None
