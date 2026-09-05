@@ -190,7 +190,8 @@ class GenerateTimeSeries:
                 verbose=False,
         ) as quokka_snapshot:
             field_3d = time_point_args.registered_field.load(
-                quokka_snapshot, amr_level=time_point_args.amr_level
+                quokka_snapshot=quokka_snapshot,
+                amr_level=time_point_args.amr_level,
             )
         assert isinstance(field_3d, field_models.ScalarField_3D)
         value = time_point_args.statistic.compute_statistic(field_3d)

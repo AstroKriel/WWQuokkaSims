@@ -96,7 +96,7 @@ class ComputeSpectra:
                     snapshot_dir=snapshot_dir,
                     verbose=False,
             ) as quokka_snapshot:
-                field = self.registered_field.load(quokka_snapshot, amr_level=self.amr_level)
+                field = self.registered_field.load(quokka_snapshot=quokka_snapshot, amr_level=self.amr_level)
             spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
             step_time = field.sim_time
             assert step_time is not None

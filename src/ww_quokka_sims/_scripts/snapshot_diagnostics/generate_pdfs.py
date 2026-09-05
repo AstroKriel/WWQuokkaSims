@@ -166,7 +166,7 @@ class ComputePDFs:
                 snapshot_dir=snapshot_dir,
                 verbose=False,
         ) as quokka_snapshot:
-            field = self.registered_field.load(quokka_snapshot, amr_level=self.amr_level)
+            field = self.registered_field.load(quokka_snapshot=quokka_snapshot, amr_level=self.amr_level)
         if isinstance(field, field_models.ScalarField_3D):
             return self._compute_sfield_pdf(
                 field=field,

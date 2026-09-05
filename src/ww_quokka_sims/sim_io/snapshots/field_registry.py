@@ -43,8 +43,8 @@ class RegisteredField:
 
     def load(
         self,
-        quokka_snapshot: load_snapshot.QuokkaSnapshot,
         *,
+        quokka_snapshot: load_snapshot.QuokkaSnapshot,
         amr_level: int = 0,
     ) -> field_models.AnyField_3D:
         """Load this field from `quokka_snapshot`, warning if it breaks its own declared properties."""

@@ -106,7 +106,7 @@ class FieldExtractor:
                 verbose=False,
         ) as quokka_snapshot:
             field = self.field_args.registered_field.load(
-                quokka_snapshot,
+                quokka_snapshot=quokka_snapshot,
                 amr_level=self.field_args.amr_level,
             )  # ScalarField_3D or VectorField_3D
         return field
