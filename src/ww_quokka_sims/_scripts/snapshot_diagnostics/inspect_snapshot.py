@@ -37,8 +37,8 @@ def main():
     with load_snapshot.QuokkaSnapshot(
             snapshot_dir=snapshot_dir,
             verbose=True,
-    ) as snapshot:
-        snapshot.list_available_field_keys()
+    ) as quokka_snapshot:
+        quokka_snapshot.list_available_field_keys()
 
 
 ##

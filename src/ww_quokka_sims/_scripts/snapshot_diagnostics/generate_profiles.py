@@ -232,9 +232,9 @@ class ComputeCompProfiles:
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
                 verbose=False,
-        ) as snapshot:
-            uniform_domain_3d = snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
-            field = self.registered_field.load(snapshot, amr_level=self.amr_level)  # ScalarField or VectorField
+        ) as quokka_snapshot:
+            uniform_domain_3d = quokka_snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
+            field = self.registered_field.load(quokka_snapshot, amr_level=self.amr_level)  # ScalarField or VectorField
         if isinstance(field, field_models.ScalarField_3D):
             return self._compute_scalar_profiles(
                 field=field,

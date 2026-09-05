@@ -43,12 +43,12 @@ class RegisteredField:
 
     def load(
         self,
-        snapshot: load_snapshot.QuokkaSnapshot,
+        quokka_snapshot: load_snapshot.QuokkaSnapshot,
         *,
         amr_level: int = 0,
     ) -> field_models.AnyField_3D:
-        """Load this field from `snapshot`, warning if it breaks its own declared properties."""
-        field = self.loader_fn(snapshot, amr_level=amr_level)
+        """Load this field from `quokka_snapshot`, warning if it breaks its own declared properties."""
+        field = self.loader_fn(quokka_snapshot, amr_level=amr_level)
         if self.expected_properties.is_strictly_positive:
             sarray_3d = field_models.extract_3d_sarray(sfield_3d=field, param_name=f"<{self.name}_sfield_3d>")
             if not numpy.all(sarray_3d >= 0):

@@ -275,10 +275,10 @@ class GenerateFieldSlices:
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
                 verbose=False,
-        ) as snapshot:
-            uniform_domain = snapshot.load_3d_uniform_domain(amr_level=amr_level)
+        ) as quokka_snapshot:
+            uniform_domain = quokka_snapshot.load_3d_uniform_domain(amr_level=amr_level)
             field = self.field_args.registered_field.load(
-                snapshot,
+                quokka_snapshot,
                 amr_level=amr_level,
             )  # ScalarField_3D or VectorField_3D
         return SnapshotData(
