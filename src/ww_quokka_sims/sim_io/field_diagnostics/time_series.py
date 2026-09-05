@@ -200,7 +200,7 @@ class GenerateTimeSeries:
             data_point.save_to_file(field_args.cache_file_path)
         return data_point
 
-    def _compute_field_series(
+    def _compute_time_series(
         self,
     ) -> TimeSeries:
         data_points: list[TimePoint] = []
@@ -304,7 +304,7 @@ class GenerateTimeSeries:
     def run(
         self,
     ) -> None:
-        time_series = self._compute_field_series()
+        time_series = self._compute_time_series()
         if self.save_data:
             self._save_series(time_series=time_series)
         if not self.save_figure:
