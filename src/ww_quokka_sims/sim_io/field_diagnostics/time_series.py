@@ -311,9 +311,8 @@ class GenerateTimeSeries:
         time_series = self._compute_time_series()
         if self.save_data:
             self._save(time_series=time_series)
-        if not self.save_figure:
-            return
-        self._plot(time_series=time_series)
+        if self.save_figure:
+            self._plot(time_series=time_series)
 
 
 ## } MODULE
