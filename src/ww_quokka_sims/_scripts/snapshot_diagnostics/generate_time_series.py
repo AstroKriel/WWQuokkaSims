@@ -34,12 +34,10 @@ _STATISTIC_LOOKUP: dict[str, time_series.Statistic] = {
         time_series.Statistic(
             name="total",
             compute_fn=field_operators.compute_sfield_volume_integral,
-            valid_field_types=(field_models.ScalarField_3D, ),
         ),
         time_series.Statistic(
             name="rms",
             compute_fn=field_operators.compute_sfield_rms,
-            valid_field_types=(field_models.ScalarField_3D, ),
         ),
     )
 }
@@ -67,7 +65,7 @@ class DiagnosticPipeline:
         self.statistic = _STATISTIC_LOOKUP[statistic_name]
         field_registry.validate_fields(
             field_names=field_args.fields,
-            allowed_types=self.statistic.valid_field_types,
+            allowed_types=(field_models.ScalarField_3D, ),
         )
         self.snapshot_args = snapshot_args
         self.fields_to_plot = validate_types.as_tuple(param=field_args.fields)
