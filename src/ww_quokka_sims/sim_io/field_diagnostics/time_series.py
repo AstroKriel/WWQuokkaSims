@@ -86,29 +86,29 @@ class TimeSeries:
     of the underlying per-snapshot files already exist, not itself saved as one file.
     """
 
-    points: list[TimePoint]
+    time_points: list[TimePoint]
 
     @property
     def num_points(
         self,
     ) -> int:
-        return len(self.points)
+        return len(self.time_points)
 
     @property
     def latex_label(
         self,
     ) -> str:
-        return self.points[0].latex_label
+        return self.time_points[0].latex_label
 
     def get_sorted_arrays(
         self,
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        if not self.points:
+        if not self.time_points:
             return (
                 numpy.asarray([], dtype=float),
                 numpy.asarray([], dtype=float),
             )
-        sorted_points = sorted(self.points, key=lambda point: point.sim_time)
+        sorted_points = sorted(self.time_points, key=lambda point: point.sim_time)
         time_array = validate_arrays.as_1d([point.sim_time for point in sorted_points])
         values_array = validate_arrays.as_1d([point.value for point in sorted_points])
         return (
@@ -226,7 +226,7 @@ class GenerateTimeSeries:
                 ),
             )
         if not pending_field_args:
-            return TimeSeries(points=data_points)
+            return TimeSeries(time_points=data_points)
 
         if (self.num_workers != 1) and (len(pending_field_args) > 5):
             new_points: list[TimePoint] = parallel_dispatch.run_in_parallel(
@@ -241,7 +241,7 @@ class GenerateTimeSeries:
         else:
             for field_args in pending_field_args:
                 data_points.append(GenerateTimeSeries._compute_time_point(field_args=field_args))
-        return TimeSeries(points=data_points)
+        return TimeSeries(time_points=data_points)
 
     def _save(
         self,
