@@ -103,7 +103,10 @@ class TimeSeries:
     def get_sorted_time_points(
         self,
     ) -> list[TimePoint]:
-        return sorted(self.time_points, key=lambda time_point: time_point.sim_time)
+        return sorted(
+            self.time_points,
+            key=lambda time_point: time_point.sim_time,
+        )
 
 
 ##
@@ -117,8 +120,8 @@ class ResolvedFieldArgs:
     field_name: str
     field_loader: Callable
     statistic_fn: Callable
-    cache_file_path: Path | None = None
     amr_level: int = 0
+    cache_file_path: Path | None = None
 
 
 @final
@@ -159,7 +162,7 @@ class GenerateTimeSeries:
         self.amr_level = amr_level
         self.apply_log10_plot = apply_log10_plot
 
-    def _cache_file_path(
+    def _get_cache_file_path(
         self,
         snapshot_dir: Path,
     ) -> Path:
@@ -200,7 +203,7 @@ class GenerateTimeSeries:
         pending_field_args: list[ResolvedFieldArgs] = []
         for snapshot_dir in self.snapshot_dirs:
             snapshot_dir = Path(snapshot_dir)
-            cache_file_path = self._cache_file_path(snapshot_dir)
+            cache_file_path = self._get_cache_file_path(snapshot_dir)
             if (not self.overwrite) and cache_file_path.exists():
                 time_points.append(TimePoint.load_from_file(cache_file_path))
                 continue
@@ -210,13 +213,12 @@ class GenerateTimeSeries:
                     field_name=self.field_name,
                     field_loader=self.field_loader,
                     statistic_fn=self.statistic_fn,
-                    cache_file_path=cache_file_path,
                     amr_level=self.amr_level,
+                    cache_file_path=cache_file_path,
                 ),
             )
         if not pending_field_args:
             return TimeSeries(time_points=time_points)
-
         if (self.num_workers != 1) and (len(pending_field_args) > 5):
             new_time_points: list[TimePoint] = parallel_dispatch.run_in_parallel(
                 worker_fn=GenerateTimeSeries._compute_time_point,
