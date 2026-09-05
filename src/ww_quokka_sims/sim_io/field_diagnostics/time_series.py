@@ -180,19 +180,19 @@ class GenerateTimeSeries:
                 snapshot_dir=time_point_args.snapshot_dir,
                 verbose=False,
         ) as snapshot:
-            sfield_3d = time_point_args.field_loader(snapshot, amr_level=time_point_args.amr_level)
-        if not(isinstance(sfield_3d, field_models.ScalarField_3D)):
+            field_3d = time_point_args.field_loader(snapshot, amr_level=time_point_args.amr_level)
+        if not(isinstance(field_3d, field_models.ScalarField_3D)):
             raise TypeError(
-                f"expected ScalarField_3D from `{time_point_args.field_loader.__name__}`, got {type(sfield_3d).__name__}.",
+                f"expected ScalarField_3D from `{time_point_args.field_loader.__name__}`, got {type(field_3d).__name__}.",
             )
-        sim_time = sfield_3d.sim_time
+        sim_time = field_3d.sim_time
         validate_types.ensure_finite_float(param=sim_time, param_name="sim_time")
         assert sim_time is not None
-        value = time_point_args.statistic_fn(sfield_3d)
+        value = time_point_args.statistic_fn(field_3d)
         time_point = TimePoint(
             sim_time=float(sim_time),
             value=float(value),
-            latex_label=sfield_3d.latex_label,
+            latex_label=field_3d.latex_label,
         )
         if time_point_args.cache_file_path is not None:
             time_point_args.cache_file_path.parent.mkdir(parents=True, exist_ok=True)
