@@ -258,6 +258,7 @@ class GenerateTimeSeries:
             input_dict={
                 "sim_times": time_array,
                 "values": values_array,
+                "latex_label": time_series.latex_label,
             },
             overwrite=True,
             verbose=False,
