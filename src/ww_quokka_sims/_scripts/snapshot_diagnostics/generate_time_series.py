@@ -29,16 +29,19 @@ from ww_quokka_sims.sim_io.field_diagnostics import time_series
 ##
 
 _STATISTIC_LOOKUP: dict[str, time_series.Statistic] = {
-    "total": time_series.Statistic(
-        name="total",
-        compute_fn=field_operators.compute_sfield_volume_integral,
-        valid_field_types=(field_models.ScalarField_3D, ),
-    ),
-    "rms": time_series.Statistic(
-        name="rms",
-        compute_fn=field_operators.compute_sfield_rms,
-        valid_field_types=(field_models.ScalarField_3D, ),
-    ),
+    statistic.name: statistic
+    for statistic in (
+        time_series.Statistic(
+            name="total",
+            compute_fn=field_operators.compute_sfield_volume_integral,
+            valid_field_types=(field_models.ScalarField_3D, ),
+        ),
+        time_series.Statistic(
+            name="rms",
+            compute_fn=field_operators.compute_sfield_rms,
+            valid_field_types=(field_models.ScalarField_3D, ),
+        ),
+    )
 }
 
 ##
