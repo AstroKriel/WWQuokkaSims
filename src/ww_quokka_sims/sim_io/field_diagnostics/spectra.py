@@ -276,7 +276,7 @@ class GenerateSpectra:
             label_gap_pt=10.0,
         )
 
-    def _get_snapshot_figure_file_path(
+    def _get_figure_file_path(
         self,
         *,
         figures_dir: pathlib.Path,
@@ -359,7 +359,7 @@ class GenerateSpectra:
         ## rebuilds since it's cheap relative to the per-snapshot compute above
         for field_spectrum in field_spectra:
             padded_index = f"{field_spectrum.step_index:0{self.index_width}d}"
-            figure_path = self._get_snapshot_figure_file_path(
+            figure_path = self._get_figure_file_path(
                 figures_dir=self.figures_dir,
                 padded_index=padded_index,
             )

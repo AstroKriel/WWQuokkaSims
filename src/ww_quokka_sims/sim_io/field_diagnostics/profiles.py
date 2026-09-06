@@ -574,7 +574,7 @@ class GenerateCompProfiles:
     ) -> pathlib.Path:
         return data_dir / f"{self.registered_field.name}-axis={axis_label}-index={padded_index}-amr_level={self.amr_level}.json"
 
-    def _get_snapshot_figure_file_path(
+    def _get_figure_file_path(
         self,
         *,
         figures_dir: pathlib.Path,
@@ -866,7 +866,7 @@ class GenerateCompProfiles:
                 data_dir=data_dir,
             ) for axis in self.axes_to_slice
         ]
-        figure_path = self._get_snapshot_figure_file_path(
+        figure_path = self._get_figure_file_path(
             figures_dir=figures_dir,
             padded_index=padded_index,
         )

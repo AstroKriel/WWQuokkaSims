@@ -342,7 +342,7 @@ class GeneratePDFs:
     ) -> pathlib.Path:
         return data_dir / f"{self._get_data_name()}-pdf-index={padded_index}.json"
 
-    def _get_snapshot_figure_file_path(
+    def _get_figure_file_path(
         self,
         *,
         figures_dir: pathlib.Path,
@@ -490,7 +490,7 @@ class GeneratePDFs:
             data_dir=data_dir,
             padded_index=padded_index,
         )
-        figure_path = self._get_snapshot_figure_file_path(
+        figure_path = self._get_figure_file_path(
             figures_dir=figures_dir,
             padded_index=padded_index,
         )
