@@ -276,21 +276,13 @@ class GenerateSpectra:
             label_gap_pt=10.0,
         )
 
-    def _get_figure_path(
-        self,
-        *,
-        figures_dir: pathlib.Path,
-        padded_index: str,
-    ) -> pathlib.Path:
-        return figures_dir / f"{self.registered_field.name}-spectrum-index={padded_index}.png"
-
     def _save_snapshot_figure(
         self,
         *,
         field_spectrum: FieldSpectrum,
         figure_path: pathlib.Path,
     ) -> None:
-        fig, ax = manage_figure.create_figure()
+        figure, ax = manage_figure.create_figure()
         self._plot_snapshot(
             ax=ax,
             field_spectrum=field_spectrum,
@@ -301,7 +293,7 @@ class GenerateSpectra:
             field_label=field_spectrum.latex_label,
         )
         manage_figure.save_figure(
-            figure=fig,
+            figure=figure,
             figure_path=figure_path,
             verbose=False,
         )
@@ -313,7 +305,7 @@ class GenerateSpectra:
         figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
-        fig, ax = manage_figure.create_figure()
+        figure, ax = manage_figure.create_figure()
         if len(field_spectra) == 1:
             self._plot_snapshot(
                 ax=ax,
@@ -329,10 +321,10 @@ class GenerateSpectra:
             ax=ax,
             field_label=field_spectra[0].latex_label,
         )
-        fig_path = figures_dir / f"{self.registered_field.name}-spectra-summary.png"
+        figure_path = figures_dir / f"{self.registered_field.name}-spectra-summary.png"
         manage_figure.save_figure(
-            figure=fig,
-            figure_path=fig_path,
+            figure=figure,
+            figure_path=figure_path,
             verbose=True,
         )
 
@@ -353,10 +345,7 @@ class GenerateSpectra:
         if field_spectra and self.save_figure:
             for field_spectrum in field_spectra:
                 padded_index = f"{field_spectrum.step_index:0{self.index_width}d}"
-                figure_path = self._get_figure_path(
-                    figures_dir=self.figures_dir,
-                    padded_index=padded_index,
-                )
+                figure_path = self.figures_dir / f"{self.registered_field.name}-spectrum-index={padded_index}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(
                         field_spectrum=field_spectrum,
