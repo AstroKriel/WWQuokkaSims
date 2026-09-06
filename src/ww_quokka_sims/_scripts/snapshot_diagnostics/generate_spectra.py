@@ -84,7 +84,7 @@ class DiagnosticPipeline:
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
     style_figure.set_figure_params()
-    user_args = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="Generate power spectra of Quokka snapshots.",
         parents=[
             cli.base_parser(
@@ -94,7 +94,8 @@ def main():
                 allow_figures=True,
             ),
         ],
-    ).parse_args()
+    )
+    user_args = parser.parse_args()
     diagnostic_pipeline = DiagnosticPipeline(
         snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
         field_args=cli.FieldArgs.from_user_args(user_args),

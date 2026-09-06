@@ -22,7 +22,7 @@ from ww_quokka_sims.sim_io.snapshots import load_snapshot
 
 def main():
     manage_log.set_block_width_mode(manage_log.BlockWidthMode.PRACTICAL)
-    user_args = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="Inspect a Quokka snapshot and list its available field keys.",
         parents=[
             cli.base_parser(
@@ -32,7 +32,8 @@ def main():
                 allow_fields=False,
             ),
         ],
-    ).parse_args()
+    )
+    user_args = parser.parse_args()
     snapshot_dir = pathlib.Path(user_args.input_dir).expanduser().resolve()
     with load_snapshot.QuokkaSnapshot(
             snapshot_dir=snapshot_dir,
