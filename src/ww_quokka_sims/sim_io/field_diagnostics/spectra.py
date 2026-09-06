@@ -171,21 +171,21 @@ class ComputeSpectra:
             ## or not save_data is set this run, so a --save-figure-only run still gets the cheap
             ## reuse; each snapshot's file is independent, so a crash never risks earlier ones
             if (not self.overwrite) and data_path.exists():
-                field_spectra.append(SpectraData.load_from_file(data_path))
-                continue
-            spectra_data = self._compute_snapshot_spectrum(
-                snapshot_dir=snapshot_dir,
-                step_index=step_index,
-            )
-            field_spectra.append(spectra_data)
-            ## save immediately, one file per snapshot, so a killed/interrupted run still
-            ## leaves every already-completed snapshot independently usable and resumable
-            if self.save_data:
-                manage_io.create_directory(
-                    directory=self.data_dir,
-                    verbose=False,
+                spectra_data = SpectraData.load_from_file(data_path)
+            else:
+                spectra_data = self._compute_snapshot_spectrum(
+                    snapshot_dir=snapshot_dir,
+                    step_index=step_index,
                 )
-                spectra_data.save_to_file(data_path)
+                ## save immediately, one file per snapshot, so a killed/interrupted run still
+                ## leaves every already-completed snapshot independently usable and resumable
+                if self.save_data:
+                    manage_io.create_directory(
+                        directory=self.data_dir,
+                        verbose=False,
+                    )
+                    spectra_data.save_to_file(data_path)
+            field_spectra.append(spectra_data)
         field_spectra.sort(key=lambda s: s.sim_time)
         return field_spectra
 
