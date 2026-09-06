@@ -36,7 +36,7 @@ class TimePoint:
     value: float
     field_name: str
     statistic_name: str
-    field_latex_label: latex_labels.LatexLabel
+    latex_label: latex_labels.LatexLabel
 
     def save_to_file(
         self,
@@ -49,7 +49,7 @@ class TimePoint:
                 "value": self.value,
                 "field_name": self.field_name,
                 "statistic_name": self.statistic_name,
-                "field_latex_label": self.field_latex_label.content,
+                "latex_label": self.latex_label.content,
             },
             overwrite=True,
             verbose=False,
@@ -72,7 +72,7 @@ class TimePoint:
                 "value",
                 "field_name",
                 "statistic_name",
-                "field_latex_label",
+                "latex_label",
             },
         )
         return cls(
@@ -80,7 +80,7 @@ class TimePoint:
             value=float(data["value"]),
             field_name=data["field_name"],
             statistic_name=data["statistic_name"],
-            field_latex_label=latex_labels.LatexLabel(content=data["field_latex_label"]),
+            latex_label=latex_labels.LatexLabel(content=data["latex_label"]),
         )
 
 
@@ -104,10 +104,10 @@ class TimeSeries:
         return len(self.time_points)
 
     @property
-    def field_latex_label(
+    def latex_label(
         self,
     ) -> latex_labels.LatexLabel:
-        return self.time_points[0].field_latex_label
+        return self.time_points[0].latex_label
 
     def get_sorted_time_points(
         self,
@@ -207,12 +207,15 @@ class GenerateTimeSeries:
             param_name="sim_time",
         )
         assert sim_time is not None
+        latex_label = latex_labels.LatexLabel(
+            content=rf"\mathrm{{{time_point_args.field_statistic.name}}}\big({field_3d.latex_label}\big)",
+        )
         time_point = TimePoint(
             sim_time=float(sim_time),
             value=float(statistic),
             field_name=time_point_args.registered_field.name,
             statistic_name=time_point_args.field_statistic.name,
-            field_latex_label=latex_labels.LatexLabel(content=field_3d.latex_label),
+            latex_label=latex_label,
         )
         if time_point_args.cache_file_path is not None:
             manage_io.create_directory(
@@ -292,7 +295,7 @@ class GenerateTimeSeries:
                 "values": values_array,
                 "field_name": self.registered_field.name,
                 "statistic_name": self.field_statistic.name,
-                "field_latex_label": time_series.field_latex_label.content,
+                "latex_label": time_series.latex_label.content,
             },
             overwrite=True,
             verbose=False,
@@ -315,8 +318,7 @@ class GenerateTimeSeries:
                 y_alignment="center",
             )
             return
-        field_label_content = time_series.field_latex_label.content
-        ylabel_content = rf"\mathrm{{{self.field_statistic.name}}}\big({field_label_content}\big)"
+        ylabel_content = time_series.latex_label.content
         fig_name = f"{self.registered_field.name}-{self.field_statistic.name}-time_series.png"
         if self.apply_log10_plot:
             if self.registered_field.expected_properties.is_strictly_positive:
