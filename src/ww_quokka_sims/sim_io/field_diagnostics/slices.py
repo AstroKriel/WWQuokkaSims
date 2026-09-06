@@ -259,7 +259,7 @@ class GenerateFieldSlices:
         palette_config: add_color.PaletteConfig,
         hide_annotations: bool = False,
     ) -> None:
-        plot_data.plot_2d_array(
+        palette = plot_data.plot_2d_array(
             panel=ax,
             array_2d=field_slice.sarray_2d,
             data_format="xy",
@@ -267,9 +267,14 @@ class GenerateFieldSlices:
             axis_ranges=field_slice.axis_bounds,
             colorbar_range=(field_slice.min_value, field_slice.max_value),
             palette_config=palette_config,
-            add_colorbar=True,
-            colorbar_label=comp_label,
+            add_colorbar=False,
+        )
+        add_color.add_colorbar(
+            panels=ax,
+            palette=palette,
+            label=comp_label,
             colorbar_side="right",
+            colorbar_gap_pt=15.0,
         )
         if not hide_annotations:
             annotate_panel.add_text(

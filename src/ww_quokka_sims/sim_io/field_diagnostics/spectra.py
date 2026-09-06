@@ -280,6 +280,7 @@ class GenerateSpectra:
             panels=ax,
             palette=palette,
             label=r"snapshot index",
+            colorbar_gap_pt=5.0,
         )
 
     def _snapshot_figure_file_path(

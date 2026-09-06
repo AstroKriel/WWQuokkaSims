@@ -767,6 +767,7 @@ class GenerateCompProfiles:
             panels=axs_row[-1],
             palette=palette,
             label=r"snapshot index",
+            colorbar_gap_pt=15.0,
         )
 
     def _save_snapshot_figure(

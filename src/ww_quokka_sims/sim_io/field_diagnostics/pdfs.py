@@ -408,6 +408,7 @@ class GeneratePDFs:
             panels=axs_grid[-1][-1],
             palette=palette,
             label=r"snapshot index",
+            colorbar_gap_pt=15.0,
         )
 
     def _save_pdf(
