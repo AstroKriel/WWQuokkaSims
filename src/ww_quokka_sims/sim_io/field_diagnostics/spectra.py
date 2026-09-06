@@ -352,8 +352,6 @@ class GenerateSpectra:
         )
         field_spectra = compute_spectra_pipeline.run()
         if field_spectra and self.save_figure:
-            ## one figure per snapshot, resumed like everything else; the combined summary always
-            ## rebuilds since it's cheap relative to the per-snapshot compute above
             for field_spectrum in field_spectra:
                 padded_index = f"{field_spectrum.step_index:0{self.index_width}d}"
                 figure_path = self._get_figure_file_path(
