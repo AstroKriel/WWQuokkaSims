@@ -449,7 +449,7 @@ class GeneratePDFs:
         field_pdf: FieldPDF,
         figure_path: pathlib.Path,
     ) -> None:
-        fig, axs_grid = manage_figure.create_figure_grid(
+        figure, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=1,
             num_panel_cols=field_pdf.num_comps,
             panel_col_gap_pt=30.0,
@@ -465,7 +465,7 @@ class GeneratePDFs:
             use_log10_bins=self.use_log10_bins,
         )
         manage_figure.save_figure(
-            figure=fig,
+            figure=figure,
             figure_path=figure_path,
             verbose=False,
         )
@@ -548,7 +548,7 @@ class GeneratePDFs:
         disk (not from anything held in memory across the potentially-long per-snapshot loop above).
         """
         num_cols = field_pdfs[0].num_comps
-        fig, axs_grid = manage_figure.create_figure_grid(
+        figure, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=1,
             num_panel_cols=num_cols,
             panel_col_gap_pt=30.0,
@@ -569,10 +569,10 @@ class GeneratePDFs:
             comp_labels=field_pdfs[0].comp_labels,
             use_log10_bins=self.use_log10_bins,
         )
-        fig_path = figures_dir / f"{self._get_data_name()}-pdfs-summary.png"
+        figure_path = figures_dir / f"{self._get_data_name()}-pdfs-summary.png"
         manage_figure.save_figure(
-            figure=fig,
-            figure_path=fig_path,
+            figure=figure,
+            figure_path=figure_path,
             verbose=True,
         )
 

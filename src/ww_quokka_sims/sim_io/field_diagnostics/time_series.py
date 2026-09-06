@@ -307,7 +307,7 @@ class GenerateTimeSeries:
         *,
         time_series: TimeSeries,
     ) -> None:
-        fig, ax = manage_figure.create_figure()
+        figure, ax = manage_figure.create_figure()
         time_array, values_array = self._as_arrays(time_points=time_series.get_sorted_time_points())
         if time_array.size == 0:
             annotate_panel.add_text(
@@ -320,14 +320,14 @@ class GenerateTimeSeries:
             )
             return
         ylabel_content = time_series.latex_label.content
-        fig_name = f"{self.registered_field.name}-{self.field_statistic.name}-time_series.png"
+        figure_name = f"{self.registered_field.name}-{self.field_statistic.name}-time_series.png"
         if self.apply_log10_plot:
             if self.registered_field.expected_properties.is_strictly_positive:
                 values_array = compute_array_stats.compute_safe_log10(values_array)
             else:
                 values_array = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
             ylabel_content = rf"\log_{{10}}\big({ylabel_content}\big)"
-            fig_name = f"log10_{fig_name}"
+            figure_name = f"log10_{figure_name}"
         ylabel = latex_labels.LatexLabel(content=ylabel_content).get_label()
         ax.plot(
             time_array,
@@ -338,10 +338,10 @@ class GenerateTimeSeries:
         )
         ax.set_xlabel("time")
         ax.set_ylabel(ylabel)
-        fig_path = self.figures_dir / fig_name
+        figure_path = self.figures_dir / figure_name
         manage_figure.save_figure(
-            figure=fig,
-            figure_path=fig_path,
+            figure=figure,
+            figure_path=figure_path,
             verbose=True,
         )
 

@@ -594,7 +594,7 @@ class GenerateFieldSlices:
                 )
                 return
         num_rows = len(rows)
-        fig, axs_grid = manage_figure.create_figure_grid(
+        figure, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=num_rows,
             num_panel_cols=len(self.axes_to_slice),
             panel_width_cm=8.0,
@@ -610,7 +610,7 @@ class GenerateFieldSlices:
         self._label_axes(axs_grid=axs_grid)
         figure_path = figures_dir / self._get_figure_file_name(padded_index=padded_index)
         manage_figure.save_figure(
-            figure=fig,
+            figure=figure,
             figure_path=figure_path,
             verbose=verbose,
         )

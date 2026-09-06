@@ -780,7 +780,7 @@ class GenerateCompProfiles:
     ) -> None:
         axis_labels = comp_profiles[0].axis_labels
         comp_labels = [comp_profile.comp_label for comp_profile in comp_profiles]
-        fig, axs_grid = manage_figure.create_figure_grid(
+        figure, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=len(comp_profiles),
             num_panel_cols=len(axis_labels),
             panel_col_gap_pt=30.0,
@@ -797,7 +797,7 @@ class GenerateCompProfiles:
             axis_labels=axis_labels,
         )
         manage_figure.save_figure(
-            figure=fig,
+            figure=figure,
             figure_path=figure_path,
             verbose=False,
         )
@@ -813,7 +813,7 @@ class GenerateCompProfiles:
         """
         comp_labels = list(comp_profiles_lookup.keys())
         axis_labels = comp_profiles_lookup[comp_labels[0]][0].axis_labels
-        fig, axs_grid = manage_figure.create_figure_grid(
+        figure, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=len(comp_labels),
             num_panel_cols=len(axis_labels),
             panel_col_gap_pt=30.0,
@@ -836,10 +836,10 @@ class GenerateCompProfiles:
             comp_labels=comp_labels,
             axis_labels=axis_labels,
         )
-        fig_path = figures_dir / f"{self.registered_field.name}-profiles-summary.png"
+        figure_path = figures_dir / f"{self.registered_field.name}-profiles-summary.png"
         manage_figure.save_figure(
-            figure=fig,
-            figure_path=fig_path,
+            figure=figure,
+            figure_path=figure_path,
             verbose=True,
         )
 
