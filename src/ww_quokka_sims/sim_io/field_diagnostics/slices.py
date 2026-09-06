@@ -275,6 +275,7 @@ class GenerateFieldSlices:
             label=comp_label,
             colorbar_side="right",
             colorbar_gap_pt=15.0,
+            label_gap_pt=10.0,
         )
         if not hide_annotations:
             annotate_panel.add_text(

@@ -409,6 +409,7 @@ class GeneratePDFs:
             palette=palette,
             label=r"snapshot index",
             colorbar_gap_pt=15.0,
+            label_gap_pt=10.0,
         )
 
     def _save_pdf(
