@@ -12,7 +12,6 @@ from jormi.ww_plots import add_color
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import field_palettes
-from ww_quokka_sims.sim_io.snapshots import field_registry
 
 ##
 ## === TEST SUITE
@@ -25,7 +24,7 @@ class TestResolvePaletteConfig(unittest.TestCase):
         self,
     ):
         config = field_palettes.resolve_palette_config(
-            expected_properties=field_registry.ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            pivot_value=None,
             value_range=(0.0, 1.0),
         )
         self.assertIsInstance(config, add_color.SequentialConfig)
@@ -35,7 +34,7 @@ class TestResolvePaletteConfig(unittest.TestCase):
         self,
     ):
         config = field_palettes.resolve_palette_config(
-            expected_properties=field_registry.ExpectedProperties(pivot_value=1.0, is_strictly_positive=True),
+            pivot_value=1.0,
             value_range=(0.0, 2.0),
         )
         self.assertIsInstance(config, add_color.DivergingConfig)
@@ -48,7 +47,7 @@ class TestResolvePaletteConfig(unittest.TestCase):
     ):
         ## `0.0` is falsy but must not be treated the same as `None`
         config = field_palettes.resolve_palette_config(
-            expected_properties=field_registry.ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            pivot_value=0.0,
             value_range=(-1.0, 1.0),
         )
         self.assertIsInstance(config, add_color.DivergingConfig)
@@ -61,7 +60,7 @@ class TestResolvePaletteConfig(unittest.TestCase):
         ## a signed field can still have one instance (eg. one comp of one slice) that comes
         ## out one-sided; a diverging palette cannot render a range that misses its own pivot
         config = field_palettes.resolve_palette_config(
-            expected_properties=field_registry.ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            pivot_value=0.0,
             value_range=(-6.4e-4, -2.96e-9),
         )
         self.assertIsInstance(config, add_color.SequentialConfig)

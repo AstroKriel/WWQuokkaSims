@@ -400,6 +400,12 @@ class GenerateFieldSlices:
         step_time: float,
     ) -> None:
         num_cols = len(self.axes_to_slice)
+        expected_properties = self.field_args.registered_field.expected_properties
+        pivot_value = expected_properties.pivot_value
+        if self.apply_log10_plot:
+            ## log10 of a strictly-positive field diverges around log10(1) = 0; log10 of a signed
+            ## field is taken of its abs value (see above), which has no sign left to pivot around
+            pivot_value = 0.0 if expected_properties.is_strictly_positive else None
         for row_index, (comp_label, sliced_by_axis) in enumerate(rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
                 ax = axs_grid[row_index][col_index]
@@ -411,7 +417,7 @@ class GenerateFieldSlices:
                     plane_label=get_slice_plane_label(axis_to_slice),
                     comp_label=comp_label,
                     palette_config=field_palettes.resolve_palette_config(
-                        expected_properties=self.field_args.registered_field.expected_properties,
+                        pivot_value=pivot_value,
                         value_range=(field_slice.min_value, field_slice.max_value),
                     ),
                     show_colorbar_label=col_index == num_cols - 1,
