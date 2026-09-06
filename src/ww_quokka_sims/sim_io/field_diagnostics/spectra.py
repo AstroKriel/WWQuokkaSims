@@ -351,27 +351,24 @@ class GenerateSpectra:
             amr_level=self.amr_level,
         )
         field_spectra = compute_spectra_pipeline.run()
-        if not field_spectra:
-            return
-        if not self.save_figure:
-            return
-        ## one figure per snapshot, resumed like everything else; the combined summary always
-        ## rebuilds since it's cheap relative to the per-snapshot compute above
-        for field_spectrum in field_spectra:
-            padded_index = f"{field_spectrum.step_index:0{self.index_width}d}"
-            figure_path = self._get_figure_file_path(
-                figures_dir=self.figures_dir,
-                padded_index=padded_index,
-            )
-            if self.overwrite or not figure_path.exists():
-                self._save_snapshot_figure(
-                    field_spectrum=field_spectrum,
-                    figure_path=figure_path,
+        if field_spectra and self.save_figure:
+            ## one figure per snapshot, resumed like everything else; the combined summary always
+            ## rebuilds since it's cheap relative to the per-snapshot compute above
+            for field_spectrum in field_spectra:
+                padded_index = f"{field_spectrum.step_index:0{self.index_width}d}"
+                figure_path = self._get_figure_file_path(
+                    figures_dir=self.figures_dir,
+                    padded_index=padded_index,
                 )
-        self._save_summary_figure(
-            field_spectra=field_spectra,
-            figures_dir=self.figures_dir,
-        )
+                if self.overwrite or not figure_path.exists():
+                    self._save_snapshot_figure(
+                        field_spectrum=field_spectrum,
+                        figure_path=figure_path,
+                    )
+            self._save_summary_figure(
+                field_spectra=field_spectra,
+                figures_dir=self.figures_dir,
+            )
 
 
 ## } MODULE
