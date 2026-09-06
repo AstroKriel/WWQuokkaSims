@@ -30,7 +30,7 @@ quokka-generate-time-series = "ww_quokka_sims._scripts.snapshot_diagnostics.gene
 quokka-inspect-snapshot = "ww_quokka_sims._scripts.snapshot_diagnostics.inspect_snapshot:main"
 
 [tool.uv.sources]
-jormi = { git = "https://github.com/AstroKriel/PythonHelpers.git", rev = "4ffc44c40417e478f952a6473369bacb7e0e4fa6" }
+jormi = { git = "https://github.com/AstroKriel/PythonHelpers.git", rev = "279567d6405e0990f74c99e7787b61e6d322736a" }
 
 [dependency-groups]
 dev = [

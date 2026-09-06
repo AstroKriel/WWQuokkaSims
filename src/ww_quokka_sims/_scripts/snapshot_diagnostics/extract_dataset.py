@@ -63,15 +63,15 @@ def _axis_to_index(
     return cartesian_axes.get_axis_index(axis)
 
 
-def _get_step_time(
+def _get_sim_time(
     field: field_models.AnyField_3D,
 ) -> float:
-    step_time = field.sim_time
-    if (step_time is None) or (not numpy.isfinite(step_time)):
-        msg = f"Invalid sim_time for field: {step_time!r}."
+    sim_time = field.sim_time
+    if (sim_time is None) or (not numpy.isfinite(sim_time)):
+        msg = f"Invalid sim_time for field: {sim_time!r}."
         manage_log.log_error(text=msg)
         raise RuntimeError(msg)
-    return float(step_time)
+    return float(sim_time)
 
 
 ##
@@ -115,7 +115,7 @@ class FieldExtractor:
         self,
         *,
         field: field_models.AnyField_3D,
-        step_time: float,
+        sim_time: float,
         step_index: int,
         index_width: int,
         data_dir: pathlib.Path,
@@ -133,7 +133,7 @@ class FieldExtractor:
             numpy.savez(
                 data_dir / file_name,
                 sarray_3d=sarray_3d,
-                step_time=step_time,
+                sim_time=sim_time,
                 step_index=step_index,
                 amr_level=self.field_args.amr_level,
             )
@@ -154,7 +154,7 @@ class FieldExtractor:
             data_dir / file_name,
             varray_3d=varray_3d[comp_indices, ...],
             comp_labels=numpy.array(comp_labels),
-            step_time=step_time,
+            sim_time=sim_time,
             step_index=step_index,
             amr_level=self.field_args.amr_level,
         )
@@ -181,7 +181,7 @@ class FieldExtractor:
         field = self._load_field(snapshot_dir=snapshot_dir)
         self._save_field(
             field=field,
-            step_time=_get_step_time(field),
+            sim_time=_get_sim_time(field),
             step_index=step_index,
             index_width=index_width,
             data_dir=data_dir,

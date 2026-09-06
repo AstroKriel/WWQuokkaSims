@@ -29,7 +29,7 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 
 @dataclasses.dataclass(frozen=True)
 class SpectraData:
-    step_time: float
+    sim_time: float
     step_index: int
     latex_label: str
     log10_k_bin_centers: numpy.ndarray
@@ -54,7 +54,7 @@ class SpectraData:
         json_io.save_dict_to_json_file(
             file_path=file_path,
             input_dict={
-                "step_time": self.step_time,
+                "sim_time": self.sim_time,
                 "step_index": self.step_index,
                 "latex_label": self.latex_label,
                 "log10_k_bin_centers": self.log10_k_bin_centers,
@@ -76,7 +76,7 @@ class SpectraData:
         validate_types.ensure_dict_has_keys(
             param=data,
             required_keys={
-                "step_time",
+                "sim_time",
                 "step_index",
                 "latex_label",
                 "log10_k_bin_centers",
@@ -85,7 +85,7 @@ class SpectraData:
             param_name="<SpectraData JSON>",
         )
         return cls(
-            step_time=float(data["step_time"]),
+            sim_time=float(data["sim_time"]),
             step_index=int(data["step_index"]),
             latex_label=data["latex_label"],
             log10_k_bin_centers=numpy.asarray(data["log10_k_bin_centers"]),
@@ -156,8 +156,8 @@ class ComputeSpectra:
             ) as quokka_snapshot:
                 field = self.registered_field.load(quokka_snapshot=quokka_snapshot, amr_level=self.amr_level)
             spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
-            step_time = field.sim_time
-            assert step_time is not None
+            sim_time = field.sim_time
+            assert sim_time is not None
             log10_k_bin_centers = numpy.ma.log10(
                 numpy.ma.masked_less_equal(
                     x=spectrum.k_bin_centers_1d,
@@ -171,7 +171,7 @@ class ComputeSpectra:
                 ),
             )
             spectra_data = SpectraData(
-                step_time=step_time,
+                sim_time=sim_time,
                 step_index=step_index,
                 latex_label=field.latex_label,
                 log10_k_bin_centers=log10_k_bin_centers,
@@ -187,7 +187,7 @@ class ComputeSpectra:
                 )
                 spectra_data.save_to_file(data_path)
 
-        field_spectra.sort(key=lambda s: s.step_time)
+        field_spectra.sort(key=lambda s: s.sim_time)
         return field_spectra
 
 

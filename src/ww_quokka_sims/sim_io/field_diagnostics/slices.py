@@ -40,7 +40,7 @@ class SlicedField:
     min_value: float
     max_value: float
     comp_label: str
-    step_time: float
+    sim_time: float
     step_index: int
     amr_level: int = 0
 
@@ -55,7 +55,7 @@ class SlicedField:
             comp_label=self.comp_label,
             min_value=self.min_value,
             max_value=self.max_value,
-            step_time=self.step_time,
+            sim_time=self.sim_time,
             step_index=self.step_index,
             amr_level=self.amr_level,
         )
@@ -77,7 +77,7 @@ class SlicedField:
                 min_value=float(npz["min_value"]),
                 max_value=float(npz["max_value"]),
                 comp_label=str(npz["comp_label"]),
-                step_time=float(npz["step_time"]),
+                sim_time=float(npz["sim_time"]),
                 step_index=int(npz["step_index"]),
                 amr_level=int(npz["amr_level"]),
             )
@@ -119,15 +119,15 @@ class SnapshotData:
     field: field_models.AnyField_3D
 
     @property
-    def step_time(
+    def sim_time(
         self,
     ) -> float:
-        step_time = self.field.sim_time
-        if (step_time is None) or (not numpy.isfinite(step_time)):
-            msg = f"Invalid sim_time for field: {step_time!r}."
+        sim_time = self.field.sim_time
+        if (sim_time is None) or (not numpy.isfinite(sim_time)):
+            msg = f"Invalid sim_time for field: {sim_time!r}."
             manage_log.log_error(text=msg)
             raise RuntimeError(msg)
-        return float(step_time)
+        return float(sim_time)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -203,7 +203,7 @@ def slice_field(
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
     uniform_domain: domain_models.UniformDomain_3D,
     comp_label: str,
-    step_time: float,
+    sim_time: float,
     step_index: int,
     amr_level: int,
 ) -> SlicedField:
@@ -225,7 +225,7 @@ def slice_field(
         min_value=min_value,
         max_value=max_value,
         comp_label=comp_label,
-        step_time=step_time,
+        sim_time=sim_time,
         step_index=step_index,
         amr_level=amr_level,
     )
@@ -252,7 +252,7 @@ class GenerateFieldSlices:
     def plot_slice(
         *,
         ax: manage_figure.Panel,
-        step_time: float,
+        sim_time: float,
         field_slice: SlicedField,
         plane_label: str,
         comp_label: str,
@@ -296,7 +296,7 @@ class GenerateFieldSlices:
                 y_pos_fraction=0.5,
                 x_alignment="center",
                 y_alignment="center",
-                label=rf"$t = {step_time:.2f}$",
+                label=rf"$t = {sim_time:.2f}$",
                 box_alpha=0.5,
             )
             annotate_panel.add_text(
@@ -369,7 +369,7 @@ class GenerateFieldSlices:
         *,
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
-        step_time: float,
+        sim_time: float,
         step_index: int,
     ) -> list[Row]:
         return [
@@ -382,7 +382,7 @@ class GenerateFieldSlices:
                         axis_to_slice=axis_to_slice,
                         uniform_domain=uniform_domain,
                         comp_label=field_comp.label,
-                        step_time=step_time,
+                        sim_time=sim_time,
                         step_index=step_index,
                         amr_level=self.field_args.amr_level,
                     )
@@ -397,7 +397,7 @@ class GenerateFieldSlices:
         *,
         axs_grid: manage_figure.PanelGrid,
         rows: list[Row],
-        step_time: float,
+        sim_time: float,
     ) -> None:
         num_cols = len(self.axes_to_slice)
         expected_properties = self.field_args.registered_field.expected_properties
@@ -412,7 +412,7 @@ class GenerateFieldSlices:
                 field_slice = sliced_by_axis[axis_to_slice]
                 self.plot_slice(
                     ax=ax,
-                    step_time=step_time,
+                    sim_time=sim_time,
                     field_slice=field_slice,
                     plane_label=get_slice_plane_label(axis_to_slice),
                     comp_label=comp_label,
@@ -498,7 +498,7 @@ class GenerateFieldSlices:
         *,
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
-        step_time: float,
+        sim_time: float,
         step_index: int,
         padded_index: str,
         data_dir: pathlib.Path,
@@ -510,7 +510,7 @@ class GenerateFieldSlices:
                     axis_to_slice=axis_to_slice,
                     uniform_domain=uniform_domain,
                     comp_label=field_comp.label,
-                    step_time=step_time,
+                    sim_time=sim_time,
                     step_index=step_index,
                     amr_level=self.field_args.amr_level,
                 )
@@ -529,7 +529,7 @@ class GenerateFieldSlices:
         data_dir: pathlib.Path,
     ) -> tuple[list[Row], float]:
         rows: list[Row] = []
-        step_time: float | None = None
+        sim_time: float | None = None
         for comp_axis in comp_axes:
             sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, SlicedField] = {}
             comp_label = ""
@@ -542,16 +542,16 @@ class GenerateFieldSlices:
                 field_slice = SlicedField.load_from_file(data_dir / file_name)
                 sliced_by_axis[axis_to_slice] = field_slice
                 comp_label = field_slice.comp_label
-                step_time = field_slice.step_time
+                sim_time = field_slice.sim_time
             rows.append((comp_label, sliced_by_axis))
-        assert step_time is not None
-        return rows, step_time
+        assert sim_time is not None
+        return rows, sim_time
 
     def _render_figure(
         self,
         *,
         rows: list[Row],
-        step_time: float,
+        sim_time: float,
         step_index: int,
         padded_index: str,
         figures_dir: pathlib.Path,
@@ -576,7 +576,7 @@ class GenerateFieldSlices:
                         min_value=min_value,
                         max_value=max_value,
                         comp_label=field_slice.comp_label,
-                        step_time=field_slice.step_time,
+                        sim_time=field_slice.sim_time,
                         step_index=field_slice.step_index,
                         amr_level=field_slice.amr_level,
                     )
@@ -602,7 +602,7 @@ class GenerateFieldSlices:
         self._plot_rows(
             axs_grid=axs_grid,
             rows=rows,
-            step_time=step_time,
+            sim_time=sim_time,
         )
         self._label_axes(axs_grid=axs_grid)
         fig_path = figures_dir / self._figure_file_name(padded_index=padded_index)
@@ -649,14 +649,14 @@ class GenerateFieldSlices:
                     f"building figure from saved data, skipping the raw snapshot."
                 ),
             )
-            rows, step_time = self._load_saved_rows(
+            rows, sim_time = self._load_saved_rows(
                 comp_axes=saved_comp_axes,
                 padded_index=padded_index,
                 data_dir=data_dir,
             )
             self._render_figure(
                 rows=rows,
-                step_time=step_time,
+                sim_time=sim_time,
                 step_index=step_index,
                 padded_index=padded_index,
                 figures_dir=figures_dir,
@@ -672,7 +672,7 @@ class GenerateFieldSlices:
             self._save_field_comps(
                 field_comps=field_comps,
                 uniform_domain=snapshot_data.uniform_domain,
-                step_time=snapshot_data.step_time,
+                sim_time=snapshot_data.sim_time,
                 step_index=step_index,
                 padded_index=padded_index,
                 data_dir=data_dir,
@@ -681,12 +681,12 @@ class GenerateFieldSlices:
             rows = self._rows_from_field_comps(
                 field_comps=field_comps,
                 uniform_domain=snapshot_data.uniform_domain,
-                step_time=snapshot_data.step_time,
+                sim_time=snapshot_data.sim_time,
                 step_index=step_index,
             )
             self._render_figure(
                 rows=rows,
-                step_time=snapshot_data.step_time,
+                sim_time=snapshot_data.sim_time,
                 step_index=step_index,
                 padded_index=padded_index,
                 figures_dir=figures_dir,

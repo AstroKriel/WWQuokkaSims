@@ -28,7 +28,7 @@ class TestScalarProfileRoundTrip(unittest.TestCase):
         scalar_profile = profiles.ScalarProfile(
             field_name="density",
             field_label=r"$\rho$",
-            step_time=0.25,
+            sim_time=0.25,
             step_index=3,
             profile_axis="x_0",
             position=numpy.array([0.0, 1.0, 2.0]),
@@ -41,7 +41,7 @@ class TestScalarProfileRoundTrip(unittest.TestCase):
             loaded = profiles.ScalarProfile.load_from_file(file_path)
         self.assertEqual(loaded.field_name, scalar_profile.field_name)
         self.assertEqual(loaded.field_label, scalar_profile.field_label)
-        self.assertEqual(loaded.step_time, scalar_profile.step_time)
+        self.assertEqual(loaded.sim_time, scalar_profile.sim_time)
         self.assertEqual(loaded.step_index, scalar_profile.step_index)
         self.assertEqual(loaded.profile_axis, scalar_profile.profile_axis)
         self.assertEqual(loaded.amr_level, scalar_profile.amr_level)
@@ -56,7 +56,7 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
     ):
         vector_profile = profiles.VectorProfile(
             field_name="velocity",
-            step_time=0.5,
+            sim_time=0.5,
             step_index=1,
             profile_axis="x_1",
             components={

@@ -125,13 +125,13 @@ def find_npz_near_time(
     glob_pattern: str,
     target_time: float,
 ) -> pathlib.Path:
-    """Return the `extracted_dir` file matching `glob_pattern` whose `step_time` is nearest `target_time`."""
+    """Return the `extracted_dir` file matching `glob_pattern` whose `sim_time` is nearest `target_time`."""
     npz_paths = sorted(extracted_dir.glob(glob_pattern))
     if not npz_paths:
         raise FileNotFoundError(f"no file matching `{glob_pattern}` found in: {extracted_dir}.")
     return min(
         npz_paths,
-        key=lambda npz_path: abs(float(numpy.load(npz_path)["step_time"]) - target_time),
+        key=lambda npz_path: abs(float(numpy.load(npz_path)["sim_time"]) - target_time),
     )
 
 

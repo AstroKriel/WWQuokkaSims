@@ -31,7 +31,7 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 
 @dataclasses.dataclass(frozen=True)
 class PDFData:
-    step_time: float
+    sim_time: float
     step_index: int
     grouped_bin_centers: list[numpy.ndarray]
     grouped_densities: list[numpy.ndarray]
@@ -89,7 +89,7 @@ class PDFData:
     ) -> None:
         bin_centers_key = "log10_bin_centers" if self.use_log10_bins else "bin_centers"
         output_dict: dict = {
-            "step_time": self.step_time,
+            "sim_time": self.sim_time,
             "step_index": self.step_index,
             "use_log10_bins": self.use_log10_bins,
         }
@@ -117,14 +117,14 @@ class PDFData:
         )
         validate_types.ensure_dict_has_keys(
             param=input_dict,
-            required_keys={"step_time", "step_index", "use_log10_bins"},
+            required_keys={"sim_time", "step_index", "use_log10_bins"},
             param_name="<PDFData JSON>",
         )
         use_log10_bins = bool(input_dict["use_log10_bins"])
         bin_centers_key = "log10_bin_centers" if use_log10_bins else "bin_centers"
-        comp_labels = [key for key in input_dict if key not in ("step_time", "step_index", "use_log10_bins")]
+        comp_labels = [key for key in input_dict if key not in ("sim_time", "step_index", "use_log10_bins")]
         return cls(
-            step_time=float(input_dict["step_time"]),
+            sim_time=float(input_dict["sim_time"]),
             step_index=int(input_dict["step_index"]),
             grouped_bin_centers=[numpy.array(input_dict[label][bin_centers_key]) for label in comp_labels],
             grouped_densities=[numpy.array(input_dict[label]["log10_density"]) for label in comp_labels],
@@ -200,8 +200,8 @@ class ComputePDFs:
                 f"Vector field `{self.registered_field.name}` requires at least one component to plot; none provided.",
             )
         field_models.ensure_3d_vfield(field)
-        step_time = field.sim_time
-        assert step_time is not None
+        sim_time = field.sim_time
+        assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
         comp_labels = [field_models.get_vcomp_label(vfield_3d=field, comp_axis=comp_name) for comp_name in comp_names]
         grouped_bin_centers: list[numpy.ndarray] = []
@@ -216,7 +216,7 @@ class ComputePDFs:
             grouped_bin_centers.append(bin_centers)
             grouped_densities.append(densities)
         return PDFData(
-            step_time=step_time,
+            sim_time=sim_time,
             step_index=step_index,
             grouped_bin_centers=grouped_bin_centers,
             grouped_densities=grouped_densities,
@@ -230,15 +230,15 @@ class ComputePDFs:
         step_index: int,
     ) -> PDFData:
         field_models.ensure_3d_sfield(field)
-        step_time = field.sim_time
-        assert step_time is not None
+        sim_time = field.sim_time
+        assert sim_time is not None
         bin_centers, densities = self._estimate_pdf(
             field_data=field.fdata.farray,
             num_bins=self.num_bins,
             use_log10_bins=self.use_log10_bins,
         )
         return PDFData(
-            step_time=step_time,
+            sim_time=sim_time,
             step_index=step_index,
             grouped_bin_centers=[bin_centers],
             grouped_densities=[densities],
@@ -420,7 +420,7 @@ class GeneratePDFs:
     ) -> None:
         """Save one snapshot's PDF to its own file, mirroring `generate_slices.py`'s one-file-per-
         snapshot convention (rather than one file aggregating every snapshot) -- each file is
-        self-contained (carries its own `step_time`/`use_log10_bins`), so results already on disk
+        self-contained (carries its own `sim_time`/`use_log10_bins`), so results already on disk
         are immediately usable even if a later snapshot in the run fails or the job is cut off.
         """
         manage_io.create_directory(
@@ -530,7 +530,7 @@ class GeneratePDFs:
     ) -> list[PDFData]:
         paths = sorted(data_dir.glob(f"{self._data_name()}-pdf-index=*.json"))
         field_pdfs = [PDFData.load_from_file(path) for path in paths]
-        field_pdfs.sort(key=lambda pdf_data: pdf_data.step_time)
+        field_pdfs.sort(key=lambda pdf_data: pdf_data.sim_time)
         return field_pdfs
 
     def _save_summary_figure(

@@ -26,7 +26,7 @@ class TestSpectraDataRoundTrip(unittest.TestCase):
         self,
     ):
         spectra_data = spectra.SpectraData(
-            step_time=0.25,
+            sim_time=0.25,
             step_index=3,
             latex_label=r"\rho",
             log10_k_bin_centers=numpy.array([0.0, 1.0, 2.0]),
@@ -36,7 +36,7 @@ class TestSpectraDataRoundTrip(unittest.TestCase):
             file_path = pathlib.Path(tmp_dir) / "spectra.json"
             spectra_data.save_to_file(file_path)
             loaded = spectra.SpectraData.load_from_file(file_path)
-        self.assertEqual(loaded.step_time, spectra_data.step_time)
+        self.assertEqual(loaded.sim_time, spectra_data.sim_time)
         self.assertEqual(loaded.step_index, spectra_data.step_index)
         self.assertEqual(loaded.latex_label, spectra_data.latex_label)
         numpy.testing.assert_array_equal(loaded.log10_k_bin_centers, spectra_data.log10_k_bin_centers)

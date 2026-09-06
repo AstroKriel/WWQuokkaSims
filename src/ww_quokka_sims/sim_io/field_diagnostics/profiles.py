@@ -109,7 +109,7 @@ class ComponentArrays:
 class ScalarProfile:
     field_name: str
     field_label: str
-    step_time: float
+    sim_time: float
     step_index: int
     profile_axis: str
     position: NDArray[numpy.floating]
@@ -125,8 +125,8 @@ class ScalarProfile:
             param_name="<field_label>",
         )
         validate_types.ensure_finite_float(
-            param=self.step_time,
-            param_name="<step_time>",
+            param=self.sim_time,
+            param_name="<sim_time>",
             allow_none=False,
         )
         validate_types.ensure_finite_int(
@@ -156,7 +156,7 @@ class ScalarProfile:
             input_dict={
                 "field_name": self.field_name,
                 "field_label": self.field_label,
-                "step_time": self.step_time,
+                "sim_time": self.sim_time,
                 "step_index": self.step_index,
                 "profile_axis": self.profile_axis,
                 "position": self.position,
@@ -181,7 +181,7 @@ class ScalarProfile:
             required_keys={
                 "field_name",
                 "field_label",
-                "step_time",
+                "sim_time",
                 "step_index",
                 "profile_axis",
                 "position",
@@ -193,7 +193,7 @@ class ScalarProfile:
         return cls(
             field_name=data["field_name"],
             field_label=data["field_label"],
-            step_time=float(data["step_time"]),
+            sim_time=float(data["sim_time"]),
             step_index=int(data["step_index"]),
             profile_axis=data["profile_axis"],
             position=numpy.asarray(data["position"]),
@@ -210,7 +210,7 @@ class ScalarProfile:
 @dataclasses.dataclass(frozen=True)
 class VectorProfile:
     field_name: str
-    step_time: float
+    sim_time: float
     step_index: int
     profile_axis: str
     components: dict[str, ComponentArrays]
@@ -221,8 +221,8 @@ class VectorProfile:
     ) -> None:
         _ensure_field_name(self.field_name)
         validate_types.ensure_finite_float(
-            param=self.step_time,
-            param_name="<step_time>",
+            param=self.sim_time,
+            param_name="<sim_time>",
             allow_none=False,
         )
         validate_types.ensure_finite_int(
@@ -255,7 +255,7 @@ class VectorProfile:
             file_path=file_path,
             input_dict={
                 "field_name": self.field_name,
-                "step_time": self.step_time,
+                "sim_time": self.sim_time,
                 "step_index": self.step_index,
                 "profile_axis": self.profile_axis,
                 "field_comps": {
@@ -285,7 +285,7 @@ class VectorProfile:
             param=data,
             required_keys={
                 "field_name",
-                "step_time",
+                "sim_time",
                 "step_index",
                 "profile_axis",
                 "field_comps",
@@ -304,7 +304,7 @@ class VectorProfile:
         }
         return cls(
             field_name=data["field_name"],
-            step_time=float(data["step_time"]),
+            sim_time=float(data["sim_time"]),
             step_index=int(data["step_index"]),
             profile_axis=data["profile_axis"],
             components=components,
@@ -319,7 +319,7 @@ class VectorProfile:
 
 @dataclasses.dataclass(frozen=True)
 class CompProfile:
-    step_time: float
+    sim_time: float
     step_index: int
     comp_name: str
     comp_label: str
@@ -414,8 +414,8 @@ class ComputeCompProfiles:
         step_index: int,
     ) -> list[CompProfile]:
         field_models.ensure_3d_sfield(field)
-        step_time = field.sim_time
-        assert step_time is not None
+        sim_time = field.sim_time
+        assert sim_time is not None
         axis_labels = list(self.axes_to_slice)
         x_array_by_axis: list[numpy.ndarray] = []
         y_array_by_axis: list[numpy.ndarray] = []
@@ -432,7 +432,7 @@ class ComputeCompProfiles:
             y_array_by_axis.append(field_profile)
         return [
             CompProfile(
-                step_time=step_time,
+                sim_time=sim_time,
                 step_index=step_index,
                 comp_name=self.registered_field.name,
                 axis_labels=axis_labels,
@@ -454,8 +454,8 @@ class ComputeCompProfiles:
                 f"Vector field `{self.registered_field.name}` requires at least one component to plot; none provided.",
             )
         field_models.ensure_3d_vfield(field)
-        step_time = field.sim_time
-        assert step_time is not None
+        sim_time = field.sim_time
+        assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
         axis_labels = list(self.axes_to_slice)
         comp_profiles: list[CompProfile] = []
@@ -478,7 +478,7 @@ class ComputeCompProfiles:
                 y_array_by_axis.append(comp_profile)
             comp_profiles.append(
                 CompProfile(
-                    step_time=step_time,
+                    sim_time=sim_time,
                     step_index=step_index,
                     comp_name=cartesian_axes.get_axis_label(comp_name),
                     axis_labels=axis_labels,
@@ -591,7 +591,7 @@ class GenerateCompProfiles:
             verbose=False,
         )
         is_scalar = comp_profiles[0].comp_name == self.registered_field.name
-        step_time = comp_profiles[0].step_time
+        sim_time = comp_profiles[0].sim_time
         step_index = comp_profiles[0].step_index
         for axis_index, axis in enumerate(comp_profiles[0].axis_labels):
             axis_label = cartesian_axes.get_axis_label(axis)
@@ -605,7 +605,7 @@ class GenerateCompProfiles:
                 ScalarProfile(
                     field_name=self.registered_field.name,
                     field_label=comp_profile.comp_label,
-                    step_time=step_time,
+                    sim_time=sim_time,
                     step_index=step_index,
                     profile_axis=axis_label,
                     position=comp_profile.get_domain(axis_index=axis_index),
@@ -624,7 +624,7 @@ class GenerateCompProfiles:
                 }
                 VectorProfile(
                     field_name=self.registered_field.name,
-                    step_time=step_time,
+                    sim_time=sim_time,
                     step_index=step_index,
                     profile_axis=axis_label,
                     components=components,
@@ -642,7 +642,7 @@ class GenerateCompProfiles:
             file_path=data_paths[0],
             verbose=False,
         )
-        step_time = 0.0
+        sim_time = 0.0
         step_index = 0
         if "field_comps" not in first_raw:
             x_array_by_axis: list[numpy.ndarray] = []
@@ -653,11 +653,11 @@ class GenerateCompProfiles:
                 x_array_by_axis.append(scalar_profile.position)
                 y_array_by_axis.append(scalar_profile.field_value)
                 comp_label = scalar_profile.field_label
-                step_time = scalar_profile.step_time
+                sim_time = scalar_profile.sim_time
                 step_index = scalar_profile.step_index
             comp_profiles = [
                 CompProfile(
-                    step_time=step_time,
+                    sim_time=sim_time,
                     step_index=step_index,
                     comp_name=self.registered_field.name,
                     axis_labels=list(self.axes_to_slice),
@@ -666,14 +666,14 @@ class GenerateCompProfiles:
                     y_array_by_axis=y_array_by_axis,
                 ),
             ]
-            return comp_profiles, step_time
+            return comp_profiles, sim_time
         vector_profiles = [VectorProfile.load_from_file(path) for path in data_paths]
         comp_keys = sorted(vector_profiles[0].components.keys())
         per_comp_x: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
         per_comp_y: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
         per_comp_label: dict[str, str] = {}
         for vector_profile in vector_profiles:
-            step_time = vector_profile.step_time
+            sim_time = vector_profile.sim_time
             step_index = vector_profile.step_index
             for key in comp_keys:
                 comp_arrays = vector_profile.components[key]
@@ -682,7 +682,7 @@ class GenerateCompProfiles:
                 per_comp_label[key] = comp_arrays.label
         comp_profiles = [
             CompProfile(
-                step_time=step_time,
+                sim_time=sim_time,
                 step_index=step_index,
                 comp_name=key,
                 axis_labels=list(self.axes_to_slice),
@@ -691,7 +691,7 @@ class GenerateCompProfiles:
                 y_array_by_axis=per_comp_y[key],
             ) for key in comp_keys
         ]
-        return comp_profiles, step_time
+        return comp_profiles, sim_time
 
     @staticmethod
     def _style_axs(
@@ -884,7 +884,7 @@ class GenerateCompProfiles:
                         f"building figure from saved data, skipping the raw snapshot."
                     ),
                 )
-                comp_profiles, _step_time = loaded
+                comp_profiles, _sim_time = loaded
                 self._save_snapshot_figure(
                     comp_profiles=comp_profiles,
                     figure_path=figure_path,
@@ -931,11 +931,11 @@ class GenerateCompProfiles:
             loaded = self._load_snapshot_data(data_paths=data_paths)
             if loaded is None:
                 continue
-            comp_profiles, _step_time = loaded
+            comp_profiles, _sim_time = loaded
             for comp_profile in comp_profiles:
                 comp_profiles_lookup.setdefault(comp_profile.comp_label, []).append(comp_profile)
         for comp_label in comp_profiles_lookup:
-            comp_profiles_lookup[comp_label].sort(key=lambda item: item.step_time)
+            comp_profiles_lookup[comp_label].sort(key=lambda item: item.sim_time)
         return comp_profiles_lookup
 
     def run(

@@ -62,7 +62,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
         self,
     ):
         pdf_data = pdfs.PDFData(
-            step_time=0.25,
+            sim_time=0.25,
             step_index=3,
             grouped_bin_centers=[numpy.array([0.0, 1.0, 2.0])],
             grouped_densities=[numpy.array([-1.0, -2.0, -3.0])],
@@ -73,7 +73,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             file_path = pathlib.Path(tmp_dir) / "pdf.json"
             pdf_data.save_to_file(file_path)
             loaded = pdfs.PDFData.load_from_file(file_path)
-        self.assertEqual(loaded.step_time, pdf_data.step_time)
+        self.assertEqual(loaded.sim_time, pdf_data.sim_time)
         self.assertEqual(loaded.step_index, pdf_data.step_index)
         self.assertEqual(loaded.comp_labels, pdf_data.comp_labels)
         self.assertEqual(loaded.use_log10_bins, pdf_data.use_log10_bins)
@@ -84,7 +84,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
         self,
     ):
         pdf_data = pdfs.PDFData(
-            step_time=0.5,
+            sim_time=0.5,
             step_index=1,
             grouped_bin_centers=[numpy.array([0.0, 1.0]), numpy.array([2.0, 3.0])],
             grouped_densities=[numpy.array([-1.0, -2.0]), numpy.array([-3.0, -4.0])],

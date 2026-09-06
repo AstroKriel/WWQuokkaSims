@@ -81,7 +81,7 @@ class TestSliceField(unittest.TestCase):
             axis_to_slice=axis_to_slice,
             uniform_domain=_UNIFORM_DOMAIN,
             comp_label=r"$\rho$",
-            step_time=0.0,
+            sim_time=0.0,
             step_index=0,
             amr_level=0,
         ).sarray_2d
@@ -122,7 +122,7 @@ class TestSlicedFieldRoundTrip(unittest.TestCase):
             min_value=0.0,
             max_value=3.0,
             comp_label=r"$\rho$",
-            step_time=0.25,
+            sim_time=0.25,
             step_index=3,
             amr_level=1,
         )
@@ -134,7 +134,7 @@ class TestSlicedFieldRoundTrip(unittest.TestCase):
         self.assertEqual(loaded.min_value, sliced_field.min_value)
         self.assertEqual(loaded.max_value, sliced_field.max_value)
         self.assertEqual(loaded.comp_label, sliced_field.comp_label)
-        self.assertEqual(loaded.step_time, sliced_field.step_time)
+        self.assertEqual(loaded.sim_time, sliced_field.sim_time)
         self.assertEqual(loaded.step_index, sliced_field.step_index)
         self.assertEqual(loaded.amr_level, sliced_field.amr_level)
         numpy.testing.assert_array_equal(loaded.sarray_2d, sliced_field.sarray_2d)
