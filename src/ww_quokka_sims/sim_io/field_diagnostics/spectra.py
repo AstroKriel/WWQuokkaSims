@@ -129,6 +129,40 @@ class ComputeSpectra:
     ) -> pathlib.Path:
         return self.data_dir / f"{self.registered_field.name}-spectrum-index={padded_index}.json"
 
+    def _compute_snapshot_spectrum(
+        self,
+        *,
+        snapshot_dir: pathlib.Path,
+        step_index: int,
+    ) -> SpectraData:
+        with load_snapshot.QuokkaSnapshot(
+                snapshot_dir=snapshot_dir,
+                verbose=False,
+        ) as quokka_snapshot:
+            field = self.registered_field.load(quokka_snapshot=quokka_snapshot, amr_level=self.amr_level)
+        spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
+        sim_time = field.sim_time
+        assert sim_time is not None
+        log10_k_bin_centers = numpy.ma.log10(
+            numpy.ma.masked_less_equal(
+                x=spectrum.k_bin_centers_1d,
+                value=0.0,
+            ),
+        )
+        log10_spectrum = numpy.ma.log10(
+            numpy.ma.masked_less_equal(
+                x=spectrum.power_spectrum_1d,
+                value=0.0,
+            ),
+        )
+        return SpectraData(
+            sim_time=sim_time,
+            step_index=step_index,
+            latex_label=field.latex_label,
+            log10_k_bin_centers=log10_k_bin_centers,
+            log10_spectrum=log10_spectrum,
+        )
+
     def run(
         self,
     ) -> list[SpectraData]:
@@ -148,32 +182,9 @@ class ComputeSpectra:
             if (not self.overwrite) and data_path.exists():
                 field_spectra.append(SpectraData.load_from_file(data_path))
                 continue
-            with load_snapshot.QuokkaSnapshot(
-                    snapshot_dir=snapshot_dir,
-                    verbose=False,
-            ) as quokka_snapshot:
-                field = self.registered_field.load(quokka_snapshot=quokka_snapshot, amr_level=self.amr_level)
-            spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
-            sim_time = field.sim_time
-            assert sim_time is not None
-            log10_k_bin_centers = numpy.ma.log10(
-                numpy.ma.masked_less_equal(
-                    x=spectrum.k_bin_centers_1d,
-                    value=0.0,
-                ),
-            )
-            log10_spectrum = numpy.ma.log10(
-                numpy.ma.masked_less_equal(
-                    x=spectrum.power_spectrum_1d,
-                    value=0.0,
-                ),
-            )
-            spectra_data = SpectraData(
-                sim_time=sim_time,
+            spectra_data = self._compute_snapshot_spectrum(
+                snapshot_dir=snapshot_dir,
                 step_index=step_index,
-                latex_label=field.latex_label,
-                log10_k_bin_centers=log10_k_bin_centers,
-                log10_spectrum=log10_spectrum,
             )
             field_spectra.append(spectra_data)
             ## save immediately, one file per snapshot, so a killed/interrupted run still
