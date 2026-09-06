@@ -22,6 +22,7 @@ from jormi.ww_plots import add_color, annotate_panel, manage_figure
 from jormi.ww_validation import validate_types
 
 ## local
+from ww_quokka_sims.sim_io.field_diagnostics import field_palettes
 from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load_snapshot
 
 ##
@@ -541,7 +542,6 @@ class GenerateCompProfiles:
         registered_field: field_registry.RegisteredField,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         axes_to_slice: tuple[cartesian_axes.AxisLike_3D, ...],
-        palette_name: str,
         data_dir: pathlib.Path,
         figures_dir: pathlib.Path,
         save_data: bool,
@@ -557,7 +557,6 @@ class GenerateCompProfiles:
         self.registered_field = registered_field
         self.comps_to_plot = comps_to_plot
         self.axes_to_slice = axes_to_slice
-        self.palette_name = palette_name
         self.save_data = save_data
         self.save_figure = save_figure
         self.overwrite = overwrite
@@ -743,7 +742,7 @@ class GenerateCompProfiles:
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialConfig(
-                palette_name=self.palette_name,
+                palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
             value_range=(

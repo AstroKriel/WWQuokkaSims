@@ -21,6 +21,7 @@ from jormi.ww_plots import add_color, annotate_panel, manage_figure
 from jormi.ww_validation import validate_arrays, validate_types
 
 ## local
+from ww_quokka_sims.sim_io.field_diagnostics import field_palettes
 from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load_snapshot
 
 ##
@@ -294,7 +295,6 @@ class GeneratePDFs:
         registered_field: field_registry.RegisteredField,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         num_bins: int,
-        palette_name: str,
         save_data: bool,
         save_figure: bool,
         overwrite: bool = False,
@@ -309,7 +309,6 @@ class GeneratePDFs:
         self.registered_field = registered_field
         self.comps_to_plot = comps_to_plot
         self.num_bins = int(num_bins)
-        self.palette_name = palette_name
         self.save_data = save_data
         self.save_figure = save_figure
         self.overwrite = overwrite
@@ -381,11 +380,10 @@ class GeneratePDFs:
         *,
         axs_grid: manage_figure.PanelGrid,
         field_pdfs: list[PDFData],
-        palette_name: str,
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialConfig(
-                palette_name=palette_name,
+                palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
             value_range=(
@@ -557,7 +555,6 @@ class GeneratePDFs:
             self._plot_series(
                 axs_grid=axs_grid,
                 field_pdfs=field_pdfs,
-                palette_name=self.palette_name,
             )
         self._style_axs(
             axs_grid=axs_grid,

@@ -19,6 +19,7 @@ from jormi.ww_plots import add_color, annotate_panel, manage_figure
 from jormi.ww_validation import validate_arrays, validate_types
 
 ## local
+from ww_quokka_sims.sim_io.field_diagnostics import field_palettes
 from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load_snapshot
 
 ##
@@ -207,7 +208,6 @@ class GenerateSpectra:
         data_dir: pathlib.Path,
         figures_dir: pathlib.Path,
         registered_field: field_registry.RegisteredField,
-        palette_name: str,
         save_data: bool,
         save_figure: bool,
         overwrite: bool = False,
@@ -219,7 +219,6 @@ class GenerateSpectra:
         self.data_dir = data_dir
         self.figures_dir = figures_dir
         self.registered_field = registered_field
-        self.palette_name = palette_name
         self.save_data = save_data
         self.save_figure = save_figure
         self.overwrite = overwrite
@@ -253,11 +252,10 @@ class GenerateSpectra:
         *,
         ax: manage_figure.Panel,
         field_spectra: list[SpectraData],
-        palette_name: str,
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialConfig(
-                palette_name=palette_name,
+                palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
             value_range=(
@@ -333,7 +331,6 @@ class GenerateSpectra:
             self._plot_series(
                 ax=ax,
                 field_spectra=field_spectra,
-                palette_name=self.palette_name,
             )
         self._style_ax(
             ax=ax,

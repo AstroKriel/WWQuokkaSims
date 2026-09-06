@@ -15,7 +15,7 @@ from jormi.ww_plots import style_figure
 from jormi.ww_validation import validate_types
 
 ## local
-from ww_quokka_sims._scripts.snapshot_tools import cli, field_palettes
+from ww_quokka_sims._scripts.snapshot_tools import cli
 from ww_quokka_sims.sim_io.field_diagnostics import profiles
 from ww_quokka_sims.sim_io.snapshots import field_registry
 
@@ -62,7 +62,6 @@ class DiagnosticPipeline:
                 registered_field=registered_field,
                 comps_to_plot=self.comps_to_plot,
                 axes_to_slice=self.axes_to_slice,
-                palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
                 save_data=self.diagnostic_output_args.save_data,
                 save_figure=self.diagnostic_output_args.save_figure,
                 overwrite=self.diagnostic_output_args.overwrite,
