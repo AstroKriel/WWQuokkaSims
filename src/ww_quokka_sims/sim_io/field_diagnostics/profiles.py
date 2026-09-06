@@ -708,8 +708,6 @@ class GenerateCompProfiles:
                 is_left_col = col_index == 0
                 if is_left_col:
                     ax.set_ylabel(comp_label)
-                else:
-                    ax.tick_params(labelleft=False)
                 if is_bottom_row:
                     axis_label_str = cartesian_axes.get_axis_label(axis_label)
                     ax.set_xlabel(axis_label_str if "$" in axis_label_str else f"${axis_label_str}$")
