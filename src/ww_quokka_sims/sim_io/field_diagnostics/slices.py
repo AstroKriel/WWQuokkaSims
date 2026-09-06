@@ -288,7 +288,6 @@ class GenerateFieldSlices:
                 x_alignment="center",
                 y_alignment="top",
                 label=f"min-value = {field_slice.min_value:.2e}\nmax-value = {field_slice.max_value:.2e}",
-                text_size_pt=16,
                 box_alpha=0.5,
             )
             annotate_panel.add_text(
@@ -298,7 +297,6 @@ class GenerateFieldSlices:
                 x_alignment="center",
                 y_alignment="center",
                 label=rf"$t = {step_time:.2f}$",
-                text_size_pt=16,
                 box_alpha=0.5,
             )
             annotate_panel.add_text(
@@ -308,7 +306,6 @@ class GenerateFieldSlices:
                 x_alignment="center",
                 y_alignment="bottom",
                 label=plane_label,
-                text_size_pt=16,
                 box_alpha=0.5,
             )
 
@@ -591,8 +588,8 @@ class GenerateFieldSlices:
             num_panel_cols=len(self.axes_to_slice),
             panel_width_cm=8.0,
             panel_aspect_ratio=1.0,
-            panel_row_gap_pt=30.0,
-            panel_col_gap_pt=30.0,
+            panel_row_gap_pt=40.0,
+            panel_col_gap_pt=40.0,
         )
         self._plot_rows(
             axs_grid=axs_grid,
