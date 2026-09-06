@@ -123,7 +123,7 @@ class ComputeSpectra:
         self.overwrite = overwrite
         self.amr_level = amr_level
 
-    def _data_file_path(
+    def _get_data_file_path(
         self,
         *,
         padded_index: str,
@@ -169,7 +169,7 @@ class ComputeSpectra:
                 ),
             )
             padded_index = f"{step_index:0{self.index_width}d}"
-            data_path = self._data_file_path(padded_index=padded_index)
+            data_path = self._get_data_file_path(padded_index=padded_index)
             if (not self.overwrite) and data_path.exists():
                 field_spectrum = FieldSpectrum.load_from_file(data_path)
             else:
@@ -276,7 +276,7 @@ class GenerateSpectra:
             label_gap_pt=10.0,
         )
 
-    def _snapshot_figure_file_path(
+    def _get_snapshot_figure_file_path(
         self,
         *,
         figures_dir: pathlib.Path,
@@ -359,7 +359,7 @@ class GenerateSpectra:
         ## rebuilds since it's cheap relative to the per-snapshot compute above
         for field_spectrum in field_spectra:
             padded_index = f"{field_spectrum.step_index:0{self.index_width}d}"
-            figure_path = self._snapshot_figure_file_path(
+            figure_path = self._get_snapshot_figure_file_path(
                 figures_dir=self.figures_dir,
                 padded_index=padded_index,
             )

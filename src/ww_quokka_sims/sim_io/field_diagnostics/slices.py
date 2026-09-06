@@ -443,7 +443,7 @@ class GenerateFieldSlices:
                     ax.set_xlabel(x_label_string)
                 ax.set_ylabel(y_label_string)
 
-    def _data_file_name(
+    def _get_data_file_name(
         self,
         *,
         comp_axis: cartesian_axes.CartesianAxis_3D | None,
@@ -457,7 +457,7 @@ class GenerateFieldSlices:
             f"-amr_level={self.field_args.amr_level}.npz"
         )
 
-    def _figure_file_name(
+    def _get_figure_file_name(
         self,
         *,
         padded_index: str,
@@ -477,7 +477,7 @@ class GenerateFieldSlices:
         if neither is fully present on disk.
         """
         scalar_paths = [
-            data_dir / self._data_file_name(
+            data_dir / self._get_data_file_name(
                 comp_axis=None,
                 axis_to_slice=axis_to_slice,
                 padded_index=padded_index,
@@ -486,7 +486,7 @@ class GenerateFieldSlices:
         if all(path.exists() for path in scalar_paths):
             return [None]
         vector_paths = [
-            data_dir / self._data_file_name(
+            data_dir / self._get_data_file_name(
                 comp_axis=comp_axis,
                 axis_to_slice=axis_to_slice,
                 padded_index=padded_index,
@@ -517,7 +517,7 @@ class GenerateFieldSlices:
                     step_index=step_index,
                     amr_level=self.field_args.amr_level,
                 )
-                file_name = self._data_file_name(
+                file_name = self._get_data_file_name(
                     comp_axis=field_comp.comp_axis,
                     axis_to_slice=axis_to_slice,
                     padded_index=padded_index,
@@ -537,7 +537,7 @@ class GenerateFieldSlices:
             sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
             comp_label = ""
             for axis_to_slice in self.axes_to_slice:
-                file_name = self._data_file_name(
+                file_name = self._get_data_file_name(
                     comp_axis=comp_axis,
                     axis_to_slice=axis_to_slice,
                     padded_index=padded_index,
@@ -608,7 +608,7 @@ class GenerateFieldSlices:
             sim_time=sim_time,
         )
         self._label_axes(axs_grid=axs_grid)
-        fig_path = figures_dir / self._figure_file_name(padded_index=padded_index)
+        fig_path = figures_dir / self._get_figure_file_name(padded_index=padded_index)
         manage_figure.save_figure(
             figure=fig,
             figure_path=fig_path,
@@ -631,7 +631,7 @@ class GenerateFieldSlices:
             ),
         )
         padded_index = f"{step_index:0{index_width}d}"
-        figure_path = figures_dir / self._figure_file_name(padded_index=padded_index)
+        figure_path = figures_dir / self._get_figure_file_name(padded_index=padded_index)
         figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
         saved_comp_axes = self._find_saved_comp_axes(
             padded_index=padded_index,

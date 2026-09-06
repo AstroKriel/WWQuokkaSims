@@ -565,7 +565,7 @@ class GenerateCompProfiles:
         self.overwrite = overwrite
         self.amr_level = amr_level
 
-    def _data_file_path(
+    def _get_data_file_path(
         self,
         *,
         axis_label: str,
@@ -574,7 +574,7 @@ class GenerateCompProfiles:
     ) -> pathlib.Path:
         return data_dir / f"{self.registered_field.name}-axis={axis_label}-index={padded_index}-amr_level={self.amr_level}.json"
 
-    def _snapshot_figure_file_path(
+    def _get_snapshot_figure_file_path(
         self,
         *,
         figures_dir: pathlib.Path,
@@ -598,7 +598,7 @@ class GenerateCompProfiles:
         step_index = comp_profiles[0].step_index
         for axis_index, axis in enumerate(comp_profiles[0].axis_labels):
             axis_label = cartesian_axes.get_axis_label(axis)
-            file_path = self._data_file_path(
+            file_path = self._get_data_file_path(
                 axis_label=axis_label,
                 padded_index=padded_index,
                 data_dir=data_dir,
@@ -860,13 +860,13 @@ class GenerateCompProfiles:
         )
         padded_index = f"{step_index:0{index_width}d}"
         data_paths = [
-            self._data_file_path(
+            self._get_data_file_path(
                 axis_label=cartesian_axes.get_axis_label(axis),
                 padded_index=padded_index,
                 data_dir=data_dir,
             ) for axis in self.axes_to_slice
         ]
-        figure_path = self._snapshot_figure_file_path(
+        figure_path = self._get_snapshot_figure_file_path(
             figures_dir=figures_dir,
             padded_index=padded_index,
         )
@@ -924,7 +924,7 @@ class GenerateCompProfiles:
             )
             padded_index = f"{int(raw['step_index']):0{self.index_width}d}"
             data_paths = [
-                self._data_file_path(
+                self._get_data_file_path(
                     axis_label=cartesian_axes.get_axis_label(axis),
                     padded_index=padded_index,
                     data_dir=data_dir,

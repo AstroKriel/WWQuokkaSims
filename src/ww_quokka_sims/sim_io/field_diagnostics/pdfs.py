@@ -323,7 +323,7 @@ class GeneratePDFs:
         self.use_log10_bins = use_log10_bins
         self.amr_level = amr_level
 
-    def _data_name(
+    def _get_data_name(
         self,
     ) -> str:
         """Filename stem, tagged with `log10_` when bins are log10-spaced.
@@ -334,21 +334,21 @@ class GeneratePDFs:
         """
         return f"log10_{self.registered_field.name}" if self.use_log10_bins else self.registered_field.name
 
-    def _data_file_path(
+    def _get_data_file_path(
         self,
         *,
         data_dir: pathlib.Path,
         padded_index: str,
     ) -> pathlib.Path:
-        return data_dir / f"{self._data_name()}-pdf-index={padded_index}.json"
+        return data_dir / f"{self._get_data_name()}-pdf-index={padded_index}.json"
 
-    def _snapshot_figure_file_path(
+    def _get_snapshot_figure_file_path(
         self,
         *,
         figures_dir: pathlib.Path,
         padded_index: str,
     ) -> pathlib.Path:
-        return figures_dir / f"{self._data_name()}-pdf-index={padded_index}.png"
+        return figures_dir / f"{self._get_data_name()}-pdf-index={padded_index}.png"
 
     @staticmethod
     def _style_axs(
@@ -437,7 +437,7 @@ class GeneratePDFs:
         )
         padded_index = f"{field_pdf.step_index:0{self.index_width}d}"
         field_pdf.save_to_file(
-            self._data_file_path(
+            self._get_data_file_path(
                 data_dir=data_dir,
                 padded_index=padded_index,
             ),
@@ -486,11 +486,11 @@ class GeneratePDFs:
             ),
         )
         padded_index = f"{step_index:0{index_width}d}"
-        data_path = self._data_file_path(
+        data_path = self._get_data_file_path(
             data_dir=data_dir,
             padded_index=padded_index,
         )
-        figure_path = self._snapshot_figure_file_path(
+        figure_path = self._get_snapshot_figure_file_path(
             figures_dir=figures_dir,
             padded_index=padded_index,
         )
@@ -533,7 +533,7 @@ class GeneratePDFs:
         *,
         data_dir: pathlib.Path,
     ) -> list[FieldPDF]:
-        paths = sorted(data_dir.glob(f"{self._data_name()}-pdf-index=*.json"))
+        paths = sorted(data_dir.glob(f"{self._get_data_name()}-pdf-index=*.json"))
         field_pdfs = [FieldPDF.load_from_file(path) for path in paths]
         field_pdfs.sort(key=lambda field_pdf: field_pdf.sim_time)
         return field_pdfs
@@ -569,7 +569,7 @@ class GeneratePDFs:
             comp_labels=field_pdfs[0].comp_labels,
             use_log10_bins=self.use_log10_bins,
         )
-        fig_path = figures_dir / f"{self._data_name()}-pdfs-summary.png"
+        fig_path = figures_dir / f"{self._get_data_name()}-pdfs-summary.png"
         manage_figure.save_figure(
             figure=fig,
             figure_path=fig_path,
