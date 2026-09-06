@@ -416,9 +416,11 @@ class GenerateFieldSlices:
                     field_slice=field_slice,
                     plane_label=get_slice_plane_label(axis_to_slice),
                     comp_label=comp_label,
-                    palette_config=field_palettes.resolve_palette_config(
+                    palette_config=add_color.resolve_continuous_config(
                         pivot_value=pivot_value,
                         value_range=(field_slice.min_value, field_slice.max_value),
+                        sequential_palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
+                        diverging_palette_name=field_palettes.DIVERGING_PALETTE_NAME,
                     ),
                     show_colorbar_label=col_index == num_cols - 1,
                     hide_annotations=self.hide_annotations,
