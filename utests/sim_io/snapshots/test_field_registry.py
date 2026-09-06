@@ -7,12 +7,58 @@
 ## stdlib
 import typing
 import unittest
+import unittest.mock
+
+from collections import abc as collections_abc
+
+## third-party
+import numpy
 
 ## personal
-from jormi.ww_fields.fields_3d import field_models
+from jormi.ww_fields.fields_3d import domain_models, field_models
+from jormi.ww_io import manage_log
 
 ## local
-from ww_quokka_sims.sim_io.snapshots import field_registry
+from ww_quokka_sims.sim_io.snapshots import field_registry, load_snapshot
+
+##
+## === HELPERS
+##
+
+
+def _make_scalar_field(
+    *,
+    value: float,
+) -> field_models.ScalarField_3D:
+    uniform_domain_3d = domain_models.UniformDomain_3D(
+        periodicity=(True, True, True),
+        domain_bounds=((0.0, 1.0), (0.0, 1.0), (0.0, 1.0)),
+        resolution=(2, 2, 2),
+    )
+    return field_models.ScalarField_3D.from_3d_sarray(
+        sarray_3d=numpy.full((2, 2, 2), value),
+        uniform_domain_3d=uniform_domain_3d,
+        field_name="density",
+        latex_label=r"\rho",
+        sim_time=0.0,
+    )
+
+
+def _make_stub_loader(
+    *,
+    value: float,
+) -> collections_abc.Callable:
+
+    def stub_loader(
+        _quokka_snapshot: load_snapshot.QuokkaSnapshot,
+        *,
+        amr_level: int = 0,
+    ) -> field_models.ScalarField_3D:
+        _ = amr_level
+        return _make_scalar_field(value=value)
+
+    return stub_loader
+
 
 ##
 ## === TEST SUITES
@@ -111,6 +157,45 @@ class TestValidateFieldsAllowedTypes(unittest.TestCase):
                 field_names=["not_a_real_field"],
                 allowed_types=(field_models.ScalarField_3D, ),
             )
+
+
+class TestRegisteredFieldLoad(unittest.TestCase):
+
+    def test_warns_when_strictly_positive_is_violated(
+        self,
+    ):
+        registered_field = field_registry.RegisteredField(
+            name="density",
+            loader_fn=_make_stub_loader(value=-1.0),
+            expected_properties=field_registry.ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+        )
+        with unittest.mock.patch.object(manage_log, "log_warning") as mock_log_warning:
+            registered_field.load(quokka_snapshot=unittest.mock.Mock(spec=load_snapshot.QuokkaSnapshot))
+        mock_log_warning.assert_called_once()
+
+    def test_no_warning_when_values_are_non_negative(
+        self,
+    ):
+        registered_field = field_registry.RegisteredField(
+            name="density",
+            loader_fn=_make_stub_loader(value=1.0),
+            expected_properties=field_registry.ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+        )
+        with unittest.mock.patch.object(manage_log, "log_warning") as mock_log_warning:
+            registered_field.load(quokka_snapshot=unittest.mock.Mock(spec=load_snapshot.QuokkaSnapshot))
+        mock_log_warning.assert_not_called()
+
+    def test_no_check_when_not_declared_strictly_positive(
+        self,
+    ):
+        registered_field = field_registry.RegisteredField(
+            name="velocity_divergence",
+            loader_fn=_make_stub_loader(value=-1.0),
+            expected_properties=field_registry.ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+        )
+        with unittest.mock.patch.object(manage_log, "log_warning") as mock_log_warning:
+            registered_field.load(quokka_snapshot=unittest.mock.Mock(spec=load_snapshot.QuokkaSnapshot))
+        mock_log_warning.assert_not_called()
 
 
 ## } U-TEST
