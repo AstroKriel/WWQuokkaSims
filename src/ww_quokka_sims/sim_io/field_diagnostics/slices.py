@@ -396,14 +396,16 @@ class GenerateFieldSlices:
         for row_index, (comp_label, sliced_by_axis) in enumerate(rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
                 ax = axs_grid[row_index][col_index]
+                field_slice = sliced_by_axis[axis_to_slice]
                 self.plot_slice(
                     ax=ax,
                     step_time=step_time,
-                    field_slice=sliced_by_axis[axis_to_slice],
+                    field_slice=field_slice,
                     plane_label=get_slice_plane_label(axis_to_slice),
                     comp_label=comp_label,
                     palette_config=field_palettes.resolve_palette_config(
                         expected_properties=self.field_args.registered_field.expected_properties,
+                        value_range=(field_slice.min_value, field_slice.max_value),
                     ),
                     hide_annotations=self.hide_annotations,
                 )
