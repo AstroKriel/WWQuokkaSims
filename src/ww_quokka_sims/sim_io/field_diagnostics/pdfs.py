@@ -334,7 +334,7 @@ class GeneratePDFs:
         """
         return f"log10_{self.registered_field.name}" if self.use_log10_bins else self.registered_field.name
 
-    def _get_data_file_path(
+    def _get_data_path(
         self,
         *,
         data_dir: pathlib.Path,
@@ -342,7 +342,7 @@ class GeneratePDFs:
     ) -> pathlib.Path:
         return data_dir / f"{self._get_data_name()}-pdf-index={padded_index}.json"
 
-    def _get_figure_file_path(
+    def _get_figure_path(
         self,
         *,
         figures_dir: pathlib.Path,
@@ -437,7 +437,7 @@ class GeneratePDFs:
         )
         padded_index = f"{field_pdf.step_index:0{self.index_width}d}"
         field_pdf.save_to_file(
-            self._get_data_file_path(
+            self._get_data_path(
                 data_dir=data_dir,
                 padded_index=padded_index,
             ),
@@ -486,11 +486,11 @@ class GeneratePDFs:
             ),
         )
         padded_index = f"{step_index:0{index_width}d}"
-        data_path = self._get_data_file_path(
+        data_path = self._get_data_path(
             data_dir=data_dir,
             padded_index=padded_index,
         )
-        figure_path = self._get_figure_file_path(
+        figure_path = self._get_figure_path(
             figures_dir=figures_dir,
             padded_index=padded_index,
         )

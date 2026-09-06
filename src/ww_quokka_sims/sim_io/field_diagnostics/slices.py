@@ -517,12 +517,12 @@ class GenerateFieldSlices:
                     step_index=step_index,
                     amr_level=self.field_args.amr_level,
                 )
-                file_name = self._get_data_file_name(
+                data_file_name = self._get_data_file_name(
                     comp_axis=field_comp.comp_axis,
                     axis_to_slice=axis_to_slice,
                     padded_index=padded_index,
                 )
-                field_slice.save_to_file(data_dir / file_name)
+                field_slice.save_to_file(data_dir / data_file_name)
 
     def _load_saved_rows(
         self,
@@ -537,12 +537,12 @@ class GenerateFieldSlices:
             sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
             comp_label = ""
             for axis_to_slice in self.axes_to_slice:
-                file_name = self._get_data_file_name(
+                data_file_name = self._get_data_file_name(
                     comp_axis=comp_axis,
                     axis_to_slice=axis_to_slice,
                     padded_index=padded_index,
                 )
-                field_slice = FieldSlice.load_from_file(data_dir / file_name)
+                field_slice = FieldSlice.load_from_file(data_dir / data_file_name)
                 sliced_by_axis[axis_to_slice] = field_slice
                 comp_label = field_slice.comp_label
                 sim_time = field_slice.sim_time

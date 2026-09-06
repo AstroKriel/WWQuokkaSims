@@ -146,7 +146,7 @@ class TimePointArgs:
     registered_field: field_registry.RegisteredField
     field_statistic: FieldStatistic
     amr_level: int = 0
-    cache_file_path: pathlib.Path | None = None
+    cache_path: pathlib.Path | None = None
 
 
 @typing.final
@@ -179,7 +179,7 @@ class GenerateTimeSeries:
         self.amr_level = amr_level
         self.apply_log10_plot = apply_log10_plot
 
-    def _get_cache_file_path(
+    def _get_cache_path(
         self,
         *,
         snapshot_dir: pathlib.Path,
@@ -217,12 +217,12 @@ class GenerateTimeSeries:
             statistic_name=time_point_args.field_statistic.name,
             latex_label=latex_label,
         )
-        if time_point_args.cache_file_path is not None:
+        if time_point_args.cache_path is not None:
             manage_io.create_directory(
-                directory=time_point_args.cache_file_path.parent,
+                directory=time_point_args.cache_path.parent,
                 verbose=False,
             )
-            time_point.save_to_file(file_path=time_point_args.cache_file_path)
+            time_point.save_to_file(file_path=time_point_args.cache_path)
         return time_point
 
     def _compute_time_series(
@@ -232,9 +232,9 @@ class GenerateTimeSeries:
         time_series_args: list[TimePointArgs] = []
         for snapshot_dir in self.snapshot_dirs:
             snapshot_dir = pathlib.Path(snapshot_dir)
-            cache_file_path = self._get_cache_file_path(snapshot_dir=snapshot_dir)
-            if not (self.overwrite) and cache_file_path.exists():
-                time_point = TimePoint.load_from_file(file_path=cache_file_path)
+            cache_path = self._get_cache_path(snapshot_dir=snapshot_dir)
+            if not (self.overwrite) and cache_path.exists():
+                time_point = TimePoint.load_from_file(file_path=cache_path)
                 time_points.append(time_point)
             else:
                 time_point_args = TimePointArgs(
@@ -242,7 +242,7 @@ class GenerateTimeSeries:
                     registered_field=self.registered_field,
                     field_statistic=self.field_statistic,
                     amr_level=self.amr_level,
-                    cache_file_path=cache_file_path,
+                    cache_path=cache_path,
                 )
                 time_series_args.append(time_point_args)
         if (self.num_workers != 1) and (len(time_series_args) > 5):
