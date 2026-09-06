@@ -34,18 +34,18 @@ class FieldSpectrum:
     step_index: int
     latex_label: str
     log10_k_bin_centers: numpy.ndarray
-    log10_spectrum: numpy.ndarray
+    log10_power_spectrum: numpy.ndarray
 
     def __post_init__(
         self,
     ) -> None:
         validate_arrays.ensure_array(array=self.log10_k_bin_centers)
-        validate_arrays.ensure_array(array=self.log10_spectrum)
+        validate_arrays.ensure_array(array=self.log10_power_spectrum)
         validate_arrays.ensure_1d(array=self.log10_k_bin_centers)
-        validate_arrays.ensure_1d(array=self.log10_spectrum)
+        validate_arrays.ensure_1d(array=self.log10_power_spectrum)
         validate_arrays.ensure_same_shape(
             array_a=self.log10_k_bin_centers,
-            array_b=self.log10_spectrum,
+            array_b=self.log10_power_spectrum,
         )
 
     def save_to_file(
@@ -59,7 +59,7 @@ class FieldSpectrum:
                 "step_index": self.step_index,
                 "latex_label": self.latex_label,
                 "log10_k_bin_centers": self.log10_k_bin_centers,
-                "log10_spectrum": self.log10_spectrum,
+                "log10_power_spectrum": self.log10_power_spectrum,
             },
             overwrite=True,
             verbose=False,
@@ -81,7 +81,7 @@ class FieldSpectrum:
                 "step_index",
                 "latex_label",
                 "log10_k_bin_centers",
-                "log10_spectrum",
+                "log10_power_spectrum",
             },
             param_name="<FieldSpectrum JSON>",
         )
@@ -90,7 +90,7 @@ class FieldSpectrum:
             step_index=int(data["step_index"]),
             latex_label=data["latex_label"],
             log10_k_bin_centers=numpy.asarray(data["log10_k_bin_centers"]),
-            log10_spectrum=numpy.asarray(data["log10_spectrum"]),
+            log10_power_spectrum=numpy.asarray(data["log10_power_spectrum"]),
         )
 
 
@@ -148,13 +148,13 @@ class ComputeSpectra:
         sim_time = field.sim_time
         assert sim_time is not None
         log10_k_bin_centers = compute_array_stats.compute_safe_log10(spectrum.k_bin_centers_1d)
-        log10_spectrum = compute_array_stats.compute_safe_log10(spectrum.power_spectrum_1d)
+        log10_power_spectrum = compute_array_stats.compute_safe_log10(spectrum.power_spectrum_1d)
         return FieldSpectrum(
             sim_time=sim_time,
             step_index=step_index,
             latex_label=field.latex_label,
             log10_k_bin_centers=log10_k_bin_centers,
-            log10_spectrum=log10_spectrum,
+            log10_power_spectrum=log10_power_spectrum,
         )
 
     def run(
@@ -239,7 +239,7 @@ class GenerateSpectra:
     ) -> None:
         ax.plot(
             field_spectrum.log10_k_bin_centers,
-            field_spectrum.log10_spectrum,
+            field_spectrum.log10_power_spectrum,
             color=color,
         )
 
