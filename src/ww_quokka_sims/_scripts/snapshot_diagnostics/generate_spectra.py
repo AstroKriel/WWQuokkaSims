@@ -289,7 +289,7 @@ class GenerateSpectra:
         self,
     ) -> None:
         ## compute the isotropic power spectrum for each snapshot; saved incrementally as each completes
-        compute_spectra = ComputeSpectra(
+        compute_spectra_pipeline = ComputeSpectra(
             snapshot_dirs=self.snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
             registered_field=self.registered_field,
@@ -299,7 +299,7 @@ class GenerateSpectra:
             overwrite=self.overwrite,
             amr_level=self.amr_level,
         )
-        field_spectra = compute_spectra.run()
+        field_spectra = compute_spectra_pipeline.run()
         if not field_spectra:
             return
         if not self.save_figure:
