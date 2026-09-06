@@ -615,7 +615,7 @@ class GenerateFieldSlices:
             verbose=verbose,
         )
 
-    def generate_snapshot(
+    def generate_snapshot_slices(
         self,
         *,
         snapshot_dir: pathlib.Path,
@@ -727,7 +727,7 @@ def generate_fields_in_serial(
             apply_log10_plot=apply_log10_plot,
         )
         for snapshot_dir in snapshot_dirs:
-            generate_field_slices.generate_snapshot(
+            generate_field_slices.generate_snapshot_slices(
                 snapshot_dir=snapshot_dir,
                 data_dir=data_dir,
                 figures_dir=figures_dir,
@@ -756,7 +756,7 @@ def _generate_snapshot_worker(
         hide_annotations=worker_args.hide_annotations,
         apply_log10_plot=worker_args.apply_log10_plot,
     )
-    generate_field_slices.generate_snapshot(
+    generate_field_slices.generate_snapshot_slices(
         snapshot_dir=pathlib.Path(worker_args.snapshot_dir),
         data_dir=pathlib.Path(worker_args.data_dir),
         figures_dir=pathlib.Path(worker_args.figures_dir),
