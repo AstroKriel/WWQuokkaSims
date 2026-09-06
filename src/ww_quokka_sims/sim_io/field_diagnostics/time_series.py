@@ -19,7 +19,7 @@ from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_fns import parallel_dispatch
 from jormi.ww_io import json_io, manage_io
-from jormi.ww_plots import annotate_panel, manage_figure
+from jormi.ww_plots import annotate_panel, latex_labels, manage_figure
 from jormi.ww_validation import validate_arrays, validate_types
 
 ## local
@@ -34,7 +34,9 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, load_snapshot
 class TimePoint:
     sim_time: float
     value: float
-    latex_label: str
+    field_name: str
+    statistic_name: str
+    field_latex_label: latex_labels.LatexLabel
 
     def save_to_file(
         self,
@@ -45,7 +47,9 @@ class TimePoint:
             input_dict={
                 "sim_time": self.sim_time,
                 "value": self.value,
-                "latex_label": self.latex_label,
+                "field_name": self.field_name,
+                "statistic_name": self.statistic_name,
+                "field_latex_label": self.field_latex_label.content,
             },
             overwrite=True,
             verbose=False,
@@ -66,13 +70,17 @@ class TimePoint:
             required_keys={
                 "sim_time",
                 "value",
-                "latex_label",
+                "field_name",
+                "statistic_name",
+                "field_latex_label",
             },
         )
         return cls(
             sim_time=float(data["sim_time"]),
             value=float(data["value"]),
-            latex_label=data["latex_label"],
+            field_name=data["field_name"],
+            statistic_name=data["statistic_name"],
+            field_latex_label=latex_labels.LatexLabel(content=data["field_latex_label"]),
         )
 
 
@@ -96,10 +104,10 @@ class TimeSeries:
         return len(self.time_points)
 
     @property
-    def latex_label(
+    def field_latex_label(
         self,
-    ) -> str:
-        return self.time_points[0].latex_label
+    ) -> latex_labels.LatexLabel:
+        return self.time_points[0].field_latex_label
 
     def get_sorted_time_points(
         self,
@@ -202,7 +210,9 @@ class GenerateTimeSeries:
         time_point = TimePoint(
             sim_time=float(sim_time),
             value=float(statistic),
-            latex_label=field_3d.latex_label,
+            field_name=time_point_args.registered_field.name,
+            statistic_name=time_point_args.field_statistic.name,
+            field_latex_label=latex_labels.LatexLabel(content=field_3d.latex_label),
         )
         if time_point_args.cache_file_path is not None:
             manage_io.create_directory(
@@ -280,7 +290,9 @@ class GenerateTimeSeries:
             input_dict={
                 "sim_times": time_array,
                 "values": values_array,
-                "latex_label": time_series.latex_label,
+                "field_name": self.registered_field.name,
+                "statistic_name": self.field_statistic.name,
+                "field_latex_label": time_series.field_latex_label.content,
             },
             overwrite=True,
             verbose=False,
@@ -303,15 +315,17 @@ class GenerateTimeSeries:
                 y_alignment="center",
             )
             return
-        ylabel = f"${time_series.latex_label}$"
+        field_label_content = time_series.field_latex_label.content
+        ylabel_content = rf"\mathrm{{{self.field_statistic.name}}}\big({field_label_content}\big)"
         fig_name = f"{self.registered_field.name}-{self.field_statistic.name}-time_series.png"
         if self.apply_log10_plot:
             if self.registered_field.expected_properties.is_strictly_positive:
                 values_array = compute_array_stats.compute_safe_log10(values_array)
             else:
                 values_array = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
-            ylabel = rf"$\log_{{10}}\big({time_series.latex_label}\big)$"
+            ylabel_content = rf"\log_{{10}}\big({ylabel_content}\big)"
             fig_name = f"log10_{fig_name}"
+        ylabel = latex_labels.LatexLabel(content=ylabel_content).get_label()
         ax.plot(
             time_array,
             values_array,
