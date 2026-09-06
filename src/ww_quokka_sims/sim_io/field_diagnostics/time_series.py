@@ -252,15 +252,16 @@ class GenerateTimeSeries:
 
     @staticmethod
     def _as_arrays(
-        sorted_time_points: list[TimePoint],
+        *,
+        time_points: list[TimePoint],
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        if not (sorted_time_points):
+        if not (time_points):
             return (
                 numpy.asarray([], dtype=float),
                 numpy.asarray([], dtype=float),
             )
-        time_array = validate_arrays.as_1d([time_point.sim_time for time_point in sorted_time_points])
-        values_array = validate_arrays.as_1d([time_point.value for time_point in sorted_time_points])
+        time_array = validate_arrays.as_1d([time_point.sim_time for time_point in time_points])
+        values_array = validate_arrays.as_1d([time_point.value for time_point in time_points])
         return (
             time_array,
             values_array,
@@ -275,7 +276,7 @@ class GenerateTimeSeries:
             directory=self.data_dir,
             verbose=False,
         )
-        time_array, values_array = self._as_arrays(time_series.get_sorted_time_points())
+        time_array, values_array = self._as_arrays(time_points=time_series.get_sorted_time_points())
         json_io.save_dict_to_json_file(
             file_path=self.data_dir / f"{self.registered_field.name}-{self.field_statistic.name}-time_series.json",
             input_dict={
@@ -293,7 +294,7 @@ class GenerateTimeSeries:
         time_series: TimeSeries,
     ) -> None:
         fig, ax = manage_figure.create_figure()
-        time_array, values_array = self._as_arrays(time_series.get_sorted_time_points())
+        time_array, values_array = self._as_arrays(time_points=time_series.get_sorted_time_points())
         if time_array.size == 0:
             annotate_panel.add_text(
                 panel=ax,
