@@ -874,35 +874,37 @@ class GenerateCompProfiles:
             return
         if figure_needed and not data_needed and data_exists:
             loaded = self._load_snapshot_data(data_paths=data_paths)
-            if loaded is not None:
-                ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot
-                manage_log.log_hint(
-                    text=(
-                        f"`{self.registered_field.name}` at snapshot {step_index}: "
-                        f"building figure from saved data, skipping the raw snapshot."
-                    ),
-                )
-                comp_profiles, _sim_time = loaded
-                self._save_snapshot_figure(
-                    comp_profiles=comp_profiles,
-                    figure_path=figure_path,
-                )
-                return
-        comp_profiles = compute_comp_profiles.compute_snapshot(
-            snapshot_dir=snapshot_dir,
-            snapshot_tag=self.snapshot_tag,
-        )
-        if data_needed:
-            self._save_snapshot_data(
-                comp_profiles=comp_profiles,
-                data_dir=data_dir,
-                padded_index=padded_index,
+        else:
+            loaded = None
+        if loaded is not None:
+            ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot
+            manage_log.log_hint(
+                text=(
+                    f"`{self.registered_field.name}` at snapshot {step_index}: "
+                    f"building figure from saved data, skipping the raw snapshot."
+                ),
             )
-        if figure_needed:
+            comp_profiles, _sim_time = loaded
             self._save_snapshot_figure(
                 comp_profiles=comp_profiles,
                 figure_path=figure_path,
             )
+        else:
+            comp_profiles = compute_comp_profiles.compute_snapshot(
+                snapshot_dir=snapshot_dir,
+                snapshot_tag=self.snapshot_tag,
+            )
+            if data_needed:
+                self._save_snapshot_data(
+                    comp_profiles=comp_profiles,
+                    data_dir=data_dir,
+                    padded_index=padded_index,
+                )
+            if figure_needed:
+                self._save_snapshot_figure(
+                    comp_profiles=comp_profiles,
+                    figure_path=figure_path,
+                )
 
     def _load_all_saved_comp_profiles(
         self,

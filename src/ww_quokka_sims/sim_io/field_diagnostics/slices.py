@@ -660,35 +660,33 @@ class GenerateFieldSlices:
                 figures_dir=figures_dir,
                 verbose=verbose,
             )
-            return
-        ## need the raw snapshot: either the data itself needs (re)computing, or no saved data
-        ## exists yet to reconstruct the figure from
-        snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
-        field_comps = self._get_field_comps(field=snapshot_data.field)
-        if data_needed:
-            self._save_field_comps(
-                field_comps=field_comps,
-                uniform_domain=snapshot_data.uniform_domain,
-                sim_time=snapshot_data.sim_time,
-                step_index=step_index,
-                padded_index=padded_index,
-                data_dir=data_dir,
-            )
-        if figure_needed:
-            rows = self._rows_from_field_comps(
-                field_comps=field_comps,
-                uniform_domain=snapshot_data.uniform_domain,
-                sim_time=snapshot_data.sim_time,
-                step_index=step_index,
-            )
-            self._render_figure(
-                rows=rows,
-                sim_time=snapshot_data.sim_time,
-                step_index=step_index,
-                padded_index=padded_index,
-                figures_dir=figures_dir,
-                verbose=verbose,
-            )
+        else:
+            snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
+            field_comps = self._get_field_comps(field=snapshot_data.field)
+            if data_needed:
+                self._save_field_comps(
+                    field_comps=field_comps,
+                    uniform_domain=snapshot_data.uniform_domain,
+                    sim_time=snapshot_data.sim_time,
+                    step_index=step_index,
+                    padded_index=padded_index,
+                    data_dir=data_dir,
+                )
+            if figure_needed:
+                rows = self._rows_from_field_comps(
+                    field_comps=field_comps,
+                    uniform_domain=snapshot_data.uniform_domain,
+                    sim_time=snapshot_data.sim_time,
+                    step_index=step_index,
+                )
+                self._render_figure(
+                    rows=rows,
+                    sim_time=snapshot_data.sim_time,
+                    step_index=step_index,
+                    padded_index=padded_index,
+                    figures_dir=figures_dir,
+                    verbose=verbose,
+                )
 
 
 def generate_fields_in_serial(

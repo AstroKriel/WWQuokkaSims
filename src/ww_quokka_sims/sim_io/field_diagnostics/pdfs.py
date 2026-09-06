@@ -504,21 +504,21 @@ class GeneratePDFs:
                 pdf_data=pdf_data,
                 figure_path=figure_path,
             )
-            return
-        pdf_data = compute_pdfs.compute_snapshot(
-            snapshot_dir=snapshot_dir,
-            snapshot_tag=self.snapshot_tag,
-        )
-        if data_needed:
-            self._save_pdf(
-                pdf_data=pdf_data,
-                data_dir=data_dir,
+        else:
+            pdf_data = compute_pdfs.compute_snapshot(
+                snapshot_dir=snapshot_dir,
+                snapshot_tag=self.snapshot_tag,
             )
-        if figure_needed:
-            self._save_snapshot_figure(
-                pdf_data=pdf_data,
-                figure_path=figure_path,
-            )
+            if data_needed:
+                self._save_pdf(
+                    pdf_data=pdf_data,
+                    data_dir=data_dir,
+                )
+            if figure_needed:
+                self._save_snapshot_figure(
+                    pdf_data=pdf_data,
+                    figure_path=figure_path,
+                )
 
     def _load_all_saved_pdfs(
         self,
