@@ -823,7 +823,7 @@ def generate_fields_in_parallel(
 ##
 
 
-def resolve_animate_figures_dir(
+def resolve_figures_dir_to_animate(
     *,
     figures_dir: pathlib.Path | None,
     data_dir: pathlib.Path | None,

@@ -165,7 +165,7 @@ def main():
         )
         diagnostic_pipeline.run()
     if user_args.animate:
-        figures_dir = slices.resolve_animate_figures_dir(
+        figures_dir = slices.resolve_figures_dir_to_animate(
             figures_dir=user_args.figures_dir,
             data_dir=user_args.data_dir,
             input_dir=user_args.input_dir,
