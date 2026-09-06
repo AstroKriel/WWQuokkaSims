@@ -313,7 +313,7 @@ class GenerateTimeSeries:
             else:
                 values_array = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
             ylabel = rf"$\log_{{10}}\big({time_series.latex_label}\big)$"
-            fig_name = f"log10_{self.registered_field.name}-{self.field_statistic.name}-time_series.png"
+            fig_name = f"log10_{fig_name}"
         ax.plot(
             time_array,
             values_array,
