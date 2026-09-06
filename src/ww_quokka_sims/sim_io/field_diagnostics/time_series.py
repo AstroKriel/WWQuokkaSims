@@ -38,7 +38,6 @@ class TimePoint:
 
     def save_to_file(
         self,
-        *,
         file_path: pathlib.Path,
     ) -> None:
         json_io.save_dict_to_json_file(
@@ -55,7 +54,6 @@ class TimePoint:
     @classmethod
     def load_from_file(
         cls,
-        *,
         file_path: pathlib.Path,
     ) -> "TimePoint":
         data = json_io.read_json_file_into_dict(
