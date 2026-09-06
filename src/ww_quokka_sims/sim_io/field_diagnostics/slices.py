@@ -608,10 +608,10 @@ class GenerateFieldSlices:
             sim_time=sim_time,
         )
         self._label_axes(axs_grid=axs_grid)
-        fig_path = figures_dir / self._get_figure_file_name(padded_index=padded_index)
+        figure_path = figures_dir / self._get_figure_file_name(padded_index=padded_index)
         manage_figure.save_figure(
             figure=fig,
-            figure_path=fig_path,
+            figure_path=figure_path,
             verbose=verbose,
         )
 
@@ -829,12 +829,15 @@ def resolve_animate_figures_dir(
     data_dir: pathlib.Path | None,
     input_dir: pathlib.Path | None,
 ) -> pathlib.Path:
-    resolved_figures_dir = figures_dir if figures_dir is not None else (
-        data_dir if data_dir is not None else input_dir
-    )
-    if resolved_figures_dir is None:
+    if figures_dir is not None:
+        resolved_figures_dir = figures_dir
+    elif data_dir is not None:
+        resolved_figures_dir = data_dir
+    elif input_dir is not None:
+        resolved_figures_dir = input_dir
+    else:
         raise ValueError(
-            "`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.",
+            "`--animate` also needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.",
         )
     return resolved_figures_dir
 
@@ -847,17 +850,18 @@ def animate_saved_figures(
 ) -> None:
     for field_name in fields_to_plot:
         plot_name = f"log10_{field_name}" if apply_log10_plot else field_name
-        fig_paths = manage_io.filter_directory(
+        figure_prefix = f"{plot_name}-slice-index="
+        figure_paths = manage_io.filter_directory(
             directory=figures_dir,
-            prefix=f"{plot_name}-slice-index=",
+            prefix=figure_prefix,
             suffix=".png",
             include_folders=False,
         )
-        if len(fig_paths) < 3:
+        if len(figure_paths) < 3:
             manage_log.log_hint(
                 text=(
                     f"Skipping animation for `{plot_name}`: "
-                    f"only found {len(fig_paths)} frame(s), but need at least 3."
+                    f"found {len(figure_paths)} frame(s), but need at least 3."
                 ),
             )
             continue
@@ -865,7 +869,7 @@ def animate_saved_figures(
         manage_figure.animate_frames_to_video(
             frames_dir=figures_dir,
             video_path=video_path,
-            pattern=f"{plot_name}-slice-index=*.png",
+            pattern=f"{figure_prefix}*.png",
             frames_per_second=60,
             timeout_seconds=120,
         )
