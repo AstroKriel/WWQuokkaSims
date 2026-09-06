@@ -489,10 +489,8 @@ class GeneratePDFs:
         data_exists = data_path.exists()
         data_needed = self.save_data and (self.overwrite or not data_exists)
         figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
-
         if not data_needed and not figure_needed:
             return
-
         if figure_needed and not data_needed and data_exists:
             ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot
             manage_log.log_hint(
@@ -507,7 +505,6 @@ class GeneratePDFs:
                 figure_path=figure_path,
             )
             return
-
         pdf_data = compute_pdfs.compute_snapshot(
             snapshot_dir=snapshot_dir,
             snapshot_tag=self.snapshot_tag,

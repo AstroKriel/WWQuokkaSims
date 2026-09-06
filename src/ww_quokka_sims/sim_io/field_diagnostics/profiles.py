@@ -870,10 +870,8 @@ class GenerateCompProfiles:
         data_exists = all(path.exists() for path in data_paths)
         data_needed = self.save_data and (self.overwrite or not data_exists)
         figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
-
         if not data_needed and not figure_needed:
             return
-
         if figure_needed and not data_needed and data_exists:
             loaded = self._load_snapshot_data(data_paths=data_paths)
             if loaded is not None:
@@ -890,7 +888,6 @@ class GenerateCompProfiles:
                     figure_path=figure_path,
                 )
                 return
-
         comp_profiles = compute_comp_profiles.compute_snapshot(
             snapshot_dir=snapshot_dir,
             snapshot_tag=self.snapshot_tag,

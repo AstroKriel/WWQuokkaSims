@@ -636,10 +636,8 @@ class GenerateFieldSlices:
         )
         data_complete = saved_comp_axes is not None
         data_needed = self.save_data and (self.overwrite or not data_complete)
-
         if not data_needed and not figure_needed:
             return
-
         if figure_needed and not data_needed and data_complete:
             ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot entirely
             assert saved_comp_axes is not None
@@ -663,7 +661,6 @@ class GenerateFieldSlices:
                 verbose=verbose,
             )
             return
-
         ## need the raw snapshot: either the data itself needs (re)computing, or no saved data
         ## exists yet to reconstruct the figure from
         snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
