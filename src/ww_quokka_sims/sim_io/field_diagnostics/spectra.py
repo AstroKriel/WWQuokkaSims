@@ -130,7 +130,7 @@ class ComputeSpectra:
     ) -> pathlib.Path:
         return self.data_dir / f"{self.registered_field.name}-spectrum-index={padded_index}.json"
 
-    def _compute_snapshot_spectrum(
+    def _compute_spectrum(
         self,
         *,
         snapshot_dir: pathlib.Path,
@@ -173,7 +173,7 @@ class ComputeSpectra:
             if (not self.overwrite) and data_path.exists():
                 field_spectrum = FieldSpectrum.load_from_file(data_path)
             else:
-                field_spectrum = self._compute_snapshot_spectrum(
+                field_spectrum = self._compute_spectrum(
                     snapshot_dir=snapshot_dir,
                     step_index=step_index,
                 )
@@ -184,7 +184,7 @@ class ComputeSpectra:
                     )
                     field_spectrum.save_to_file(data_path)
             field_spectra.append(field_spectrum)
-        field_spectra.sort(key=lambda s: s.sim_time)
+        field_spectra.sort(key=lambda _field_spectrum: _field_spectrum.sim_time)
         return field_spectra
 
 
