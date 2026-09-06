@@ -197,9 +197,9 @@ def _compute_min_max(
     )
 
 
-def slice_field(
+def slice_3d_farray(
     *,
-    sarray_3d: numpy.ndarray,
+    farray_3d: numpy.ndarray,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
     uniform_domain: domain_models.UniformDomain_3D,
     comp_label: str,
@@ -207,13 +207,13 @@ def slice_field(
     step_index: int,
     amr_level: int,
 ) -> FieldSlice:
-    num_cells_x0, num_cells_x1, num_cells_x2 = sarray_3d.shape
+    num_cells_x0, num_cells_x1, num_cells_x2 = farray_3d.shape
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X2:
-        sarray_2d = sarray_3d[:, :, num_cells_x2 // 2]
+        sarray_2d = farray_3d[:, :, num_cells_x2 // 2]
     elif axis_to_slice == cartesian_axes.CartesianAxis_3D.X1:
-        sarray_2d = sarray_3d[:, num_cells_x1 // 2, :]
+        sarray_2d = farray_3d[:, num_cells_x1 // 2, :]
     else:
-        sarray_2d = sarray_3d[num_cells_x0 // 2, :, :]
+        sarray_2d = farray_3d[num_cells_x0 // 2, :, :]
     axis_bounds = get_slice_bounds(
         uniform_domain=uniform_domain,
         axis_to_slice=axis_to_slice,
@@ -380,8 +380,8 @@ class GenerateFieldSlices:
                 field_comp.label,
                 {
                     axis_to_slice:
-                    slice_field(
-                        sarray_3d=field_comp.sarray_3d,
+                    slice_3d_farray(
+                        farray_3d=field_comp.sarray_3d,
                         axis_to_slice=axis_to_slice,
                         uniform_domain=uniform_domain,
                         comp_label=field_comp.label,
@@ -508,8 +508,8 @@ class GenerateFieldSlices:
     ) -> None:
         for field_comp in field_comps:
             for axis_to_slice in self.axes_to_slice:
-                field_slice = slice_field(
-                    sarray_3d=field_comp.sarray_3d,
+                field_slice = slice_3d_farray(
+                    farray_3d=field_comp.sarray_3d,
                     axis_to_slice=axis_to_slice,
                     uniform_domain=uniform_domain,
                     comp_label=field_comp.label,

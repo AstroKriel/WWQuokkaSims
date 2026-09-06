@@ -76,8 +76,8 @@ class TestSliceField(unittest.TestCase):
         *,
         axis_to_slice: cartesian_axes.CartesianAxis_3D,
     ) -> numpy.ndarray:
-        return slices.slice_field(
-            sarray_3d=_SARRAY_3D,
+        return slices.slice_3d_farray(
+            farray_3d=_SARRAY_3D,
             axis_to_slice=axis_to_slice,
             uniform_domain=_UNIFORM_DOMAIN,
             comp_label=r"$\rho$",
