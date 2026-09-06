@@ -442,7 +442,7 @@ class GeneratePDFs:
         fig, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=1,
             num_panel_cols=pdf_data.num_comps,
-            panel_col_gap_pt=20.0,
+            panel_col_gap_pt=30.0,
         )
         self._plot_snapshot(
             axs_grid=axs_grid,
@@ -544,7 +544,7 @@ class GeneratePDFs:
         fig, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=1,
             num_panel_cols=num_cols,
-            panel_col_gap_pt=20.0,
+            panel_col_gap_pt=30.0,
         )
         if len(field_pdfs) == 1:
             self._plot_snapshot(

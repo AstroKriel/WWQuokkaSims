@@ -780,7 +780,7 @@ class GenerateCompProfiles:
         fig, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=len(comp_profiles),
             num_panel_cols=len(axis_labels),
-            panel_col_gap_pt=20.0,
+            panel_col_gap_pt=30.0,
         )
         for row_index, comp_profile in enumerate(comp_profiles):
             self._plot_comp_profile(
@@ -813,7 +813,7 @@ class GenerateCompProfiles:
         fig, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=len(comp_labels),
             num_panel_cols=len(axis_labels),
-            panel_col_gap_pt=20.0,
+            panel_col_gap_pt=30.0,
         )
         for row_index, comp_label in enumerate(comp_labels):
             comp_profiles = comp_profiles_lookup[comp_label]
