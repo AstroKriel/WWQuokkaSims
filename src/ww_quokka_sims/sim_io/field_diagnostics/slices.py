@@ -257,6 +257,7 @@ class GenerateFieldSlices:
         plane_label: str,
         comp_label: str,
         palette_config: add_color.PaletteConfig,
+        show_colorbar_label: bool = True,
         hide_annotations: bool = False,
     ) -> None:
         palette = plot_data.plot_2d_array(
@@ -272,7 +273,9 @@ class GenerateFieldSlices:
         add_color.add_colorbar(
             panels=ax,
             palette=palette,
-            label=comp_label,
+            ## every column in a row shares the same quantity, so only the rightmost one
+            ## needs the label; the bar and its own tick values still belong on every column
+            label=comp_label if show_colorbar_label else None,
             colorbar_side="right",
             colorbar_gap_pt=15.0,
             label_gap_pt=10.0,
@@ -399,6 +402,7 @@ class GenerateFieldSlices:
         rows: list[Row],
         step_time: float,
     ) -> None:
+        num_cols = len(self.axes_to_slice)
         for row_index, (comp_label, sliced_by_axis) in enumerate(rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
                 ax = axs_grid[row_index][col_index]
@@ -413,6 +417,7 @@ class GenerateFieldSlices:
                         expected_properties=self.field_args.registered_field.expected_properties,
                         value_range=(field_slice.min_value, field_slice.max_value),
                     ),
+                    show_colorbar_label=col_index == num_cols - 1,
                     hide_annotations=self.hide_annotations,
                 )
 
@@ -586,7 +591,7 @@ class GenerateFieldSlices:
             num_panel_cols=len(self.axes_to_slice),
             panel_width_cm=8.0,
             panel_aspect_ratio=1.0,
-            panel_row_gap_pt=20.0,
+            panel_row_gap_pt=30.0,
             panel_col_gap_pt=30.0,
         )
         self._plot_rows(
