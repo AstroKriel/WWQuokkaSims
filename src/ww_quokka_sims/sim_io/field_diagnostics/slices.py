@@ -589,7 +589,7 @@ class GenerateFieldSlices:
             panel_width_cm=8.0,
             panel_aspect_ratio=1.0,
             panel_row_gap_pt=40.0,
-            panel_col_gap_pt=40.0,
+            panel_col_gap_pt=70.0,
         )
         self._plot_rows(
             axs_grid=axs_grid,
