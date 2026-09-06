@@ -282,7 +282,7 @@ wheels = [
 [[package]]
 name = "jormi"
 version = "0.1.0"
-source = { git = "https://github.com/AstroKriel/PythonHelpers.git?rev=01ffc441d0f16315f267242121c2b6968c23890b#01ffc441d0f16315f267242121c2b6968c23890b" }
+source = { git = "https://github.com/AstroKriel/PythonHelpers.git?rev=4ffc44c40417e478f952a6473369bacb7e0e4fa6#4ffc44c40417e478f952a6473369bacb7e0e4fa6" }
 dependencies = [
     { name = "cmasher" },
     { name = "h5py" },
@@ -952,7 +952,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "imageio", specifier = ">=2.37.0" },
-    { name = "jormi", git = "https://github.com/AstroKriel/PythonHelpers.git?rev=01ffc441d0f16315f267242121c2b6968c23890b" },
+    { name = "jormi", git = "https://github.com/AstroKriel/PythonHelpers.git?rev=4ffc44c40417e478f952a6473369bacb7e0e4fa6" },
     { name = "numpy", specifier = ">=2.3.2" },
     { name = "yt", specifier = ">=4.4.1" },
 ]

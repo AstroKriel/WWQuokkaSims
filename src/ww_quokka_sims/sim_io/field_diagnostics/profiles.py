@@ -738,7 +738,7 @@ class GenerateCompProfiles:
         comp_profiles: list[CompProfile],
     ) -> None:
         palette = add_color.make_palette(
-            config=add_color.SequentialConfig(
+            config=add_color.SequentialPaletteConfig(
                 palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
