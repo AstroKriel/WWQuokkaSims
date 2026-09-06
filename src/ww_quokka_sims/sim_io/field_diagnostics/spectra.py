@@ -225,10 +225,10 @@ class GenerateSpectra:
     def _style_ax(
         *,
         ax: manage_figure.Panel,
-        latex_label: str,
+        field_label: str,
     ) -> None:
         ax.set_xlabel(r"$\log_{10}(k)$")
-        ax.set_ylabel(rf"$\log_{{10}}\big(\mathcal{{P}}_{{{latex_label}}}(k)\big)$")
+        ax.set_ylabel(rf"$\log_{{10}}\big(\mathcal{{P}}_{{{field_label}}}(k)\big)$")
 
     @staticmethod
     def _plot_snapshot(
@@ -249,18 +249,13 @@ class GenerateSpectra:
         ax: manage_figure.Panel,
         field_spectra: list[FieldSpectrum],
     ) -> None:
+        last_series_index = max(0, len(field_spectra) - 1)
         palette = add_color.make_palette(
             config=add_color.SequentialPaletteConfig(
                 palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
-            value_range=(
-                0,
-                max(
-                    0,
-                    len(field_spectra) - 1,
-                ),
-            ),
+            value_range=(0, last_series_index),
         )
         for series_index, field_spectrum in enumerate(field_spectra):
             color = palette.mpl_cmap(
@@ -303,7 +298,7 @@ class GenerateSpectra:
         )
         self._style_ax(
             ax=ax,
-            latex_label=field_spectrum.latex_label,
+            field_label=field_spectrum.latex_label,
         )
         manage_figure.save_figure(
             figure=fig,
@@ -332,7 +327,7 @@ class GenerateSpectra:
             )
         self._style_ax(
             ax=ax,
-            latex_label=field_spectra[0].latex_label,
+            field_label=field_spectra[0].latex_label,
         )
         fig_path = figures_dir / f"{self.registered_field.name}-spectra-summary.png"
         manage_figure.save_figure(
