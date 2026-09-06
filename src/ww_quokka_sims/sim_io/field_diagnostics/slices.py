@@ -32,7 +32,7 @@ AxisBounds = tuple[tuple[float, float], tuple[float, float]]  # ((xmin, xmax), (
 
 
 @dataclasses.dataclass(frozen=True)
-class SlicedField:
+class FieldSlice:
     """A single 2D slice, self-contained enough to plot without the raw snapshot or uniform_domain."""
 
     sarray_2d: numpy.ndarray
@@ -64,7 +64,7 @@ class SlicedField:
     def load_from_file(
         cls,
         file_path: pathlib.Path,
-    ) -> "SlicedField":
+    ) -> "FieldSlice":
         with numpy.load(file_path) as npz:
             saved_bounds = npz["axis_bounds"]
             axis_bounds: AxisBounds = (
@@ -137,7 +137,7 @@ class FieldComp:
     comp_axis: cartesian_axes.CartesianAxis_3D | None = None
 
 
-Row = tuple[str, dict[cartesian_axes.CartesianAxis_3D, "SlicedField"]]  # (comp_label, {axis: SlicedField})
+Row = tuple[str, dict[cartesian_axes.CartesianAxis_3D, "FieldSlice"]]  # (comp_label, {axis: FieldSlice})
 
 ##
 ## === FIELD PROCESSING
@@ -206,7 +206,7 @@ def slice_field(
     sim_time: float,
     step_index: int,
     amr_level: int,
-) -> SlicedField:
+) -> FieldSlice:
     num_cells_x0, num_cells_x1, num_cells_x2 = sarray_3d.shape
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X2:
         sarray_2d = sarray_3d[:, :, num_cells_x2 // 2]
@@ -219,7 +219,7 @@ def slice_field(
         axis_to_slice=axis_to_slice,
     )
     min_value, max_value = _compute_min_max(sarray_2d)
-    return SlicedField(
+    return FieldSlice(
         sarray_2d=sarray_2d,
         axis_bounds=axis_bounds,
         min_value=min_value,
@@ -253,7 +253,7 @@ class GenerateFieldSlices:
         *,
         ax: manage_figure.Panel,
         sim_time: float,
-        field_slice: SlicedField,
+        field_slice: FieldSlice,
         plane_label: str,
         comp_label: str,
         palette_config: add_color.PaletteConfig,
@@ -534,7 +534,7 @@ class GenerateFieldSlices:
         rows: list[Row] = []
         sim_time: float | None = None
         for comp_axis in comp_axes:
-            sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, SlicedField] = {}
+            sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
             comp_label = ""
             for axis_to_slice in self.axes_to_slice:
                 file_name = self._data_file_name(
@@ -542,7 +542,7 @@ class GenerateFieldSlices:
                     axis_to_slice=axis_to_slice,
                     padded_index=padded_index,
                 )
-                field_slice = SlicedField.load_from_file(data_dir / file_name)
+                field_slice = FieldSlice.load_from_file(data_dir / file_name)
                 sliced_by_axis[axis_to_slice] = field_slice
                 comp_label = field_slice.comp_label
                 sim_time = field_slice.sim_time
@@ -566,14 +566,14 @@ class GenerateFieldSlices:
             for comp_label, sliced_by_axis in rows:
                 if all(numpy.all(field_slice.sarray_2d == 0) for field_slice in sliced_by_axis.values()):
                     continue
-                log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, SlicedField] = {}
+                log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
                 for axis_to_slice, field_slice in sliced_by_axis.items():
                     sarray_2d = field_slice.sarray_2d if is_strictly_positive else numpy.abs(
                         field_slice.sarray_2d,
                     )
                     log10_sarray_2d = compute_array_stats.compute_safe_log10(sarray_2d)
                     min_value, max_value = _compute_min_max(log10_sarray_2d)
-                    log10_sliced_by_axis[axis_to_slice] = SlicedField(
+                    log10_sliced_by_axis[axis_to_slice] = FieldSlice(
                         sarray_2d=log10_sarray_2d,
                         axis_bounds=field_slice.axis_bounds,
                         min_value=min_value,

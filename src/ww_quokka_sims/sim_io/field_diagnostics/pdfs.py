@@ -30,7 +30,7 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 
 
 @dataclasses.dataclass(frozen=True)
-class PDFData:
+class FieldPDF:
     sim_time: float
     step_index: int
     grouped_bin_centers: list[numpy.ndarray]
@@ -110,7 +110,7 @@ class PDFData:
     def load_from_file(
         cls,
         file_path: pathlib.Path,
-    ) -> "PDFData":
+    ) -> "FieldPDF":
         input_dict = json_io.read_json_file_into_dict(
             file_path=file_path,
             verbose=False,
@@ -118,7 +118,7 @@ class PDFData:
         validate_types.ensure_dict_has_keys(
             param=input_dict,
             required_keys={"sim_time", "step_index", "use_log10_bins"},
-            param_name="<PDFData JSON>",
+            param_name="<FieldPDF JSON>",
         )
         use_log10_bins = bool(input_dict["use_log10_bins"])
         bin_centers_key = "log10_bin_centers" if use_log10_bins else "bin_centers"
@@ -194,7 +194,7 @@ class ComputePDFs:
         self,
         field: field_models.VectorField_3D,
         step_index: int,
-    ) -> PDFData:
+    ) -> FieldPDF:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
                 f"Vector field `{self.registered_field.name}` requires at least one component to plot; none provided.",
@@ -220,7 +220,7 @@ class ComputePDFs:
             )
             grouped_bin_centers.append(bin_centers)
             grouped_densities.append(densities)
-        return PDFData(
+        return FieldPDF(
             sim_time=sim_time,
             step_index=step_index,
             grouped_bin_centers=grouped_bin_centers,
@@ -233,7 +233,7 @@ class ComputePDFs:
         self,
         field: field_models.ScalarField_3D,
         step_index: int,
-    ) -> PDFData:
+    ) -> FieldPDF:
         field_models.ensure_3d_sfield(field)
         sim_time = field.sim_time
         assert sim_time is not None
@@ -242,7 +242,7 @@ class ComputePDFs:
             num_bins=self.num_bins,
             use_log10_bins=self.use_log10_bins,
         )
-        return PDFData(
+        return FieldPDF(
             sim_time=sim_time,
             step_index=step_index,
             grouped_bin_centers=[bin_centers],
@@ -256,7 +256,7 @@ class ComputePDFs:
         *,
         snapshot_dir: pathlib.Path,
         snapshot_tag: str,
-    ) -> PDFData:
+    ) -> FieldPDF:
         step_index = int(
             find_snapshots.get_step_index_string(
                 snapshot_dir=snapshot_dir,
@@ -368,12 +368,12 @@ class GeneratePDFs:
     def _plot_snapshot(
         *,
         axs_grid: manage_figure.PanelGrid,
-        pdf_data: PDFData,
+        field_pdf: FieldPDF,
         color: annotate_panel.ColorType,
     ) -> None:
-        for comp_index in range(pdf_data.num_comps):
+        for comp_index in range(field_pdf.num_comps):
             ax = axs_grid[0][comp_index]
-            x_values, y_values = pdf_data.get_pdf(comp_index)
+            x_values, y_values = field_pdf.get_pdf(comp_index)
             ax.step(
                 x_values,
                 y_values,
@@ -386,7 +386,7 @@ class GeneratePDFs:
     def _plot_series(
         *,
         axs_grid: manage_figure.PanelGrid,
-        field_pdfs: list[PDFData],
+        field_pdfs: list[FieldPDF],
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialPaletteConfig(
@@ -401,7 +401,7 @@ class GeneratePDFs:
                 ),
             ),
         )
-        for series_index, pdf_data in enumerate(field_pdfs):
+        for series_index, field_pdf in enumerate(field_pdfs):
             color = palette.mpl_cmap(
                 palette.mpl_norm(
                     series_index,
@@ -409,7 +409,7 @@ class GeneratePDFs:
             )
             GeneratePDFs._plot_snapshot(
                 axs_grid=axs_grid,
-                pdf_data=pdf_data,
+                field_pdf=field_pdf,
                 color=color,
             )
         add_color.add_colorbar(
@@ -423,7 +423,7 @@ class GeneratePDFs:
     def _save_pdf(
         self,
         *,
-        pdf_data: PDFData,
+        field_pdf: FieldPDF,
         data_dir: pathlib.Path,
     ) -> None:
         """Save one snapshot's PDF to its own file, mirroring `generate_slices.py`'s one-file-per-
@@ -435,8 +435,8 @@ class GeneratePDFs:
             directory=data_dir,
             verbose=False,
         )
-        padded_index = f"{pdf_data.step_index:0{self.index_width}d}"
-        pdf_data.save_to_file(
+        padded_index = f"{field_pdf.step_index:0{self.index_width}d}"
+        field_pdf.save_to_file(
             self._data_file_path(
                 data_dir=data_dir,
                 padded_index=padded_index,
@@ -446,22 +446,22 @@ class GeneratePDFs:
     def _save_snapshot_figure(
         self,
         *,
-        pdf_data: PDFData,
+        field_pdf: FieldPDF,
         figure_path: pathlib.Path,
     ) -> None:
         fig, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=1,
-            num_panel_cols=pdf_data.num_comps,
+            num_panel_cols=field_pdf.num_comps,
             panel_col_gap_pt=30.0,
         )
         self._plot_snapshot(
             axs_grid=axs_grid,
-            pdf_data=pdf_data,
+            field_pdf=field_pdf,
             color="black",
         )
         self._style_axs(
             axs_grid=axs_grid,
-            comp_labels=pdf_data.comp_labels,
+            comp_labels=field_pdf.comp_labels,
             use_log10_bins=self.use_log10_bins,
         )
         manage_figure.save_figure(
@@ -507,24 +507,24 @@ class GeneratePDFs:
                     f"building figure from saved data, skipping the raw snapshot."
                 ),
             )
-            pdf_data = PDFData.load_from_file(data_path)
+            field_pdf = FieldPDF.load_from_file(data_path)
             self._save_snapshot_figure(
-                pdf_data=pdf_data,
+                field_pdf=field_pdf,
                 figure_path=figure_path,
             )
         else:
-            pdf_data = compute_pdfs.compute_snapshot(
+            field_pdf = compute_pdfs.compute_snapshot(
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=self.snapshot_tag,
             )
             if data_needed:
                 self._save_pdf(
-                    pdf_data=pdf_data,
+                    field_pdf=field_pdf,
                     data_dir=data_dir,
                 )
             if figure_needed:
                 self._save_snapshot_figure(
-                    pdf_data=pdf_data,
+                    field_pdf=field_pdf,
                     figure_path=figure_path,
                 )
 
@@ -532,16 +532,16 @@ class GeneratePDFs:
         self,
         *,
         data_dir: pathlib.Path,
-    ) -> list[PDFData]:
+    ) -> list[FieldPDF]:
         paths = sorted(data_dir.glob(f"{self._data_name()}-pdf-index=*.json"))
-        field_pdfs = [PDFData.load_from_file(path) for path in paths]
-        field_pdfs.sort(key=lambda pdf_data: pdf_data.sim_time)
+        field_pdfs = [FieldPDF.load_from_file(path) for path in paths]
+        field_pdfs.sort(key=lambda field_pdf: field_pdf.sim_time)
         return field_pdfs
 
     def _save_summary_figure(
         self,
         *,
-        field_pdfs: list[PDFData],
+        field_pdfs: list[FieldPDF],
         figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every saved snapshot; always rebuilt fresh from whatever is on
@@ -556,7 +556,7 @@ class GeneratePDFs:
         if len(field_pdfs) == 1:
             self._plot_snapshot(
                 axs_grid=axs_grid,
-                pdf_data=field_pdfs[0],
+                field_pdf=field_pdfs[0],
                 color="black",
             )
         else:

@@ -106,7 +106,7 @@ class ComponentArrays:
 
 
 @dataclasses.dataclass(frozen=True)
-class ScalarProfile:
+class ScalarFieldProfile:
     field_name: str
     field_label: str
     sim_time: float
@@ -171,7 +171,7 @@ class ScalarProfile:
     def load_from_file(
         cls,
         file_path: pathlib.Path,
-    ) -> "ScalarProfile":
+    ) -> "ScalarFieldProfile":
         data = json_io.read_json_file_into_dict(
             file_path=file_path,
             verbose=False,
@@ -188,7 +188,7 @@ class ScalarProfile:
                 "field_value",
                 "amr_level",
             },
-            param_name="<ScalarProfile JSON>",
+            param_name="<ScalarFieldProfile JSON>",
         )
         return cls(
             field_name=data["field_name"],
@@ -208,7 +208,7 @@ class ScalarProfile:
 
 
 @dataclasses.dataclass(frozen=True)
-class VectorProfile:
+class VectorFieldProfile:
     field_name: str
     sim_time: float
     step_index: int
@@ -276,7 +276,7 @@ class VectorProfile:
     def load_from_file(
         cls,
         file_path: pathlib.Path,
-    ) -> "VectorProfile":
+    ) -> "VectorFieldProfile":
         data = json_io.read_json_file_into_dict(
             file_path=file_path,
             verbose=False,
@@ -291,7 +291,7 @@ class VectorProfile:
                 "field_comps",
                 "amr_level",
             },
-            param_name="<VectorProfile JSON>",
+            param_name="<VectorFieldProfile JSON>",
         )
         components = {
             comp_axis:
@@ -605,7 +605,7 @@ class GenerateCompProfiles:
             )
             if is_scalar:
                 comp_profile = comp_profiles[0]
-                ScalarProfile(
+                ScalarFieldProfile(
                     field_name=self.registered_field.name,
                     field_label=comp_profile.comp_label,
                     sim_time=sim_time,
@@ -625,7 +625,7 @@ class GenerateCompProfiles:
                     )
                     for comp_profile in comp_profiles
                 }
-                VectorProfile(
+                VectorFieldProfile(
                     field_name=self.registered_field.name,
                     sim_time=sim_time,
                     step_index=step_index,
@@ -652,12 +652,12 @@ class GenerateCompProfiles:
             y_array_by_axis: list[numpy.ndarray] = []
             comp_label = ""
             for path in data_paths:
-                scalar_profile = ScalarProfile.load_from_file(path)
-                x_array_by_axis.append(scalar_profile.position)
-                y_array_by_axis.append(scalar_profile.field_value)
-                comp_label = scalar_profile.field_label
-                sim_time = scalar_profile.sim_time
-                step_index = scalar_profile.step_index
+                scalar_field_profile = ScalarFieldProfile.load_from_file(path)
+                x_array_by_axis.append(scalar_field_profile.position)
+                y_array_by_axis.append(scalar_field_profile.field_value)
+                comp_label = scalar_field_profile.field_label
+                sim_time = scalar_field_profile.sim_time
+                step_index = scalar_field_profile.step_index
             comp_profiles = [
                 CompProfile(
                     sim_time=sim_time,
@@ -670,16 +670,16 @@ class GenerateCompProfiles:
                 ),
             ]
             return comp_profiles, sim_time
-        vector_profiles = [VectorProfile.load_from_file(path) for path in data_paths]
+        vector_profiles = [VectorFieldProfile.load_from_file(path) for path in data_paths]
         comp_keys = sorted(vector_profiles[0].components.keys())
         per_comp_x: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
         per_comp_y: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
         per_comp_label: dict[str, str] = {}
-        for vector_profile in vector_profiles:
-            sim_time = vector_profile.sim_time
-            step_index = vector_profile.step_index
+        for vector_field_profile in vector_profiles:
+            sim_time = vector_field_profile.sim_time
+            step_index = vector_field_profile.step_index
             for key in comp_keys:
-                comp_arrays = vector_profile.components[key]
+                comp_arrays = vector_field_profile.components[key]
                 per_comp_x[key].append(comp_arrays.position)
                 per_comp_y[key].append(comp_arrays.field_value)
                 per_comp_label[key] = comp_arrays.label

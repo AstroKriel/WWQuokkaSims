@@ -116,7 +116,7 @@ class TestSlicedFieldRoundTrip(unittest.TestCase):
     def test_save_and_load_preserves_all_fields(
         self,
     ):
-        sliced_field = slices.SlicedField(
+        sliced_field = slices.FieldSlice(
             sarray_2d=numpy.arange(4, dtype=float).reshape(2, 2),
             axis_bounds=((0.0, 1.0), (0.0, 2.0)),
             min_value=0.0,
@@ -129,7 +129,7 @@ class TestSlicedFieldRoundTrip(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = pathlib.Path(tmp_dir) / "sliced_field.npz"
             sliced_field.save_to_file(file_path)
-            loaded = slices.SlicedField.load_from_file(file_path)
+            loaded = slices.FieldSlice.load_from_file(file_path)
         self.assertEqual(loaded.axis_bounds, sliced_field.axis_bounds)
         self.assertEqual(loaded.min_value, sliced_field.min_value)
         self.assertEqual(loaded.max_value, sliced_field.max_value)

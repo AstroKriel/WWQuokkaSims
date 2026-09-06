@@ -29,7 +29,7 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 
 
 @dataclasses.dataclass(frozen=True)
-class SpectraData:
+class FieldSpectrum:
     sim_time: float
     step_index: int
     latex_label: str
@@ -69,7 +69,7 @@ class SpectraData:
     def load_from_file(
         cls,
         file_path: pathlib.Path,
-    ) -> "SpectraData":
+    ) -> "FieldSpectrum":
         data = json_io.read_json_file_into_dict(
             file_path=file_path,
             verbose=False,
@@ -83,7 +83,7 @@ class SpectraData:
                 "log10_k_bin_centers",
                 "log10_spectrum",
             },
-            param_name="<SpectraData JSON>",
+            param_name="<FieldSpectrum JSON>",
         )
         return cls(
             sim_time=float(data["sim_time"]),
@@ -135,7 +135,7 @@ class ComputeSpectra:
         *,
         snapshot_dir: pathlib.Path,
         step_index: int,
-    ) -> SpectraData:
+    ) -> FieldSpectrum:
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
                 verbose=False,
@@ -149,7 +149,7 @@ class ComputeSpectra:
         assert sim_time is not None
         log10_k_bin_centers = compute_array_stats.compute_safe_log10(spectrum.k_bin_centers_1d)
         log10_spectrum = compute_array_stats.compute_safe_log10(spectrum.power_spectrum_1d)
-        return SpectraData(
+        return FieldSpectrum(
             sim_time=sim_time,
             step_index=step_index,
             latex_label=field.latex_label,
@@ -159,8 +159,8 @@ class ComputeSpectra:
 
     def run(
         self,
-    ) -> list[SpectraData]:
-        field_spectra: list[SpectraData] = []
+    ) -> list[FieldSpectrum]:
+        field_spectra: list[FieldSpectrum] = []
         for snapshot_dir in self.snapshot_dirs:
             step_index = int(
                 find_snapshots.get_step_index_string(
@@ -171,9 +171,9 @@ class ComputeSpectra:
             padded_index = f"{step_index:0{self.index_width}d}"
             data_path = self._data_file_path(padded_index=padded_index)
             if (not self.overwrite) and data_path.exists():
-                spectra_data = SpectraData.load_from_file(data_path)
+                field_spectrum = FieldSpectrum.load_from_file(data_path)
             else:
-                spectra_data = self._compute_snapshot_spectrum(
+                field_spectrum = self._compute_snapshot_spectrum(
                     snapshot_dir=snapshot_dir,
                     step_index=step_index,
                 )
@@ -182,8 +182,8 @@ class ComputeSpectra:
                         directory=self.data_dir,
                         verbose=False,
                     )
-                    spectra_data.save_to_file(data_path)
-            field_spectra.append(spectra_data)
+                    field_spectrum.save_to_file(data_path)
+            field_spectra.append(field_spectrum)
         field_spectra.sort(key=lambda s: s.sim_time)
         return field_spectra
 
@@ -234,12 +234,12 @@ class GenerateSpectra:
     def _plot_snapshot(
         *,
         ax: manage_figure.Panel,
-        spectra_data: SpectraData,
+        field_spectrum: FieldSpectrum,
         color: annotate_panel.ColorType,
     ) -> None:
         ax.plot(
-            spectra_data.log10_k_bin_centers,
-            spectra_data.log10_spectrum,
+            field_spectrum.log10_k_bin_centers,
+            field_spectrum.log10_spectrum,
             color=color,
         )
 
@@ -247,7 +247,7 @@ class GenerateSpectra:
     def _plot_series(
         *,
         ax: manage_figure.Panel,
-        field_spectra: list[SpectraData],
+        field_spectra: list[FieldSpectrum],
     ) -> None:
         palette = add_color.make_palette(
             config=add_color.SequentialPaletteConfig(
@@ -262,7 +262,7 @@ class GenerateSpectra:
                 ),
             ),
         )
-        for series_index, spectra_data in enumerate(field_spectra):
+        for series_index, field_spectrum in enumerate(field_spectra):
             color = palette.mpl_cmap(
                 palette.mpl_norm(
                     series_index,
@@ -270,7 +270,7 @@ class GenerateSpectra:
             )
             GenerateSpectra._plot_snapshot(
                 ax=ax,
-                spectra_data=spectra_data,
+                field_spectrum=field_spectrum,
                 color=color,
             )
         add_color.add_colorbar(
@@ -292,18 +292,18 @@ class GenerateSpectra:
     def _save_snapshot_figure(
         self,
         *,
-        spectra_data: SpectraData,
+        field_spectrum: FieldSpectrum,
         figure_path: pathlib.Path,
     ) -> None:
         fig, ax = manage_figure.create_figure()
         self._plot_snapshot(
             ax=ax,
-            spectra_data=spectra_data,
+            field_spectrum=field_spectrum,
             color="black",
         )
         self._style_ax(
             ax=ax,
-            latex_label=spectra_data.latex_label,
+            latex_label=field_spectrum.latex_label,
         )
         manage_figure.save_figure(
             figure=fig,
@@ -314,7 +314,7 @@ class GenerateSpectra:
     def _save_summary_figure(
         self,
         *,
-        field_spectra: list[SpectraData],
+        field_spectra: list[FieldSpectrum],
         figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
@@ -322,7 +322,7 @@ class GenerateSpectra:
         if len(field_spectra) == 1:
             self._plot_snapshot(
                 ax=ax,
-                spectra_data=field_spectra[0],
+                field_spectrum=field_spectra[0],
                 color="black",
             )
         else:
@@ -362,15 +362,15 @@ class GenerateSpectra:
             return
         ## one figure per snapshot, resumed like everything else; the combined summary always
         ## rebuilds since it's cheap relative to the per-snapshot compute above
-        for spectra_data in field_spectra:
-            padded_index = f"{spectra_data.step_index:0{self.index_width}d}"
+        for field_spectrum in field_spectra:
+            padded_index = f"{field_spectrum.step_index:0{self.index_width}d}"
             figure_path = self._snapshot_figure_file_path(
                 figures_dir=self.figures_dir,
                 padded_index=padded_index,
             )
             if self.overwrite or not figure_path.exists():
                 self._save_snapshot_figure(
-                    spectra_data=spectra_data,
+                    field_spectrum=field_spectrum,
                     figure_path=figure_path,
                 )
         self._save_summary_figure(
