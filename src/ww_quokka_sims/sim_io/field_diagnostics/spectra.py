@@ -13,6 +13,7 @@ import typing
 import numpy
 
 ## personal
+from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields.fields_3d import compute_spectra
 from jormi.ww_io import json_io, manage_io
 from jormi.ww_plots import add_color, annotate_panel, manage_figure
@@ -143,18 +144,8 @@ class ComputeSpectra:
         spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
         sim_time = field.sim_time
         assert sim_time is not None
-        log10_k_bin_centers = numpy.ma.log10(
-            numpy.ma.masked_less_equal(
-                x=spectrum.k_bin_centers_1d,
-                value=0.0,
-            ),
-        )
-        log10_spectrum = numpy.ma.log10(
-            numpy.ma.masked_less_equal(
-                x=spectrum.power_spectrum_1d,
-                value=0.0,
-            ),
-        )
+        log10_k_bin_centers = compute_array_stats.compute_safe_log10(spectrum.k_bin_centers_1d)
+        log10_spectrum = compute_array_stats.compute_safe_log10(spectrum.power_spectrum_1d)
         return SpectraData(
             sim_time=sim_time,
             step_index=step_index,
