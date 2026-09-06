@@ -460,7 +460,10 @@ class ComputeCompProfiles:
         axis_labels = list(self.axes_to_slice)
         comp_profiles: list[CompProfile] = []
         for comp_name in comp_names:
-            comp_label = field_models.get_vcomp_label(vfield_3d=field, comp_axis=comp_name)
+            comp_label = field_models.get_vcomp_label(
+                vfield_3d=field,
+                comp_axis=comp_name,
+            )
             x_array_by_axis: list[numpy.ndarray] = []
             y_array_by_axis: list[numpy.ndarray] = []
             for axis_to_slice in axis_labels:
@@ -962,7 +965,8 @@ class GenerateCompProfiles:
         comp_profiles_lookup = self._load_all_saved_comp_profiles(data_dir=self.data_dir)
         if not comp_profiles_lookup:
             manage_log.log_hint(
-                text=f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
+                text=
+                f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
             )
             return
         self._save_summary_figure(

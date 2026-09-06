@@ -60,12 +60,14 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
             step_index=1,
             profile_axis="x_1",
             components={
-                "x_0": profiles.ComponentArrays(
+                "x_0":
+                profiles.ComponentArrays(
                     position=numpy.array([0.0, 1.0]),
                     field_value=numpy.array([1.0, 2.0]),
                     label=r"$v_x$",
                 ),
-                "x_1": profiles.ComponentArrays(
+                "x_1":
+                profiles.ComponentArrays(
                     position=numpy.array([0.0, 1.0]),
                     field_value=numpy.array([3.0, 4.0]),
                     label=r"$v_y$",

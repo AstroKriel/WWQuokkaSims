@@ -289,7 +289,8 @@ class GenerateTimeSeries:
         )
         time_array, values_array = self._as_arrays(time_points=time_series.get_sorted_time_points())
         json_io.save_dict_to_json_file(
-            file_path=self.data_dir / f"{self.registered_field.name}-{self.field_statistic.name}-time_series.json",
+            file_path=self.data_dir /
+            f"{self.registered_field.name}-{self.field_statistic.name}-time_series.json",
             input_dict={
                 "sim_times": time_array,
                 "values": values_array,

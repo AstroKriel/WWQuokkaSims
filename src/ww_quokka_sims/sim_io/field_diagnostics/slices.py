@@ -359,7 +359,10 @@ class GenerateFieldSlices:
         return [
             FieldComp(
                 sarray_3d=varray_3d[_axis_to_index(comp_axis)],
-                label=field_models.get_vcomp_label(vfield_3d=field, comp_axis=comp_axis),
+                label=field_models.get_vcomp_label(
+                    vfield_3d=field,
+                    comp_axis=comp_axis,
+                ),
                 comp_axis=comp_axis,
             ) for comp_axis in self.comps_to_plot
         ]
@@ -566,7 +569,7 @@ class GenerateFieldSlices:
                 log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, SlicedField] = {}
                 for axis_to_slice, field_slice in sliced_by_axis.items():
                     sarray_2d = field_slice.sarray_2d if is_strictly_positive else numpy.abs(
-                        field_slice.sarray_2d
+                        field_slice.sarray_2d,
                     )
                     log10_sarray_2d = compute_array_stats.compute_safe_log10(sarray_2d)
                     min_value, max_value = _compute_min_max(log10_sarray_2d)
@@ -831,7 +834,7 @@ def resolve_animate_figures_dir(
     )
     if resolved_figures_dir is None:
         raise ValueError(
-            "`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look."
+            "`--animate` needs `--figures-dir` (or `--data-dir`/`--input-dir`) to know where to look.",
         )
     return resolved_figures_dir
 

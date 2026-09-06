@@ -68,9 +68,15 @@ class TestComputeTimePointLabel(unittest.TestCase):
         registered_field = field_registry.RegisteredField(
             name="density",
             loader_fn=_stub_loader,
-            expected_properties=field_registry.ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=field_registry.ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         )
-        field_statistic = time_series.FieldStatistic(name="rms", _compute_fn=lambda field_3d: 1.0)
+        field_statistic = time_series.FieldStatistic(
+            name="rms",
+            _compute_fn=lambda field_3d: 1.0,
+        )
         time_point_args = time_series.TimePointArgs(
             snapshot_dir=pathlib.Path("/unused"),
             registered_field=registered_field,
@@ -89,9 +95,15 @@ class TestComputeTimePointLabel(unittest.TestCase):
         registered_field = field_registry.RegisteredField(
             name="density",
             loader_fn=_stub_loader,
-            expected_properties=field_registry.ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=field_registry.ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         )
-        field_statistic = time_series.FieldStatistic(name="total", _compute_fn=lambda field_3d: 1.0)
+        field_statistic = time_series.FieldStatistic(
+            name="total",
+            _compute_fn=lambda field_3d: 1.0,
+        )
         time_point_args = time_series.TimePointArgs(
             snapshot_dir=pathlib.Path("/unused"),
             registered_field=registered_field,

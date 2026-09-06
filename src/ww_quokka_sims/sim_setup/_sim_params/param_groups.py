@@ -35,7 +35,10 @@ def _ensure_scalar_or_axis_triple(
     param_name: str,
 ) -> None:
     if isinstance(param, tuple):
-        _ensure_axis_triple(param=param, param_name=param_name)
+        _ensure_axis_triple(
+            param=param,
+            param_name=param_name,
+        )
         return
     validate_types.ensure_finite_int(
         param=param,
@@ -97,8 +100,14 @@ class GeometryParams:
     def __post_init__(
         self,
     ) -> None:
-        _ensure_axis_triple(param=self.domain_lo, param_name="<domain_lo>")
-        _ensure_axis_triple(param=self.domain_hi, param_name="<domain_hi>")
+        _ensure_axis_triple(
+            param=self.domain_lo,
+            param_name="<domain_lo>",
+        )
+        _ensure_axis_triple(
+            param=self.domain_hi,
+            param_name="<domain_hi>",
+        )
         for axis, (domain_lo_value, domain_hi_value) in enumerate(zip(
                 self.domain_lo,
                 self.domain_hi,
@@ -183,8 +192,14 @@ class ResolutionParams:
                 raise ValueError(
                     f"`<num_cells>` entries must be >= 8 (AMReX minimum under periodic BCs), got {self.num_cells}.",
                 )
-        _ensure_scalar_or_axis_triple(param=self.blocking_factor, param_name="<blocking_factor>")
-        _ensure_scalar_or_axis_triple(param=self.max_grid_size, param_name="<max_grid_size>")
+        _ensure_scalar_or_axis_triple(
+            param=self.blocking_factor,
+            param_name="<blocking_factor>",
+        )
+        _ensure_scalar_or_axis_triple(
+            param=self.max_grid_size,
+            param_name="<max_grid_size>",
+        )
         validate_types.ensure_finite_int(
             param=self.max_amr_levels,
             param_name="<max_amr_levels>",

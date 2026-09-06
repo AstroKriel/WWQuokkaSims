@@ -203,7 +203,12 @@ class ComputePDFs:
         sim_time = field.sim_time
         assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
-        comp_labels = [field_models.get_vcomp_label(vfield_3d=field, comp_axis=comp_name) for comp_name in comp_names]
+        comp_labels = [
+            field_models.get_vcomp_label(
+                vfield_3d=field,
+                comp_axis=comp_name,
+            ) for comp_name in comp_names
+        ]
         grouped_bin_centers: list[numpy.ndarray] = []
         grouped_densities: list[numpy.ndarray] = []
         for comp_name in comp_names:
@@ -262,7 +267,10 @@ class ComputePDFs:
                 snapshot_dir=snapshot_dir,
                 verbose=False,
         ) as quokka_snapshot:
-            field = self.registered_field.load(quokka_snapshot=quokka_snapshot, amr_level=self.amr_level)
+            field = self.registered_field.load(
+                quokka_snapshot=quokka_snapshot,
+                amr_level=self.amr_level,
+            )
         if isinstance(field, field_models.ScalarField_3D):
             return self._compute_sfield_pdf(
                 field=field,
@@ -594,7 +602,8 @@ class GeneratePDFs:
         field_pdfs = self._load_all_saved_pdfs(data_dir=self.data_dir)
         if not field_pdfs:
             manage_log.log_hint(
-                text=f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
+                text=
+                f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
             )
             return
         self._save_summary_figure(

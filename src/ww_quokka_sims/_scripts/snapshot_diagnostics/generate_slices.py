@@ -130,7 +130,8 @@ def main():
         "--apply-log10-plot",
         action="store_true",
         default=False,
-        help="Apply log10 to the plotted field, abs-valued unless it is strictly positive (does not affect the saved `.npz` data slices).",
+        help=
+        "Apply log10 to the plotted field, abs-valued unless it is strictly positive (does not affect the saved `.npz` data slices).",
     )
     parser.add_argument(
         "--no-annotations",

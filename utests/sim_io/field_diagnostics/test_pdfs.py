@@ -87,7 +87,8 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             sim_time=0.5,
             step_index=1,
             grouped_bin_centers=[numpy.array([0.0, 1.0]), numpy.array([2.0, 3.0])],
-            grouped_densities=[numpy.array([-1.0, -2.0]), numpy.array([-3.0, -4.0])],
+            grouped_densities=[numpy.array([-1.0, -2.0]),
+                               numpy.array([-3.0, -4.0])],
             comp_labels=[r"$v_x$", r"$v_y$"],
             use_log10_bins=False,
         )

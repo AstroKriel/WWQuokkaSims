@@ -60,7 +60,7 @@ class DiagnosticPipeline:
     ):
         if statistic_name not in _STATISTIC_LOOKUP:
             raise ValueError(
-                f"unknown statistic `{statistic_name}`; expected one of {sorted(_STATISTIC_LOOKUP)}."
+                f"unknown statistic `{statistic_name}`; expected one of {sorted(_STATISTIC_LOOKUP)}.",
             )
         self.field_statistic = _STATISTIC_LOOKUP[statistic_name]
         field_registry.validate_fields(

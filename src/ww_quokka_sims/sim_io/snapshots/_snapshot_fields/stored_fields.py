@@ -130,7 +130,10 @@ class _LoadStoredFields:
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Load total energy: `e_tot = e_int + e_kin + e_mag` (code units)."""
-        cache_key = self._field_cache_key(field_name="total_energy", amr_level=amr_level)
+        cache_key = self._field_cache_key(
+            field_name="total_energy",
+            amr_level=amr_level,
+        )
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
@@ -159,7 +162,10 @@ class _LoadStoredFields:
         Otherwise, a fallback estimate using a different stencil is calculated. The native value
         requires `derived_vars = "magnetic_divergence"` in the param TOML file.
         """
-        cache_key = self._field_cache_key(field_name="magnetic_divergence", amr_level=amr_level)
+        cache_key = self._field_cache_key(
+            field_name="magnetic_divergence",
+            amr_level=amr_level,
+        )
         cached_field = self._field_cache.get_cached_field(cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field

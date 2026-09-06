@@ -167,7 +167,10 @@ class TestRegisteredFieldLoad(unittest.TestCase):
         registered_field = field_registry.RegisteredField(
             name="density",
             loader_fn=_make_stub_loader(value=-1.0),
-            expected_properties=field_registry.ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=field_registry.ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         )
         with unittest.mock.patch.object(manage_log, "log_warning") as mock_log_warning:
             registered_field.load(quokka_snapshot=unittest.mock.Mock(spec=load_snapshot.QuokkaSnapshot))
@@ -179,7 +182,10 @@ class TestRegisteredFieldLoad(unittest.TestCase):
         registered_field = field_registry.RegisteredField(
             name="density",
             loader_fn=_make_stub_loader(value=1.0),
-            expected_properties=field_registry.ExpectedProperties(pivot_value=None, is_strictly_positive=True),
+            expected_properties=field_registry.ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
         )
         with unittest.mock.patch.object(manage_log, "log_warning") as mock_log_warning:
             registered_field.load(quokka_snapshot=unittest.mock.Mock(spec=load_snapshot.QuokkaSnapshot))
@@ -191,7 +197,10 @@ class TestRegisteredFieldLoad(unittest.TestCase):
         registered_field = field_registry.RegisteredField(
             name="velocity_divergence",
             loader_fn=_make_stub_loader(value=-1.0),
-            expected_properties=field_registry.ExpectedProperties(pivot_value=0.0, is_strictly_positive=False),
+            expected_properties=field_registry.ExpectedProperties(
+                pivot_value=0.0,
+                is_strictly_positive=False,
+            ),
         )
         with unittest.mock.patch.object(manage_log, "log_warning") as mock_log_warning:
             registered_field.load(quokka_snapshot=unittest.mock.Mock(spec=load_snapshot.QuokkaSnapshot))

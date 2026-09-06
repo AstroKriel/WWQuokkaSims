@@ -156,8 +156,14 @@ def _build_resolution_section(
             key="amr.max_level",
             value=resolution_params.max_amr_levels,
         ),
-        *format_params.expand_per_axis(value=resolution_params.blocking_factor, key_prefix="amr.blocking_factor"),
-        *format_params.expand_per_axis(value=resolution_params.max_grid_size, key_prefix="amr.max_grid_size"),
+        *format_params.expand_per_axis(
+            value=resolution_params.blocking_factor,
+            key_prefix="amr.blocking_factor",
+        ),
+        *format_params.expand_per_axis(
+            value=resolution_params.max_grid_size,
+            key_prefix="amr.max_grid_size",
+        ),
     ]
     if resolution_params.num_refinement_buffer_cells is not None:
         assignment_lines.append(
