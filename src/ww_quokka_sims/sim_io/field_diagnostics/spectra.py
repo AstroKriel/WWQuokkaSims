@@ -167,9 +167,6 @@ class ComputeSpectra:
             )
             padded_index = f"{step_index:0{self.index_width}d}"
             data_path = self._data_file_path(padded_index=padded_index)
-            ## skip snapshots already computed in a prior (e.g. killed/interrupted) run, whether
-            ## or not save_data is set this run, so a --save-figure-only run still gets the cheap
-            ## reuse; each snapshot's file is independent, so a crash never risks earlier ones
             if (not self.overwrite) and data_path.exists():
                 spectra_data = SpectraData.load_from_file(data_path)
             else:
@@ -177,8 +174,6 @@ class ComputeSpectra:
                     snapshot_dir=snapshot_dir,
                     step_index=step_index,
                 )
-                ## save immediately, one file per snapshot, so a killed/interrupted run still
-                ## leaves every already-completed snapshot independently usable and resumable
                 if self.save_data:
                     manage_io.create_directory(
                         directory=self.data_dir,
