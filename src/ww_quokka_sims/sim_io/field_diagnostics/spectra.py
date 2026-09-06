@@ -339,7 +339,6 @@ class GenerateSpectra:
     def run(
         self,
     ) -> None:
-        ## compute the isotropic power spectrum for each snapshot; saved incrementally as each completes
         compute_spectra_pipeline = ComputeSpectra(
             snapshot_dirs=self.snapshot_dirs,
             snapshot_tag=self.snapshot_tag,
