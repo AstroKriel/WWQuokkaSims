@@ -243,7 +243,6 @@ class GenerateSpectra:
         ax.plot(
             spectra_data.log10_k_bin_centers,
             spectra_data.log10_spectrum,
-            lw=2.0,
             color=color,
         )
 

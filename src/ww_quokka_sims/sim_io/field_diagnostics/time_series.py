@@ -333,9 +333,7 @@ class GenerateTimeSeries:
             values_array,
             color="black",
             marker="o",
-            ms=6,
             ls="-",
-            lw=1.5,
         )
         ax.set_xlabel("time")
         ax.set_ylabel(ylabel)

@@ -730,7 +730,6 @@ class GenerateCompProfiles:
             ax.plot(
                 x,
                 y,
-                lw=2.0,
                 color=color,
             )
 

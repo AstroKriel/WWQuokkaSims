@@ -370,7 +370,6 @@ class GeneratePDFs:
                 x_values,
                 y_values,
                 where="mid",
-                lw=2.0,
                 color=color,
                 zorder=comp_index + 1,
             )
