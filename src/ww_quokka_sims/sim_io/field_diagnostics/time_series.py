@@ -305,19 +305,18 @@ class GenerateTimeSeries:
                 y_alignment="center",
             )
             return
-        plot_values = values_array
         ylabel = f"${time_series.latex_label}$"
         fig_name = f"{self.registered_field.name}-{self.field_statistic.name}-time_series.png"
         if self.apply_log10_plot:
             if self.registered_field.expected_properties.is_strictly_positive:
-                plot_values = compute_array_stats.compute_safe_log10(values_array)
+                values_array = compute_array_stats.compute_safe_log10(values_array)
             else:
-                plot_values = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
+                values_array = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
             ylabel = rf"$\log_{{10}}\big({time_series.latex_label}\big)$"
             fig_name = f"log10_{self.registered_field.name}-{self.field_statistic.name}-time_series.png"
         ax.plot(
             time_array,
-            plot_values,
+            values_array,
             color="black",
             marker="o",
             ms=6,
