@@ -958,21 +958,20 @@ class GenerateCompProfiles:
                     figures_dir=self.figures_dir,
                     index_width=self.index_width,
                 )
-        if not self.save_figure:
-            return
-        ## the summary is only buildable from saved data; if none was ever saved for this field
-        ## (eg. --save-figure was used without --save-data, ever), there's nothing to aggregate
-        comp_profiles_lookup = self._load_all_saved_comp_profiles(data_dir=self.data_dir)
-        if not comp_profiles_lookup:
-            manage_log.log_hint(
-                text=
-                f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
-            )
-            return
-        self._save_summary_figure(
-            comp_profiles_lookup=comp_profiles_lookup,
-            figures_dir=self.figures_dir,
-        )
+        if self.save_figure:
+            ## the summary is only buildable from saved data; if none was ever saved for this field
+            ## (eg. --save-figure was used without --save-data, ever), there's nothing to aggregate
+            comp_profiles_lookup = self._load_all_saved_comp_profiles(data_dir=self.data_dir)
+            if comp_profiles_lookup:
+                self._save_summary_figure(
+                    comp_profiles_lookup=comp_profiles_lookup,
+                    figures_dir=self.figures_dir,
+                )
+            else:
+                manage_log.log_hint(
+                    text=
+                    f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
+                )
 
 
 ## } MODULE
