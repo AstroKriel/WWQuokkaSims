@@ -14,6 +14,7 @@ import numpy
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import spectra
+from ww_quokka_sims.sim_io.snapshots import find_snapshots
 
 ##
 ## === TEST SUITE
@@ -27,7 +28,7 @@ class TestSpectraDataRoundTrip(unittest.TestCase):
     ):
         field_spectrum = spectra.FieldSpectrum(
             sim_time=0.25,
-            step_index=3,
+            step_index=find_snapshots.StepIndex.from_value(3),
             latex_label=r"\rho",
             log10_k_bin_centers=numpy.array([0.0, 1.0, 2.0]),
             log10_power_spectrum=numpy.array([-1.0, -2.0, -3.0]),

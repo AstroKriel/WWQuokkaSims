@@ -31,7 +31,7 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 @dataclasses.dataclass(frozen=True)
 class FieldSpectrum:
     sim_time: float
-    step_index: int
+    step_index: find_snapshots.StepIndex
     latex_label: str
     log10_k_bin_centers: numpy.ndarray
     log10_power_spectrum: numpy.ndarray
@@ -56,7 +56,7 @@ class FieldSpectrum:
             file_path=file_path,
             input_dict={
                 "sim_time": self.sim_time,
-                "step_index": self.step_index,
+                "step_index": self.step_index.get_value(),
                 "latex_label": self.latex_label,
                 "log10_k_bin_centers": self.log10_k_bin_centers,
                 "log10_power_spectrum": self.log10_power_spectrum,
@@ -87,7 +87,7 @@ class FieldSpectrum:
         )
         return cls(
             sim_time=float(data["sim_time"]),
-            step_index=int(data["step_index"]),
+            step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
             latex_label=data["latex_label"],
             log10_k_bin_centers=numpy.asarray(data["log10_k_bin_centers"]),
             log10_power_spectrum=numpy.asarray(data["log10_power_spectrum"]),
@@ -134,7 +134,7 @@ class ComputeSpectra:
         self,
         *,
         snapshot_dir: pathlib.Path,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
     ) -> FieldSpectrum:
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
@@ -173,7 +173,7 @@ class ComputeSpectra:
             else:
                 field_spectrum = self._compute_spectrum(
                     snapshot_dir=snapshot_dir,
-                    step_index=step_index.get_value(),
+                    step_index=step_index,
                 )
                 if self.save_data:
                     manage_io.create_directory(
@@ -338,7 +338,7 @@ class GenerateSpectra:
         field_spectra = compute_spectra_pipeline.run()
         if field_spectra and self.save_figure:
             for field_spectrum in field_spectra:
-                padded_index = f"{field_spectrum.step_index:0{self.index_width}d}"
+                padded_index = field_spectrum.step_index.get_padded_string(index_width=self.index_width)
                 figure_path = self.figures_dir / f"{self.registered_field.name}-spectrum-index={padded_index}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(

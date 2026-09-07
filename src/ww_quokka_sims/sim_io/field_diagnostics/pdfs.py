@@ -32,7 +32,7 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 @dataclasses.dataclass(frozen=True)
 class FieldPDF:
     sim_time: float
-    step_index: int
+    step_index: find_snapshots.StepIndex
     grouped_bin_centers: list[numpy.ndarray]
     grouped_densities: list[numpy.ndarray]
     comp_labels: list[str]
@@ -90,7 +90,7 @@ class FieldPDF:
         bin_centers_key = "log10_bin_centers" if self.use_log10_bins else "bin_centers"
         output_dict: dict = {
             "sim_time": self.sim_time,
-            "step_index": self.step_index,
+            "step_index": self.step_index.get_value(),
             "use_log10_bins": self.use_log10_bins,
         }
         for comp_index, comp_label in enumerate(self.comp_labels):
@@ -125,7 +125,7 @@ class FieldPDF:
         comp_labels = [key for key in input_dict if key not in ("sim_time", "step_index", "use_log10_bins")]
         return cls(
             sim_time=float(input_dict["sim_time"]),
-            step_index=int(input_dict["step_index"]),
+            step_index=find_snapshots.StepIndex.from_value(int(input_dict["step_index"])),
             grouped_bin_centers=[numpy.array(input_dict[label][bin_centers_key]) for label in comp_labels],
             grouped_densities=[numpy.array(input_dict[label]["log10_density"]) for label in comp_labels],
             comp_labels=comp_labels,
@@ -217,7 +217,7 @@ class ComputePDFs:
     def _compute_vfield_pdf(
         self,
         vfield_3d: field_models.VectorField_3D,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
     ) -> FieldPDF:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
@@ -256,7 +256,7 @@ class ComputePDFs:
     def _compute_sfield_pdf(
         self,
         sfield_3d: field_models.ScalarField_3D,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
     ) -> FieldPDF:
         field_models.ensure_3d_sfield(sfield_3d)
         sim_time = sfield_3d.sim_time
@@ -279,7 +279,7 @@ class ComputePDFs:
         self,
         *,
         snapshot_dir: pathlib.Path,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
     ) -> FieldPDF:
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
@@ -317,7 +317,7 @@ class ComputePDFs:
             else:
                 field_pdf = self._compute_snapshot(
                     snapshot_dir=snapshot_dir,
-                    step_index=step_index.get_value(),
+                    step_index=step_index,
                 )
                 if self.save_data:
                     manage_io.create_directory(
@@ -528,7 +528,7 @@ class GeneratePDFs:
         if field_pdfs and self.save_figure:
             data_name = self._get_data_name()
             for field_pdf in field_pdfs:
-                padded_index = f"{field_pdf.step_index:0{self.index_width}d}"
+                padded_index = field_pdf.step_index.get_padded_string(index_width=self.index_width)
                 figure_path = self.figures_dir / f"{data_name}-pdf-index={padded_index}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(

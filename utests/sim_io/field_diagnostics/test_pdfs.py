@@ -14,6 +14,7 @@ import numpy
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import pdfs
+from ww_quokka_sims.sim_io.snapshots import find_snapshots
 
 ##
 ## === TEST SUITE
@@ -63,7 +64,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
     ):
         field_pdf = pdfs.FieldPDF(
             sim_time=0.25,
-            step_index=3,
+            step_index=find_snapshots.StepIndex.from_value(3),
             grouped_bin_centers=[numpy.array([0.0, 1.0, 2.0])],
             grouped_densities=[numpy.array([-1.0, -2.0, -3.0])],
             comp_labels=[r"$\rho$"],
@@ -85,7 +86,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
     ):
         field_pdf = pdfs.FieldPDF(
             sim_time=0.5,
-            step_index=1,
+            step_index=find_snapshots.StepIndex.from_value(1),
             grouped_bin_centers=[numpy.array([0.0, 1.0]), numpy.array([2.0, 3.0])],
             grouped_densities=[numpy.array([-1.0, -2.0]),
                                numpy.array([-3.0, -4.0])],

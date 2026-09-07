@@ -14,6 +14,7 @@ import numpy
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import profiles
+from ww_quokka_sims.sim_io.snapshots import find_snapshots
 
 ##
 ## === TEST SUITE
@@ -29,7 +30,7 @@ class TestScalarProfileRoundTrip(unittest.TestCase):
             field_name="density",
             field_label=r"$\rho$",
             sim_time=0.25,
-            step_index=3,
+            step_index=find_snapshots.StepIndex.from_value(3),
             profile_axis="x_0",
             position=numpy.array([0.0, 1.0, 2.0]),
             field_value=numpy.array([1.0, 2.0, 3.0]),
@@ -57,7 +58,7 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
         vector_field_profile = profiles.VectorFieldProfile(
             field_name="velocity",
             sim_time=0.5,
-            step_index=1,
+            step_index=find_snapshots.StepIndex.from_value(1),
             profile_axis="x_1",
             components={
                 "x_0":

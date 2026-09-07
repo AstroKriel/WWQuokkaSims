@@ -110,7 +110,7 @@ class ScalarFieldProfile:
     field_name: str
     field_label: str
     sim_time: float
-    step_index: int
+    step_index: find_snapshots.StepIndex
     profile_axis: str
     position: NDArray[numpy.floating]
     field_value: NDArray[numpy.floating]
@@ -127,11 +127,6 @@ class ScalarFieldProfile:
         validate_types.ensure_finite_float(
             param=self.sim_time,
             param_name="<sim_time>",
-            allow_none=False,
-        )
-        validate_types.ensure_finite_int(
-            param=self.step_index,
-            param_name="<step_index>",
             allow_none=False,
         )
         _ensure_profile_axis(self.profile_axis)
@@ -157,7 +152,7 @@ class ScalarFieldProfile:
                 "field_name": self.field_name,
                 "field_label": self.field_label,
                 "sim_time": self.sim_time,
-                "step_index": self.step_index,
+                "step_index": self.step_index.get_value(),
                 "profile_axis": self.profile_axis,
                 "position": self.position,
                 "field_value": self.field_value,
@@ -194,7 +189,7 @@ class ScalarFieldProfile:
             field_name=data["field_name"],
             field_label=data["field_label"],
             sim_time=float(data["sim_time"]),
-            step_index=int(data["step_index"]),
+            step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
             profile_axis=data["profile_axis"],
             position=numpy.asarray(data["position"]),
             field_value=numpy.asarray(data["field_value"]),
@@ -211,7 +206,7 @@ class ScalarFieldProfile:
 class VectorFieldProfile:
     field_name: str
     sim_time: float
-    step_index: int
+    step_index: find_snapshots.StepIndex
     profile_axis: str
     components: dict[str, ComponentArrays]
     amr_level: int = 0
@@ -223,11 +218,6 @@ class VectorFieldProfile:
         validate_types.ensure_finite_float(
             param=self.sim_time,
             param_name="<sim_time>",
-            allow_none=False,
-        )
-        validate_types.ensure_finite_int(
-            param=self.step_index,
-            param_name="<step_index>",
             allow_none=False,
         )
         _ensure_profile_axis(self.profile_axis)
@@ -256,7 +246,7 @@ class VectorFieldProfile:
             input_dict={
                 "field_name": self.field_name,
                 "sim_time": self.sim_time,
-                "step_index": self.step_index,
+                "step_index": self.step_index.get_value(),
                 "profile_axis": self.profile_axis,
                 "field_comps": {
                     comp_axis: {
@@ -305,7 +295,7 @@ class VectorFieldProfile:
         return cls(
             field_name=data["field_name"],
             sim_time=float(data["sim_time"]),
-            step_index=int(data["step_index"]),
+            step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
             profile_axis=data["profile_axis"],
             components=components,
             amr_level=int(data["amr_level"]),
@@ -320,7 +310,7 @@ class VectorFieldProfile:
 @dataclasses.dataclass(frozen=True)
 class CompProfile:
     sim_time: float
-    step_index: int
+    step_index: find_snapshots.StepIndex
     comp_name: str
     comp_label: str
     axis_labels: list[cartesian_axes.AxisLike_3D]
@@ -447,7 +437,7 @@ class ComputeCompProfiles:
             verbose=False,
         )
         sim_time = 0.0
-        step_index = 0
+        step_index = find_snapshots.StepIndex.from_value(0)
         if "field_comps" not in first_raw:
             x_array_by_axis: list[numpy.ndarray] = []
             y_array_by_axis: list[numpy.ndarray] = []
@@ -539,7 +529,7 @@ class ComputeCompProfiles:
         *,
         sfield_3d: field_models.ScalarField_3D,
         uniform_domain_3d: domain_models.UniformDomain_3D,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
     ) -> list[CompProfile]:
         field_models.ensure_3d_sfield(sfield_3d)
         sim_time = sfield_3d.sim_time
@@ -575,7 +565,7 @@ class ComputeCompProfiles:
         *,
         vfield_3d: field_models.VectorField_3D,
         uniform_domain_3d: domain_models.UniformDomain_3D,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
     ) -> list[CompProfile]:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
@@ -624,7 +614,7 @@ class ComputeCompProfiles:
         self,
         *,
         snapshot_dir: pathlib.Path,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
     ) -> list[CompProfile]:
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
@@ -671,7 +661,7 @@ class ComputeCompProfiles:
             else:
                 comp_profiles = self._compute_snapshot(
                     snapshot_dir=snapshot_dir,
-                    step_index=step_index.get_value(),
+                    step_index=step_index,
                 )
                 if self.save_data:
                     manage_io.create_directory(
@@ -887,7 +877,7 @@ class GenerateCompProfiles:
         if all_comp_profiles and self.save_figure:
             comp_profiles_lookup: dict[str, list[CompProfile]] = {}
             for comp_profiles in all_comp_profiles:
-                padded_index = f"{comp_profiles[0].step_index:0{self.index_width}d}"
+                padded_index = comp_profiles[0].step_index.get_padded_string(index_width=self.index_width)
                 figure_path = self._get_figure_path(
                     figures_dir=self.figures_dir,
                     padded_index=padded_index,

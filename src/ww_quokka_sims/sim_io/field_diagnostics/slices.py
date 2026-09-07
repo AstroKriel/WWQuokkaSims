@@ -41,7 +41,7 @@ class FieldSlice:
     max_value: float
     comp_label: str
     sim_time: float
-    step_index: int
+    step_index: find_snapshots.StepIndex
     amr_level: int = 0
 
     def save_to_file(
@@ -56,7 +56,7 @@ class FieldSlice:
             min_value=self.min_value,
             max_value=self.max_value,
             sim_time=self.sim_time,
-            step_index=self.step_index,
+            step_index=self.step_index.get_value(),
             amr_level=self.amr_level,
         )
 
@@ -78,7 +78,7 @@ class FieldSlice:
                 max_value=float(npz["max_value"]),
                 comp_label=str(npz["comp_label"]),
                 sim_time=float(npz["sim_time"]),
-                step_index=int(npz["step_index"]),
+                step_index=find_snapshots.StepIndex.from_value(int(npz["step_index"])),
                 amr_level=int(npz["amr_level"]),
             )
 
@@ -204,7 +204,7 @@ def slice_3d_farray(
     uniform_domain: domain_models.UniformDomain_3D,
     comp_label: str,
     sim_time: float,
-    step_index: int,
+    step_index: find_snapshots.StepIndex,
     amr_level: int,
 ) -> FieldSlice:
     num_cells_x0, num_cells_x1, num_cells_x2 = farray_3d.shape
@@ -373,7 +373,7 @@ class GenerateFieldSlices:
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
         sim_time: float,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
     ) -> list[Row]:
         return [
             (
@@ -502,7 +502,7 @@ class GenerateFieldSlices:
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
         sim_time: float,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
         padded_index: str,
         data_dir: pathlib.Path,
     ) -> None:
@@ -555,7 +555,7 @@ class GenerateFieldSlices:
         *,
         rows: list[Row],
         sim_time: float,
-        step_index: int,
+        step_index: find_snapshots.StepIndex,
         padded_index: str,
         figures_dir: pathlib.Path,
         verbose: bool,
@@ -588,7 +588,7 @@ class GenerateFieldSlices:
             if not rows:
                 manage_log.log_hint(
                     text=(
-                        f"Skipping `{self.field_args.registered_field.name}` at snapshot {step_index}: "
+                        f"Skipping `{self.field_args.registered_field.name}` at snapshot {step_index.get_value()}: "
                         f"all components are exactly zero, so there is no data to safely log10."
                     ),
                 )
@@ -629,7 +629,6 @@ class GenerateFieldSlices:
             snapshot_tag=self.snapshot_tag,
         )
         padded_index = step_index.get_padded_string(index_width=index_width)
-        step_index = step_index.get_value()
         figure_path = figures_dir / self._get_figure_file_name(padded_index=padded_index)
         figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
         saved_comp_axes = self._find_saved_comp_axes(
@@ -645,7 +644,7 @@ class GenerateFieldSlices:
             assert saved_comp_axes is not None
             manage_log.log_hint(
                 text=(
-                    f"`{self.field_args.registered_field.name}` at snapshot {step_index}: "
+                    f"`{self.field_args.registered_field.name}` at snapshot {step_index.get_value()}: "
                     f"building figure from saved data, skipping the raw snapshot."
                 ),
             )

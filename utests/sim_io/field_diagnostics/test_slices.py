@@ -18,6 +18,7 @@ from jormi.ww_fields.fields_3d import domain_models
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import slices
+from ww_quokka_sims.sim_io.snapshots import find_snapshots
 
 ##
 ## === HELPERS
@@ -82,7 +83,7 @@ class TestSliceField(unittest.TestCase):
             uniform_domain=_UNIFORM_DOMAIN,
             comp_label=r"$\rho$",
             sim_time=0.0,
-            step_index=0,
+            step_index=find_snapshots.StepIndex.from_value(0),
             amr_level=0,
         ).sarray_2d
 
@@ -123,7 +124,7 @@ class TestSlicedFieldRoundTrip(unittest.TestCase):
             max_value=3.0,
             comp_label=r"$\rho$",
             sim_time=0.25,
-            step_index=3,
+            step_index=find_snapshots.StepIndex.from_value(3),
             amr_level=1,
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
