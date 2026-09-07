@@ -187,7 +187,8 @@ class ComputePDFs:
         *,
         padded_index: str,
     ) -> pathlib.Path:
-        return self.data_dir / f"{self._get_data_name()}-pdf-index={padded_index}.json"
+        data_name = self._get_data_name()
+        return self.data_dir / f"{data_name}-pdf-index={padded_index}.json"
 
     @staticmethod
     def _estimate_pdf(
@@ -383,7 +384,10 @@ class GeneratePDFs:
         be renamed); the saved `use_log10_bins` flag and `log10_bin_centers` key inside the file
         itself are what downstream code should actually check.
         """
-        return f"log10_{self.registered_field.name}" if self.use_log10_bins else self.registered_field.name
+        if self.use_log10_bins:
+            return f"log10_{self.registered_field.name}"
+        else:
+            return self.registered_field.name
 
     @staticmethod
     def _style_axs(
@@ -511,7 +515,8 @@ class GeneratePDFs:
             comp_labels=field_pdfs[0].comp_labels,
             use_log10_bins=self.use_log10_bins,
         )
-        figure_path = figures_dir / f"{self._get_data_name()}-pdfs-summary.png"
+        data_name = self._get_data_name()
+        figure_path = figures_dir / f"{data_name}-pdfs-summary.png"
         manage_figure.save_figure(
             figure=figure,
             figure_path=figure_path,
@@ -536,12 +541,13 @@ class GeneratePDFs:
         )
         field_pdfs = compute_pdfs_pipeline.run()
         if field_pdfs and self.save_figure:
+            data_name = self._get_data_name()
             for field_pdf in field_pdfs:
                 padded_index = find_snapshots.get_padded_step_index(
                     step_index=field_pdf.step_index,
                     index_width=self.index_width,
                 )
-                figure_path = self.figures_dir / f"{self._get_data_name()}-pdf-index={padded_index}.png"
+                figure_path = self.figures_dir / f"{data_name}-pdf-index={padded_index}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(
                         field_pdf=field_pdf,
