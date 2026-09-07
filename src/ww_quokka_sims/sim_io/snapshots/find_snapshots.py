@@ -30,6 +30,13 @@ class StepIndex:
         if not self._string.isdigit():
             raise ValueError(f"expected a digit-only step-index string, got: {self._string!r}")
 
+    @classmethod
+    def from_value(
+        cls,
+        step_index_value: int,
+    ) -> "StepIndex":
+        return cls(str(step_index_value))
+
     def get_value(
         self,
     ) -> int:
