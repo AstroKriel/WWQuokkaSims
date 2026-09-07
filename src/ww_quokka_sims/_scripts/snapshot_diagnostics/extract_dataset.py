@@ -137,27 +137,27 @@ class FieldExtractor:
                 step_index=step_index.value,
                 amr_level=self.field_args.amr_level,
             )
-            return
-        if not isinstance(field, field_models.VectorField_3D):
-            raise ValueError(f"{field_name} is an unrecognised field type.")
-        if not self.comps_to_extract:
-            raise ValueError(
-                f"Vector field `{field_name}` requires at least one component to extract; none provided.",
+        elif isinstance(field, field_models.VectorField_3D):
+            if not self.comps_to_extract:
+                raise ValueError(
+                    f"Vector field `{field_name}` requires at least one component to extract; none provided.",
+                )
+            varray_3d = field_models.extract_3d_varray(
+                vfield_3d=field,
+                param_name=f"<{field_name}_vfield_3d>",
             )
-        varray_3d = field_models.extract_3d_varray(
-            vfield_3d=field,
-            param_name=f"<{field_name}_vfield_3d>",
-        )
-        comp_indices = [_axis_to_index(comp_axis) for comp_axis in self.comps_to_extract]
-        comp_labels = [comp_axis.axis_label for comp_axis in self.comps_to_extract]
-        numpy.savez(
-            data_dir / file_name,
-            varray_3d=varray_3d[comp_indices, ...],
-            comp_labels=numpy.array(comp_labels),
-            sim_time=sim_time,
-            step_index=step_index.value,
-            amr_level=self.field_args.amr_level,
-        )
+            comp_indices = [_axis_to_index(comp_axis) for comp_axis in self.comps_to_extract]
+            comp_labels = [comp_axis.axis_label for comp_axis in self.comps_to_extract]
+            numpy.savez(
+                data_dir / file_name,
+                varray_3d=varray_3d[comp_indices, ...],
+                comp_labels=numpy.array(comp_labels),
+                sim_time=sim_time,
+                step_index=step_index.value,
+                amr_level=self.field_args.amr_level,
+            )
+        else:
+            raise ValueError(f"{field_name} is an unrecognised field type.")
 
     def extract_snapshot(
         self,
@@ -174,16 +174,15 @@ class FieldExtractor:
             step_index=step_index,
             index_width=index_width,
         )
-        if (not self.overwrite) and file_path.exists():
-            return
-        field = self._load_field(snapshot_dir=snapshot_dir)
-        self._save_field(
-            field=field,
-            sim_time=_get_sim_time(field),
-            step_index=step_index,
-            index_width=index_width,
-            data_dir=data_dir,
-        )
+        if self.overwrite or not file_path.exists():
+            field = self._load_field(snapshot_dir=snapshot_dir)
+            self._save_field(
+                field=field,
+                sim_time=_get_sim_time(field),
+                step_index=step_index,
+                index_width=index_width,
+                data_dir=data_dir,
+            )
 
 
 def extract_fields_in_serial(

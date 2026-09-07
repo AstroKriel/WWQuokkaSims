@@ -264,16 +264,15 @@ def validate_fields(
     )
     if not field_names or not set(field_names).issubset(valid_field_names):
         raise ValueError(f"`field_names` must be a non-empty subset of: {sorted(valid_field_names)}.")
-    if allowed_types is None:
-        return
-    for field_name in field_names:
-        field_type = get_field_type(field_name)
-        if not issubclass(field_type, allowed_types):
-            allowed_names = sorted(allowed_type.__name__ for allowed_type in allowed_types)
-            raise ValueError(
-                f"`{field_name}` resolves to {field_type.__name__}, which is not supported here;"
-                f" supported types: {allowed_names}.",
-            )
+    if allowed_types is not None:
+        for field_name in field_names:
+            field_type = get_field_type(field_name)
+            if not issubclass(field_type, allowed_types):
+                allowed_names = sorted(allowed_type.__name__ for allowed_type in allowed_types)
+                raise ValueError(
+                    f"`{field_name}` resolves to {field_type.__name__}, which is not supported here;"
+                    f" supported types: {allowed_names}.",
+                )
 
 
 ## } MODULE

@@ -447,28 +447,29 @@ def resolve_inputs(
     )
     if not snapshot_dirs:
         return None
-    data_dir = resolve_output_dir(
-        output_dir=output_args.data_dir,
-        default_dir=snapshot_dirs[0].parent,
-    )
-    figures_dir = None
-    if isinstance(output_args, DiagnosticOutputArgs):
-        figures_dir = resolve_output_dir(
-            output_dir=output_args.figures_dir,
-            default_dir=data_dir,
+    else:
+        data_dir = resolve_output_dir(
+            output_dir=output_args.data_dir,
+            default_dir=snapshot_dirs[0].parent,
         )
-    index_width = None
-    if allow_index_width:
-        index_width = find_snapshots.get_max_index_width(
+        figures_dir = None
+        if isinstance(output_args, DiagnosticOutputArgs):
+            figures_dir = resolve_output_dir(
+                output_dir=output_args.figures_dir,
+                default_dir=data_dir,
+            )
+        index_width = None
+        if allow_index_width:
+            index_width = find_snapshots.get_max_index_width(
+                snapshot_dirs=snapshot_dirs,
+                snapshot_tag=snapshot_args.snapshot_tag,
+            )
+        return ResolvedInputs(
             snapshot_dirs=snapshot_dirs,
-            snapshot_tag=snapshot_args.snapshot_tag,
+            data_dir=data_dir,
+            figures_dir=figures_dir,
+            index_width=index_width,
         )
-    return ResolvedInputs(
-        snapshot_dirs=snapshot_dirs,
-        data_dir=data_dir,
-        figures_dir=figures_dir,
-        index_width=index_width,
-    )
 
 
 ##
@@ -483,17 +484,18 @@ def parse_axes(
     """Resolve `comps`/`axes` to a canonical tuple; `None` defaults to all three axes."""
     if axes is None:
         return tuple(cartesian_axes.DEFAULT_3D_AXES_ORDER)
-    parsed_axes: list[cartesian_axes.CartesianAxis_3D] = []
-    for axis_name in axes:
-        try:
-            parsed_axes.append(
-                cartesian_axes.as_axis(
-                    axis=axis_name,
-                ),
-            )
-        except (TypeError, ValueError):
-            raise ValueError(f"Provide one or more axes from: {AXIS_LABELS_TEXT}")
-    return tuple(parsed_axes)
+    else:
+        parsed_axes: list[cartesian_axes.CartesianAxis_3D] = []
+        for axis_name in axes:
+            try:
+                parsed_axes.append(
+                    cartesian_axes.as_axis(
+                        axis=axis_name,
+                    ),
+                )
+            except (TypeError, ValueError):
+                raise ValueError(f"Provide one or more axes from: {AXIS_LABELS_TEXT}")
+        return tuple(parsed_axes)
 
 
 ## } MODULE

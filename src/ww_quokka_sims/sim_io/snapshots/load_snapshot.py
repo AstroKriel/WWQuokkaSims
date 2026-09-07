@@ -587,23 +587,24 @@ class QuokkaSnapshot(
             cached_uniform_domain_3d = self._uniform_domain_3d_cache[amr_level]
             self._close_if_needed()
             return cached_uniform_domain_3d
-        x_min, y_min, z_min = (float(value) for value in self._yt_dataset.domain_left_edge)
-        x_max, y_max, z_max = (float(value) for value in self._yt_dataset.domain_right_edge)
-        refinement_ratio = int(self._yt_dataset.refine_by)
-        num_cells_x, num_cells_y, num_cells_z = (
-            int(num_cells) * (refinement_ratio**amr_level) for num_cells in self._yt_dataset.domain_dimensions
-        )
-        is_periodic_x, is_periodic_y, is_periodic_z = (
-            (bool(is_periodic) or force_periodicity) for is_periodic in self._yt_dataset.periodicity
-        )
-        self._close_if_needed()
-        uniform_domain_3d = domain_models.UniformDomain_3D(
-            periodicity=(is_periodic_x, is_periodic_y, is_periodic_z),
-            resolution=(num_cells_x, num_cells_y, num_cells_z),
-            domain_bounds=((x_min, x_max), (y_min, y_max), (z_min, z_max)),
-        )
-        self._uniform_domain_3d_cache[amr_level] = uniform_domain_3d
-        return uniform_domain_3d
+        else:
+            x_min, y_min, z_min = (float(value) for value in self._yt_dataset.domain_left_edge)
+            x_max, y_max, z_max = (float(value) for value in self._yt_dataset.domain_right_edge)
+            refinement_ratio = int(self._yt_dataset.refine_by)
+            num_cells_x, num_cells_y, num_cells_z = (
+                int(num_cells) * (refinement_ratio**amr_level) for num_cells in self._yt_dataset.domain_dimensions
+            )
+            is_periodic_x, is_periodic_y, is_periodic_z = (
+                (bool(is_periodic) or force_periodicity) for is_periodic in self._yt_dataset.periodicity
+            )
+            self._close_if_needed()
+            uniform_domain_3d = domain_models.UniformDomain_3D(
+                periodicity=(is_periodic_x, is_periodic_y, is_periodic_z),
+                resolution=(num_cells_x, num_cells_y, num_cells_z),
+                domain_bounds=((x_min, x_max), (y_min, y_max), (z_min, z_max)),
+            )
+            self._uniform_domain_3d_cache[amr_level] = uniform_domain_3d
+            return uniform_domain_3d
 
 
 ## } MODULE

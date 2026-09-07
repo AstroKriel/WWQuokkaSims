@@ -129,29 +129,30 @@ class _DeriveMagneticFields:
                 latex_label=r"\nabla\times\vec{b}",
                 grad_order=grad_order,
             )
-        cell_widths_3d = self.load_3d_uniform_domain(amr_level=amr_level).cell_widths
+        else:
+            cell_widths_3d = self.load_3d_uniform_domain(amr_level=amr_level).cell_widths
 
-        def local_compute_fn(
-            expanded_b_varray: numpy.ndarray,
-            num_extra_cells: int,
-        ) -> numpy.ndarray:
-            local_curl_varray = farray_operators.compute_varray_curl(
-                varray_3d=expanded_b_varray,
-                cell_widths_3d=cell_widths_3d,
-            )
-            return read_expanded_box.trim_expanded_box(
-                expanded_farray=local_curl_varray,
-                num_extra_cells=num_extra_cells,
-            )
+            def local_compute_fn(
+                expanded_b_varray: numpy.ndarray,
+                num_extra_cells: int,
+            ) -> numpy.ndarray:
+                local_curl_varray = farray_operators.compute_varray_curl(
+                    varray_3d=expanded_b_varray,
+                    cell_widths_3d=cell_widths_3d,
+                )
+                return read_expanded_box.trim_expanded_box(
+                    expanded_farray=local_curl_varray,
+                    num_extra_cells=num_extra_cells,
+                )
 
-        return self._compute_chunked_derived_vfield(
-            field_name="magnetic",
-            grad_order=grad_order,
-            amr_level=amr_level,
-            local_compute_fn=local_compute_fn,
-            output_field_name="current_density",
-            output_latex_label=r"\nabla\times\vec{b}",
-        )
+            return self._compute_chunked_derived_vfield(
+                field_name="magnetic",
+                grad_order=grad_order,
+                amr_level=amr_level,
+                local_compute_fn=local_compute_fn,
+                output_field_name="current_density",
+                output_latex_label=r"\nabla\times\vec{b}",
+            )
 
     def compute_current_density_sfield(
         self: FieldsProtocol,

@@ -31,11 +31,12 @@ def format_value(
     if isinstance(value, bool):
         ## AMReX booleans are written as bare 0/1, never Python's True/False
         return "1" if value else "0"
-    if isinstance(value, str):
+    elif isinstance(value, str):
         return f'"{value}"'
-    if isinstance(value, (list, tuple)):
+    elif isinstance(value, (list, tuple)):
         return "[" + ", ".join(format_value(elem) for elem in value) + "]"
-    return str(value)
+    else:
+        return str(value)
 
 
 def format_key_value(

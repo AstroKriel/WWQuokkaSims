@@ -28,7 +28,7 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 ## === SLICED FIELD
 ##
 
-AxisBounds = tuple[tuple[float, float], tuple[float, float]]  # ((xmin, xmax), (ymin, ymax))
+AxisBounds = tuple[tuple[float, float], tuple[float, float]]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -137,7 +137,7 @@ class FieldComp:
     comp_axis: cartesian_axes.CartesianAxis_3D | None = None
 
 
-Row = tuple[str, dict[cartesian_axes.CartesianAxis_3D, "FieldSlice"]]  # (comp_label, {axis: FieldSlice})
+Row = tuple[str, dict[cartesian_axes.CartesianAxis_3D, "FieldSlice"]]
 
 ##
 ## === FIELD PROCESSING
@@ -159,12 +159,13 @@ def get_slice_bounds(
     (x0_min, x0_max), (x1_min, x1_max), (x2_min, x2_max) = uniform_domain.domain_bounds
     if axis_to_slice == cartesian_axes.CartesianAxis_3D.X2:
         return ((x0_min, x0_max), (x1_min, x1_max))
-    if axis_to_slice == cartesian_axes.CartesianAxis_3D.X1:
+    elif axis_to_slice == cartesian_axes.CartesianAxis_3D.X1:
         return ((x0_min, x0_max), (x2_min, x2_max))
-    return (
-        (x1_min, x1_max),
-        (x2_min, x2_max),
-    )
+    else:
+        return (
+            (x1_min, x1_max),
+            (x2_min, x2_max),
+        )
 
 
 def get_slice_labels(
@@ -323,7 +324,7 @@ class GenerateFieldSlices:
             field_3d = self.field_args.registered_field.load(
                 quokka_snapshot=quokka_snapshot,
                 amr_level=amr_level,
-            )  # ScalarField_3D or VectorField_3D
+            )
         return SnapshotData(
             uniform_domain=uniform_domain,
             field_3d=field_3d,
@@ -346,26 +347,27 @@ class GenerateFieldSlices:
                     label=field_models.get_label(field_3d),
                 ),
             ]
-        if not isinstance(field_3d, field_models.VectorField_3D):
-            raise ValueError(f"{field_name} is an unrecognised field type.")
-        if not self.comps_to_plot:
-            raise ValueError(
-                f"Vector field `{field_name}` requires at least one component to plot; none provided.",
+        elif isinstance(field_3d, field_models.VectorField_3D):
+            if not self.comps_to_plot:
+                raise ValueError(
+                    f"Vector field `{field_name}` requires at least one component to plot; none provided.",
+                )
+            varray_3d = field_models.extract_3d_varray(
+                vfield_3d=field_3d,
+                param_name=f"<{field_name}_vfield_3d>",
             )
-        varray_3d = field_models.extract_3d_varray(
-            vfield_3d=field_3d,
-            param_name=f"<{field_name}_vfield_3d>",
-        )
-        return [
-            FieldComp(
-                sarray_3d=varray_3d[_axis_to_index(comp_axis)],
-                label=field_models.get_vcomp_label(
-                    vfield_3d=field_3d,
+            return [
+                FieldComp(
+                    sarray_3d=varray_3d[_axis_to_index(comp_axis)],
+                    label=field_models.get_vcomp_label(
+                        vfield_3d=field_3d,
+                        comp_axis=comp_axis,
+                    ),
                     comp_axis=comp_axis,
-                ),
-                comp_axis=comp_axis,
-            ) for comp_axis in self.comps_to_plot
-        ]
+                ) for comp_axis in self.comps_to_plot
+            ]
+        else:
+            raise ValueError(f"{field_name} is an unrecognised field type.")
 
     def _rows_from_field_comps(
         self,
@@ -485,16 +487,18 @@ class GenerateFieldSlices:
         ]
         if all(path.exists() for path in scalar_paths):
             return [None]
-        vector_paths = [
-            data_dir / self._get_data_file_name(
-                comp_axis=comp_axis,
-                axis_to_slice=axis_to_slice,
-                padded_step_index_string=padded_step_index_string,
-            ) for comp_axis in self.comps_to_plot for axis_to_slice in self.axes_to_slice
-        ]
-        if all(path.exists() for path in vector_paths):
-            return list(self.comps_to_plot)
-        return None
+        else:
+            vector_paths = [
+                data_dir / self._get_data_file_name(
+                    comp_axis=comp_axis,
+                    axis_to_slice=axis_to_slice,
+                    padded_step_index_string=padded_step_index_string,
+                ) for comp_axis in self.comps_to_plot for axis_to_slice in self.axes_to_slice
+            ]
+            if all(path.exists() for path in vector_paths):
+                return list(self.comps_to_plot)
+            else:
+                return None
 
     def _save_field_comps(
         self,
@@ -637,57 +641,56 @@ class GenerateFieldSlices:
         )
         data_complete = saved_comp_axes is not None
         data_needed = self.save_data and (self.overwrite or not data_complete)
-        if not data_needed and not figure_needed:
-            return
-        if figure_needed and not data_needed and data_complete:
-            ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot entirely
-            assert saved_comp_axes is not None
-            manage_log.log_hint(
-                text=(
-                    f"`{self.field_args.registered_field.name}` at snapshot {step_index.value}: "
-                    f"building figure from saved data, skipping the raw snapshot."
-                ),
-            )
-            rows, sim_time = self._load_saved_rows(
-                comp_axes=saved_comp_axes,
-                padded_step_index_string=padded_step_index_string,
-                data_dir=data_dir,
-            )
-            self._render_figure(
-                rows=rows,
-                sim_time=sim_time,
-                step_index=step_index,
-                padded_step_index_string=padded_step_index_string,
-                figures_dir=figures_dir,
-                verbose=verbose,
-            )
-        else:
-            snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
-            field_comps = self._get_field_comps(field_3d=snapshot_data.field_3d)
-            if data_needed:
-                self._save_field_comps(
-                    field_comps=field_comps,
-                    uniform_domain=snapshot_data.uniform_domain,
-                    sim_time=snapshot_data.sim_time,
-                    step_index=step_index,
+        if data_needed or figure_needed:
+            if figure_needed and not data_needed and data_complete:
+                ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot entirely
+                assert saved_comp_axes is not None
+                manage_log.log_hint(
+                    text=(
+                        f"`{self.field_args.registered_field.name}` at snapshot {step_index.value}: "
+                        f"building figure from saved data, skipping the raw snapshot."
+                    ),
+                )
+                rows, sim_time = self._load_saved_rows(
+                    comp_axes=saved_comp_axes,
                     padded_step_index_string=padded_step_index_string,
                     data_dir=data_dir,
                 )
-            if figure_needed:
-                rows = self._rows_from_field_comps(
-                    field_comps=field_comps,
-                    uniform_domain=snapshot_data.uniform_domain,
-                    sim_time=snapshot_data.sim_time,
-                    step_index=step_index,
-                )
                 self._render_figure(
                     rows=rows,
-                    sim_time=snapshot_data.sim_time,
+                    sim_time=sim_time,
                     step_index=step_index,
                     padded_step_index_string=padded_step_index_string,
                     figures_dir=figures_dir,
                     verbose=verbose,
                 )
+            else:
+                snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
+                field_comps = self._get_field_comps(field_3d=snapshot_data.field_3d)
+                if data_needed:
+                    self._save_field_comps(
+                        field_comps=field_comps,
+                        uniform_domain=snapshot_data.uniform_domain,
+                        sim_time=snapshot_data.sim_time,
+                        step_index=step_index,
+                        padded_step_index_string=padded_step_index_string,
+                        data_dir=data_dir,
+                    )
+                if figure_needed:
+                    rows = self._rows_from_field_comps(
+                        field_comps=field_comps,
+                        uniform_domain=snapshot_data.uniform_domain,
+                        sim_time=snapshot_data.sim_time,
+                        step_index=step_index,
+                    )
+                    self._render_figure(
+                        rows=rows,
+                        sim_time=snapshot_data.sim_time,
+                        step_index=step_index,
+                        padded_step_index_string=padded_step_index_string,
+                        figures_dir=figures_dir,
+                        verbose=verbose,
+                    )
 
 
 def generate_fields_in_serial(

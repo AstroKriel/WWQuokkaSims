@@ -73,9 +73,10 @@ def looks_like_boxlib_dir(
     )
     if not snapshot_dir.exists() or not snapshot_dir.is_dir():
         return False
-    has_header = (snapshot_dir / "Header").is_file()
-    has_level0 = (snapshot_dir / "Level_0").is_dir()
-    return has_header and has_level0
+    else:
+        has_header = (snapshot_dir / "Header").is_file()
+        has_level0 = (snapshot_dir / "Level_0").is_dir()
+        return has_header and has_level0
 
 
 def get_step_index(
@@ -130,16 +131,17 @@ def resolve_snapshot_dirs(
     """
     if (snapshot_tag in input_dir.name) or looks_like_boxlib_dir(snapshot_dir=input_dir):
         return [input_dir]
-    snapshot_dirs = get_latest_snapshot_dirs(
-        sim_dir=input_dir,
-        snapshot_tag=snapshot_tag,
-    )
-    if max_elems is not None:
-        snapshot_dirs = ww_lists.sample_list(
-            elems=snapshot_dirs,
-            max_elems=max_elems,
+    else:
+        snapshot_dirs = get_latest_snapshot_dirs(
+            sim_dir=input_dir,
+            snapshot_tag=snapshot_tag,
         )
-    return snapshot_dirs
+        if max_elems is not None:
+            snapshot_dirs = ww_lists.sample_list(
+                elems=snapshot_dirs,
+                max_elems=max_elems,
+            )
+        return snapshot_dirs
 
 
 def get_max_index_width(

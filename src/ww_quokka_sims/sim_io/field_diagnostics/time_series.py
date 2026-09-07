@@ -271,12 +271,13 @@ class GenerateTimeSeries:
                 numpy.asarray([], dtype=float),
                 numpy.asarray([], dtype=float),
             )
-        time_array = validate_arrays.as_1d([time_point.sim_time for time_point in time_points])
-        values_array = validate_arrays.as_1d([time_point.value for time_point in time_points])
-        return (
-            time_array,
-            values_array,
-        )
+        else:
+            time_array = validate_arrays.as_1d([time_point.sim_time for time_point in time_points])
+            values_array = validate_arrays.as_1d([time_point.value for time_point in time_points])
+            return (
+                time_array,
+                values_array,
+            )
 
     def _save(
         self,
@@ -318,32 +319,32 @@ class GenerateTimeSeries:
                 x_alignment="center",
                 y_alignment="center",
             )
-            return
-        ylabel_content = time_series.latex_label.content
-        figure_name = f"{self.registered_field.name}-{self.field_statistic.name}-time_series.png"
-        if self.apply_log10_plot:
-            if self.registered_field.expected_properties.is_strictly_positive:
-                values_array = compute_array_stats.compute_safe_log10(values_array)
-            else:
-                values_array = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
-            ylabel_content = rf"\log_{{10}}\big({ylabel_content}\big)"
-            figure_name = f"log10_{figure_name}"
-        ylabel = latex_labels.LatexLabel(content=ylabel_content).get_label()
-        ax.plot(
-            time_array,
-            values_array,
-            color="black",
-            marker="o",
-            ls="-",
-        )
-        ax.set_xlabel("time")
-        ax.set_ylabel(ylabel)
-        figure_path = self.figures_dir / figure_name
-        manage_figure.save_figure(
-            figure=figure,
-            figure_path=figure_path,
-            verbose=True,
-        )
+        else:
+            ylabel_content = time_series.latex_label.content
+            figure_name = f"{self.registered_field.name}-{self.field_statistic.name}-time_series.png"
+            if self.apply_log10_plot:
+                if self.registered_field.expected_properties.is_strictly_positive:
+                    values_array = compute_array_stats.compute_safe_log10(values_array)
+                else:
+                    values_array = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
+                ylabel_content = rf"\log_{{10}}\big({ylabel_content}\big)"
+                figure_name = f"log10_{figure_name}"
+            ylabel = latex_labels.LatexLabel(content=ylabel_content).get_label()
+            ax.plot(
+                time_array,
+                values_array,
+                color="black",
+                marker="o",
+                ls="-",
+            )
+            ax.set_xlabel("time")
+            ax.set_ylabel(ylabel)
+            figure_path = self.figures_dir / figure_name
+            manage_figure.save_figure(
+                figure=figure,
+                figure_path=figure_path,
+                verbose=True,
+            )
 
     def run(
         self,

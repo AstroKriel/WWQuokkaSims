@@ -432,60 +432,62 @@ class ComputeCompProfiles:
     ) -> tuple[list[CompProfile], float] | None:
         if not all(path.exists() for path in data_paths):
             return None
-        first_raw = json_io.read_json_file_into_dict(
-            file_path=data_paths[0],
-            verbose=False,
-        )
-        sim_time = 0.0
-        step_index = find_snapshots.StepIndex.from_value(0)
-        if "field_comps" not in first_raw:
-            x_array_by_axis: list[numpy.ndarray] = []
-            y_array_by_axis: list[numpy.ndarray] = []
-            comp_label = ""
-            for path in data_paths:
-                scalar_field_profile = ScalarFieldProfile.load_from_file(path)
-                x_array_by_axis.append(scalar_field_profile.position)
-                y_array_by_axis.append(scalar_field_profile.field_value)
-                comp_label = scalar_field_profile.field_label
-                sim_time = scalar_field_profile.sim_time
-                step_index = scalar_field_profile.step_index
-            comp_profiles = [
-                CompProfile(
-                    sim_time=sim_time,
-                    step_index=step_index,
-                    comp_name=self.registered_field.name,
-                    axis_labels=list(self.axes_to_slice),
-                    comp_label=comp_label,
-                    x_array_by_axis=x_array_by_axis,
-                    y_array_by_axis=y_array_by_axis,
-                ),
-            ]
-            return comp_profiles, sim_time
-        vector_profiles = [VectorFieldProfile.load_from_file(path) for path in data_paths]
-        comp_keys = sorted(vector_profiles[0].components.keys())
-        per_comp_x: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-        per_comp_y: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-        per_comp_label: dict[str, str] = {}
-        for vector_field_profile in vector_profiles:
-            sim_time = vector_field_profile.sim_time
-            step_index = vector_field_profile.step_index
-            for key in comp_keys:
-                comp_arrays = vector_field_profile.components[key]
-                per_comp_x[key].append(comp_arrays.position)
-                per_comp_y[key].append(comp_arrays.field_value)
-                per_comp_label[key] = comp_arrays.label
-        comp_profiles = [
-            CompProfile(
-                sim_time=sim_time,
-                step_index=step_index,
-                comp_name=key,
-                axis_labels=list(self.axes_to_slice),
-                comp_label=per_comp_label[key],
-                x_array_by_axis=per_comp_x[key],
-                y_array_by_axis=per_comp_y[key],
-            ) for key in comp_keys
-        ]
-        return comp_profiles, sim_time
+        else:
+            first_raw = json_io.read_json_file_into_dict(
+                file_path=data_paths[0],
+                verbose=False,
+            )
+            sim_time = 0.0
+            step_index = find_snapshots.StepIndex.from_value(0)
+            if "field_comps" not in first_raw:
+                x_array_by_axis: list[numpy.ndarray] = []
+                y_array_by_axis: list[numpy.ndarray] = []
+                comp_label = ""
+                for path in data_paths:
+                    scalar_field_profile = ScalarFieldProfile.load_from_file(path)
+                    x_array_by_axis.append(scalar_field_profile.position)
+                    y_array_by_axis.append(scalar_field_profile.field_value)
+                    comp_label = scalar_field_profile.field_label
+                    sim_time = scalar_field_profile.sim_time
+                    step_index = scalar_field_profile.step_index
+                comp_profiles = [
+                    CompProfile(
+                        sim_time=sim_time,
+                        step_index=step_index,
+                        comp_name=self.registered_field.name,
+                        axis_labels=list(self.axes_to_slice),
+                        comp_label=comp_label,
+                        x_array_by_axis=x_array_by_axis,
+                        y_array_by_axis=y_array_by_axis,
+                    ),
+                ]
+                return comp_profiles, sim_time
+            else:
+                vector_profiles = [VectorFieldProfile.load_from_file(path) for path in data_paths]
+                comp_keys = sorted(vector_profiles[0].components.keys())
+                per_comp_x: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+                per_comp_y: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+                per_comp_label: dict[str, str] = {}
+                for vector_field_profile in vector_profiles:
+                    sim_time = vector_field_profile.sim_time
+                    step_index = vector_field_profile.step_index
+                    for key in comp_keys:
+                        comp_arrays = vector_field_profile.components[key]
+                        per_comp_x[key].append(comp_arrays.position)
+                        per_comp_y[key].append(comp_arrays.field_value)
+                        per_comp_label[key] = comp_arrays.label
+                comp_profiles = [
+                    CompProfile(
+                        sim_time=sim_time,
+                        step_index=step_index,
+                        comp_name=key,
+                        axis_labels=list(self.axes_to_slice),
+                        comp_label=per_comp_label[key],
+                        x_array_by_axis=per_comp_x[key],
+                        y_array_by_axis=per_comp_y[key],
+                    ) for key in comp_keys
+                ]
+                return comp_profiles, sim_time
 
     @staticmethod
     def _compute_cell_centers(
@@ -499,11 +501,12 @@ class ComputeCompProfiles:
         ax_idx = cartesian_axes.get_axis_index(axis_to_slice)
         if ax_idx == 0:
             return x_min + (numpy.arange(num_cells_x) + 0.5) * cell_width_x
-        if ax_idx == 1:
+        elif ax_idx == 1:
             return y_min + (numpy.arange(num_cells_y) + 0.5) * cell_width_y
-        if ax_idx == 2:
+        elif ax_idx == 2:
             return z_min + (numpy.arange(num_cells_z) + 0.5) * cell_width_z
-        raise ValueError(f"axis must be one of the three cartesian axes, got {axis_to_slice!r}")
+        else:
+            raise ValueError(f"axis must be one of the three cartesian axes, got {axis_to_slice!r}")
 
     @staticmethod
     def _extract_1d_midplane_profile(
@@ -518,11 +521,12 @@ class ComputeCompProfiles:
         ax_idx = cartesian_axes.get_axis_index(axis_to_slice)
         if ax_idx == 0:
             return data_3d[:, slice_index_y, slice_index_z]
-        if ax_idx == 1:
+        elif ax_idx == 1:
             return data_3d[slice_index_x, :, slice_index_z]
-        if ax_idx == 2:
+        elif ax_idx == 2:
             return data_3d[slice_index_x, slice_index_y, :]
-        raise ValueError(f"axis must be one of the three cartesian axes, got {axis_to_slice!r}")
+        else:
+            raise ValueError(f"axis must be one of the three cartesian axes, got {axis_to_slice!r}")
 
     def _compute_scalar_profiles(
         self,
@@ -624,20 +628,21 @@ class ComputeCompProfiles:
             field_3d = self.registered_field.load(
                 quokka_snapshot=quokka_snapshot,
                 amr_level=self.amr_level,
-            )  # ScalarField or VectorField
+            )
         if isinstance(field_3d, field_models.ScalarField_3D):
             return self._compute_scalar_profiles(
                 sfield_3d=field_3d,
                 uniform_domain_3d=uniform_domain_3d,
                 step_index=step_index,
             )
-        if isinstance(field_3d, field_models.VectorField_3D):
+        elif isinstance(field_3d, field_models.VectorField_3D):
             return self._compute_vector_profiles(
                 vfield_3d=field_3d,
                 uniform_domain_3d=uniform_domain_3d,
                 step_index=step_index,
             )
-        raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")
+        else:
+            raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")
 
     def run(
         self,

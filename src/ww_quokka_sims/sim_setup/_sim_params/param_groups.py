@@ -39,13 +39,13 @@ def _ensure_scalar_or_axis_triple(
             param=param,
             param_name=param_name,
         )
-        return
-    validate_types.ensure_finite_int(
-        param=param,
-        param_name=param_name,
-        require_positive=True,
-        allow_zero=False,
-    )
+    else:
+        validate_types.ensure_finite_int(
+            param=param,
+            param_name=param_name,
+            require_positive=True,
+            allow_zero=False,
+        )
 
 
 def _as_axis_triple(

@@ -206,8 +206,6 @@ class ComputePDFs:
         """
         values = sarray_3d.ravel()
         if use_log10_bins:
-            ## non-positive entries become NaN (no divide-by-zero/invalid-value warning), and are
-            ## then dropped by `estimate_pdf`'s own finite-value mask below
             values = compute_array_stats.compute_safe_log10(values)
         return compute_array_stats.estimate_pdf(
             values=values,
@@ -294,12 +292,13 @@ class ComputePDFs:
                 sfield_3d=field_3d,
                 step_index=step_index,
             )
-        if isinstance(field_3d, field_models.VectorField_3D):
+        elif isinstance(field_3d, field_models.VectorField_3D):
             return self._compute_vfield_pdf(
                 vfield_3d=field_3d,
                 step_index=step_index,
             )
-        raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")
+        else:
+            raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")
 
     def run(
         self,
