@@ -576,39 +576,49 @@ class GeneratePDFs:
             verbose=True,
         )
 
+    def _process_snapshots(
+        self,
+    ) -> None:
+        compute_pdfs = ComputePDFs(
+            registered_field=self.registered_field,
+            comps_to_plot=self.comps_to_plot,
+            num_bins=self.num_bins,
+            use_log10_bins=self.use_log10_bins,
+            amr_level=self.amr_level,
+        )
+        for snapshot_dir in self.snapshot_dirs:
+            self._process_snapshot(
+                compute_pdfs=compute_pdfs,
+                snapshot_dir=snapshot_dir,
+                data_dir=self.data_dir,
+                figures_dir=self.figures_dir,
+                index_width=self.index_width,
+            )
+
+    def _save_summary_figure_if_available(
+        self,
+    ) -> None:
+        ## the summary is only buildable from saved data; if none was ever saved for this field
+        ## (eg. --save-figure was used without --save-data, ever), there's nothing to aggregate
+        field_pdfs = self._load_all_saved_pdfs(data_dir=self.data_dir)
+        if field_pdfs:
+            self._save_summary_figure(
+                field_pdfs=field_pdfs,
+                figures_dir=self.figures_dir,
+            )
+        else:
+            manage_log.log_hint(
+                text=
+                f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
+            )
+
     def run(
         self,
     ) -> None:
         if self.save_data or self.save_figure:
-            compute_pdfs = ComputePDFs(
-                registered_field=self.registered_field,
-                comps_to_plot=self.comps_to_plot,
-                num_bins=self.num_bins,
-                use_log10_bins=self.use_log10_bins,
-                amr_level=self.amr_level,
-            )
-            for snapshot_dir in self.snapshot_dirs:
-                self._process_snapshot(
-                    compute_pdfs=compute_pdfs,
-                    snapshot_dir=snapshot_dir,
-                    data_dir=self.data_dir,
-                    figures_dir=self.figures_dir,
-                    index_width=self.index_width,
-                )
+            self._process_snapshots()
         if self.save_figure:
-            ## the summary is only buildable from saved data; if none was ever saved for this field
-            ## (eg. --save-figure was used without --save-data, ever), there's nothing to aggregate
-            field_pdfs = self._load_all_saved_pdfs(data_dir=self.data_dir)
-            if field_pdfs:
-                self._save_summary_figure(
-                    field_pdfs=field_pdfs,
-                    figures_dir=self.figures_dir,
-                )
-            else:
-                manage_log.log_hint(
-                    text=
-                    f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
-                )
+            self._save_summary_figure_if_available()
 
 
 ## } MODULE
