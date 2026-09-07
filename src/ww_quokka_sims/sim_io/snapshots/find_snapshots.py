@@ -101,6 +101,15 @@ def resolve_snapshot_dirs(
     return snapshot_dirs
 
 
+def get_padded_step_index(
+    *,
+    step_index: int,
+    index_width: int,
+) -> str:
+    """Return `step_index` zero-padded to `index_width` characters."""
+    return f"{step_index:0{index_width}d}"
+
+
 def get_max_index_width(
     *,
     snapshot_dirs: list[pathlib.Path],
