@@ -654,15 +654,11 @@ class ComputeCompProfiles:
     ) -> list[list[CompProfile]]:
         all_comp_profiles: list[list[CompProfile]] = []
         for snapshot_dir in self.snapshot_dirs:
-            step_index_string = find_snapshots.get_step_index_string(
+            step_index = find_snapshots.get_step_index(
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=self.snapshot_tag,
             )
-            step_index = int(step_index_string)
-            padded_index = find_snapshots.get_padded_step_index(
-                step_index=step_index,
-                index_width=self.index_width,
-            )
+            padded_index = step_index.get_padded_string(index_width=self.index_width)
             data_paths = [
                 self._get_data_path(
                     axis_label=cartesian_axes.get_axis_label(axis),
@@ -675,7 +671,7 @@ class ComputeCompProfiles:
             else:
                 comp_profiles = self._compute_snapshot(
                     snapshot_dir=snapshot_dir,
-                    step_index=step_index,
+                    step_index=step_index.get_value(),
                 )
                 if self.save_data:
                     manage_io.create_directory(
@@ -891,10 +887,7 @@ class GenerateCompProfiles:
         if all_comp_profiles and self.save_figure:
             comp_profiles_lookup: dict[str, list[CompProfile]] = {}
             for comp_profiles in all_comp_profiles:
-                padded_index = find_snapshots.get_padded_step_index(
-                    step_index=comp_profiles[0].step_index,
-                    index_width=self.index_width,
-                )
+                padded_index = f"{comp_profiles[0].step_index:0{self.index_width}d}"
                 figure_path = self._get_figure_path(
                     figures_dir=self.figures_dir,
                     padded_index=padded_index,

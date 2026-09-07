@@ -93,10 +93,7 @@ class FieldExtractor:
         index_width: int,
     ) -> str:
         field_name = self.field_args.registered_field.name
-        padded_index = find_snapshots.get_padded_step_index(
-            step_index=step_index,
-            index_width=index_width,
-        )
+        padded_index = f"{step_index:0{index_width}d}"
         return f"{field_name}-index={padded_index}-amr_level={self.field_args.amr_level}.npz"
 
     def _load_field(
@@ -169,11 +166,10 @@ class FieldExtractor:
         data_dir: pathlib.Path,
         index_width: int,
     ) -> None:
-        step_index_string = find_snapshots.get_step_index_string(
+        step_index = find_snapshots.get_step_index(
             snapshot_dir=snapshot_dir,
             snapshot_tag=self.snapshot_tag,
-        )
-        step_index = int(step_index_string)
+        ).get_value()
         file_path = data_dir / self._expected_file_name(
             step_index=step_index,
             index_width=index_width,

@@ -306,22 +306,18 @@ class ComputePDFs:
     ) -> list[FieldPDF]:
         field_pdfs: list[FieldPDF] = []
         for snapshot_dir in self.snapshot_dirs:
-            step_index_string = find_snapshots.get_step_index_string(
+            step_index = find_snapshots.get_step_index(
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=self.snapshot_tag,
             )
-            step_index = int(step_index_string)
-            padded_index = find_snapshots.get_padded_step_index(
-                step_index=step_index,
-                index_width=self.index_width,
-            )
+            padded_index = step_index.get_padded_string(index_width=self.index_width)
             data_path = self._get_data_path(padded_index=padded_index)
             if (not self.overwrite) and data_path.exists():
                 field_pdf = FieldPDF.load_from_file(data_path)
             else:
                 field_pdf = self._compute_snapshot(
                     snapshot_dir=snapshot_dir,
-                    step_index=step_index,
+                    step_index=step_index.get_value(),
                 )
                 if self.save_data:
                     manage_io.create_directory(
@@ -532,10 +528,7 @@ class GeneratePDFs:
         if field_pdfs and self.save_figure:
             data_name = self._get_data_name()
             for field_pdf in field_pdfs:
-                padded_index = find_snapshots.get_padded_step_index(
-                    step_index=field_pdf.step_index,
-                    index_width=self.index_width,
-                )
+                padded_index = f"{field_pdf.step_index:0{self.index_width}d}"
                 figure_path = self.figures_dir / f"{data_name}-pdf-index={padded_index}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(
