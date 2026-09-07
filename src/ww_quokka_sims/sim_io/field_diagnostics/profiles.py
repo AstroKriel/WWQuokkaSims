@@ -250,11 +250,11 @@ class VectorFieldProfile:
                 "profile_axis": self.profile_axis,
                 "field_comps": {
                     comp_axis: {
-                        "position": comp.position,
-                        "field_value": comp.field_value,
-                        "label": comp.label,
+                        "position": component_arrays.position,
+                        "field_value": component_arrays.field_value,
+                        "label": component_arrays.label,
                     }
-                    for comp_axis, comp in self.components.items()
+                    for comp_axis, component_arrays in self.components.items()
                 },
                 "amr_level": self.amr_level,
             },
@@ -388,10 +388,10 @@ class ComputeCompProfiles:
         is_scalar = comp_profiles[0].comp_name == self.registered_field.name
         sim_time = comp_profiles[0].sim_time
         step_index = comp_profiles[0].step_index
-        for axis_index, axis in enumerate(comp_profiles[0].axis_labels):
-            axis_label = cartesian_axes.get_axis_label(axis)
+        for axis_index, axis_label in enumerate(comp_profiles[0].axis_labels):
+            axis_label_str = cartesian_axes.get_axis_label(axis_label)
             file_path = self._get_data_path(
-                axis_label=axis_label,
+                axis_label=axis_label_str,
                 padded_step_index_string=padded_step_index_string,
             )
             if is_scalar:
@@ -401,7 +401,7 @@ class ComputeCompProfiles:
                     field_label=comp_profile.comp_label,
                     sim_time=sim_time,
                     step_index=step_index,
-                    profile_axis=axis_label,
+                    profile_axis=axis_label_str,
                     position=comp_profile.get_domain(axis_index=axis_index),
                     field_value=comp_profile.get_values(axis_index=axis_index),
                     amr_level=self.amr_level,
@@ -420,7 +420,7 @@ class ComputeCompProfiles:
                     field_name=self.registered_field.name,
                     sim_time=sim_time,
                     step_index=step_index,
-                    profile_axis=axis_label,
+                    profile_axis=axis_label_str,
                     components=components,
                     amr_level=self.amr_level,
                 ).save_to_file(file_path)
@@ -430,7 +430,7 @@ class ComputeCompProfiles:
         *,
         data_paths: list[pathlib.Path],
     ) -> tuple[list[CompProfile], float] | None:
-        if not all(path.exists() for path in data_paths):
+        if not all(data_path.exists() for data_path in data_paths):
             return None
         else:
             first_raw = json_io.read_json_file_into_dict(
@@ -443,8 +443,8 @@ class ComputeCompProfiles:
                 x_array_by_axis: list[numpy.ndarray] = []
                 y_array_by_axis: list[numpy.ndarray] = []
                 comp_label = ""
-                for path in data_paths:
-                    scalar_field_profile = ScalarFieldProfile.load_from_file(path)
+                for data_path in data_paths:
+                    scalar_field_profile = ScalarFieldProfile.load_from_file(data_path)
                     x_array_by_axis.append(scalar_field_profile.position)
                     y_array_by_axis.append(scalar_field_profile.field_value)
                     comp_label = scalar_field_profile.field_label
@@ -463,7 +463,7 @@ class ComputeCompProfiles:
                 ]
                 return comp_profiles, sim_time
             else:
-                vector_profiles = [VectorFieldProfile.load_from_file(path) for path in data_paths]
+                vector_profiles = [VectorFieldProfile.load_from_file(data_path) for data_path in data_paths]
                 comp_keys = sorted(vector_profiles[0].components.keys())
                 per_comp_x: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
                 per_comp_y: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
@@ -472,10 +472,10 @@ class ComputeCompProfiles:
                     sim_time = vector_field_profile.sim_time
                     step_index = vector_field_profile.step_index
                     for key in comp_keys:
-                        comp_arrays = vector_field_profile.components[key]
-                        per_comp_x[key].append(comp_arrays.position)
-                        per_comp_y[key].append(comp_arrays.field_value)
-                        per_comp_label[key] = comp_arrays.label
+                        component_arrays = vector_field_profile.components[key]
+                        per_comp_x[key].append(component_arrays.position)
+                        per_comp_y[key].append(component_arrays.field_value)
+                        per_comp_label[key] = component_arrays.label
                 comp_profiles = [
                     CompProfile(
                         sim_time=sim_time,
@@ -656,9 +656,9 @@ class ComputeCompProfiles:
             padded_step_index_string = step_index.get_padded_string(index_width=self.index_width)
             data_paths = [
                 self._get_data_path(
-                    axis_label=cartesian_axes.get_axis_label(axis),
+                    axis_label=cartesian_axes.get_axis_label(axis_to_slice),
                     padded_step_index_string=padded_step_index_string,
-                ) for axis in self.axes_to_slice
+                ) for axis_to_slice in self.axes_to_slice
             ]
             loaded = None if self.overwrite else self._load_snapshot_data(data_paths=data_paths)
             if loaded is not None:

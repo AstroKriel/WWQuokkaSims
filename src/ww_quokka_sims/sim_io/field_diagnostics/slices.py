@@ -478,24 +478,24 @@ class GenerateFieldSlices:
         the raw field; `[None]` for a scalar field, `self.comps_to_plot` for a vector field, or `None`
         if neither is fully present on disk.
         """
-        scalar_paths = [
+        sfield_paths = [
             data_dir / self._get_data_file_name(
                 comp_axis=None,
                 axis_to_slice=axis_to_slice,
                 padded_step_index_string=padded_step_index_string,
             ) for axis_to_slice in self.axes_to_slice
         ]
-        if all(path.exists() for path in scalar_paths):
+        if all(sfield_path.exists() for sfield_path in sfield_paths):
             return [None]
         else:
-            vector_paths = [
+            vfield_paths = [
                 data_dir / self._get_data_file_name(
                     comp_axis=comp_axis,
                     axis_to_slice=axis_to_slice,
                     padded_step_index_string=padded_step_index_string,
                 ) for comp_axis in self.comps_to_plot for axis_to_slice in self.axes_to_slice
             ]
-            if all(path.exists() for path in vector_paths):
+            if all(vfield_path.exists() for vfield_path in vfield_paths):
                 return list(self.comps_to_plot)
             else:
                 return None

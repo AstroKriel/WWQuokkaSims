@@ -126,8 +126,8 @@ class FieldPDF:
         return cls(
             sim_time=float(input_dict["sim_time"]),
             step_index=find_snapshots.StepIndex.from_value(int(input_dict["step_index"])),
-            grouped_bin_centers=[numpy.array(input_dict[label][bin_centers_key]) for label in comp_labels],
-            grouped_densities=[numpy.array(input_dict[label]["log10_density"]) for label in comp_labels],
+            grouped_bin_centers=[numpy.array(input_dict[comp_label][bin_centers_key]) for comp_label in comp_labels],
+            grouped_densities=[numpy.array(input_dict[comp_label]["log10_density"]) for comp_label in comp_labels],
             comp_labels=comp_labels,
             use_log10_bins=use_log10_bins,
         )
@@ -389,9 +389,9 @@ class GeneratePDFs:
         comp_labels: list[str],
         use_log10_bins: bool,
     ) -> None:
-        for comp_index, label in enumerate(comp_labels):
+        for comp_index, comp_label in enumerate(comp_labels):
             ax = axs_grid[0][comp_index]
-            x_label = rf"$\log_{{10}}($ {label} $)$" if use_log10_bins else rf"$x \equiv$ {label}"
+            x_label = rf"$\log_{{10}}($ {comp_label} $)$" if use_log10_bins else rf"$x \equiv$ {comp_label}"
             ax.set_xlabel(x_label)
             if comp_index == 0:
                 ax.set_ylabel(r"$\log_{10}\big(p(x)\big)$")
