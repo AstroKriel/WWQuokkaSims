@@ -116,13 +116,13 @@ class WorkerArgs(typing.NamedTuple):
 @dataclasses.dataclass(frozen=True)
 class SnapshotData:
     uniform_domain: domain_models.UniformDomain_3D
-    field: field_models.AnyField_3D
+    field_3d: field_models.AnyField_3D
 
     @property
     def sim_time(
         self,
     ) -> float:
-        sim_time = self.field.sim_time
+        sim_time = self.field_3d.sim_time
         if (sim_time is None) or (not numpy.isfinite(sim_time)):
             msg = f"Invalid sim_time for field: {sim_time!r}."
             manage_log.log_error(text=msg)
@@ -320,47 +320,47 @@ class GenerateFieldSlices:
                 verbose=False,
         ) as quokka_snapshot:
             uniform_domain = quokka_snapshot.load_3d_uniform_domain(amr_level=amr_level)
-            field = self.field_args.registered_field.load(
+            field_3d = self.field_args.registered_field.load(
                 quokka_snapshot=quokka_snapshot,
                 amr_level=amr_level,
             )  # ScalarField_3D or VectorField_3D
         return SnapshotData(
             uniform_domain=uniform_domain,
-            field=field,
+            field_3d=field_3d,
         )
 
     def _get_field_comps(
         self,
         *,
-        field: field_models.AnyField_3D,
+        field_3d: field_models.AnyField_3D,
     ) -> list[FieldComp]:
         field_name = self.field_args.registered_field.name
-        if isinstance(field, field_models.ScalarField_3D):
+        if isinstance(field_3d, field_models.ScalarField_3D):
             sarray_3d = field_models.extract_3d_sarray(
-                sfield_3d=field,
+                sfield_3d=field_3d,
                 param_name=f"<{field_name}_sfield_3d>",
             )
             return [
                 FieldComp(
                     sarray_3d=sarray_3d,
-                    label=field_models.get_label(field),
+                    label=field_models.get_label(field_3d),
                 ),
             ]
-        if not isinstance(field, field_models.VectorField_3D):
+        if not isinstance(field_3d, field_models.VectorField_3D):
             raise ValueError(f"{field_name} is an unrecognised field type.")
         if not self.comps_to_plot:
             raise ValueError(
                 f"Vector field `{field_name}` requires at least one component to plot; none provided.",
             )
         varray_3d = field_models.extract_3d_varray(
-            vfield_3d=field,
+            vfield_3d=field_3d,
             param_name=f"<{field_name}_vfield_3d>",
         )
         return [
             FieldComp(
                 sarray_3d=varray_3d[_axis_to_index(comp_axis)],
                 label=field_models.get_vcomp_label(
-                    vfield_3d=field,
+                    vfield_3d=field_3d,
                     comp_axis=comp_axis,
                 ),
                 comp_axis=comp_axis,
@@ -665,7 +665,7 @@ class GenerateFieldSlices:
             )
         else:
             snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
-            field_comps = self._get_field_comps(field=snapshot_data.field)
+            field_comps = self._get_field_comps(field_3d=snapshot_data.field_3d)
             if data_needed:
                 self._save_field_comps(
                     field_comps=field_comps,

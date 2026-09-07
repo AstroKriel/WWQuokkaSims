@@ -140,19 +140,19 @@ class ComputeSpectra:
                 snapshot_dir=snapshot_dir,
                 verbose=False,
         ) as quokka_snapshot:
-            field = self.registered_field.load(
+            field_3d = self.registered_field.load(
                 quokka_snapshot=quokka_snapshot,
                 amr_level=self.amr_level,
             )
-        spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field)
-        sim_time = field.sim_time
+        spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field_3d)
+        sim_time = field_3d.sim_time
         assert sim_time is not None
         log10_k_bin_centers = compute_array_stats.compute_safe_log10(spectrum.k_bin_centers_1d)
         log10_power_spectrum = compute_array_stats.compute_safe_log10(spectrum.power_spectrum_1d)
         return FieldSpectrum(
             sim_time=sim_time,
             step_index=step_index,
-            latex_label=field.latex_label,
+            latex_label=field_3d.latex_label,
             log10_k_bin_centers=log10_k_bin_centers,
             log10_power_spectrum=log10_power_spectrum,
         )

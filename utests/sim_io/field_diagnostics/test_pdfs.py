@@ -31,7 +31,7 @@ class TestEstimatePDF(unittest.TestCase):
         self,
     ):
         pdf = pdfs.ComputePDFs._estimate_pdf(
-            sfield_data=self._FIELD_DATA,
+            sarray_3d=self._FIELD_DATA,
             num_bins=4,
             use_log10_bins=False,
         )
@@ -44,7 +44,7 @@ class TestEstimatePDF(unittest.TestCase):
         self,
     ):
         pdf = pdfs.ComputePDFs._estimate_pdf(
-            sfield_data=self._FIELD_DATA,
+            sarray_3d=self._FIELD_DATA,
             num_bins=4,
             use_log10_bins=True,
         )

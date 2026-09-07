@@ -631,19 +631,19 @@ class ComputeCompProfiles:
                 verbose=False,
         ) as quokka_snapshot:
             uniform_domain_3d = quokka_snapshot.load_3d_uniform_domain(amr_level=self.amr_level)
-            field = self.registered_field.load(
+            field_3d = self.registered_field.load(
                 quokka_snapshot=quokka_snapshot,
                 amr_level=self.amr_level,
             )  # ScalarField or VectorField
-        if isinstance(field, field_models.ScalarField_3D):
+        if isinstance(field_3d, field_models.ScalarField_3D):
             return self._compute_scalar_profiles(
-                sfield_3d=field,
+                sfield_3d=field_3d,
                 uniform_domain_3d=uniform_domain_3d,
                 step_index=step_index,
             )
-        if isinstance(field, field_models.VectorField_3D):
+        if isinstance(field_3d, field_models.VectorField_3D):
             return self._compute_vector_profiles(
-                vfield_3d=field,
+                vfield_3d=field_3d,
                 uniform_domain_3d=uniform_domain_3d,
                 step_index=step_index,
             )
