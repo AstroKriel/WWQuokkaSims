@@ -427,18 +427,13 @@ class GeneratePDFs:
         axs_grid: manage_figure.PanelGrid,
         field_pdfs: list[FieldPDF],
     ) -> None:
+        last_series_index = max(0, len(field_pdfs) - 1)
         palette = add_color.make_palette(
             config=add_color.SequentialPaletteConfig(
                 palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
-            value_range=(
-                0,
-                max(
-                    0,
-                    len(field_pdfs) - 1,
-                ),
-            ),
+            value_range=(0, last_series_index),
         )
         for series_index, field_pdf in enumerate(field_pdfs):
             color = palette.mpl_cmap(

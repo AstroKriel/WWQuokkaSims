@@ -781,18 +781,13 @@ class GenerateCompProfiles:
         axs_row: manage_figure.PanelGrid,
         comp_profiles: list[CompProfile],
     ) -> None:
+        last_series_index = max(0, len(comp_profiles) - 1)
         palette = add_color.make_palette(
             config=add_color.SequentialPaletteConfig(
                 palette_name=field_palettes.SEQUENTIAL_PALETTE_NAME,
                 palette_range=(0.25, 1.0),
             ),
-            value_range=(
-                0,
-                max(
-                    0,
-                    len(comp_profiles) - 1,
-                ),
-            ),
+            value_range=(0, last_series_index),
         )
         for time_index, comp_profile in enumerate(comp_profiles):
             color = palette.mpl_cmap(
