@@ -16,7 +16,7 @@ import numpy
 from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_models
-from jormi.ww_io import json_io, manage_io, manage_log
+from jormi.ww_io import json_io, manage_io
 from jormi.ww_plots import add_color, annotate_panel, manage_figure
 from jormi.ww_validation import validate_arrays, validate_types
 
@@ -144,22 +144,55 @@ class ComputePDFs:
     def __init__(
         self,
         *,
+        snapshot_dirs: list[pathlib.Path],
+        snapshot_tag: str,
         registered_field: field_registry.RegisteredField,
+        index_width: int,
         comps_to_plot: tuple[cartesian_axes.AxisLike_3D, ...],
         num_bins: int,
+        save_data: bool,
+        data_dir: pathlib.Path,
+        overwrite: bool = False,
         use_log10_bins: bool = False,
         amr_level: int = 0,
     ):
+        self.snapshot_dirs = snapshot_dirs
+        self.snapshot_tag = snapshot_tag
         self.registered_field = registered_field
+        self.index_width = index_width
         self.comps_to_plot = comps_to_plot
-        self.num_bins = num_bins
+        self.num_bins = int(num_bins)
+        self.save_data = save_data
+        self.data_dir = data_dir
+        self.overwrite = overwrite
         self.use_log10_bins = use_log10_bins
         self.amr_level = amr_level
+
+    def _get_data_name(
+        self,
+    ) -> str:
+        """Filename stem, tagged with `log10_` when bins are log10-spaced.
+
+        The filename is a hint for humans browsing the directory, not the source of truth (it can
+        be renamed); the saved `use_log10_bins` flag and `log10_bin_centers` key inside the file
+        itself are what downstream code should actually check.
+        """
+        if self.use_log10_bins:
+            return f"log10_{self.registered_field.name}"
+        else:
+            return self.registered_field.name
+
+    def _get_data_path(
+        self,
+        *,
+        padded_index: str,
+    ) -> pathlib.Path:
+        return self.data_dir / f"{self._get_data_name()}-pdf-index={padded_index}.json"
 
     @staticmethod
     def _estimate_pdf(
         *,
-        field_data: numpy.ndarray,
+        sfield_data: numpy.ndarray,
         num_bins: int,
         use_log10_bins: bool,
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
@@ -170,13 +203,13 @@ class ComputePDFs:
         get almost all of their linearly-spaced bins wasted on the rare, large-valued tail,
         leaving the bulk of the distribution unresolved in a single bin.
         """
-        values = field_data.ravel()
+        sfield_values = sfield_data.ravel()
         if use_log10_bins:
             ## non-positive entries become NaN (no divide-by-zero/invalid-value warning), and are
             ## then dropped by `estimate_pdf`'s own finite-value mask below
-            values = compute_array_stats.compute_safe_log10(values)
+            sfield_values = compute_array_stats.compute_safe_log10(sfield_values)
         pdf = compute_array_stats.estimate_pdf(
-            values=values,
+            values=sfield_values,
             num_bins=num_bins,
         )
         log10_densities = numpy.ma.log10(
@@ -214,7 +247,7 @@ class ComputePDFs:
         for comp_name in comp_names:
             comp_data = field.fdata.farray[cartesian_axes.get_axis_index(comp_name)]
             bin_centers, densities = self._estimate_pdf(
-                field_data=comp_data,
+                sfield_data=comp_data,
                 num_bins=self.num_bins,
                 use_log10_bins=self.use_log10_bins,
             )
@@ -238,7 +271,7 @@ class ComputePDFs:
         sim_time = field.sim_time
         assert sim_time is not None
         bin_centers, densities = self._estimate_pdf(
-            field_data=field.fdata.farray,
+            sfield_data=field.fdata.farray,
             num_bins=self.num_bins,
             use_log10_bins=self.use_log10_bins,
         )
@@ -251,18 +284,12 @@ class ComputePDFs:
             use_log10_bins=self.use_log10_bins,
         )
 
-    def compute_snapshot(
+    def _compute_snapshot(
         self,
         *,
         snapshot_dir: pathlib.Path,
-        snapshot_tag: str,
+        step_index: int,
     ) -> FieldPDF:
-        step_index = int(
-            find_snapshots.get_step_index_string(
-                snapshot_dir=snapshot_dir,
-                snapshot_tag=snapshot_tag,
-            ),
-        )
         with load_snapshot.QuokkaSnapshot(
                 snapshot_dir=snapshot_dir,
                 verbose=False,
@@ -282,6 +309,37 @@ class ComputePDFs:
                 step_index=step_index,
             )
         raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")
+
+    def run(
+        self,
+    ) -> list[FieldPDF]:
+        field_pdfs: list[FieldPDF] = []
+        for snapshot_dir in self.snapshot_dirs:
+            step_index = int(
+                find_snapshots.get_step_index_string(
+                    snapshot_dir=snapshot_dir,
+                    snapshot_tag=self.snapshot_tag,
+                ),
+            )
+            padded_index = f"{step_index:0{self.index_width}d}"
+            data_path = self._get_data_path(padded_index=padded_index)
+            if (not self.overwrite) and data_path.exists():
+                field_pdf = FieldPDF.load_from_file(data_path)
+            else:
+                field_pdf = self._compute_snapshot(
+                    snapshot_dir=snapshot_dir,
+                    step_index=step_index,
+                )
+                if self.save_data:
+                    manage_io.create_directory(
+                        directory=self.data_dir,
+                        verbose=False,
+                    )
+                    ## one file per snapshot, not one aggregate file, so results survive a partial run
+                    field_pdf.save_to_file(data_path)
+            field_pdfs.append(field_pdf)
+        field_pdfs.sort(key=lambda _field_pdf: _field_pdf.sim_time)
+        return field_pdfs
 
 
 ##
@@ -333,22 +391,6 @@ class GeneratePDFs:
         itself are what downstream code should actually check.
         """
         return f"log10_{self.registered_field.name}" if self.use_log10_bins else self.registered_field.name
-
-    def _get_data_path(
-        self,
-        *,
-        data_dir: pathlib.Path,
-        padded_index: str,
-    ) -> pathlib.Path:
-        return data_dir / f"{self._get_data_name()}-pdf-index={padded_index}.json"
-
-    def _get_figure_path(
-        self,
-        *,
-        figures_dir: pathlib.Path,
-        padded_index: str,
-    ) -> pathlib.Path:
-        return figures_dir / f"{self._get_data_name()}-pdf-index={padded_index}.png"
 
     @staticmethod
     def _style_axs(
@@ -420,29 +462,6 @@ class GeneratePDFs:
             label_gap_pt=10.0,
         )
 
-    def _save_pdf(
-        self,
-        *,
-        field_pdf: FieldPDF,
-        data_dir: pathlib.Path,
-    ) -> None:
-        """Save one snapshot's PDF to its own file, mirroring `generate_slices.py`'s one-file-per-
-        snapshot convention (rather than one file aggregating every snapshot) -- each file is
-        self-contained (carries its own `sim_time`/`use_log10_bins`), so results already on disk
-        are immediately usable even if a later snapshot in the run fails or the job is cut off.
-        """
-        manage_io.create_directory(
-            directory=data_dir,
-            verbose=False,
-        )
-        padded_index = f"{field_pdf.step_index:0{self.index_width}d}"
-        field_pdf.save_to_file(
-            self._get_data_path(
-                data_dir=data_dir,
-                padded_index=padded_index,
-            ),
-        )
-
     def _save_snapshot_figure(
         self,
         *,
@@ -470,83 +489,13 @@ class GeneratePDFs:
             verbose=False,
         )
 
-    def _process_snapshot(
-        self,
-        *,
-        compute_pdfs: ComputePDFs,
-        snapshot_dir: pathlib.Path,
-        data_dir: pathlib.Path,
-        figures_dir: pathlib.Path,
-        index_width: int,
-    ) -> None:
-        step_index = int(
-            find_snapshots.get_step_index_string(
-                snapshot_dir=snapshot_dir,
-                snapshot_tag=self.snapshot_tag,
-            ),
-        )
-        padded_index = f"{step_index:0{index_width}d}"
-        data_path = self._get_data_path(
-            data_dir=data_dir,
-            padded_index=padded_index,
-        )
-        figure_path = self._get_figure_path(
-            figures_dir=figures_dir,
-            padded_index=padded_index,
-        )
-        data_exists = data_path.exists()
-        data_needed = self.save_data and (self.overwrite or not data_exists)
-        figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
-        if not data_needed and not figure_needed:
-            return
-        if figure_needed and not data_needed and data_exists:
-            ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot
-            manage_log.log_hint(
-                text=(
-                    f"`{self.registered_field.name}` at snapshot {step_index}: "
-                    f"building figure from saved data, skipping the raw snapshot."
-                ),
-            )
-            field_pdf = FieldPDF.load_from_file(data_path)
-            self._save_snapshot_figure(
-                field_pdf=field_pdf,
-                figure_path=figure_path,
-            )
-        else:
-            field_pdf = compute_pdfs.compute_snapshot(
-                snapshot_dir=snapshot_dir,
-                snapshot_tag=self.snapshot_tag,
-            )
-            if data_needed:
-                self._save_pdf(
-                    field_pdf=field_pdf,
-                    data_dir=data_dir,
-                )
-            if figure_needed:
-                self._save_snapshot_figure(
-                    field_pdf=field_pdf,
-                    figure_path=figure_path,
-                )
-
-    def _load_all_saved_pdfs(
-        self,
-        *,
-        data_dir: pathlib.Path,
-    ) -> list[FieldPDF]:
-        paths = sorted(data_dir.glob(f"{self._get_data_name()}-pdf-index=*.json"))
-        field_pdfs = [FieldPDF.load_from_file(path) for path in paths]
-        field_pdfs.sort(key=lambda field_pdf: field_pdf.sim_time)
-        return field_pdfs
-
     def _save_summary_figure(
         self,
         *,
         field_pdfs: list[FieldPDF],
         figures_dir: pathlib.Path,
     ) -> None:
-        """Combined overlay across every saved snapshot; always rebuilt fresh from whatever is on
-        disk (not from anything held in memory across the potentially-long per-snapshot loop above).
-        """
+        """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
         num_cols = field_pdfs[0].num_comps
         figure, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=1,
@@ -576,49 +525,36 @@ class GeneratePDFs:
             verbose=True,
         )
 
-    def _process_snapshots(
+    def run(
         self,
     ) -> None:
-        compute_pdfs = ComputePDFs(
+        compute_pdfs_pipeline = ComputePDFs(
+            snapshot_dirs=self.snapshot_dirs,
+            snapshot_tag=self.snapshot_tag,
             registered_field=self.registered_field,
+            index_width=self.index_width,
             comps_to_plot=self.comps_to_plot,
             num_bins=self.num_bins,
+            save_data=self.save_data,
+            data_dir=self.data_dir,
+            overwrite=self.overwrite,
             use_log10_bins=self.use_log10_bins,
             amr_level=self.amr_level,
         )
-        for snapshot_dir in self.snapshot_dirs:
-            self._process_snapshot(
-                compute_pdfs=compute_pdfs,
-                snapshot_dir=snapshot_dir,
-                data_dir=self.data_dir,
-                figures_dir=self.figures_dir,
-                index_width=self.index_width,
-            )
-
-    def _save_summary_figure_if_available(
-        self,
-    ) -> None:
-        ## the summary is only buildable from saved data; if none was ever saved for this field
-        ## (eg. --save-figure was used without --save-data, ever), there's nothing to aggregate
-        field_pdfs = self._load_all_saved_pdfs(data_dir=self.data_dir)
-        if field_pdfs:
+        field_pdfs = compute_pdfs_pipeline.run()
+        if field_pdfs and self.save_figure:
+            for field_pdf in field_pdfs:
+                padded_index = f"{field_pdf.step_index:0{self.index_width}d}"
+                figure_path = self.figures_dir / f"{self._get_data_name()}-pdf-index={padded_index}.png"
+                if self.overwrite or not figure_path.exists():
+                    self._save_snapshot_figure(
+                        field_pdf=field_pdf,
+                        figure_path=figure_path,
+                    )
             self._save_summary_figure(
                 field_pdfs=field_pdfs,
                 figures_dir=self.figures_dir,
             )
-        else:
-            manage_log.log_hint(
-                text=
-                f"Skipping summary figure for `{self.registered_field.name}`: no saved data found in {self.data_dir}.",
-            )
-
-    def run(
-        self,
-    ) -> None:
-        if self.save_data or self.save_figure:
-            self._process_snapshots()
-        if self.save_figure:
-            self._save_summary_figure_if_available()
 
 
 ## } MODULE
