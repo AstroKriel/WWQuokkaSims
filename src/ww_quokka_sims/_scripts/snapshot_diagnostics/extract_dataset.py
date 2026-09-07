@@ -169,12 +169,11 @@ class FieldExtractor:
         data_dir: pathlib.Path,
         index_width: int,
     ) -> None:
-        step_index = int(
-            find_snapshots.get_step_index_string(
-                snapshot_dir=snapshot_dir,
-                snapshot_tag=self.snapshot_tag,
-            ),
+        step_index_string = find_snapshots.get_step_index_string(
+            snapshot_dir=snapshot_dir,
+            snapshot_tag=self.snapshot_tag,
         )
+        step_index = int(step_index_string)
         file_path = data_dir / self._expected_file_name(
             step_index=step_index,
             index_width=index_width,

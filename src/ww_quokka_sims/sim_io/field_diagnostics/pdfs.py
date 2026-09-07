@@ -306,12 +306,11 @@ class ComputePDFs:
     ) -> list[FieldPDF]:
         field_pdfs: list[FieldPDF] = []
         for snapshot_dir in self.snapshot_dirs:
-            step_index = int(
-                find_snapshots.get_step_index_string(
-                    snapshot_dir=snapshot_dir,
-                    snapshot_tag=self.snapshot_tag,
-                ),
+            step_index_string = find_snapshots.get_step_index_string(
+                snapshot_dir=snapshot_dir,
+                snapshot_tag=self.snapshot_tag,
             )
+            step_index = int(step_index_string)
             padded_index = find_snapshots.get_padded_step_index(
                 step_index=step_index,
                 index_width=self.index_width,
