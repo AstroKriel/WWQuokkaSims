@@ -30,30 +30,30 @@ class TestEstimatePDF(unittest.TestCase):
     def test_linear_bins_span_the_full_raw_range(
         self,
     ):
-        bin_centers, densities = pdfs.ComputePDFs._estimate_pdf(
+        pdf = pdfs.ComputePDFs._estimate_pdf(
             sfield_data=self._FIELD_DATA,
             num_bins=4,
             use_log10_bins=False,
         )
-        self.assertEqual(len(bin_centers), 4)
-        self.assertEqual(len(densities), 4)
-        self.assertAlmostEqual(float(bin_centers.min()), -1.0, places=6)
-        self.assertAlmostEqual(float(bin_centers.max()), 8.0, places=6)
+        self.assertEqual(len(pdf.bin_centers), 4)
+        self.assertEqual(len(pdf.densities), 4)
+        self.assertAlmostEqual(float(pdf.bin_centers.min()), -1.0, places=6)
+        self.assertAlmostEqual(float(pdf.bin_centers.max()), 8.0, places=6)
 
     def test_log10_bins_span_only_the_positive_values_in_log_space(
         self,
     ):
-        bin_centers, densities = pdfs.ComputePDFs._estimate_pdf(
+        pdf = pdfs.ComputePDFs._estimate_pdf(
             sfield_data=self._FIELD_DATA,
             num_bins=4,
             use_log10_bins=True,
         )
-        self.assertEqual(len(bin_centers), 4)
-        self.assertEqual(len(densities), 4)
+        self.assertEqual(len(pdf.bin_centers), 4)
+        self.assertEqual(len(pdf.densities), 4)
         ## non-positive entries (-1.0, 0.0) must be masked out before binning, so the
         ## range reflects only {1, 2, 4, 8} in log10-space, not the raw data's range
-        self.assertAlmostEqual(float(bin_centers.min()), numpy.log10(1.0), places=6)
-        self.assertAlmostEqual(float(bin_centers.max()), numpy.log10(8.0), places=6)
+        self.assertAlmostEqual(float(pdf.bin_centers.min()), numpy.log10(1.0), places=6)
+        self.assertAlmostEqual(float(pdf.bin_centers.max()), numpy.log10(8.0), places=6)
 
 
 class TestPDFDataRoundTrip(unittest.TestCase):

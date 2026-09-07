@@ -195,8 +195,8 @@ class ComputePDFs:
         sfield_data: numpy.ndarray,
         num_bins: int,
         use_log10_bins: bool,
-    ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        """Return (bin_centers, log10_densities); zero and negative bins become NaN.
+    ) -> compute_array_stats.EstimatedPDF:
+        """Estimate a 1D PDF of `sfield_data`, optionally binned in log10-space.
 
         When `use_log10_bins` is set, bins are placed in log10-space of the field itself (not
         just the density axis), since fields spanning orders of magnitude (eg. current density)
@@ -208,14 +208,9 @@ class ComputePDFs:
             ## non-positive entries become NaN (no divide-by-zero/invalid-value warning), and are
             ## then dropped by `estimate_pdf`'s own finite-value mask below
             sfield_values = compute_array_stats.compute_safe_log10(sfield_values)
-        pdf = compute_array_stats.estimate_pdf(
+        return compute_array_stats.estimate_pdf(
             values=sfield_values,
             num_bins=num_bins,
-        )
-        log10_densities = compute_array_stats.compute_safe_log10(pdf.densities)
-        return (
-            pdf.bin_centers,
-            log10_densities,
         )
 
     def _compute_vfield_pdf(
@@ -241,13 +236,13 @@ class ComputePDFs:
         grouped_densities: list[numpy.ndarray] = []
         for comp_name in comp_names:
             comp_data = field.fdata.farray[cartesian_axes.get_axis_index(comp_name)]
-            bin_centers, densities = self._estimate_pdf(
+            pdf = self._estimate_pdf(
                 sfield_data=comp_data,
                 num_bins=self.num_bins,
                 use_log10_bins=self.use_log10_bins,
             )
-            grouped_bin_centers.append(bin_centers)
-            grouped_densities.append(densities)
+            grouped_bin_centers.append(pdf.bin_centers)
+            grouped_densities.append(pdf.log10_densities)
         return FieldPDF(
             sim_time=sim_time,
             step_index=step_index,
@@ -265,7 +260,7 @@ class ComputePDFs:
         field_models.ensure_3d_sfield(field)
         sim_time = field.sim_time
         assert sim_time is not None
-        bin_centers, densities = self._estimate_pdf(
+        pdf = self._estimate_pdf(
             sfield_data=field.fdata.farray,
             num_bins=self.num_bins,
             use_log10_bins=self.use_log10_bins,
@@ -273,8 +268,8 @@ class ComputePDFs:
         return FieldPDF(
             sim_time=sim_time,
             step_index=step_index,
-            grouped_bin_centers=[bin_centers],
-            grouped_densities=[densities],
+            grouped_bin_centers=[pdf.bin_centers],
+            grouped_densities=[pdf.log10_densities],
             comp_labels=[field_models.get_label(field)],
             use_log10_bins=self.use_log10_bins,
         )
