@@ -215,27 +215,27 @@ class ComputePDFs:
 
     def _compute_vfield_pdf(
         self,
-        field: field_models.VectorField_3D,
+        vfield_3d: field_models.VectorField_3D,
         step_index: int,
     ) -> FieldPDF:
         if len(self.comps_to_plot) == 0:
             raise ValueError(
                 f"Vector field `{self.registered_field.name}` requires at least one component to plot; none provided.",
             )
-        field_models.ensure_3d_vfield(field)
-        sim_time = field.sim_time
+        field_models.ensure_3d_vfield(vfield_3d)
+        sim_time = vfield_3d.sim_time
         assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
         comp_labels = [
             field_models.get_vcomp_label(
-                vfield_3d=field,
+                vfield_3d=vfield_3d,
                 comp_axis=comp_name,
             ) for comp_name in comp_names
         ]
         grouped_bin_centers: list[numpy.ndarray] = []
         grouped_densities: list[numpy.ndarray] = []
         for comp_name in comp_names:
-            comp_data = field.fdata.farray[cartesian_axes.get_axis_index(comp_name)]
+            comp_data = vfield_3d.fdata.farray[cartesian_axes.get_axis_index(comp_name)]
             pdf = self._estimate_pdf(
                 sfield_data=comp_data,
                 num_bins=self.num_bins,
@@ -254,14 +254,14 @@ class ComputePDFs:
 
     def _compute_sfield_pdf(
         self,
-        field: field_models.ScalarField_3D,
+        sfield_3d: field_models.ScalarField_3D,
         step_index: int,
     ) -> FieldPDF:
-        field_models.ensure_3d_sfield(field)
-        sim_time = field.sim_time
+        field_models.ensure_3d_sfield(sfield_3d)
+        sim_time = sfield_3d.sim_time
         assert sim_time is not None
         pdf = self._estimate_pdf(
-            sfield_data=field.fdata.farray,
+            sfield_data=sfield_3d.fdata.farray,
             num_bins=self.num_bins,
             use_log10_bins=self.use_log10_bins,
         )
@@ -270,7 +270,7 @@ class ComputePDFs:
             step_index=step_index,
             grouped_bin_centers=[pdf.bin_centers],
             grouped_densities=[pdf.log10_densities],
-            comp_labels=[field_models.get_label(field)],
+            comp_labels=[field_models.get_label(sfield_3d)],
             use_log10_bins=self.use_log10_bins,
         )
 
@@ -290,12 +290,12 @@ class ComputePDFs:
             )
         if isinstance(field, field_models.ScalarField_3D):
             return self._compute_sfield_pdf(
-                field=field,
+                sfield_3d=field,
                 step_index=step_index,
             )
         if isinstance(field, field_models.VectorField_3D):
             return self._compute_vfield_pdf(
-                field=field,
+                vfield_3d=field,
                 step_index=step_index,
             )
         raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")

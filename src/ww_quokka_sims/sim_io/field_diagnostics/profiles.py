@@ -537,12 +537,12 @@ class ComputeCompProfiles:
     def _compute_scalar_profiles(
         self,
         *,
-        field: field_models.ScalarField_3D,
+        sfield_3d: field_models.ScalarField_3D,
         uniform_domain_3d: domain_models.UniformDomain_3D,
         step_index: int,
     ) -> list[CompProfile]:
-        field_models.ensure_3d_sfield(field)
-        sim_time = field.sim_time
+        field_models.ensure_3d_sfield(sfield_3d)
+        sim_time = sfield_3d.sim_time
         assert sim_time is not None
         axis_labels = list(self.axes_to_slice)
         x_array_by_axis: list[numpy.ndarray] = []
@@ -553,7 +553,7 @@ class ComputeCompProfiles:
                 axis_to_slice=axis_to_slice,
             )
             field_profile = self._extract_1d_midplane_profile(
-                data_3d=field.fdata.farray,
+                data_3d=sfield_3d.fdata.farray,
                 axis_to_slice=axis_to_slice,
             )
             x_array_by_axis.append(x_positions)
@@ -564,7 +564,7 @@ class ComputeCompProfiles:
                 step_index=step_index,
                 comp_name=self.registered_field.name,
                 axis_labels=axis_labels,
-                comp_label=field_models.get_label(field),
+                comp_label=field_models.get_label(sfield_3d),
                 x_array_by_axis=x_array_by_axis,
                 y_array_by_axis=y_array_by_axis,
             ),
@@ -573,7 +573,7 @@ class ComputeCompProfiles:
     def _compute_vector_profiles(
         self,
         *,
-        field: field_models.VectorField_3D,
+        vfield_3d: field_models.VectorField_3D,
         uniform_domain_3d: domain_models.UniformDomain_3D,
         step_index: int,
     ) -> list[CompProfile]:
@@ -581,15 +581,15 @@ class ComputeCompProfiles:
             raise ValueError(
                 f"Vector field `{self.registered_field.name}` requires at least one component to plot; none provided.",
             )
-        field_models.ensure_3d_vfield(field)
-        sim_time = field.sim_time
+        field_models.ensure_3d_vfield(vfield_3d)
+        sim_time = vfield_3d.sim_time
         assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
         axis_labels = list(self.axes_to_slice)
         comp_profiles: list[CompProfile] = []
         for comp_name in comp_names:
             comp_label = field_models.get_vcomp_label(
-                vfield_3d=field,
+                vfield_3d=vfield_3d,
                 comp_axis=comp_name,
             )
             x_array_by_axis: list[numpy.ndarray] = []
@@ -600,7 +600,7 @@ class ComputeCompProfiles:
                     axis_to_slice=axis_to_slice,
                 )
                 comp_index = cartesian_axes.get_axis_index(comp_name)
-                comp_data_3d = field.fdata.farray[comp_index]
+                comp_data_3d = vfield_3d.fdata.farray[comp_index]
                 comp_profile = self._extract_1d_midplane_profile(
                     data_3d=comp_data_3d,
                     axis_to_slice=axis_to_slice,
@@ -637,13 +637,13 @@ class ComputeCompProfiles:
             )  # ScalarField or VectorField
         if isinstance(field, field_models.ScalarField_3D):
             return self._compute_scalar_profiles(
-                field=field,
+                sfield_3d=field,
                 uniform_domain_3d=uniform_domain_3d,
                 step_index=step_index,
             )
         if isinstance(field, field_models.VectorField_3D):
             return self._compute_vector_profiles(
-                field=field,
+                vfield_3d=field,
                 uniform_domain_3d=uniform_domain_3d,
                 step_index=step_index,
             )
