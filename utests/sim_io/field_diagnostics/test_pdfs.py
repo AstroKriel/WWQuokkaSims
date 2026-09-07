@@ -31,7 +31,7 @@ class TestEstimatePDF(unittest.TestCase):
         self,
     ):
         bin_centers, densities = pdfs.ComputePDFs._estimate_pdf(
-            field_data=self._FIELD_DATA,
+            sfield_data=self._FIELD_DATA,
             num_bins=4,
             use_log10_bins=False,
         )
@@ -44,7 +44,7 @@ class TestEstimatePDF(unittest.TestCase):
         self,
     ):
         bin_centers, densities = pdfs.ComputePDFs._estimate_pdf(
-            field_data=self._FIELD_DATA,
+            sfield_data=self._FIELD_DATA,
             num_bins=4,
             use_log10_bins=True,
         )

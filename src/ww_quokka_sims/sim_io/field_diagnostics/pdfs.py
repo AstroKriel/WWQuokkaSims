@@ -196,7 +196,7 @@ class ComputePDFs:
         num_bins: int,
         use_log10_bins: bool,
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
-        """Return (bin_centers, log10_densities); zero and negative bins are masked.
+        """Return (bin_centers, log10_densities); zero and negative bins become NaN.
 
         When `use_log10_bins` is set, bins are placed in log10-space of the field itself (not
         just the density axis), since fields spanning orders of magnitude (eg. current density)
@@ -212,12 +212,7 @@ class ComputePDFs:
             values=sfield_values,
             num_bins=num_bins,
         )
-        log10_densities = numpy.ma.log10(
-            numpy.ma.masked_less_equal(
-                x=pdf.densities,
-                value=0.0,
-            ),
-        )
+        log10_densities = compute_array_stats.compute_safe_log10(pdf.densities)
         return (
             pdf.bin_centers,
             log10_densities,
