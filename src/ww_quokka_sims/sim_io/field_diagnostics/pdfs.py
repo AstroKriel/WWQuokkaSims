@@ -311,7 +311,10 @@ class ComputePDFs:
                     snapshot_tag=self.snapshot_tag,
                 ),
             )
-            padded_index = f"{step_index:0{self.index_width}d}"
+            padded_index = find_snapshots.get_padded_step_index(
+                step_index=step_index,
+                index_width=self.index_width,
+            )
             data_path = self._get_data_path(padded_index=padded_index)
             if (not self.overwrite) and data_path.exists():
                 field_pdf = FieldPDF.load_from_file(data_path)
@@ -534,7 +537,10 @@ class GeneratePDFs:
         field_pdfs = compute_pdfs_pipeline.run()
         if field_pdfs and self.save_figure:
             for field_pdf in field_pdfs:
-                padded_index = f"{field_pdf.step_index:0{self.index_width}d}"
+                padded_index = find_snapshots.get_padded_step_index(
+                    step_index=field_pdf.step_index,
+                    index_width=self.index_width,
+                )
                 figure_path = self.figures_dir / f"{self._get_data_name()}-pdf-index={padded_index}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(

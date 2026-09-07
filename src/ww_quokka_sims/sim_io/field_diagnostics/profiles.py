@@ -660,7 +660,10 @@ class ComputeCompProfiles:
                     snapshot_tag=self.snapshot_tag,
                 ),
             )
-            padded_index = f"{step_index:0{self.index_width}d}"
+            padded_index = find_snapshots.get_padded_step_index(
+                step_index=step_index,
+                index_width=self.index_width,
+            )
             data_paths = [
                 self._get_data_path(
                     axis_label=cartesian_axes.get_axis_label(axis),
@@ -898,7 +901,10 @@ class GenerateCompProfiles:
         if all_comp_profiles and self.save_figure:
             comp_profiles_lookup: dict[str, list[CompProfile]] = {}
             for comp_profiles in all_comp_profiles:
-                padded_index = f"{comp_profiles[0].step_index:0{self.index_width}d}"
+                padded_index = find_snapshots.get_padded_step_index(
+                    step_index=comp_profiles[0].step_index,
+                    index_width=self.index_width,
+                )
                 figure_path = self._get_figure_path(
                     figures_dir=self.figures_dir,
                     padded_index=padded_index,

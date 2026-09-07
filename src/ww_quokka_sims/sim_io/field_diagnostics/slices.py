@@ -630,7 +630,10 @@ class GenerateFieldSlices:
                 snapshot_tag=self.snapshot_tag,
             ),
         )
-        padded_index = f"{step_index:0{index_width}d}"
+        padded_index = find_snapshots.get_padded_step_index(
+            step_index=step_index,
+            index_width=index_width,
+        )
         figure_path = figures_dir / self._get_figure_file_name(padded_index=padded_index)
         figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
         saved_comp_axes = self._find_saved_comp_axes(

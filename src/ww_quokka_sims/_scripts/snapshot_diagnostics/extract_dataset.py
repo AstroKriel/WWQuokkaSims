@@ -93,7 +93,10 @@ class FieldExtractor:
         index_width: int,
     ) -> str:
         field_name = self.field_args.registered_field.name
-        padded_index = f"{step_index:0{index_width}d}"
+        padded_index = find_snapshots.get_padded_step_index(
+            step_index=step_index,
+            index_width=index_width,
+        )
         return f"{field_name}-index={padded_index}-amr_level={self.field_args.amr_level}.npz"
 
     def _load_field(
