@@ -12,6 +12,9 @@ import unittest
 ## third-party
 import numpy
 
+## personal
+from jormi.ww_fields import cartesian_axes
+
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import profiles
 from ww_quokka_sims.sim_io.snapshots import find_snapshots
@@ -60,16 +63,15 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
             sim_time=0.5,
             step_index=find_snapshots.StepIndex.from_value(1),
             profile_axis="x_1",
+            position=numpy.array([0.0, 1.0]),
             components={
-                "x_0":
-                profiles.ComponentArrays(
-                    position=numpy.array([0.0, 1.0]),
+                cartesian_axes.CartesianAxis_3D.X0:
+                profiles.VectorComponent(
                     field_value=numpy.array([1.0, 2.0]),
                     label=r"$v_x$",
                 ),
-                "x_1":
-                profiles.ComponentArrays(
-                    position=numpy.array([0.0, 1.0]),
+                cartesian_axes.CartesianAxis_3D.X1:
+                profiles.VectorComponent(
                     field_value=numpy.array([3.0, 4.0]),
                     label=r"$v_y$",
                 ),
@@ -81,12 +83,12 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
             vector_field_profile.save_to_file(file_path)
             loaded = profiles.VectorFieldProfile.load_from_file(file_path)
         self.assertEqual(loaded.field_name, vector_field_profile.field_name)
+        numpy.testing.assert_array_equal(loaded.position, vector_field_profile.position)
         self.assertEqual(set(loaded.components.keys()), set(vector_field_profile.components.keys()))
-        for key, comp_arrays in vector_field_profile.components.items():
-            loaded_comp_arrays = loaded.components[key]
-            self.assertEqual(loaded_comp_arrays.label, comp_arrays.label)
-            numpy.testing.assert_array_equal(loaded_comp_arrays.position, comp_arrays.position)
-            numpy.testing.assert_array_equal(loaded_comp_arrays.field_value, comp_arrays.field_value)
+        for key, component in vector_field_profile.components.items():
+            loaded_component = loaded.components[key]
+            self.assertEqual(loaded_component.label, component.label)
+            numpy.testing.assert_array_equal(loaded_component.field_value, component.field_value)
 
 
 ## } U-TEST

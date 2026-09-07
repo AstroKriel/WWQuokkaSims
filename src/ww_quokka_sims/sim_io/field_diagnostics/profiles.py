@@ -77,30 +77,6 @@ def _ensure_profile_arrays(
 
 
 ##
-## === COMPONENT ARRAYS
-##
-
-
-@dataclasses.dataclass(frozen=True)
-class ComponentArrays:
-    position: NDArray[numpy.floating]
-    field_value: NDArray[numpy.floating]
-    label: str
-
-    def __post_init__(
-        self,
-    ) -> None:
-        _ensure_profile_arrays(
-            position=self.position,
-            field_value=self.field_value,
-        )
-        validate_types.ensure_nonempty_string(
-            param=self.label,
-            param_name="<label>",
-        )
-
-
-##
 ## === SCALAR PROFILE
 ##
 
@@ -198,6 +174,30 @@ class ScalarFieldProfile:
 
 
 ##
+## === VECTOR COMPONENT
+##
+
+
+@dataclasses.dataclass(frozen=True)
+class VectorComponent:
+    field_value: NDArray[numpy.floating]
+    label: str
+
+    def __post_init__(
+        self,
+    ) -> None:
+        validate_types.ensure_ndarray_ndim(
+            param=self.field_value,
+            ndim=1,
+            param_name="<field_value>",
+        )
+        validate_types.ensure_nonempty_string(
+            param=self.label,
+            param_name="<label>",
+        )
+
+
+##
 ## === VECTOR PROFILE
 ##
 
@@ -208,7 +208,8 @@ class VectorFieldProfile:
     sim_time: float
     step_index: find_snapshots.StepIndex
     profile_axis: str
-    components: dict[str, ComponentArrays]
+    position: NDArray[numpy.floating]
+    components: dict[cartesian_axes.CartesianAxis_3D, VectorComponent]
     amr_level: int = 0
 
     def __post_init__(
@@ -223,12 +224,11 @@ class VectorFieldProfile:
         _ensure_profile_axis(self.profile_axis)
         if not self.components:
             raise ValueError("`<components>` must be non-empty.")
-        valid = cartesian_axes.VALID_3D_AXIS_LABELS
-        for key in self.components:
-            if key not in valid:
-                raise ValueError(
-                    f"`<components>` key must be one of {valid}, got: {key!r}",
-                )
+        for component in self.components.values():
+            _ensure_profile_arrays(
+                position=self.position,
+                field_value=component.field_value,
+            )
         validate_types.ensure_finite_int(
             param=self.amr_level,
             param_name="<amr_level>",
@@ -248,13 +248,13 @@ class VectorFieldProfile:
                 "sim_time": self.sim_time,
                 "step_index": self.step_index.value,
                 "profile_axis": self.profile_axis,
+                "position": self.position,
                 "field_comps": {
                     comp_axis: {
-                        "position": comp_arrays.position,
-                        "field_value": comp_arrays.field_value,
-                        "label": comp_arrays.label,
+                        "field_value": component.field_value,
+                        "label": component.label,
                     }
-                    for comp_axis, comp_arrays in self.components.items()
+                    for comp_axis, component in self.components.items()
                 },
                 "amr_level": self.amr_level,
             },
@@ -278,15 +278,15 @@ class VectorFieldProfile:
                 "sim_time",
                 "step_index",
                 "profile_axis",
+                "position",
                 "field_comps",
                 "amr_level",
             },
             param_name="<VectorFieldProfile JSON>",
         )
         components = {
-            comp_axis:
-            ComponentArrays(
-                position=numpy.asarray(comp_data["position"]),
+            cartesian_axes.as_axis(comp_axis):
+            VectorComponent(
                 field_value=numpy.asarray(comp_data["field_value"]),
                 label=comp_data["label"],
             )
@@ -297,6 +297,7 @@ class VectorFieldProfile:
             sim_time=float(data["sim_time"]),
             step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
             profile_axis=data["profile_axis"],
+            position=numpy.asarray(data["position"]),
             components=components,
             amr_level=int(data["amr_level"]),
         )
@@ -407,10 +408,10 @@ class ComputeCompProfiles:
                     amr_level=self.amr_level,
                 ).save_to_file(file_path)
             else:
+                position = comp_profiles[0].get_domain(axis_index=axis_index)
                 components = {
-                    comp_profile.comp_name:
-                    ComponentArrays(
-                        position=comp_profile.get_domain(axis_index=axis_index),
+                    cartesian_axes.as_axis(comp_profile.comp_name):
+                    VectorComponent(
                         field_value=comp_profile.get_values(axis_index=axis_index),
                         label=comp_profile.comp_label,
                     )
@@ -421,6 +422,7 @@ class ComputeCompProfiles:
                     sim_time=sim_time,
                     step_index=step_index,
                     profile_axis=axis_label_str,
+                    position=position,
                     components=components,
                     amr_level=self.amr_level,
                 ).save_to_file(file_path)
@@ -465,17 +467,17 @@ class ComputeCompProfiles:
             else:
                 vector_profiles = [VectorFieldProfile.load_from_file(data_path) for data_path in data_paths]
                 comp_keys = sorted(vector_profiles[0].components.keys())
-                per_comp_x: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-                per_comp_y: dict[str, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-                per_comp_label: dict[str, str] = {}
+                per_comp_x: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+                per_comp_y: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+                per_comp_label: dict[cartesian_axes.CartesianAxis_3D, str] = {}
                 for vector_field_profile in vector_profiles:
                     sim_time = vector_field_profile.sim_time
                     step_index = vector_field_profile.step_index
                     for key in comp_keys:
-                        comp_arrays = vector_field_profile.components[key]
-                        per_comp_x[key].append(comp_arrays.position)
-                        per_comp_y[key].append(comp_arrays.field_value)
-                        per_comp_label[key] = comp_arrays.label
+                        component = vector_field_profile.components[key]
+                        per_comp_x[key].append(vector_field_profile.position)
+                        per_comp_y[key].append(component.field_value)
+                        per_comp_label[key] = component.label
                 comp_profiles = [
                     CompProfile(
                         sim_time=sim_time,
