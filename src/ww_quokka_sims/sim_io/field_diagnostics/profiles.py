@@ -250,11 +250,11 @@ class VectorFieldProfile:
                 "profile_axis": self.profile_axis,
                 "field_comps": {
                     comp_axis: {
-                        "position": component_arrays.position,
-                        "field_value": component_arrays.field_value,
-                        "label": component_arrays.label,
+                        "position": comp_arrays.position,
+                        "field_value": comp_arrays.field_value,
+                        "label": comp_arrays.label,
                     }
-                    for comp_axis, component_arrays in self.components.items()
+                    for comp_axis, comp_arrays in self.components.items()
                 },
                 "amr_level": self.amr_level,
             },
@@ -472,10 +472,10 @@ class ComputeCompProfiles:
                     sim_time = vector_field_profile.sim_time
                     step_index = vector_field_profile.step_index
                     for key in comp_keys:
-                        component_arrays = vector_field_profile.components[key]
-                        per_comp_x[key].append(component_arrays.position)
-                        per_comp_y[key].append(component_arrays.field_value)
-                        per_comp_label[key] = component_arrays.label
+                        comp_arrays = vector_field_profile.components[key]
+                        per_comp_x[key].append(comp_arrays.position)
+                        per_comp_y[key].append(comp_arrays.field_value)
+                        per_comp_label[key] = comp_arrays.label
                 comp_profiles = [
                     CompProfile(
                         sim_time=sim_time,
