@@ -89,12 +89,12 @@ class FieldExtractor:
     def _expected_file_name(
         self,
         *,
-        step_index_value: int,
+        step_index: find_snapshots.StepIndex,
         index_width: int,
     ) -> str:
         field_name = self.field_args.registered_field.name
-        padded_index = f"{step_index_value:0{index_width}d}"
-        return f"{field_name}-index={padded_index}-amr_level={self.field_args.amr_level}.npz"
+        padded_step_index_string = step_index.get_padded_string(index_width=index_width)
+        return f"{field_name}-index={padded_step_index_string}-amr_level={self.field_args.amr_level}.npz"
 
     def _load_field(
         self,
@@ -116,13 +116,13 @@ class FieldExtractor:
         *,
         field: field_models.AnyField_3D,
         sim_time: float,
-        step_index_value: int,
+        step_index: find_snapshots.StepIndex,
         index_width: int,
         data_dir: pathlib.Path,
     ) -> None:
         field_name = self.field_args.registered_field.name
         file_name = self._expected_file_name(
-            step_index_value=step_index_value,
+            step_index=step_index,
             index_width=index_width,
         )
         if isinstance(field, field_models.ScalarField_3D):
@@ -134,7 +134,7 @@ class FieldExtractor:
                 data_dir / file_name,
                 sarray_3d=sarray_3d,
                 sim_time=sim_time,
-                step_index=step_index_value,
+                step_index=step_index.value,
                 amr_level=self.field_args.amr_level,
             )
             return
@@ -155,7 +155,7 @@ class FieldExtractor:
             varray_3d=varray_3d[comp_indices, ...],
             comp_labels=numpy.array(comp_labels),
             sim_time=sim_time,
-            step_index=step_index_value,
+            step_index=step_index.value,
             amr_level=self.field_args.amr_level,
         )
 
@@ -166,12 +166,12 @@ class FieldExtractor:
         data_dir: pathlib.Path,
         index_width: int,
     ) -> None:
-        step_index_value = find_snapshots.get_step_index(
+        step_index = find_snapshots.get_step_index(
             snapshot_dir=snapshot_dir,
             snapshot_tag=self.snapshot_tag,
-        ).get_value()
+        )
         file_path = data_dir / self._expected_file_name(
-            step_index_value=step_index_value,
+            step_index=step_index,
             index_width=index_width,
         )
         if (not self.overwrite) and file_path.exists():
@@ -180,7 +180,7 @@ class FieldExtractor:
         self._save_field(
             field=field,
             sim_time=_get_sim_time(field),
-            step_index_value=step_index_value,
+            step_index=step_index,
             index_width=index_width,
             data_dir=data_dir,
         )

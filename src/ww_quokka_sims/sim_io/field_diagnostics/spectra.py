@@ -56,7 +56,7 @@ class FieldSpectrum:
             file_path=file_path,
             input_dict={
                 "sim_time": self.sim_time,
-                "step_index": self.step_index.get_value(),
+                "step_index": self.step_index.value,
                 "latex_label": self.latex_label,
                 "log10_k_bin_centers": self.log10_k_bin_centers,
                 "log10_power_spectrum": self.log10_power_spectrum,
@@ -126,9 +126,9 @@ class ComputeSpectra:
     def _get_data_path(
         self,
         *,
-        padded_index: str,
+        padded_step_index_string: str,
     ) -> pathlib.Path:
-        return self.data_dir / f"{self.registered_field.name}-spectrum-index={padded_index}.json"
+        return self.data_dir / f"{self.registered_field.name}-spectrum-index={padded_step_index_string}.json"
 
     def _compute_spectrum(
         self,
@@ -166,8 +166,8 @@ class ComputeSpectra:
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=self.snapshot_tag,
             )
-            padded_index = step_index.get_padded_string(index_width=self.index_width)
-            data_path = self._get_data_path(padded_index=padded_index)
+            padded_step_index_string = step_index.get_padded_string(index_width=self.index_width)
+            data_path = self._get_data_path(padded_step_index_string=padded_step_index_string)
             if (not self.overwrite) and data_path.exists():
                 field_spectrum = FieldSpectrum.load_from_file(data_path)
             else:
@@ -338,8 +338,8 @@ class GenerateSpectra:
         field_spectra = compute_spectra_pipeline.run()
         if field_spectra and self.save_figure:
             for field_spectrum in field_spectra:
-                padded_index = field_spectrum.step_index.get_padded_string(index_width=self.index_width)
-                figure_path = self.figures_dir / f"{self.registered_field.name}-spectrum-index={padded_index}.png"
+                padded_step_index_string = field_spectrum.step_index.get_padded_string(index_width=self.index_width)
+                figure_path = self.figures_dir / f"{self.registered_field.name}-spectrum-index={padded_step_index_string}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(
                         field_spectrum=field_spectrum,

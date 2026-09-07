@@ -37,12 +37,14 @@ class StepIndex:
     ) -> "StepIndex":
         return cls(str(step_index_value))
 
-    def get_value(
+    @property
+    def value(
         self,
     ) -> int:
         return int(self._string)
 
-    def get_string(
+    @property
+    def string(
         self,
     ) -> str:
         return self._string
@@ -52,7 +54,7 @@ class StepIndex:
         *,
         index_width: int,
     ) -> str:
-        return f"{self.get_value():0{index_width}d}"
+        return f"{self.value:0{index_width}d}"
 
 
 ##
@@ -108,7 +110,7 @@ def get_latest_snapshot_dirs(
         key=lambda snapshot_dir: get_step_index(
             snapshot_dir=snapshot_dir,
             snapshot_tag=snapshot_tag,
-        ).get_value(),
+        ).value,
     )
     return snapshot_dirs
 
@@ -154,7 +156,7 @@ def get_max_index_width(
             snapshot_dir=snapshot_dir,
             snapshot_tag=snapshot_tag,
         )
-        index_widths.append(len(step_index.get_string()))
+        index_widths.append(len(step_index.string))
     return max(index_widths)
 
 

@@ -56,7 +56,7 @@ class FieldSlice:
             min_value=self.min_value,
             max_value=self.max_value,
             sim_time=self.sim_time,
-            step_index=self.step_index.get_value(),
+            step_index=self.step_index.value,
             amr_level=self.amr_level,
         )
 
@@ -448,28 +448,28 @@ class GenerateFieldSlices:
         *,
         comp_axis: cartesian_axes.CartesianAxis_3D | None,
         axis_to_slice: cartesian_axes.CartesianAxis_3D,
-        padded_index: str,
+        padded_step_index_string: str,
     ) -> str:
         field_name = self.field_args.registered_field.name
         comp_part = f"-comp={comp_axis.axis_label}" if comp_axis is not None else ""
         return (
-            f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_index}"
+            f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_step_index_string}"
             f"-amr_level={self.field_args.amr_level}.npz"
         )
 
     def _get_figure_file_name(
         self,
         *,
-        padded_index: str,
+        padded_step_index_string: str,
     ) -> str:
         field_name = self.field_args.registered_field.name
         plot_name = f"log10_{field_name}" if self.apply_log10_plot else field_name
-        return f"{plot_name}-slice-index={padded_index}.png"
+        return f"{plot_name}-slice-index={padded_step_index_string}.png"
 
     def _find_saved_comp_axes(
         self,
         *,
-        padded_index: str,
+        padded_step_index_string: str,
         data_dir: pathlib.Path,
     ) -> list[cartesian_axes.CartesianAxis_3D | None] | None:
         """Return the comp identities of a complete saved dataset for this snapshot, without loading
@@ -480,7 +480,7 @@ class GenerateFieldSlices:
             data_dir / self._get_data_file_name(
                 comp_axis=None,
                 axis_to_slice=axis_to_slice,
-                padded_index=padded_index,
+                padded_step_index_string=padded_step_index_string,
             ) for axis_to_slice in self.axes_to_slice
         ]
         if all(path.exists() for path in scalar_paths):
@@ -489,7 +489,7 @@ class GenerateFieldSlices:
             data_dir / self._get_data_file_name(
                 comp_axis=comp_axis,
                 axis_to_slice=axis_to_slice,
-                padded_index=padded_index,
+                padded_step_index_string=padded_step_index_string,
             ) for comp_axis in self.comps_to_plot for axis_to_slice in self.axes_to_slice
         ]
         if all(path.exists() for path in vector_paths):
@@ -503,7 +503,7 @@ class GenerateFieldSlices:
         uniform_domain: domain_models.UniformDomain_3D,
         sim_time: float,
         step_index: find_snapshots.StepIndex,
-        padded_index: str,
+        padded_step_index_string: str,
         data_dir: pathlib.Path,
     ) -> None:
         for field_comp in field_comps:
@@ -520,7 +520,7 @@ class GenerateFieldSlices:
                 data_file_name = self._get_data_file_name(
                     comp_axis=field_comp.comp_axis,
                     axis_to_slice=axis_to_slice,
-                    padded_index=padded_index,
+                    padded_step_index_string=padded_step_index_string,
                 )
                 field_slice.save_to_file(data_dir / data_file_name)
 
@@ -528,7 +528,7 @@ class GenerateFieldSlices:
         self,
         *,
         comp_axes: list[cartesian_axes.CartesianAxis_3D | None],
-        padded_index: str,
+        padded_step_index_string: str,
         data_dir: pathlib.Path,
     ) -> tuple[list[Row], float]:
         rows: list[Row] = []
@@ -540,7 +540,7 @@ class GenerateFieldSlices:
                 data_file_name = self._get_data_file_name(
                     comp_axis=comp_axis,
                     axis_to_slice=axis_to_slice,
-                    padded_index=padded_index,
+                    padded_step_index_string=padded_step_index_string,
                 )
                 field_slice = FieldSlice.load_from_file(data_dir / data_file_name)
                 sliced_by_axis[axis_to_slice] = field_slice
@@ -556,7 +556,7 @@ class GenerateFieldSlices:
         rows: list[Row],
         sim_time: float,
         step_index: find_snapshots.StepIndex,
-        padded_index: str,
+        padded_step_index_string: str,
         figures_dir: pathlib.Path,
         verbose: bool,
     ) -> None:
@@ -588,7 +588,7 @@ class GenerateFieldSlices:
             if not rows:
                 manage_log.log_hint(
                     text=(
-                        f"Skipping `{self.field_args.registered_field.name}` at snapshot {step_index.get_value()}: "
+                        f"Skipping `{self.field_args.registered_field.name}` at snapshot {step_index.value}: "
                         f"all components are exactly zero, so there is no data to safely log10."
                     ),
                 )
@@ -608,7 +608,7 @@ class GenerateFieldSlices:
             sim_time=sim_time,
         )
         self._label_axes(axs_grid=axs_grid)
-        figure_path = figures_dir / self._get_figure_file_name(padded_index=padded_index)
+        figure_path = figures_dir / self._get_figure_file_name(padded_step_index_string=padded_step_index_string)
         manage_figure.save_figure(
             figure=figure,
             figure_path=figure_path,
@@ -628,11 +628,11 @@ class GenerateFieldSlices:
             snapshot_dir=snapshot_dir,
             snapshot_tag=self.snapshot_tag,
         )
-        padded_index = step_index.get_padded_string(index_width=index_width)
-        figure_path = figures_dir / self._get_figure_file_name(padded_index=padded_index)
+        padded_step_index_string = step_index.get_padded_string(index_width=index_width)
+        figure_path = figures_dir / self._get_figure_file_name(padded_step_index_string=padded_step_index_string)
         figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
         saved_comp_axes = self._find_saved_comp_axes(
-            padded_index=padded_index,
+            padded_step_index_string=padded_step_index_string,
             data_dir=data_dir,
         )
         data_complete = saved_comp_axes is not None
@@ -644,20 +644,20 @@ class GenerateFieldSlices:
             assert saved_comp_axes is not None
             manage_log.log_hint(
                 text=(
-                    f"`{self.field_args.registered_field.name}` at snapshot {step_index.get_value()}: "
+                    f"`{self.field_args.registered_field.name}` at snapshot {step_index.value}: "
                     f"building figure from saved data, skipping the raw snapshot."
                 ),
             )
             rows, sim_time = self._load_saved_rows(
                 comp_axes=saved_comp_axes,
-                padded_index=padded_index,
+                padded_step_index_string=padded_step_index_string,
                 data_dir=data_dir,
             )
             self._render_figure(
                 rows=rows,
                 sim_time=sim_time,
                 step_index=step_index,
-                padded_index=padded_index,
+                padded_step_index_string=padded_step_index_string,
                 figures_dir=figures_dir,
                 verbose=verbose,
             )
@@ -670,7 +670,7 @@ class GenerateFieldSlices:
                     uniform_domain=snapshot_data.uniform_domain,
                     sim_time=snapshot_data.sim_time,
                     step_index=step_index,
-                    padded_index=padded_index,
+                    padded_step_index_string=padded_step_index_string,
                     data_dir=data_dir,
                 )
             if figure_needed:
@@ -684,7 +684,7 @@ class GenerateFieldSlices:
                     rows=rows,
                     sim_time=snapshot_data.sim_time,
                     step_index=step_index,
-                    padded_index=padded_index,
+                    padded_step_index_string=padded_step_index_string,
                     figures_dir=figures_dir,
                     verbose=verbose,
                 )

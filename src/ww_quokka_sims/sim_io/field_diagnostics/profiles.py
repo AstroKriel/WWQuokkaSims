@@ -152,7 +152,7 @@ class ScalarFieldProfile:
                 "field_name": self.field_name,
                 "field_label": self.field_label,
                 "sim_time": self.sim_time,
-                "step_index": self.step_index.get_value(),
+                "step_index": self.step_index.value,
                 "profile_axis": self.profile_axis,
                 "position": self.position,
                 "field_value": self.field_value,
@@ -246,7 +246,7 @@ class VectorFieldProfile:
             input_dict={
                 "field_name": self.field_name,
                 "sim_time": self.sim_time,
-                "step_index": self.step_index.get_value(),
+                "step_index": self.step_index.value,
                 "profile_axis": self.profile_axis,
                 "field_comps": {
                     comp_axis: {
@@ -375,15 +375,15 @@ class ComputeCompProfiles:
         self,
         *,
         axis_label: str,
-        padded_index: str,
+        padded_step_index_string: str,
     ) -> pathlib.Path:
-        return self.data_dir / f"{self.registered_field.name}-axis={axis_label}-index={padded_index}-amr_level={self.amr_level}.json"
+        return self.data_dir / f"{self.registered_field.name}-axis={axis_label}-index={padded_step_index_string}-amr_level={self.amr_level}.json"
 
     def _save_snapshot_data(
         self,
         *,
         comp_profiles: list[CompProfile],
-        padded_index: str,
+        padded_step_index_string: str,
     ) -> None:
         is_scalar = comp_profiles[0].comp_name == self.registered_field.name
         sim_time = comp_profiles[0].sim_time
@@ -392,7 +392,7 @@ class ComputeCompProfiles:
             axis_label = cartesian_axes.get_axis_label(axis)
             file_path = self._get_data_path(
                 axis_label=axis_label,
-                padded_index=padded_index,
+                padded_step_index_string=padded_step_index_string,
             )
             if is_scalar:
                 comp_profile = comp_profiles[0]
@@ -648,11 +648,11 @@ class ComputeCompProfiles:
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=self.snapshot_tag,
             )
-            padded_index = step_index.get_padded_string(index_width=self.index_width)
+            padded_step_index_string = step_index.get_padded_string(index_width=self.index_width)
             data_paths = [
                 self._get_data_path(
                     axis_label=cartesian_axes.get_axis_label(axis),
-                    padded_index=padded_index,
+                    padded_step_index_string=padded_step_index_string,
                 ) for axis in self.axes_to_slice
             ]
             loaded = None if self.overwrite else self._load_snapshot_data(data_paths=data_paths)
@@ -670,7 +670,7 @@ class ComputeCompProfiles:
                     )
                     self._save_snapshot_data(
                         comp_profiles=comp_profiles,
-                        padded_index=padded_index,
+                        padded_step_index_string=padded_step_index_string,
                     )
             all_comp_profiles.append(comp_profiles)
         all_comp_profiles.sort(key=lambda _comp_profiles: _comp_profiles[0].sim_time)
@@ -718,9 +718,9 @@ class GenerateCompProfiles:
         self,
         *,
         figures_dir: pathlib.Path,
-        padded_index: str,
+        padded_step_index_string: str,
     ) -> pathlib.Path:
-        return figures_dir / f"{self.registered_field.name}-profile-index={padded_index}.png"
+        return figures_dir / f"{self.registered_field.name}-profile-index={padded_step_index_string}.png"
 
     @staticmethod
     def _style_axs(
@@ -877,10 +877,10 @@ class GenerateCompProfiles:
         if all_comp_profiles and self.save_figure:
             comp_profiles_lookup: dict[str, list[CompProfile]] = {}
             for comp_profiles in all_comp_profiles:
-                padded_index = comp_profiles[0].step_index.get_padded_string(index_width=self.index_width)
+                padded_step_index_string = comp_profiles[0].step_index.get_padded_string(index_width=self.index_width)
                 figure_path = self._get_figure_path(
                     figures_dir=self.figures_dir,
-                    padded_index=padded_index,
+                    padded_step_index_string=padded_step_index_string,
                 )
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(

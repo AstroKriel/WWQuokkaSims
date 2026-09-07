@@ -18,17 +18,17 @@ from ww_quokka_sims.sim_io.snapshots import find_snapshots
 
 class TestStepIndex(unittest.TestCase):
 
-    def test_get_value_returns_int(
+    def test_value_returns_int(
         self,
     ):
         step_index = find_snapshots.StepIndex("0056218")
-        self.assertEqual(step_index.get_value(), 56218)
+        self.assertEqual(step_index.value, 56218)
 
-    def test_get_string_returns_original_string(
+    def test_string_returns_original_string(
         self,
     ):
         step_index = find_snapshots.StepIndex("0056218")
-        self.assertEqual(step_index.get_string(), "0056218")
+        self.assertEqual(step_index.string, "0056218")
 
     def test_get_padded_string_pads_to_index_width(
         self,
@@ -52,7 +52,7 @@ class TestGetStepIndex(unittest.TestCase):
             snapshot_dir=pathlib.Path("/some/dir/plt0056218"),
             snapshot_tag="plt",
         )
-        self.assertEqual(step_index.get_value(), 56218)
+        self.assertEqual(step_index.value, 56218)
 
     def test_raises_when_tag_missing(
         self,

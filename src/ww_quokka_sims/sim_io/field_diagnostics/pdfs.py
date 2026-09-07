@@ -90,7 +90,7 @@ class FieldPDF:
         bin_centers_key = "log10_bin_centers" if self.use_log10_bins else "bin_centers"
         output_dict: dict = {
             "sim_time": self.sim_time,
-            "step_index": self.step_index.get_value(),
+            "step_index": self.step_index.value,
             "use_log10_bins": self.use_log10_bins,
         }
         for comp_index, comp_label in enumerate(self.comp_labels):
@@ -185,10 +185,10 @@ class ComputePDFs:
     def _get_data_path(
         self,
         *,
-        padded_index: str,
+        padded_step_index_string: str,
     ) -> pathlib.Path:
         data_name = self._get_data_name()
-        return self.data_dir / f"{data_name}-pdf-index={padded_index}.json"
+        return self.data_dir / f"{data_name}-pdf-index={padded_step_index_string}.json"
 
     @staticmethod
     def _estimate_pdf(
@@ -310,8 +310,8 @@ class ComputePDFs:
                 snapshot_dir=snapshot_dir,
                 snapshot_tag=self.snapshot_tag,
             )
-            padded_index = step_index.get_padded_string(index_width=self.index_width)
-            data_path = self._get_data_path(padded_index=padded_index)
+            padded_step_index_string = step_index.get_padded_string(index_width=self.index_width)
+            data_path = self._get_data_path(padded_step_index_string=padded_step_index_string)
             if (not self.overwrite) and data_path.exists():
                 field_pdf = FieldPDF.load_from_file(data_path)
             else:
@@ -528,8 +528,8 @@ class GeneratePDFs:
         if field_pdfs and self.save_figure:
             data_name = self._get_data_name()
             for field_pdf in field_pdfs:
-                padded_index = field_pdf.step_index.get_padded_string(index_width=self.index_width)
-                figure_path = self.figures_dir / f"{data_name}-pdf-index={padded_index}.png"
+                padded_step_index_string = field_pdf.step_index.get_padded_string(index_width=self.index_width)
+                figure_path = self.figures_dir / f"{data_name}-pdf-index={padded_step_index_string}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(
                         field_pdf=field_pdf,
