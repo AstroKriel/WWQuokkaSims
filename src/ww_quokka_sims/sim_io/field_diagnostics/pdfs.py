@@ -329,7 +329,6 @@ class ComputePDFs:
                         directory=self.data_dir,
                         verbose=False,
                     )
-                    ## one file per snapshot, not one aggregate file, so results survive a partial run
                     field_pdf.save_to_file(data_path)
             field_pdfs.append(field_pdf)
         field_pdfs.sort(key=lambda _field_pdf: _field_pdf.sim_time)
@@ -436,11 +435,7 @@ class GeneratePDFs:
             value_range=(0, last_series_index),
         )
         for series_index, field_pdf in enumerate(field_pdfs):
-            color = palette.mpl_cmap(
-                palette.mpl_norm(
-                    series_index,
-                ),
-            )
+            color = palette.get_color(series_index)
             GeneratePDFs._plot_snapshot(
                 axs_grid=axs_grid,
                 field_pdf=field_pdf,

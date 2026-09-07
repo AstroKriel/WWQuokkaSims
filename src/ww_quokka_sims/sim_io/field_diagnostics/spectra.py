@@ -261,11 +261,7 @@ class GenerateSpectra:
             value_range=(0, last_series_index),
         )
         for series_index, field_spectrum in enumerate(field_spectra):
-            color = palette.mpl_cmap(
-                palette.mpl_norm(
-                    series_index,
-                ),
-            )
+            color = palette.get_color(series_index)
             GenerateSpectra._plot_snapshot(
                 ax=ax,
                 field_spectrum=field_spectrum,

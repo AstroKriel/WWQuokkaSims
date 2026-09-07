@@ -790,11 +790,7 @@ class GenerateCompProfiles:
             value_range=(0, last_series_index),
         )
         for time_index, comp_profile in enumerate(comp_profiles):
-            color = palette.mpl_cmap(
-                palette.mpl_norm(
-                    time_index,
-                ),
-            )
+            color = palette.get_color(time_index)
             self._plot_comp_profile(
                 axs_row=axs_row,
                 comp_profile=comp_profile,
