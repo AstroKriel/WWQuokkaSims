@@ -752,11 +752,11 @@ class GenerateCompProfiles:
     ) -> None:
         for axis_index in range(comp_profile.num_axes):
             ax = axs_row[axis_index]
-            x = comp_profile.get_domain(axis_index=axis_index)
-            y = comp_profile.get_values(axis_index=axis_index)
+            x_values = comp_profile.get_domain(axis_index=axis_index)
+            y_values = comp_profile.get_values(axis_index=axis_index)
             ax.plot(
-                x,
-                y,
+                x_values,
+                y_values,
                 color=color,
             )
 
