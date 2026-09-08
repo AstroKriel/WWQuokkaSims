@@ -28,6 +28,9 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 ## === PDF DATA
 ##
 
+## every other key in the saved JSON is a per-component latex-label string
+_METADATA_KEYS = {"sim_time", "step_index", "use_log10_bins"}
+
 
 @dataclasses.dataclass(frozen=True)
 class FieldPDF:
@@ -117,12 +120,15 @@ class FieldPDF:
         )
         validate_types.ensure_dict_has_keys(
             param=input_dict,
-            required_keys={"sim_time", "step_index", "use_log10_bins"},
+            required_keys=_METADATA_KEYS,
             param_name="<FieldPDF JSON>",
         )
         use_log10_bins = bool(input_dict["use_log10_bins"])
-        bin_centers_key = "log10_bin_centers" if use_log10_bins else "bin_centers"
-        comp_label_strings = [key for key in input_dict if key not in ("sim_time", "step_index", "use_log10_bins")]
+        if use_log10_bins:
+            bin_centers_key = "log10_bin_centers"
+        else:
+            bin_centers_key = "bin_centers"
+        comp_label_strings = [key for key in input_dict if key not in _METADATA_KEYS]
         return cls(
             sim_time=float(input_dict["sim_time"]),
             step_index=find_snapshots.StepIndex.from_value(int(input_dict["step_index"])),
