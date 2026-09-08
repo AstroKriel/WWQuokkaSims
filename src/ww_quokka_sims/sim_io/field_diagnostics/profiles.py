@@ -822,19 +822,20 @@ class GenerateCompProfiles:
     def _save_summary_figure(
         self,
         *,
-        comp_profiles_lookup: dict[latex_labels.LatexLabel, list[CompProfile]],
+        comp_profiles_lookup: dict[str, list[CompProfile]],
         figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
-        comp_latex_labels = list(comp_profiles_lookup.keys())
-        axis_labels = comp_profiles_lookup[comp_latex_labels[0]][0].axis_labels
+        comp_names = list(comp_profiles_lookup.keys())
+        axis_labels = comp_profiles_lookup[comp_names[0]][0].axis_labels
+        comp_latex_labels = [comp_profiles_lookup[comp_name][0].comp_latex_label for comp_name in comp_names]
         figure, axs_grid = manage_figure.create_figure_grid(
-            num_panel_rows=len(comp_latex_labels),
+            num_panel_rows=len(comp_names),
             num_panel_cols=len(axis_labels),
             panel_col_gap_pt=30.0,
         )
-        for row_index, comp_latex_label in enumerate(comp_latex_labels):
-            comp_profiles = comp_profiles_lookup[comp_latex_label]
+        for row_index, comp_name in enumerate(comp_names):
+            comp_profiles = comp_profiles_lookup[comp_name]
             if len(comp_profiles) == 1:
                 self._plot_comp_profile(
                     axs_row=axs_grid[row_index],
@@ -875,7 +876,7 @@ class GenerateCompProfiles:
         )
         all_comp_profiles = compute_comp_profiles_pipeline.run()
         if all_comp_profiles and self.save_figure:
-            comp_profiles_lookup: dict[latex_labels.LatexLabel, list[CompProfile]] = {}
+            comp_profiles_lookup: dict[str, list[CompProfile]] = {}
             for comp_profiles in all_comp_profiles:
                 padded_step_index_string = comp_profiles[0].step_index.get_padded_string(index_width=self.index_width)
                 figure_path = self._get_figure_path(
@@ -888,9 +889,9 @@ class GenerateCompProfiles:
                         figure_path=figure_path,
                     )
                 for comp_profile in comp_profiles:
-                    comp_profiles_lookup.setdefault(comp_profile.comp_latex_label, []).append(comp_profile)
-            for comp_latex_label in comp_profiles_lookup:
-                comp_profiles_lookup[comp_latex_label].sort(key=lambda _comp_profile: _comp_profile.sim_time)
+                    comp_profiles_lookup.setdefault(comp_profile.comp_name, []).append(comp_profile)
+            for comp_name in comp_profiles_lookup:
+                comp_profiles_lookup[comp_name].sort(key=lambda _comp_profile: _comp_profile.sim_time)
             self._save_summary_figure(
                 comp_profiles_lookup=comp_profiles_lookup,
                 figures_dir=self.figures_dir,
