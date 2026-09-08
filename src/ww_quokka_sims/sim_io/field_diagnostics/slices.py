@@ -257,7 +257,7 @@ class GenerateFieldSlices:
         ax: manage_figure.Panel,
         sim_time: float,
         field_slice: FieldSlice,
-        plane_label: latex_labels.LatexLabel,
+        plane_latex_label: latex_labels.LatexLabel,
         comp_latex_label: latex_labels.LatexLabel,
         palette_config: add_color.PaletteConfig,
         show_colorbar_label: bool = True,
@@ -312,7 +312,7 @@ class GenerateFieldSlices:
                 y_pos_fraction=0.05,
                 x_alignment="center",
                 y_alignment="bottom",
-                label=plane_label.label,
+                label=plane_latex_label.label,
                 box_alpha=0.5,
             )
 
@@ -428,7 +428,7 @@ class GenerateFieldSlices:
                     ax=ax,
                     sim_time=sim_time,
                     field_slice=field_slice,
-                    plane_label=get_slice_plane_label(axis_to_slice),
+                    plane_latex_label=get_slice_plane_label(axis_to_slice),
                     comp_latex_label=comp_latex_label,
                     palette_config=add_color.resolve_continuous_palette_config(
                         pivot_value=pivot_value,
