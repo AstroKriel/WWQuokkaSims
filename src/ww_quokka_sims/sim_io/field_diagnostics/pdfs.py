@@ -29,7 +29,7 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 ##
 
 ## every other key in the saved JSON is a per-component latex-label string
-_METADATA_KEYS = {"sim_time", "step_index", "use_log10_bins"}
+_METADATA_KEYS: set[str] = {"sim_time", "step_index", "use_log10_bins"}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -123,24 +123,29 @@ class FieldPDF:
             required_keys=_METADATA_KEYS,
             param_name="<FieldPDF JSON>",
         )
+        sim_time = float(input_dict["sim_time"])
+        step_index = find_snapshots.StepIndex.from_value(int(input_dict["step_index"]))
+        comp_label_strings = [_key for _key in input_dict if _key not in _METADATA_KEYS]
         use_log10_bins = bool(input_dict["use_log10_bins"])
         if use_log10_bins:
             bin_centers_key = "log10_bin_centers"
         else:
             bin_centers_key = "bin_centers"
-        comp_label_strings = [key for key in input_dict if key not in _METADATA_KEYS]
+        grouped_bin_centers = [
+            numpy.array(input_dict[_comp_label_string][bin_centers_key]) for _comp_label_string in comp_label_strings
+        ]
+        grouped_densities = [
+            numpy.array(input_dict[_comp_label_string]["log10_density"]) for _comp_label_string in comp_label_strings
+        ]
+        comp_latex_labels = [
+            latex_labels.LatexLabel(content=_comp_label_string) for _comp_label_string in comp_label_strings
+        ]
         return cls(
-            sim_time=float(input_dict["sim_time"]),
-            step_index=find_snapshots.StepIndex.from_value(int(input_dict["step_index"])),
-            grouped_bin_centers=[
-                numpy.array(input_dict[comp_label_string][bin_centers_key]) for comp_label_string in comp_label_strings
-            ],
-            grouped_densities=[
-                numpy.array(input_dict[comp_label_string]["log10_density"]) for comp_label_string in comp_label_strings
-            ],
-            comp_latex_labels=[
-                latex_labels.LatexLabel(content=comp_label_string) for comp_label_string in comp_label_strings
-            ],
+            sim_time=sim_time,
+            step_index=step_index,
+            grouped_bin_centers=grouped_bin_centers,
+            grouped_densities=grouped_densities,
+            comp_latex_labels=comp_latex_labels,
             use_log10_bins=use_log10_bins,
         )
 
