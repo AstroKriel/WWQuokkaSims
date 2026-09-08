@@ -504,20 +504,20 @@ class ComputeCompProfiles:
     @staticmethod
     def _extract_1d_midplane_profile(
         *,
-        data_3d: numpy.ndarray,
+        sarray_3d: numpy.ndarray,
         axis_to_slice: cartesian_axes.AxisLike_3D,
     ) -> numpy.ndarray:
-        num_cells_x, num_cells_y, num_cells_z = data_3d.shape
+        num_cells_x, num_cells_y, num_cells_z = sarray_3d.shape
         slice_index_x = num_cells_x // 2
         slice_index_y = num_cells_y // 2
         slice_index_z = num_cells_z // 2
         ax_idx = cartesian_axes.get_axis_index(axis_to_slice)
         if ax_idx == 0:
-            return data_3d[:, slice_index_y, slice_index_z]
+            return sarray_3d[:, slice_index_y, slice_index_z]
         elif ax_idx == 1:
-            return data_3d[slice_index_x, :, slice_index_z]
+            return sarray_3d[slice_index_x, :, slice_index_z]
         elif ax_idx == 2:
-            return data_3d[slice_index_x, slice_index_y, :]
+            return sarray_3d[slice_index_x, slice_index_y, :]
         else:
             raise ValueError(f"axis must be one of the three cartesian axes, got {axis_to_slice!r}")
 
@@ -540,7 +540,7 @@ class ComputeCompProfiles:
                 axis_to_slice=axis_to_slice,
             )
             field_profile = self._extract_1d_midplane_profile(
-                data_3d=sfield_3d.fdata.farray,
+                sarray_3d=sfield_3d.fdata.farray,
                 axis_to_slice=axis_to_slice,
             )
             x_array_by_axis.append(x_positions)
@@ -587,9 +587,9 @@ class ComputeCompProfiles:
                     axis_to_slice=axis_to_slice,
                 )
                 comp_index = cartesian_axes.get_axis_index(comp_name)
-                comp_data_3d = vfield_3d.fdata.farray[comp_index]
+                comp_sarray_3d = vfield_3d.fdata.farray[comp_index]
                 comp_profile = self._extract_1d_midplane_profile(
-                    data_3d=comp_data_3d,
+                    sarray_3d=comp_sarray_3d,
                     axis_to_slice=axis_to_slice,
                 )
                 x_array_by_axis.append(x_positions)
