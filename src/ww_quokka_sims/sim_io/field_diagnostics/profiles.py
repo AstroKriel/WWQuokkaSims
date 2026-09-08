@@ -889,7 +889,9 @@ class GenerateCompProfiles:
                         figure_path=figure_path,
                     )
                 for comp_profile in comp_profiles:
-                    comp_profiles_lookup.setdefault(comp_profile.comp_name, []).append(comp_profile)
+                    if comp_profile.comp_name not in comp_profiles_lookup:
+                        comp_profiles_lookup[comp_profile.comp_name] = []
+                    comp_profiles_lookup[comp_profile.comp_name].append(comp_profile)
             for comp_name in comp_profiles_lookup:
                 comp_profiles_lookup[comp_name].sort(key=lambda _comp_profile: _comp_profile.sim_time)
             self._save_summary_figure(
