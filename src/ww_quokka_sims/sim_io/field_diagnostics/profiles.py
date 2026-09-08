@@ -423,66 +423,64 @@ class ComputeCompProfiles:
         self,
         *,
         data_paths: list[pathlib.Path],
-    ) -> tuple[list[CompProfile], float] | None:
-        if not all(data_path.exists() for data_path in data_paths):
-            return None
+    ) -> tuple[list[CompProfile], float]:
+        """Load profiles already saved to `data_paths`; caller must confirm they all exist first."""
+        first_raw = json_io.read_json_file_into_dict(
+            file_path=data_paths[0],
+            verbose=False,
+        )
+        sim_time = 0.0
+        step_index = find_snapshots.StepIndex.from_value(0)
+        if "field_comps" not in first_raw:
+            x_array_by_axis: list[numpy.ndarray] = []
+            y_array_by_axis: list[numpy.ndarray] = []
+            comp_latex_label: latex_labels.LatexLabel | None = None
+            for data_path in data_paths:
+                scalar_field_profile = ScalarFieldProfile.load_from_file(data_path)
+                x_array_by_axis.append(scalar_field_profile.position)
+                y_array_by_axis.append(scalar_field_profile.field_value)
+                comp_latex_label = scalar_field_profile.field_latex_label
+                sim_time = scalar_field_profile.sim_time
+                step_index = scalar_field_profile.step_index
+            assert comp_latex_label is not None
+            comp_profiles = [
+                CompProfile(
+                    sim_time=sim_time,
+                    step_index=step_index,
+                    comp_name=self.registered_field.name,
+                    axis_labels=list(self.axes_to_slice),
+                    comp_latex_label=comp_latex_label,
+                    x_array_by_axis=x_array_by_axis,
+                    y_array_by_axis=y_array_by_axis,
+                ),
+            ]
+            return comp_profiles, sim_time
         else:
-            first_raw = json_io.read_json_file_into_dict(
-                file_path=data_paths[0],
-                verbose=False,
-            )
-            sim_time = 0.0
-            step_index = find_snapshots.StepIndex.from_value(0)
-            if "field_comps" not in first_raw:
-                x_array_by_axis: list[numpy.ndarray] = []
-                y_array_by_axis: list[numpy.ndarray] = []
-                comp_latex_label: latex_labels.LatexLabel | None = None
-                for data_path in data_paths:
-                    scalar_field_profile = ScalarFieldProfile.load_from_file(data_path)
-                    x_array_by_axis.append(scalar_field_profile.position)
-                    y_array_by_axis.append(scalar_field_profile.field_value)
-                    comp_latex_label = scalar_field_profile.field_latex_label
-                    sim_time = scalar_field_profile.sim_time
-                    step_index = scalar_field_profile.step_index
-                assert comp_latex_label is not None
-                comp_profiles = [
-                    CompProfile(
-                        sim_time=sim_time,
-                        step_index=step_index,
-                        comp_name=self.registered_field.name,
-                        axis_labels=list(self.axes_to_slice),
-                        comp_latex_label=comp_latex_label,
-                        x_array_by_axis=x_array_by_axis,
-                        y_array_by_axis=y_array_by_axis,
-                    ),
-                ]
-                return comp_profiles, sim_time
-            else:
-                vector_profiles = [VectorFieldProfile.load_from_file(data_path) for data_path in data_paths]
-                comp_keys = sorted(vector_profiles[0].components.keys())
-                per_comp_x: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-                per_comp_y: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-                per_comp_latex_label: dict[cartesian_axes.CartesianAxis_3D, latex_labels.LatexLabel] = {}
-                for vector_field_profile in vector_profiles:
-                    sim_time = vector_field_profile.sim_time
-                    step_index = vector_field_profile.step_index
-                    for key in comp_keys:
-                        component = vector_field_profile.components[key]
-                        per_comp_x[key].append(vector_field_profile.position)
-                        per_comp_y[key].append(component.field_value)
-                        per_comp_latex_label[key] = component.latex_label
-                comp_profiles = [
-                    CompProfile(
-                        sim_time=sim_time,
-                        step_index=step_index,
-                        comp_name=key,
-                        axis_labels=list(self.axes_to_slice),
-                        comp_latex_label=per_comp_latex_label[key],
-                        x_array_by_axis=per_comp_x[key],
-                        y_array_by_axis=per_comp_y[key],
-                    ) for key in comp_keys
-                ]
-                return comp_profiles, sim_time
+            vector_profiles = [VectorFieldProfile.load_from_file(data_path) for data_path in data_paths]
+            comp_keys = sorted(vector_profiles[0].components.keys())
+            per_comp_x: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+            per_comp_y: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+            per_comp_latex_label: dict[cartesian_axes.CartesianAxis_3D, latex_labels.LatexLabel] = {}
+            for vector_field_profile in vector_profiles:
+                sim_time = vector_field_profile.sim_time
+                step_index = vector_field_profile.step_index
+                for key in comp_keys:
+                    component = vector_field_profile.components[key]
+                    per_comp_x[key].append(vector_field_profile.position)
+                    per_comp_y[key].append(component.field_value)
+                    per_comp_latex_label[key] = component.latex_label
+            comp_profiles = [
+                CompProfile(
+                    sim_time=sim_time,
+                    step_index=step_index,
+                    comp_name=key,
+                    axis_labels=list(self.axes_to_slice),
+                    comp_latex_label=per_comp_latex_label[key],
+                    x_array_by_axis=per_comp_x[key],
+                    y_array_by_axis=per_comp_y[key],
+                ) for key in comp_keys
+            ]
+            return comp_profiles, sim_time
 
     @staticmethod
     def _compute_cell_centers(
@@ -655,9 +653,9 @@ class ComputeCompProfiles:
                     padded_step_index_string=padded_step_index_string,
                 ) for axis_to_slice in self.axes_to_slice
             ]
-            loaded = None if self.overwrite else self._load_snapshot_data(data_paths=data_paths)
-            if loaded is not None:
-                comp_profiles, _sim_time = loaded
+            data_complete = all(data_path.exists() for data_path in data_paths)
+            if (not self.overwrite) and data_complete:
+                comp_profiles, _sim_time = self._load_snapshot_data(data_paths=data_paths)
             else:
                 comp_profiles = self._compute_snapshot(
                     snapshot_dir=snapshot_dir,
@@ -739,7 +737,10 @@ class GenerateCompProfiles:
                     ax.set_ylabel(comp_latex_label.label)
                 if is_bottom_row:
                     axis_label_str = cartesian_axes.get_axis_label(axis_label)
-                    ax.set_xlabel(axis_label_str if "$" in axis_label_str else f"${axis_label_str}$")
+                    if "$" in axis_label_str:
+                        ax.set_xlabel(axis_label_str)
+                    else:
+                        ax.set_xlabel(f"${axis_label_str}$")
                 else:
                     ax.tick_params(labelbottom=False)
 
