@@ -735,11 +735,7 @@ class GenerateCompProfiles:
                 if is_left_col:
                     ax.set_ylabel(comp_latex_label.label)
                 if is_bottom_row:
-                    axis_label_str = cartesian_axes.get_axis_label(axis_label)
-                    if "$" in axis_label_str:
-                        ax.set_xlabel(axis_label_str)
-                    else:
-                        ax.set_xlabel(f"${axis_label_str}$")
+                    ax.set_xlabel(cartesian_axes.get_axis_latex_label(axis_label).label)
                 else:
                     ax.tick_params(labelbottom=False)
 

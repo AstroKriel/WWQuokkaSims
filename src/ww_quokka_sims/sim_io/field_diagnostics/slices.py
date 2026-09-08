@@ -168,36 +168,27 @@ def get_slice_bounds(
         )
 
 
-def _wrap_axis_label(
-    axis_label: str,
-) -> str:
-    if "$" in axis_label:
-        return axis_label
-    else:
-        return f"${axis_label}$"
-
-
 def get_slice_labels(
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
-) -> tuple[str, str]:
+) -> tuple[latex_labels.LatexLabel, latex_labels.LatexLabel]:
     axes_plane = [ax for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER if ax != axis_to_slice]
     return (
-        _wrap_axis_label(axes_plane[0].axis_label),
-        _wrap_axis_label(axes_plane[1].axis_label),
+        axes_plane[0].axis_latex_label,
+        axes_plane[1].axis_latex_label,
     )
 
 
 def get_slice_plane_label(
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
-) -> str:
+) -> latex_labels.LatexLabel:
     """Return the "which plane was sliced" annotation text; a pure function of `axis_to_slice` alone."""
     label_parts: list[str] = []
     for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER:
         if ax == axis_to_slice:
-            label_parts.append(rf"{ax.axis_label}=L_{ax.axis_index}/2")
+            label_parts.append(rf"{ax.axis_latex_label.content}=L_{ax.axis_index}/2")
         else:
-            label_parts.append(ax.axis_label)
-    return "$(" + ", ".join(label_parts) + ")$"
+            label_parts.append(ax.axis_latex_label.content)
+    return latex_labels.LatexLabel(content="(" + ", ".join(label_parts) + ")")
 
 
 def _compute_min_max(
@@ -266,7 +257,7 @@ class GenerateFieldSlices:
         ax: manage_figure.Panel,
         sim_time: float,
         field_slice: FieldSlice,
-        plane_label: str,
+        plane_label: latex_labels.LatexLabel,
         comp_latex_label: latex_labels.LatexLabel,
         palette_config: add_color.PaletteConfig,
         show_colorbar_label: bool = True,
@@ -321,7 +312,7 @@ class GenerateFieldSlices:
                 y_pos_fraction=0.05,
                 x_alignment="center",
                 y_alignment="bottom",
-                label=plane_label,
+                label=plane_label.label,
                 box_alpha=0.5,
             )
 
@@ -458,10 +449,10 @@ class GenerateFieldSlices:
         for row_index in range(num_rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
                 ax = axs_grid[row_index][col_index]
-                x_label_string, y_label_string = get_slice_labels(axis_to_slice)
+                x_axis_latex_label, y_axis_latex_label = get_slice_labels(axis_to_slice)
                 if (num_rows == 1) or (row_index == num_rows - 1):
-                    ax.set_xlabel(x_label_string)
-                ax.set_ylabel(y_label_string)
+                    ax.set_xlabel(x_axis_latex_label.label)
+                ax.set_ylabel(y_axis_latex_label.label)
 
     def _get_data_file_name(
         self,
