@@ -276,7 +276,7 @@ class GenerateFieldSlices:
             palette=palette,
             ## every column in a row shares the same quantity, so only the rightmost one
             ## needs the label; the bar and its own tick values still belong on every column
-            label=comp_label.get_label() if show_colorbar_label else None,
+            label=comp_label.label if show_colorbar_label else None,
             colorbar_side="right",
             colorbar_gap_pt=15.0,
             label_gap_pt=10.0,

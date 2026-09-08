@@ -329,7 +329,7 @@ class GenerateTimeSeries:
                     values_array = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
                 ylabel_content = rf"\log_{{10}}\big({ylabel_content}\big)"
                 figure_name = f"log10_{figure_name}"
-            ylabel = latex_labels.LatexLabel(content=ylabel_content).get_label()
+            ylabel = latex_labels.LatexLabel(content=ylabel_content).label
             ax.plot(
                 time_array,
                 values_array,

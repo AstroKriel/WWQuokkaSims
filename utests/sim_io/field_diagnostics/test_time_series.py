@@ -85,7 +85,7 @@ class TestComputeTimePointLabel(unittest.TestCase):
         with unittest.mock.patch.object(load_snapshot, "QuokkaSnapshot") as mock_snapshot_cls:
             mock_snapshot_cls.return_value.__enter__.return_value = unittest.mock.Mock()
             time_point = time_series.GenerateTimeSeries._compute_time_point(time_point_args)
-        self.assertEqual(time_point.latex_label.get_label(), r"$\mathrm{rms}\big(\rho\big)$")
+        self.assertEqual(time_point.latex_label.label, r"$\mathrm{rms}\big(\rho\big)$")
         self.assertEqual(time_point.field_name, "density")
         self.assertEqual(time_point.statistic_name, "rms")
 
@@ -114,7 +114,7 @@ class TestComputeTimePointLabel(unittest.TestCase):
             time_point = time_series.GenerateTimeSeries._compute_time_point(time_point_args)
         ## a regression here (e.g. always saying "rms" regardless of which statistic ran) is exactly
         ## the bug this suite exists to catch
-        self.assertEqual(time_point.latex_label.get_label(), r"$\mathrm{total}\big(\rho\big)$")
+        self.assertEqual(time_point.latex_label.label, r"$\mathrm{total}\big(\rho\big)$")
 
 
 class TestTimePointRoundTrip(unittest.TestCase):

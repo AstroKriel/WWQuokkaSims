@@ -736,7 +736,7 @@ class GenerateCompProfiles:
                 ax = axs_grid[row_index][col_index]
                 is_left_col = col_index == 0
                 if is_left_col:
-                    ax.set_ylabel(comp_label.get_label())
+                    ax.set_ylabel(comp_label.label)
                 if is_bottom_row:
                     axis_label_str = cartesian_axes.get_axis_label(axis_label)
                     ax.set_xlabel(axis_label_str if "$" in axis_label_str else f"${axis_label_str}$")

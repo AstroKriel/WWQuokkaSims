@@ -399,7 +399,7 @@ class GeneratePDFs:
                 x_label = latex_labels.LatexLabel(content=rf"x \equiv \log_{{10}}({comp_label.content})")
             else:
                 x_label = latex_labels.LatexLabel(content=rf"x \equiv {comp_label.content}")
-            ax.set_xlabel(x_label.get_label())
+            ax.set_xlabel(x_label.label)
             if comp_index == 0:
                 ax.set_ylabel(r"$\log_{10}\big(p(x)\big)$")
 

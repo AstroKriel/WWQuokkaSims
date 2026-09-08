@@ -227,7 +227,7 @@ class GenerateSpectra:
     ) -> None:
         ylabel = latex_labels.LatexLabel(
             content=rf"\log_{{10}}\big(\mathcal{{P}}_{{{field_label.content}}}(k)\big)",
-        ).get_label()
+        ).label
         ax.set_xlabel(r"$\log_{10}(k)$")
         ax.set_ylabel(ylabel)
 
