@@ -661,15 +661,15 @@ class GenerateFieldSlices:
         )
         padded_step_index_string = step_index.get_padded_string(index_width=index_width)
         figure_path = figures_dir / self._get_figure_file_name(padded_step_index_string=padded_step_index_string)
-        figure_needed = self.save_figure and (self.overwrite or not figure_path.exists())
+        figure_is_needed = self.save_figure and (self.overwrite or not figure_path.exists())
         saved_comp_axes = self._find_saved_comp_axes(
             padded_step_index_string=padded_step_index_string,
             data_dir=data_dir,
         )
-        data_complete = saved_comp_axes is not None
-        data_needed = self.save_data and (self.overwrite or not data_complete)
-        if data_needed or figure_needed:
-            if figure_needed and not data_needed and data_complete:
+        data_is_complete = saved_comp_axes is not None
+        data_is_needed = self.save_data and (self.overwrite or not data_is_complete)
+        if data_is_needed or figure_is_needed:
+            if figure_is_needed and not data_is_needed and data_is_complete:
                 ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot entirely
                 assert saved_comp_axes is not None
                 manage_log.log_hint(
@@ -694,7 +694,7 @@ class GenerateFieldSlices:
             else:
                 snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
                 field_comps = self._get_field_comps(field_3d=snapshot_data.field_3d)
-                if data_needed:
+                if data_is_needed:
                     self._save_field_comps(
                         field_comps=field_comps,
                         uniform_domain=snapshot_data.uniform_domain,
@@ -703,7 +703,7 @@ class GenerateFieldSlices:
                         padded_step_index_string=padded_step_index_string,
                         data_dir=data_dir,
                     )
-                if figure_needed:
+                if figure_is_needed:
                     rows = self._rows_from_field_comps(
                         field_comps=field_comps,
                         uniform_domain=snapshot_data.uniform_domain,

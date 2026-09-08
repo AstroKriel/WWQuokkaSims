@@ -653,8 +653,8 @@ class ComputeCompProfiles:
                     padded_step_index_string=padded_step_index_string,
                 ) for axis_to_slice in self.axes_to_slice
             ]
-            data_complete = all(data_path.exists() for data_path in data_paths)
-            if (not self.overwrite) and data_complete:
+            data_is_complete = all(data_path.exists() for data_path in data_paths)
+            if (not self.overwrite) and data_is_complete:
                 comp_profiles, _sim_time = self._load_snapshot_data(data_paths=data_paths)
             else:
                 comp_profiles = self._compute_snapshot(
