@@ -504,7 +504,7 @@ class QuokkaSnapshot(
         applied per component.
         """
         if set(vfield_key_lookup) != set(cartesian_axes.DEFAULT_3D_AXES_ORDER):
-            received_axes = [axis.value for axis in sorted(vfield_key_lookup.keys(), key=lambda a: a.value)]
+            received_axes = [axis.value for axis in sorted(vfield_key_lookup.keys(), key=lambda _axis: _axis.value)]
             expected_axes = [axis.value for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER]
             msg = f"`vfield_key_lookup` must contain all 3 components {expected_axes}; got {received_axes}."
             manage_log.log_error(text=msg)
