@@ -588,23 +588,22 @@ class ComputeCompProfiles:
                 )
                 comp_index = cartesian_axes.get_axis_index(comp_name)
                 comp_sarray_3d = vfield_3d.fdata.farray[comp_index]
-                comp_profile = self._extract_1d_midplane_profile(
+                comp_sarray_1d = self._extract_1d_midplane_profile(
                     sarray_3d=comp_sarray_3d,
                     axis_to_slice=axis_to_slice,
                 )
                 x_array_by_axis.append(x_positions)
-                y_array_by_axis.append(comp_profile)
-            comp_profiles.append(
-                CompProfile(
-                    sim_time=sim_time,
-                    step_index=step_index,
-                    comp_name=cartesian_axes.get_axis_label(comp_name),
-                    axis_labels=axis_labels,
-                    comp_latex_label=comp_latex_label,
-                    x_array_by_axis=x_array_by_axis,
-                    y_array_by_axis=y_array_by_axis,
-                ),
+                y_array_by_axis.append(comp_sarray_1d)
+            comp_profile = CompProfile(
+                sim_time=sim_time,
+                step_index=step_index,
+                comp_name=cartesian_axes.get_axis_label(comp_name),
+                axis_labels=axis_labels,
+                comp_latex_label=comp_latex_label,
+                x_array_by_axis=x_array_by_axis,
+                y_array_by_axis=y_array_by_axis,
             )
+            comp_profiles.append(comp_profile)
         return comp_profiles
 
     def _compute_snapshot(
