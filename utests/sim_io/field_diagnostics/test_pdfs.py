@@ -12,6 +12,9 @@ import unittest
 ## third-party
 import numpy
 
+## personal
+from jormi.ww_plots import latex_labels
+
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import pdfs
 from ww_quokka_sims.sim_io.snapshots import find_snapshots
@@ -67,7 +70,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             step_index=find_snapshots.StepIndex.from_value(3),
             grouped_bin_centers=[numpy.array([0.0, 1.0, 2.0])],
             grouped_densities=[numpy.array([-1.0, -2.0, -3.0])],
-            comp_labels=[r"$\rho$"],
+            comp_labels=[latex_labels.LatexLabel(content=r"\rho")],
             use_log10_bins=True,
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -90,14 +93,17 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             grouped_bin_centers=[numpy.array([0.0, 1.0]), numpy.array([2.0, 3.0])],
             grouped_densities=[numpy.array([-1.0, -2.0]),
                                numpy.array([-3.0, -4.0])],
-            comp_labels=[r"$v_x$", r"$v_y$"],
+            comp_labels=[latex_labels.LatexLabel(content=r"v_x"), latex_labels.LatexLabel(content=r"v_y")],
             use_log10_bins=False,
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = pathlib.Path(tmp_dir) / "pdf.json"
             field_pdf.save_to_file(file_path)
             loaded = pdfs.FieldPDF.load_from_file(file_path)
-        self.assertEqual(sorted(loaded.comp_labels), sorted(field_pdf.comp_labels))
+        self.assertEqual(
+            sorted(comp_label.content for comp_label in loaded.comp_labels),
+            sorted(comp_label.content for comp_label in field_pdf.comp_labels),
+        )
         self.assertEqual(loaded.num_comps, field_pdf.num_comps)
 
 

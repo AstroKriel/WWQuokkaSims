@@ -14,6 +14,7 @@ import numpy
 
 ## personal
 from jormi.ww_fields import cartesian_axes
+from jormi.ww_plots import latex_labels
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import profiles
@@ -31,7 +32,7 @@ class TestScalarProfileRoundTrip(unittest.TestCase):
     ):
         scalar_field_profile = profiles.ScalarFieldProfile(
             field_name="density",
-            field_label=r"$\rho$",
+            field_label=latex_labels.LatexLabel(content=r"\rho"),
             sim_time=0.25,
             step_index=find_snapshots.StepIndex.from_value(3),
             profile_axis="x_0",
@@ -68,12 +69,12 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
                 cartesian_axes.CartesianAxis_3D.X0:
                 profiles.VectorComponent(
                     field_value=numpy.array([1.0, 2.0]),
-                    label=r"$v_x$",
+                    label=latex_labels.LatexLabel(content=r"v_x"),
                 ),
                 cartesian_axes.CartesianAxis_3D.X1:
                 profiles.VectorComponent(
                     field_value=numpy.array([3.0, 4.0]),
-                    label=r"$v_y$",
+                    label=latex_labels.LatexLabel(content=r"v_y"),
                 ),
             },
             amr_level=0,

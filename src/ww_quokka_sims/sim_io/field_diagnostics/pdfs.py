@@ -17,7 +17,7 @@ from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_io import json_io, manage_io
-from jormi.ww_plots import add_color, annotate_panel, manage_figure
+from jormi.ww_plots import add_color, annotate_panel, latex_labels, manage_figure
 from jormi.ww_validation import validate_arrays, validate_types
 
 ## local
@@ -35,7 +35,7 @@ class FieldPDF:
     step_index: find_snapshots.StepIndex
     grouped_bin_centers: list[numpy.ndarray]
     grouped_densities: list[numpy.ndarray]
-    comp_labels: list[str]
+    comp_labels: list[latex_labels.LatexLabel]
     use_log10_bins: bool = False
 
     def __post_init__(
@@ -95,7 +95,7 @@ class FieldPDF:
         }
         for comp_index, comp_label in enumerate(self.comp_labels):
             bin_centers, densities = self.get_pdf(comp_index)
-            output_dict[comp_label] = {
+            output_dict[comp_label.content] = {
                 bin_centers_key: bin_centers,
                 "log10_density": densities,
             }
@@ -122,13 +122,17 @@ class FieldPDF:
         )
         use_log10_bins = bool(input_dict["use_log10_bins"])
         bin_centers_key = "log10_bin_centers" if use_log10_bins else "bin_centers"
-        comp_labels = [key for key in input_dict if key not in ("sim_time", "step_index", "use_log10_bins")]
+        comp_label_strings = [key for key in input_dict if key not in ("sim_time", "step_index", "use_log10_bins")]
         return cls(
             sim_time=float(input_dict["sim_time"]),
             step_index=find_snapshots.StepIndex.from_value(int(input_dict["step_index"])),
-            grouped_bin_centers=[numpy.array(input_dict[comp_label][bin_centers_key]) for comp_label in comp_labels],
-            grouped_densities=[numpy.array(input_dict[comp_label]["log10_density"]) for comp_label in comp_labels],
-            comp_labels=comp_labels,
+            grouped_bin_centers=[
+                numpy.array(input_dict[comp_label_string][bin_centers_key]) for comp_label_string in comp_label_strings
+            ],
+            grouped_densities=[
+                numpy.array(input_dict[comp_label_string]["log10_density"]) for comp_label_string in comp_label_strings
+            ],
+            comp_labels=[latex_labels.LatexLabel(content=comp_label_string) for comp_label_string in comp_label_strings],
             use_log10_bins=use_log10_bins,
         )
 
@@ -386,13 +390,16 @@ class GeneratePDFs:
     def _style_axs(
         *,
         axs_grid: manage_figure.PanelGrid,
-        comp_labels: list[str],
+        comp_labels: list[latex_labels.LatexLabel],
         use_log10_bins: bool,
     ) -> None:
         for comp_index, comp_label in enumerate(comp_labels):
             ax = axs_grid[0][comp_index]
-            x_label = rf"$\log_{{10}}($ {comp_label} $)$" if use_log10_bins else rf"$x \equiv$ {comp_label}"
-            ax.set_xlabel(x_label)
+            if use_log10_bins:
+                x_label = latex_labels.LatexLabel(content=rf"x \equiv \log_{{10}}({comp_label.content})")
+            else:
+                x_label = latex_labels.LatexLabel(content=rf"x \equiv {comp_label.content}")
+            ax.set_xlabel(x_label.get_label())
             if comp_index == 0:
                 ax.set_ylabel(r"$\log_{10}\big(p(x)\big)$")
 

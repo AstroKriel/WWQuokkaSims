@@ -18,7 +18,7 @@ from numpy.typing import NDArray
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import domain_models, field_models
 from jormi.ww_io import json_io, manage_io
-from jormi.ww_plots import add_color, annotate_panel, manage_figure
+from jormi.ww_plots import add_color, annotate_panel, latex_labels, manage_figure
 from jormi.ww_validation import validate_types
 
 ## local
@@ -84,7 +84,7 @@ def _ensure_profile_arrays(
 @dataclasses.dataclass(frozen=True)
 class ScalarFieldProfile:
     field_name: str
-    field_label: str
+    field_label: latex_labels.LatexLabel
     sim_time: float
     step_index: find_snapshots.StepIndex
     profile_axis: str
@@ -96,10 +96,6 @@ class ScalarFieldProfile:
         self,
     ) -> None:
         _ensure_field_name(self.field_name)
-        validate_types.ensure_nonempty_string(
-            param=self.field_label,
-            param_name="<field_label>",
-        )
         validate_types.ensure_finite_float(
             param=self.sim_time,
             param_name="<sim_time>",
@@ -126,7 +122,7 @@ class ScalarFieldProfile:
             file_path=file_path,
             input_dict={
                 "field_name": self.field_name,
-                "field_label": self.field_label,
+                "field_label": self.field_label.content,
                 "sim_time": self.sim_time,
                 "step_index": self.step_index.value,
                 "profile_axis": self.profile_axis,
@@ -163,7 +159,7 @@ class ScalarFieldProfile:
         )
         return cls(
             field_name=data["field_name"],
-            field_label=data["field_label"],
+            field_label=latex_labels.LatexLabel(content=data["field_label"]),
             sim_time=float(data["sim_time"]),
             step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
             profile_axis=data["profile_axis"],
@@ -181,7 +177,7 @@ class ScalarFieldProfile:
 @dataclasses.dataclass(frozen=True)
 class VectorComponent:
     field_value: NDArray[numpy.floating]
-    label: str
+    label: latex_labels.LatexLabel
 
     def __post_init__(
         self,
@@ -190,10 +186,6 @@ class VectorComponent:
             param=self.field_value,
             ndim=1,
             param_name="<field_value>",
-        )
-        validate_types.ensure_nonempty_string(
-            param=self.label,
-            param_name="<label>",
         )
 
 
@@ -252,7 +244,7 @@ class VectorFieldProfile:
                 "field_comps": {
                     comp_axis: {
                         "field_value": component.field_value,
-                        "label": component.label,
+                        "label": component.label.content,
                     }
                     for comp_axis, component in self.components.items()
                 },
@@ -288,7 +280,7 @@ class VectorFieldProfile:
             cartesian_axes.as_axis(comp_axis):
             VectorComponent(
                 field_value=numpy.asarray(comp_data["field_value"]),
-                label=comp_data["label"],
+                label=latex_labels.LatexLabel(content=comp_data["label"]),
             )
             for comp_axis, comp_data in data["field_comps"].items()
         }
@@ -313,7 +305,7 @@ class CompProfile:
     sim_time: float
     step_index: find_snapshots.StepIndex
     comp_name: str
-    comp_label: str
+    comp_label: latex_labels.LatexLabel
     axis_labels: list[cartesian_axes.AxisLike_3D]
     x_array_by_axis: list[numpy.ndarray]
     y_array_by_axis: list[numpy.ndarray]
@@ -444,7 +436,7 @@ class ComputeCompProfiles:
             if "field_comps" not in first_raw:
                 x_array_by_axis: list[numpy.ndarray] = []
                 y_array_by_axis: list[numpy.ndarray] = []
-                comp_label = ""
+                comp_label: latex_labels.LatexLabel | None = None
                 for data_path in data_paths:
                     scalar_field_profile = ScalarFieldProfile.load_from_file(data_path)
                     x_array_by_axis.append(scalar_field_profile.position)
@@ -452,6 +444,7 @@ class ComputeCompProfiles:
                     comp_label = scalar_field_profile.field_label
                     sim_time = scalar_field_profile.sim_time
                     step_index = scalar_field_profile.step_index
+                assert comp_label is not None
                 comp_profiles = [
                     CompProfile(
                         sim_time=sim_time,
@@ -469,7 +462,7 @@ class ComputeCompProfiles:
                 comp_keys = sorted(vector_profiles[0].components.keys())
                 per_comp_x: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
                 per_comp_y: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-                per_comp_label: dict[cartesian_axes.CartesianAxis_3D, str] = {}
+                per_comp_label: dict[cartesian_axes.CartesianAxis_3D, latex_labels.LatexLabel] = {}
                 for vector_field_profile in vector_profiles:
                     sim_time = vector_field_profile.sim_time
                     step_index = vector_field_profile.step_index
@@ -733,7 +726,7 @@ class GenerateCompProfiles:
     def _style_axs(
         *,
         axs_grid: manage_figure.PanelGrid,
-        comp_labels: list[str],
+        comp_labels: list[latex_labels.LatexLabel],
         axis_labels: list[cartesian_axes.AxisLike_3D],
     ) -> None:
         num_rows = len(comp_labels)
@@ -743,7 +736,7 @@ class GenerateCompProfiles:
                 ax = axs_grid[row_index][col_index]
                 is_left_col = col_index == 0
                 if is_left_col:
-                    ax.set_ylabel(comp_label)
+                    ax.set_ylabel(comp_label.get_label())
                 if is_bottom_row:
                     axis_label_str = cartesian_axes.get_axis_label(axis_label)
                     ax.set_xlabel(axis_label_str if "$" in axis_label_str else f"${axis_label_str}$")
@@ -829,7 +822,7 @@ class GenerateCompProfiles:
     def _save_summary_figure(
         self,
         *,
-        comp_profiles_lookup: dict[str, list[CompProfile]],
+        comp_profiles_lookup: dict[latex_labels.LatexLabel, list[CompProfile]],
         figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
@@ -882,7 +875,7 @@ class GenerateCompProfiles:
         )
         all_comp_profiles = compute_comp_profiles_pipeline.run()
         if all_comp_profiles and self.save_figure:
-            comp_profiles_lookup: dict[str, list[CompProfile]] = {}
+            comp_profiles_lookup: dict[latex_labels.LatexLabel, list[CompProfile]] = {}
             for comp_profiles in all_comp_profiles:
                 padded_step_index_string = comp_profiles[0].step_index.get_padded_string(index_width=self.index_width)
                 figure_path = self._get_figure_path(

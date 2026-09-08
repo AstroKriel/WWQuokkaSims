@@ -16,7 +16,7 @@ import numpy
 from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields.fields_3d import compute_spectra
 from jormi.ww_io import json_io, manage_io
-from jormi.ww_plots import add_color, annotate_panel, manage_figure
+from jormi.ww_plots import add_color, annotate_panel, latex_labels, manage_figure
 from jormi.ww_validation import validate_arrays, validate_types
 
 ## local
@@ -32,7 +32,7 @@ from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load
 class FieldSpectrum:
     sim_time: float
     step_index: find_snapshots.StepIndex
-    latex_label: str
+    latex_label: latex_labels.LatexLabel
     log10_k_bin_centers: numpy.ndarray
     log10_power_spectrum: numpy.ndarray
 
@@ -57,7 +57,7 @@ class FieldSpectrum:
             input_dict={
                 "sim_time": self.sim_time,
                 "step_index": self.step_index.value,
-                "latex_label": self.latex_label,
+                "latex_label": self.latex_label.content,
                 "log10_k_bin_centers": self.log10_k_bin_centers,
                 "log10_power_spectrum": self.log10_power_spectrum,
             },
@@ -88,7 +88,7 @@ class FieldSpectrum:
         return cls(
             sim_time=float(data["sim_time"]),
             step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
-            latex_label=data["latex_label"],
+            latex_label=latex_labels.LatexLabel(content=data["latex_label"]),
             log10_k_bin_centers=numpy.asarray(data["log10_k_bin_centers"]),
             log10_power_spectrum=numpy.asarray(data["log10_power_spectrum"]),
         )
@@ -152,7 +152,7 @@ class ComputeSpectra:
         return FieldSpectrum(
             sim_time=sim_time,
             step_index=step_index,
-            latex_label=field_3d.latex_label,
+            latex_label=latex_labels.LatexLabel(content=field_3d.latex_label),
             log10_k_bin_centers=log10_k_bin_centers,
             log10_power_spectrum=log10_power_spectrum,
         )
@@ -223,10 +223,13 @@ class GenerateSpectra:
     def _style_ax(
         *,
         ax: manage_figure.Panel,
-        field_label: str,
+        field_label: latex_labels.LatexLabel,
     ) -> None:
+        ylabel = latex_labels.LatexLabel(
+            content=rf"\log_{{10}}\big(\mathcal{{P}}_{{{field_label.content}}}(k)\big)",
+        ).get_label()
         ax.set_xlabel(r"$\log_{10}(k)$")
-        ax.set_ylabel(rf"$\log_{{10}}\big(\mathcal{{P}}_{{{field_label}}}(k)\big)$")
+        ax.set_ylabel(ylabel)
 
     @staticmethod
     def _plot_snapshot(

@@ -15,6 +15,7 @@ import numpy
 ## personal
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import domain_models
+from jormi.ww_plots import latex_labels
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import slices
@@ -81,7 +82,7 @@ class TestSliceField(unittest.TestCase):
             farray_3d=_SARRAY_3D,
             axis_to_slice=axis_to_slice,
             uniform_domain=_UNIFORM_DOMAIN,
-            comp_label=r"$\rho$",
+            comp_label=latex_labels.LatexLabel(content=r"\rho"),
             sim_time=0.0,
             step_index=find_snapshots.StepIndex.from_value(0),
             amr_level=0,
@@ -122,7 +123,7 @@ class TestSlicedFieldRoundTrip(unittest.TestCase):
             axis_bounds=((0.0, 1.0), (0.0, 2.0)),
             min_value=0.0,
             max_value=3.0,
-            comp_label=r"$\rho$",
+            comp_label=latex_labels.LatexLabel(content=r"\rho"),
             sim_time=0.25,
             step_index=find_snapshots.StepIndex.from_value(3),
             amr_level=1,
