@@ -30,7 +30,10 @@ def format_value(
     )
     if isinstance(value, bool):
         ## AMReX booleans are written as bare 0/1, never Python's True/False
-        return "1" if value else "0"
+        if value:
+            return "1"
+        else:
+            return "0"
     elif isinstance(value, str):
         return f'"{value}"'
     elif isinstance(value, (list, tuple)):

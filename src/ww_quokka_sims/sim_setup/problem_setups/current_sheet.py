@@ -46,6 +46,11 @@ def build_sim_params(
 ) -> save_params.SimParams:
     """Build the full parameter set for one run."""
     reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
+    ## Quokka requires use_dual_energy=0 whenever resistivity is nonzero
+    if resistivity is not None:
+        use_dual_energy = 0
+    else:
+        use_dual_energy = None
     return save_params.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=_DOMAIN_LO,
@@ -75,8 +80,7 @@ def build_sim_params(
         hydro_params=param_groups.HydroParams(
             integrator_order=_INTEGRATOR_ORDER,
             reconstruction_order=reconstruction_order,
-            ## Quokka requires use_dual_energy=0 whenever resistivity is nonzero
-            use_dual_energy=0 if (resistivity is not None) else None,
+            use_dual_energy=use_dual_energy,
         ),
         mhd_params=param_groups.MHDParams(
             emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),

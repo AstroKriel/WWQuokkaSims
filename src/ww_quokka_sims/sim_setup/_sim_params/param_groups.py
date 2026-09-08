@@ -51,7 +51,10 @@ def _ensure_scalar_or_axis_triple(
 def _as_axis_triple(
     param: int | tuple[int, int, int],
 ) -> tuple[int, int, int]:
-    return param if isinstance(param, tuple) else (param, param, param)
+    if isinstance(param, tuple):
+        return param
+    else:
+        return (param, param, param)
 
 
 def _is_power_of_two(

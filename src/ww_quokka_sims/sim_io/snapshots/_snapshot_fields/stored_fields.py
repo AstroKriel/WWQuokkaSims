@@ -35,7 +35,11 @@ class _LoadStoredFields:
         use_chunked_reader: bool = False,
     ) -> str:
         """Build the `_field_cache` key for `field_name` at `amr_level`."""
-        return f"{field_name}:level-{amr_level}:reader-{'chunked' if use_chunked_reader else 'whole_domain'}"
+        if use_chunked_reader:
+            reader_label = "chunked"
+        else:
+            reader_label = "whole_domain"
+        return f"{field_name}:level-{amr_level}:reader-{reader_label}"
 
     def load_3d_density_sfield(
         self: FieldsProtocol,

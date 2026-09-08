@@ -524,7 +524,10 @@ class QuokkaSnapshot(
             )
         self._open_if_needed()
         assert self._yt_dataset is not None
-        whole_domain_grid = None if use_chunked_reader else self._get_whole_domain_grid(amr_level=amr_level)
+        if use_chunked_reader:
+            whole_domain_grid = None
+        else:
+            whole_domain_grid = self._get_whole_domain_grid(amr_level=amr_level)
         grouped_sarrays: dict[cartesian_axes.CartesianAxis_3D, numpy.ndarray] = {}
         for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER:
             comp_key = vfield_key_lookup[comp_axis]

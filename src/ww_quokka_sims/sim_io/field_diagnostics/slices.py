@@ -168,13 +168,22 @@ def get_slice_bounds(
         )
 
 
+def _wrap_axis_label(
+    axis_label: str,
+) -> str:
+    if "$" in axis_label:
+        return axis_label
+    else:
+        return f"${axis_label}$"
+
+
 def get_slice_labels(
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
 ) -> tuple[str, str]:
     axes_plane = [ax for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER if ax != axis_to_slice]
     return (
-        axes_plane[0].axis_label if "$" in axes_plane[0].axis_label else f"${axes_plane[0].axis_label}$",
-        axes_plane[1].axis_label if "$" in axes_plane[1].axis_label else f"${axes_plane[1].axis_label}$",
+        _wrap_axis_label(axes_plane[0].axis_label),
+        _wrap_axis_label(axes_plane[1].axis_label),
     )
 
 
@@ -182,10 +191,12 @@ def get_slice_plane_label(
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
 ) -> str:
     """Return the "which plane was sliced" annotation text; a pure function of `axis_to_slice` alone."""
-    label_parts = [
-        rf"{ax.axis_label}=L_{ax.axis_index}/2" if ax == axis_to_slice else ax.axis_label
-        for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER
-    ]
+    label_parts: list[str] = []
+    for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER:
+        if ax == axis_to_slice:
+            label_parts.append(rf"{ax.axis_label}=L_{ax.axis_index}/2")
+        else:
+            label_parts.append(ax.axis_label)
     return "$(" + ", ".join(label_parts) + ")$"
 
 
@@ -271,12 +282,16 @@ class GenerateFieldSlices:
             palette_config=palette_config,
             add_colorbar=False,
         )
+        ## every column in a row shares the same quantity, so only the rightmost one
+        ## needs the label; the bar and its own tick values still belong on every column
+        if show_colorbar_label:
+            colorbar_label = comp_latex_label.label
+        else:
+            colorbar_label = None
         add_color.add_colorbar(
             panels=ax,
             palette=palette,
-            ## every column in a row shares the same quantity, so only the rightmost one
-            ## needs the label; the bar and its own tick values still belong on every column
-            label=comp_latex_label.label if show_colorbar_label else None,
+            label=colorbar_label,
             colorbar_side="right",
             colorbar_gap_pt=15.0,
             label_gap_pt=10.0,
@@ -410,7 +425,10 @@ class GenerateFieldSlices:
         if self.apply_log10_plot:
             ## log10 of a strictly-positive field diverges around log10(1) = 0; log10 of a signed
             ## field is taken of its abs value (see above), which has no sign left to pivot around
-            pivot_value = 0.0 if expected_properties.is_strictly_positive else None
+            if expected_properties.is_strictly_positive:
+                pivot_value = 0.0
+            else:
+                pivot_value = None
         for row_index, (comp_latex_label, sliced_by_axis) in enumerate(rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
                 ax = axs_grid[row_index][col_index]
@@ -453,7 +471,10 @@ class GenerateFieldSlices:
         padded_step_index_string: str,
     ) -> str:
         field_name = self.field_args.registered_field.name
-        comp_part = f"-comp={comp_axis.axis_label}" if comp_axis is not None else ""
+        if comp_axis is not None:
+            comp_part = f"-comp={comp_axis.axis_label}"
+        else:
+            comp_part = ""
         return (
             f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_step_index_string}"
             f"-amr_level={self.field_args.amr_level}.npz"
@@ -465,7 +486,10 @@ class GenerateFieldSlices:
         padded_step_index_string: str,
     ) -> str:
         field_name = self.field_args.registered_field.name
-        plot_name = f"log10_{field_name}" if self.apply_log10_plot else field_name
+        if self.apply_log10_plot:
+            plot_name = f"log10_{field_name}"
+        else:
+            plot_name = field_name
         return f"{plot_name}-slice-index={padded_step_index_string}.png"
 
     def _find_saved_comp_axes(
@@ -573,9 +597,10 @@ class GenerateFieldSlices:
                     continue
                 log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
                 for axis_to_slice, field_slice in sliced_by_axis.items():
-                    sarray_2d = field_slice.sarray_2d if is_strictly_positive else numpy.abs(
-                        field_slice.sarray_2d,
-                    )
+                    if is_strictly_positive:
+                        sarray_2d = field_slice.sarray_2d
+                    else:
+                        sarray_2d = numpy.abs(field_slice.sarray_2d)
                     log10_sarray_2d = compute_array_stats.compute_safe_log10(sarray_2d)
                     min_value, max_value = _compute_min_max(log10_sarray_2d)
                     log10_sliced_by_axis[axis_to_slice] = FieldSlice(
@@ -852,7 +877,10 @@ def animate_saved_figures(
     apply_log10_plot: bool = False,
 ) -> None:
     for field_name in fields_to_plot:
-        plot_name = f"log10_{field_name}" if apply_log10_plot else field_name
+        if apply_log10_plot:
+            plot_name = f"log10_{field_name}"
+        else:
+            plot_name = field_name
         figure_prefix = f"{plot_name}-slice-index="
         figure_paths = manage_io.filter_directory(
             directory=figures_dir,

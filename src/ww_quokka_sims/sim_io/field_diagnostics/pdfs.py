@@ -90,7 +90,10 @@ class FieldPDF:
         self,
         file_path: pathlib.Path,
     ) -> None:
-        bin_centers_key = "log10_bin_centers" if self.use_log10_bins else "bin_centers"
+        if self.use_log10_bins:
+            bin_centers_key = "log10_bin_centers"
+        else:
+            bin_centers_key = "bin_centers"
         output_dict: dict = {
             "sim_time": self.sim_time,
             "step_index": self.step_index.value,

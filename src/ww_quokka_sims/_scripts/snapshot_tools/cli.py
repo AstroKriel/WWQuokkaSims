@@ -395,7 +395,10 @@ def resolve_output_dir(
     default_dir: pathlib.Path,
 ) -> pathlib.Path:
     """Resolve `output_dir` to `default_dir` if unset, creating it if needed."""
-    resolved_dir = output_dir if output_dir is not None else default_dir
+    if output_dir is not None:
+        resolved_dir = output_dir
+    else:
+        resolved_dir = default_dir
     manage_io.create_directory(
         directory=resolved_dir,
         verbose=False,
