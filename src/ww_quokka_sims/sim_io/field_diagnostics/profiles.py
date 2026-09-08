@@ -307,8 +307,8 @@ class CompProfile:
     comp_name: str
     comp_latex_label: latex_labels.LatexLabel
     axis_labels: list[cartesian_axes.AxisLike_3D]
-    x_array_by_axis: list[numpy.ndarray]
-    y_array_by_axis: list[numpy.ndarray]
+    domain_array_by_axis: list[numpy.ndarray]
+    values_array_by_axis: list[numpy.ndarray]
 
     @property
     def num_axes(
@@ -321,14 +321,14 @@ class CompProfile:
         *,
         axis_index: int,
     ) -> numpy.ndarray:
-        return self.x_array_by_axis[axis_index]
+        return self.domain_array_by_axis[axis_index]
 
     def get_values(
         self,
         *,
         axis_index: int,
     ) -> numpy.ndarray:
-        return self.y_array_by_axis[axis_index]
+        return self.values_array_by_axis[axis_index]
 
 
 ##
@@ -432,13 +432,13 @@ class ComputeCompProfiles:
         sim_time = 0.0
         step_index = find_snapshots.StepIndex.from_value(0)
         if "field_comps" not in first_raw:
-            x_array_by_axis: list[numpy.ndarray] = []
-            y_array_by_axis: list[numpy.ndarray] = []
+            domain_array_by_axis: list[numpy.ndarray] = []
+            values_array_by_axis: list[numpy.ndarray] = []
             comp_latex_label: latex_labels.LatexLabel | None = None
             for data_path in data_paths:
                 scalar_field_profile = ScalarFieldProfile.load_from_file(data_path)
-                x_array_by_axis.append(scalar_field_profile.position)
-                y_array_by_axis.append(scalar_field_profile.field_value)
+                domain_array_by_axis.append(scalar_field_profile.position)
+                values_array_by_axis.append(scalar_field_profile.field_value)
                 comp_latex_label = scalar_field_profile.field_latex_label
                 sim_time = scalar_field_profile.sim_time
                 step_index = scalar_field_profile.step_index
@@ -448,36 +448,36 @@ class ComputeCompProfiles:
                     sim_time=sim_time,
                     step_index=step_index,
                     comp_name=self.registered_field.name,
-                    axis_labels=list(self.axes_to_slice),
                     comp_latex_label=comp_latex_label,
-                    x_array_by_axis=x_array_by_axis,
-                    y_array_by_axis=y_array_by_axis,
+                    axis_labels=list(self.axes_to_slice),
+                    domain_array_by_axis=domain_array_by_axis,
+                    values_array_by_axis=values_array_by_axis,
                 ),
             ]
             return comp_profiles, sim_time
         else:
             vector_profiles = [VectorFieldProfile.load_from_file(data_path) for data_path in data_paths]
             comp_keys = sorted(vector_profiles[0].components.keys())
-            per_comp_x: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-            per_comp_y: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+            per_comp_domain: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+            per_comp_values: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
             per_comp_latex_label: dict[cartesian_axes.CartesianAxis_3D, latex_labels.LatexLabel] = {}
             for vector_field_profile in vector_profiles:
                 sim_time = vector_field_profile.sim_time
                 step_index = vector_field_profile.step_index
                 for key in comp_keys:
                     component = vector_field_profile.components[key]
-                    per_comp_x[key].append(vector_field_profile.position)
-                    per_comp_y[key].append(component.field_value)
+                    per_comp_domain[key].append(vector_field_profile.position)
+                    per_comp_values[key].append(component.field_value)
                     per_comp_latex_label[key] = component.latex_label
             comp_profiles = [
                 CompProfile(
                     sim_time=sim_time,
                     step_index=step_index,
                     comp_name=key,
-                    axis_labels=list(self.axes_to_slice),
                     comp_latex_label=per_comp_latex_label[key],
-                    x_array_by_axis=per_comp_x[key],
-                    y_array_by_axis=per_comp_y[key],
+                    axis_labels=list(self.axes_to_slice),
+                    domain_array_by_axis=per_comp_domain[key],
+                    values_array_by_axis=per_comp_values[key],
                 ) for key in comp_keys
             ]
             return comp_profiles, sim_time
@@ -532,8 +532,8 @@ class ComputeCompProfiles:
         sim_time = sfield_3d.sim_time
         assert sim_time is not None
         axis_labels = list(self.axes_to_slice)
-        x_array_by_axis: list[numpy.ndarray] = []
-        y_array_by_axis: list[numpy.ndarray] = []
+        domain_array_by_axis: list[numpy.ndarray] = []
+        values_array_by_axis: list[numpy.ndarray] = []
         for axis_to_slice in axis_labels:
             x_positions = self._compute_cell_centers(
                 uniform_domain_3d=uniform_domain_3d,
@@ -543,17 +543,17 @@ class ComputeCompProfiles:
                 sarray_3d=sfield_3d.fdata.farray,
                 axis_to_slice=axis_to_slice,
             )
-            x_array_by_axis.append(x_positions)
-            y_array_by_axis.append(field_profile)
+            domain_array_by_axis.append(x_positions)
+            values_array_by_axis.append(field_profile)
         return [
             CompProfile(
                 sim_time=sim_time,
                 step_index=step_index,
                 comp_name=self.registered_field.name,
-                axis_labels=axis_labels,
                 comp_latex_label=field_models.get_label(sfield_3d),
-                x_array_by_axis=x_array_by_axis,
-                y_array_by_axis=y_array_by_axis,
+                axis_labels=axis_labels,
+                domain_array_by_axis=domain_array_by_axis,
+                values_array_by_axis=values_array_by_axis,
             ),
         ]
 
@@ -579,8 +579,8 @@ class ComputeCompProfiles:
                 vfield_3d=vfield_3d,
                 comp_axis=comp_name,
             )
-            x_array_by_axis: list[numpy.ndarray] = []
-            y_array_by_axis: list[numpy.ndarray] = []
+            domain_array_by_axis: list[numpy.ndarray] = []
+            values_array_by_axis: list[numpy.ndarray] = []
             for axis_to_slice in axis_labels:
                 x_positions = self._compute_cell_centers(
                     uniform_domain_3d=uniform_domain_3d,
@@ -592,16 +592,16 @@ class ComputeCompProfiles:
                     sarray_3d=comp_sarray_3d,
                     axis_to_slice=axis_to_slice,
                 )
-                x_array_by_axis.append(x_positions)
-                y_array_by_axis.append(comp_sarray_1d)
+                domain_array_by_axis.append(x_positions)
+                values_array_by_axis.append(comp_sarray_1d)
             comp_profile = CompProfile(
                 sim_time=sim_time,
                 step_index=step_index,
                 comp_name=cartesian_axes.get_axis_label(comp_name),
-                axis_labels=axis_labels,
                 comp_latex_label=comp_latex_label,
-                x_array_by_axis=x_array_by_axis,
-                y_array_by_axis=y_array_by_axis,
+                axis_labels=axis_labels,
+                domain_array_by_axis=domain_array_by_axis,
+                values_array_by_axis=values_array_by_axis,
             )
             comp_profiles.append(comp_profile)
         return comp_profiles
