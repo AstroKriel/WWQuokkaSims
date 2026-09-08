@@ -329,7 +329,7 @@ class GenerateTimeSeries:
                     values_array = compute_array_stats.compute_safe_log10(numpy.abs(values_array))
                 ylabel_content = rf"\log_{{10}}\big({ylabel_content}\big)"
                 figure_name = f"log10_{figure_name}"
-            ylabel = latex_labels.LatexLabel(content=ylabel_content).label
+            y_latex_label = latex_labels.LatexLabel(content=ylabel_content)
             ax.plot(
                 time_array,
                 values_array,
@@ -338,7 +338,7 @@ class GenerateTimeSeries:
                 ls="-",
             )
             ax.set_xlabel("time")
-            ax.set_ylabel(ylabel)
+            ax.set_ylabel(y_latex_label.label)
             figure_path = self.figures_dir / figure_name
             manage_figure.save_figure(
                 figure=figure,

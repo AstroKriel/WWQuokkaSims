@@ -82,7 +82,7 @@ class TestSliceField(unittest.TestCase):
             farray_3d=_SARRAY_3D,
             axis_to_slice=axis_to_slice,
             uniform_domain=_UNIFORM_DOMAIN,
-            comp_label=latex_labels.LatexLabel(content=r"\rho"),
+            comp_latex_label=latex_labels.LatexLabel(content=r"\rho"),
             sim_time=0.0,
             step_index=find_snapshots.StepIndex.from_value(0),
             amr_level=0,
@@ -123,7 +123,7 @@ class TestSlicedFieldRoundTrip(unittest.TestCase):
             axis_bounds=((0.0, 1.0), (0.0, 2.0)),
             min_value=0.0,
             max_value=3.0,
-            comp_label=latex_labels.LatexLabel(content=r"\rho"),
+            comp_latex_label=latex_labels.LatexLabel(content=r"\rho"),
             sim_time=0.25,
             step_index=find_snapshots.StepIndex.from_value(3),
             amr_level=1,
@@ -135,7 +135,7 @@ class TestSlicedFieldRoundTrip(unittest.TestCase):
         self.assertEqual(loaded.axis_bounds, sliced_field.axis_bounds)
         self.assertEqual(loaded.min_value, sliced_field.min_value)
         self.assertEqual(loaded.max_value, sliced_field.max_value)
-        self.assertEqual(loaded.comp_label, sliced_field.comp_label)
+        self.assertEqual(loaded.comp_latex_label, sliced_field.comp_latex_label)
         self.assertEqual(loaded.sim_time, sliced_field.sim_time)
         self.assertEqual(loaded.step_index, sliced_field.step_index)
         self.assertEqual(loaded.amr_level, sliced_field.amr_level)

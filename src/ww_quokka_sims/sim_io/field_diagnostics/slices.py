@@ -39,7 +39,7 @@ class FieldSlice:
     axis_bounds: AxisBounds
     min_value: float
     max_value: float
-    comp_label: latex_labels.LatexLabel
+    comp_latex_label: latex_labels.LatexLabel
     sim_time: float
     step_index: find_snapshots.StepIndex
     amr_level: int = 0
@@ -52,7 +52,7 @@ class FieldSlice:
             file_path,
             sarray_2d=self.sarray_2d,
             axis_bounds=numpy.array(self.axis_bounds),
-            comp_label=self.comp_label.content,
+            comp_label=self.comp_latex_label.content,
             min_value=self.min_value,
             max_value=self.max_value,
             sim_time=self.sim_time,
@@ -76,7 +76,7 @@ class FieldSlice:
                 axis_bounds=axis_bounds,
                 min_value=float(npz["min_value"]),
                 max_value=float(npz["max_value"]),
-                comp_label=latex_labels.LatexLabel(content=str(npz["comp_label"])),
+                comp_latex_label=latex_labels.LatexLabel(content=str(npz["comp_label"])),
                 sim_time=float(npz["sim_time"]),
                 step_index=find_snapshots.StepIndex.from_value(int(npz["step_index"])),
                 amr_level=int(npz["amr_level"]),
@@ -133,7 +133,7 @@ class SnapshotData:
 @dataclasses.dataclass(frozen=True)
 class FieldComp:
     sarray_3d: numpy.ndarray
-    label: latex_labels.LatexLabel
+    latex_label: latex_labels.LatexLabel
     comp_axis: cartesian_axes.CartesianAxis_3D | None = None
 
 
@@ -203,7 +203,7 @@ def slice_3d_farray(
     farray_3d: numpy.ndarray,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
     uniform_domain: domain_models.UniformDomain_3D,
-    comp_label: latex_labels.LatexLabel,
+    comp_latex_label: latex_labels.LatexLabel,
     sim_time: float,
     step_index: find_snapshots.StepIndex,
     amr_level: int,
@@ -225,7 +225,7 @@ def slice_3d_farray(
         axis_bounds=axis_bounds,
         min_value=min_value,
         max_value=max_value,
-        comp_label=comp_label,
+        comp_latex_label=comp_latex_label,
         sim_time=sim_time,
         step_index=step_index,
         amr_level=amr_level,
@@ -256,7 +256,7 @@ class GenerateFieldSlices:
         sim_time: float,
         field_slice: FieldSlice,
         plane_label: str,
-        comp_label: latex_labels.LatexLabel,
+        comp_latex_label: latex_labels.LatexLabel,
         palette_config: add_color.PaletteConfig,
         show_colorbar_label: bool = True,
         hide_annotations: bool = False,
@@ -276,7 +276,7 @@ class GenerateFieldSlices:
             palette=palette,
             ## every column in a row shares the same quantity, so only the rightmost one
             ## needs the label; the bar and its own tick values still belong on every column
-            label=comp_label.label if show_colorbar_label else None,
+            label=comp_latex_label.label if show_colorbar_label else None,
             colorbar_side="right",
             colorbar_gap_pt=15.0,
             label_gap_pt=10.0,
@@ -344,7 +344,7 @@ class GenerateFieldSlices:
             return [
                 FieldComp(
                     sarray_3d=sarray_3d,
-                    label=field_models.get_label(field_3d),
+                    latex_label=field_models.get_label(field_3d),
                 ),
             ]
         elif isinstance(field_3d, field_models.VectorField_3D):
@@ -359,7 +359,7 @@ class GenerateFieldSlices:
             return [
                 FieldComp(
                     sarray_3d=varray_3d[_axis_to_index(comp_axis)],
-                    label=field_models.get_vcomp_label(
+                    latex_label=field_models.get_vcomp_label(
                         vfield_3d=field_3d,
                         comp_axis=comp_axis,
                     ),
@@ -379,14 +379,14 @@ class GenerateFieldSlices:
     ) -> list[Row]:
         return [
             (
-                field_comp.label,
+                field_comp.latex_label,
                 {
                     axis_to_slice:
                     slice_3d_farray(
                         farray_3d=field_comp.sarray_3d,
                         axis_to_slice=axis_to_slice,
                         uniform_domain=uniform_domain,
-                        comp_label=field_comp.label,
+                        comp_latex_label=field_comp.latex_label,
                         sim_time=sim_time,
                         step_index=step_index,
                         amr_level=self.field_args.amr_level,
@@ -411,7 +411,7 @@ class GenerateFieldSlices:
             ## log10 of a strictly-positive field diverges around log10(1) = 0; log10 of a signed
             ## field is taken of its abs value (see above), which has no sign left to pivot around
             pivot_value = 0.0 if expected_properties.is_strictly_positive else None
-        for row_index, (comp_label, sliced_by_axis) in enumerate(rows):
+        for row_index, (comp_latex_label, sliced_by_axis) in enumerate(rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
                 ax = axs_grid[row_index][col_index]
                 field_slice = sliced_by_axis[axis_to_slice]
@@ -420,7 +420,7 @@ class GenerateFieldSlices:
                     sim_time=sim_time,
                     field_slice=field_slice,
                     plane_label=get_slice_plane_label(axis_to_slice),
-                    comp_label=comp_label,
+                    comp_latex_label=comp_latex_label,
                     palette_config=add_color.resolve_continuous_palette_config(
                         pivot_value=pivot_value,
                         value_range=(field_slice.min_value, field_slice.max_value),
@@ -516,7 +516,7 @@ class GenerateFieldSlices:
                     farray_3d=field_comp.sarray_3d,
                     axis_to_slice=axis_to_slice,
                     uniform_domain=uniform_domain,
-                    comp_label=field_comp.label,
+                    comp_latex_label=field_comp.latex_label,
                     sim_time=sim_time,
                     step_index=step_index,
                     amr_level=self.field_args.amr_level,
@@ -539,7 +539,7 @@ class GenerateFieldSlices:
         sim_time: float | None = None
         for comp_axis in comp_axes:
             sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
-            comp_label: latex_labels.LatexLabel | None = None
+            comp_latex_label: latex_labels.LatexLabel | None = None
             for axis_to_slice in self.axes_to_slice:
                 data_file_name = self._get_data_file_name(
                     comp_axis=comp_axis,
@@ -548,10 +548,10 @@ class GenerateFieldSlices:
                 )
                 field_slice = FieldSlice.load_from_file(data_dir / data_file_name)
                 sliced_by_axis[axis_to_slice] = field_slice
-                comp_label = field_slice.comp_label
+                comp_latex_label = field_slice.comp_latex_label
                 sim_time = field_slice.sim_time
-            assert comp_label is not None
-            rows.append((comp_label, sliced_by_axis))
+            assert comp_latex_label is not None
+            rows.append((comp_latex_label, sliced_by_axis))
         assert sim_time is not None
         return rows, sim_time
 
@@ -568,7 +568,7 @@ class GenerateFieldSlices:
         if self.apply_log10_plot:
             is_strictly_positive = self.field_args.registered_field.expected_properties.is_strictly_positive
             log10_rows: list[Row] = []
-            for comp_label, sliced_by_axis in rows:
+            for comp_latex_label, sliced_by_axis in rows:
                 if all(numpy.all(field_slice.sarray_2d == 0) for field_slice in sliced_by_axis.values()):
                     continue
                 log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
@@ -583,13 +583,13 @@ class GenerateFieldSlices:
                         axis_bounds=field_slice.axis_bounds,
                         min_value=min_value,
                         max_value=max_value,
-                        comp_label=field_slice.comp_label,
+                        comp_latex_label=field_slice.comp_latex_label,
                         sim_time=field_slice.sim_time,
                         step_index=field_slice.step_index,
                         amr_level=field_slice.amr_level,
                     )
-                log10_comp_label = latex_labels.LatexLabel(content=rf"\log_{{10}}({comp_label.content})")
-                log10_rows.append((log10_comp_label, log10_sliced_by_axis))
+                log10_comp_latex_label = latex_labels.LatexLabel(content=rf"\log_{{10}}({comp_latex_label.content})")
+                log10_rows.append((log10_comp_latex_label, log10_sliced_by_axis))
             rows = log10_rows
             if not rows:
                 manage_log.log_hint(

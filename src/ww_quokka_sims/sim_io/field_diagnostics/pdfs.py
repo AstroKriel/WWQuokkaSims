@@ -35,7 +35,7 @@ class FieldPDF:
     step_index: find_snapshots.StepIndex
     grouped_bin_centers: list[numpy.ndarray]
     grouped_densities: list[numpy.ndarray]
-    comp_labels: list[latex_labels.LatexLabel]
+    comp_latex_labels: list[latex_labels.LatexLabel]
     use_log10_bins: bool = False
 
     def __post_init__(
@@ -45,13 +45,13 @@ class FieldPDF:
             param=self.grouped_bin_centers,
             valid_seq_types=(list, tuple),
             param_name="<grouped_bin_centers>",
-            seq_length=len(self.comp_labels),
+            seq_length=len(self.comp_latex_labels),
         )
         validate_types.ensure_sequence(
             param=self.grouped_densities,
             valid_seq_types=(list, tuple),
             param_name="<grouped_densities>",
-            seq_length=len(self.comp_labels),
+            seq_length=len(self.comp_latex_labels),
         )
         for (bin_centers, densities) in zip(self.grouped_bin_centers, self.grouped_densities):
             validate_arrays.ensure_array(array=bin_centers)
@@ -67,7 +67,7 @@ class FieldPDF:
     def num_comps(
         self,
     ) -> int:
-        return len(self.comp_labels)
+        return len(self.comp_latex_labels)
 
     @property
     def is_scalar(
@@ -93,9 +93,9 @@ class FieldPDF:
             "step_index": self.step_index.value,
             "use_log10_bins": self.use_log10_bins,
         }
-        for comp_index, comp_label in enumerate(self.comp_labels):
+        for comp_index, comp_latex_label in enumerate(self.comp_latex_labels):
             bin_centers, densities = self.get_pdf(comp_index)
-            output_dict[comp_label.content] = {
+            output_dict[comp_latex_label.content] = {
                 bin_centers_key: bin_centers,
                 "log10_density": densities,
             }
@@ -132,7 +132,9 @@ class FieldPDF:
             grouped_densities=[
                 numpy.array(input_dict[comp_label_string]["log10_density"]) for comp_label_string in comp_label_strings
             ],
-            comp_labels=[latex_labels.LatexLabel(content=comp_label_string) for comp_label_string in comp_label_strings],
+            comp_latex_labels=[
+                latex_labels.LatexLabel(content=comp_label_string) for comp_label_string in comp_label_strings
+            ],
             use_log10_bins=use_log10_bins,
         )
 
@@ -229,7 +231,7 @@ class ComputePDFs:
         sim_time = vfield_3d.sim_time
         assert sim_time is not None
         comp_names = sorted(self.comps_to_plot)
-        comp_labels = [
+        comp_latex_labels = [
             field_models.get_vcomp_label(
                 vfield_3d=vfield_3d,
                 comp_axis=comp_name,
@@ -251,7 +253,7 @@ class ComputePDFs:
             step_index=step_index,
             grouped_bin_centers=grouped_bin_centers,
             grouped_densities=grouped_densities,
-            comp_labels=comp_labels,
+            comp_latex_labels=comp_latex_labels,
             use_log10_bins=self.use_log10_bins,
         )
 
@@ -273,7 +275,7 @@ class ComputePDFs:
             step_index=step_index,
             grouped_bin_centers=[pdf.bin_centers],
             grouped_densities=[pdf.log10_densities],
-            comp_labels=[field_models.get_label(sfield_3d)],
+            comp_latex_labels=[field_models.get_label(sfield_3d)],
             use_log10_bins=self.use_log10_bins,
         )
 
@@ -390,16 +392,16 @@ class GeneratePDFs:
     def _style_axs(
         *,
         axs_grid: manage_figure.PanelGrid,
-        comp_labels: list[latex_labels.LatexLabel],
+        comp_latex_labels: list[latex_labels.LatexLabel],
         use_log10_bins: bool,
     ) -> None:
-        for comp_index, comp_label in enumerate(comp_labels):
+        for comp_index, comp_latex_label in enumerate(comp_latex_labels):
             ax = axs_grid[0][comp_index]
             if use_log10_bins:
-                x_label = latex_labels.LatexLabel(content=rf"x \equiv \log_{{10}}({comp_label.content})")
+                x_latex_label = latex_labels.LatexLabel(content=rf"x \equiv \log_{{10}}({comp_latex_label.content})")
             else:
-                x_label = latex_labels.LatexLabel(content=rf"x \equiv {comp_label.content}")
-            ax.set_xlabel(x_label.label)
+                x_latex_label = latex_labels.LatexLabel(content=rf"x \equiv {comp_latex_label.content}")
+            ax.set_xlabel(x_latex_label.label)
             if comp_index == 0:
                 ax.set_ylabel(r"$\log_{10}\big(p(x)\big)$")
 
@@ -468,7 +470,7 @@ class GeneratePDFs:
         )
         self._style_axs(
             axs_grid=axs_grid,
-            comp_labels=field_pdf.comp_labels,
+            comp_latex_labels=field_pdf.comp_latex_labels,
             use_log10_bins=self.use_log10_bins,
         )
         manage_figure.save_figure(
@@ -503,7 +505,7 @@ class GeneratePDFs:
             )
         self._style_axs(
             axs_grid=axs_grid,
-            comp_labels=field_pdfs[0].comp_labels,
+            comp_latex_labels=field_pdfs[0].comp_latex_labels,
             use_log10_bins=self.use_log10_bins,
         )
         data_name = self._get_data_name()

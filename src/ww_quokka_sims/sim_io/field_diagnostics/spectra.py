@@ -223,13 +223,13 @@ class GenerateSpectra:
     def _style_ax(
         *,
         ax: manage_figure.Panel,
-        field_label: latex_labels.LatexLabel,
+        field_latex_label: latex_labels.LatexLabel,
     ) -> None:
-        ylabel = latex_labels.LatexLabel(
-            content=rf"\log_{{10}}\big(\mathcal{{P}}_{{{field_label.content}}}(k)\big)",
-        ).label
+        ylabel_latex_label = latex_labels.LatexLabel(
+            content=rf"\log_{{10}}\big(\mathcal{{P}}_{{{field_latex_label.content}}}(k)\big)",
+        )
         ax.set_xlabel(r"$\log_{10}(k)$")
-        ax.set_ylabel(ylabel)
+        ax.set_ylabel(ylabel_latex_label.label)
 
     @staticmethod
     def _plot_snapshot(
@@ -287,7 +287,7 @@ class GenerateSpectra:
         )
         self._style_ax(
             ax=ax,
-            field_label=field_spectrum.latex_label,
+            field_latex_label=field_spectrum.latex_label,
         )
         manage_figure.save_figure(
             figure=figure,
@@ -316,7 +316,7 @@ class GenerateSpectra:
             )
         self._style_ax(
             ax=ax,
-            field_label=field_spectra[0].latex_label,
+            field_latex_label=field_spectra[0].latex_label,
         )
         figure_path = figures_dir / f"{self.registered_field.name}-spectra-summary.png"
         manage_figure.save_figure(

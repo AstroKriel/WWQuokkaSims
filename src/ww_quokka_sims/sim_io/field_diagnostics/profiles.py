@@ -84,7 +84,7 @@ def _ensure_profile_arrays(
 @dataclasses.dataclass(frozen=True)
 class ScalarFieldProfile:
     field_name: str
-    field_label: latex_labels.LatexLabel
+    field_latex_label: latex_labels.LatexLabel
     sim_time: float
     step_index: find_snapshots.StepIndex
     profile_axis: str
@@ -122,7 +122,7 @@ class ScalarFieldProfile:
             file_path=file_path,
             input_dict={
                 "field_name": self.field_name,
-                "field_label": self.field_label.content,
+                "field_label": self.field_latex_label.content,
                 "sim_time": self.sim_time,
                 "step_index": self.step_index.value,
                 "profile_axis": self.profile_axis,
@@ -159,7 +159,7 @@ class ScalarFieldProfile:
         )
         return cls(
             field_name=data["field_name"],
-            field_label=latex_labels.LatexLabel(content=data["field_label"]),
+            field_latex_label=latex_labels.LatexLabel(content=data["field_label"]),
             sim_time=float(data["sim_time"]),
             step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
             profile_axis=data["profile_axis"],
@@ -177,7 +177,7 @@ class ScalarFieldProfile:
 @dataclasses.dataclass(frozen=True)
 class VectorComponent:
     field_value: NDArray[numpy.floating]
-    label: latex_labels.LatexLabel
+    latex_label: latex_labels.LatexLabel
 
     def __post_init__(
         self,
@@ -244,7 +244,7 @@ class VectorFieldProfile:
                 "field_comps": {
                     comp_axis: {
                         "field_value": component.field_value,
-                        "label": component.label.content,
+                        "label": component.latex_label.content,
                     }
                     for comp_axis, component in self.components.items()
                 },
@@ -280,7 +280,7 @@ class VectorFieldProfile:
             cartesian_axes.as_axis(comp_axis):
             VectorComponent(
                 field_value=numpy.asarray(comp_data["field_value"]),
-                label=latex_labels.LatexLabel(content=comp_data["label"]),
+                latex_label=latex_labels.LatexLabel(content=comp_data["label"]),
             )
             for comp_axis, comp_data in data["field_comps"].items()
         }
@@ -305,7 +305,7 @@ class CompProfile:
     sim_time: float
     step_index: find_snapshots.StepIndex
     comp_name: str
-    comp_label: latex_labels.LatexLabel
+    comp_latex_label: latex_labels.LatexLabel
     axis_labels: list[cartesian_axes.AxisLike_3D]
     x_array_by_axis: list[numpy.ndarray]
     y_array_by_axis: list[numpy.ndarray]
@@ -391,7 +391,7 @@ class ComputeCompProfiles:
                 comp_profile = comp_profiles[0]
                 ScalarFieldProfile(
                     field_name=self.registered_field.name,
-                    field_label=comp_profile.comp_label,
+                    field_latex_label=comp_profile.comp_latex_label,
                     sim_time=sim_time,
                     step_index=step_index,
                     profile_axis=axis_label_str,
@@ -405,7 +405,7 @@ class ComputeCompProfiles:
                     cartesian_axes.as_axis(comp_profile.comp_name):
                     VectorComponent(
                         field_value=comp_profile.get_values(axis_index=axis_index),
-                        label=comp_profile.comp_label,
+                        latex_label=comp_profile.comp_latex_label,
                     )
                     for comp_profile in comp_profiles
                 }
@@ -436,22 +436,22 @@ class ComputeCompProfiles:
             if "field_comps" not in first_raw:
                 x_array_by_axis: list[numpy.ndarray] = []
                 y_array_by_axis: list[numpy.ndarray] = []
-                comp_label: latex_labels.LatexLabel | None = None
+                comp_latex_label: latex_labels.LatexLabel | None = None
                 for data_path in data_paths:
                     scalar_field_profile = ScalarFieldProfile.load_from_file(data_path)
                     x_array_by_axis.append(scalar_field_profile.position)
                     y_array_by_axis.append(scalar_field_profile.field_value)
-                    comp_label = scalar_field_profile.field_label
+                    comp_latex_label = scalar_field_profile.field_latex_label
                     sim_time = scalar_field_profile.sim_time
                     step_index = scalar_field_profile.step_index
-                assert comp_label is not None
+                assert comp_latex_label is not None
                 comp_profiles = [
                     CompProfile(
                         sim_time=sim_time,
                         step_index=step_index,
                         comp_name=self.registered_field.name,
                         axis_labels=list(self.axes_to_slice),
-                        comp_label=comp_label,
+                        comp_latex_label=comp_latex_label,
                         x_array_by_axis=x_array_by_axis,
                         y_array_by_axis=y_array_by_axis,
                     ),
@@ -462,7 +462,7 @@ class ComputeCompProfiles:
                 comp_keys = sorted(vector_profiles[0].components.keys())
                 per_comp_x: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
                 per_comp_y: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-                per_comp_label: dict[cartesian_axes.CartesianAxis_3D, latex_labels.LatexLabel] = {}
+                per_comp_latex_label: dict[cartesian_axes.CartesianAxis_3D, latex_labels.LatexLabel] = {}
                 for vector_field_profile in vector_profiles:
                     sim_time = vector_field_profile.sim_time
                     step_index = vector_field_profile.step_index
@@ -470,14 +470,14 @@ class ComputeCompProfiles:
                         component = vector_field_profile.components[key]
                         per_comp_x[key].append(vector_field_profile.position)
                         per_comp_y[key].append(component.field_value)
-                        per_comp_label[key] = component.label
+                        per_comp_latex_label[key] = component.latex_label
                 comp_profiles = [
                     CompProfile(
                         sim_time=sim_time,
                         step_index=step_index,
                         comp_name=key,
                         axis_labels=list(self.axes_to_slice),
-                        comp_label=per_comp_label[key],
+                        comp_latex_label=per_comp_latex_label[key],
                         x_array_by_axis=per_comp_x[key],
                         y_array_by_axis=per_comp_y[key],
                     ) for key in comp_keys
@@ -553,7 +553,7 @@ class ComputeCompProfiles:
                 step_index=step_index,
                 comp_name=self.registered_field.name,
                 axis_labels=axis_labels,
-                comp_label=field_models.get_label(sfield_3d),
+                comp_latex_label=field_models.get_label(sfield_3d),
                 x_array_by_axis=x_array_by_axis,
                 y_array_by_axis=y_array_by_axis,
             ),
@@ -577,7 +577,7 @@ class ComputeCompProfiles:
         axis_labels = list(self.axes_to_slice)
         comp_profiles: list[CompProfile] = []
         for comp_name in comp_names:
-            comp_label = field_models.get_vcomp_label(
+            comp_latex_label = field_models.get_vcomp_label(
                 vfield_3d=vfield_3d,
                 comp_axis=comp_name,
             )
@@ -602,7 +602,7 @@ class ComputeCompProfiles:
                     step_index=step_index,
                     comp_name=cartesian_axes.get_axis_label(comp_name),
                     axis_labels=axis_labels,
-                    comp_label=comp_label,
+                    comp_latex_label=comp_latex_label,
                     x_array_by_axis=x_array_by_axis,
                     y_array_by_axis=y_array_by_axis,
                 ),
@@ -726,17 +726,17 @@ class GenerateCompProfiles:
     def _style_axs(
         *,
         axs_grid: manage_figure.PanelGrid,
-        comp_labels: list[latex_labels.LatexLabel],
+        comp_latex_labels: list[latex_labels.LatexLabel],
         axis_labels: list[cartesian_axes.AxisLike_3D],
     ) -> None:
-        num_rows = len(comp_labels)
-        for row_index, comp_label in enumerate(comp_labels):
+        num_rows = len(comp_latex_labels)
+        for row_index, comp_latex_label in enumerate(comp_latex_labels):
             is_bottom_row = row_index == num_rows - 1
             for col_index, axis_label in enumerate(axis_labels):
                 ax = axs_grid[row_index][col_index]
                 is_left_col = col_index == 0
                 if is_left_col:
-                    ax.set_ylabel(comp_label.label)
+                    ax.set_ylabel(comp_latex_label.label)
                 if is_bottom_row:
                     axis_label_str = cartesian_axes.get_axis_label(axis_label)
                     ax.set_xlabel(axis_label_str if "$" in axis_label_str else f"${axis_label_str}$")
@@ -796,7 +796,7 @@ class GenerateCompProfiles:
         figure_path: pathlib.Path,
     ) -> None:
         axis_labels = comp_profiles[0].axis_labels
-        comp_labels = [comp_profile.comp_label for comp_profile in comp_profiles]
+        comp_latex_labels = [comp_profile.comp_latex_label for comp_profile in comp_profiles]
         figure, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=len(comp_profiles),
             num_panel_cols=len(axis_labels),
@@ -810,7 +810,7 @@ class GenerateCompProfiles:
             )
         self._style_axs(
             axs_grid=axs_grid,
-            comp_labels=comp_labels,
+            comp_latex_labels=comp_latex_labels,
             axis_labels=axis_labels,
         )
         manage_figure.save_figure(
@@ -826,15 +826,15 @@ class GenerateCompProfiles:
         figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
-        comp_labels = list(comp_profiles_lookup.keys())
-        axis_labels = comp_profiles_lookup[comp_labels[0]][0].axis_labels
+        comp_latex_labels = list(comp_profiles_lookup.keys())
+        axis_labels = comp_profiles_lookup[comp_latex_labels[0]][0].axis_labels
         figure, axs_grid = manage_figure.create_figure_grid(
-            num_panel_rows=len(comp_labels),
+            num_panel_rows=len(comp_latex_labels),
             num_panel_cols=len(axis_labels),
             panel_col_gap_pt=30.0,
         )
-        for row_index, comp_label in enumerate(comp_labels):
-            comp_profiles = comp_profiles_lookup[comp_label]
+        for row_index, comp_latex_label in enumerate(comp_latex_labels):
+            comp_profiles = comp_profiles_lookup[comp_latex_label]
             if len(comp_profiles) == 1:
                 self._plot_comp_profile(
                     axs_row=axs_grid[row_index],
@@ -848,7 +848,7 @@ class GenerateCompProfiles:
                 )
         self._style_axs(
             axs_grid=axs_grid,
-            comp_labels=comp_labels,
+            comp_latex_labels=comp_latex_labels,
             axis_labels=axis_labels,
         )
         figure_path = figures_dir / f"{self.registered_field.name}-profiles-summary.png"
@@ -888,9 +888,9 @@ class GenerateCompProfiles:
                         figure_path=figure_path,
                     )
                 for comp_profile in comp_profiles:
-                    comp_profiles_lookup.setdefault(comp_profile.comp_label, []).append(comp_profile)
-            for comp_label in comp_profiles_lookup:
-                comp_profiles_lookup[comp_label].sort(key=lambda _comp_profile: _comp_profile.sim_time)
+                    comp_profiles_lookup.setdefault(comp_profile.comp_latex_label, []).append(comp_profile)
+            for comp_latex_label in comp_profiles_lookup:
+                comp_profiles_lookup[comp_latex_label].sort(key=lambda _comp_profile: _comp_profile.sim_time)
             self._save_summary_figure(
                 comp_profiles_lookup=comp_profiles_lookup,
                 figures_dir=self.figures_dir,

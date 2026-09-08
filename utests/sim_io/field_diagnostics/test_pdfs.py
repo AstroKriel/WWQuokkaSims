@@ -70,7 +70,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             step_index=find_snapshots.StepIndex.from_value(3),
             grouped_bin_centers=[numpy.array([0.0, 1.0, 2.0])],
             grouped_densities=[numpy.array([-1.0, -2.0, -3.0])],
-            comp_labels=[latex_labels.LatexLabel(content=r"\rho")],
+            comp_latex_labels=[latex_labels.LatexLabel(content=r"\rho")],
             use_log10_bins=True,
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -79,7 +79,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             loaded = pdfs.FieldPDF.load_from_file(file_path)
         self.assertEqual(loaded.sim_time, field_pdf.sim_time)
         self.assertEqual(loaded.step_index, field_pdf.step_index)
-        self.assertEqual(loaded.comp_labels, field_pdf.comp_labels)
+        self.assertEqual(loaded.comp_latex_labels, field_pdf.comp_latex_labels)
         self.assertEqual(loaded.use_log10_bins, field_pdf.use_log10_bins)
         numpy.testing.assert_array_equal(loaded.grouped_bin_centers[0], field_pdf.grouped_bin_centers[0])
         numpy.testing.assert_array_equal(loaded.grouped_densities[0], field_pdf.grouped_densities[0])
@@ -93,7 +93,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             grouped_bin_centers=[numpy.array([0.0, 1.0]), numpy.array([2.0, 3.0])],
             grouped_densities=[numpy.array([-1.0, -2.0]),
                                numpy.array([-3.0, -4.0])],
-            comp_labels=[latex_labels.LatexLabel(content=r"v_x"), latex_labels.LatexLabel(content=r"v_y")],
+            comp_latex_labels=[latex_labels.LatexLabel(content=r"v_x"), latex_labels.LatexLabel(content=r"v_y")],
             use_log10_bins=False,
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -101,8 +101,8 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             field_pdf.save_to_file(file_path)
             loaded = pdfs.FieldPDF.load_from_file(file_path)
         self.assertEqual(
-            sorted(comp_label.content for comp_label in loaded.comp_labels),
-            sorted(comp_label.content for comp_label in field_pdf.comp_labels),
+            sorted(comp_latex_label.content for comp_latex_label in loaded.comp_latex_labels),
+            sorted(comp_latex_label.content for comp_latex_label in field_pdf.comp_latex_labels),
         )
         self.assertEqual(loaded.num_comps, field_pdf.num_comps)
 

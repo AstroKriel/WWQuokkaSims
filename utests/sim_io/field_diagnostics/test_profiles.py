@@ -32,7 +32,7 @@ class TestScalarProfileRoundTrip(unittest.TestCase):
     ):
         scalar_field_profile = profiles.ScalarFieldProfile(
             field_name="density",
-            field_label=latex_labels.LatexLabel(content=r"\rho"),
+            field_latex_label=latex_labels.LatexLabel(content=r"\rho"),
             sim_time=0.25,
             step_index=find_snapshots.StepIndex.from_value(3),
             profile_axis="x_0",
@@ -45,7 +45,7 @@ class TestScalarProfileRoundTrip(unittest.TestCase):
             scalar_field_profile.save_to_file(file_path)
             loaded = profiles.ScalarFieldProfile.load_from_file(file_path)
         self.assertEqual(loaded.field_name, scalar_field_profile.field_name)
-        self.assertEqual(loaded.field_label, scalar_field_profile.field_label)
+        self.assertEqual(loaded.field_latex_label, scalar_field_profile.field_latex_label)
         self.assertEqual(loaded.sim_time, scalar_field_profile.sim_time)
         self.assertEqual(loaded.step_index, scalar_field_profile.step_index)
         self.assertEqual(loaded.profile_axis, scalar_field_profile.profile_axis)
@@ -69,12 +69,12 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
                 cartesian_axes.CartesianAxis_3D.X0:
                 profiles.VectorComponent(
                     field_value=numpy.array([1.0, 2.0]),
-                    label=latex_labels.LatexLabel(content=r"v_x"),
+                    latex_label=latex_labels.LatexLabel(content=r"v_x"),
                 ),
                 cartesian_axes.CartesianAxis_3D.X1:
                 profiles.VectorComponent(
                     field_value=numpy.array([3.0, 4.0]),
-                    label=latex_labels.LatexLabel(content=r"v_y"),
+                    latex_label=latex_labels.LatexLabel(content=r"v_y"),
                 ),
             },
             amr_level=0,
@@ -88,7 +88,7 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
         self.assertEqual(set(loaded.components.keys()), set(vector_field_profile.components.keys()))
         for key, component in vector_field_profile.components.items():
             loaded_component = loaded.components[key]
-            self.assertEqual(loaded_component.label, component.label)
+            self.assertEqual(loaded_component.latex_label, component.latex_label)
             numpy.testing.assert_array_equal(loaded_component.field_value, component.field_value)
 
 
