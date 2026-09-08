@@ -815,24 +815,23 @@ def generate_fields_in_parallel(
     for field_name in fields_to_plot:
         registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
         for snapshot_dir in snapshot_dirs:
-            grouped_args.append(
-                WorkerArgs(
-                    snapshot_dir=str(snapshot_dir),
-                    snapshot_tag=snapshot_tag,
-                    registered_field=registered_field,
-                    comps_to_plot=comps_to_plot,
-                    axes_to_slice=axes_to_slice,
-                    data_dir=str(data_dir),
-                    figures_dir=str(figures_dir),
-                    index_width=index_width,
-                    save_data=save_data,
-                    save_figure=save_figure,
-                    overwrite=overwrite,
-                    hide_annotations=hide_annotations,
-                    amr_level=amr_level,
-                    apply_log10_plot=apply_log10_plot,
-                ),
+            worker_args = WorkerArgs(
+                snapshot_dir=str(snapshot_dir),
+                snapshot_tag=snapshot_tag,
+                registered_field=registered_field,
+                comps_to_plot=comps_to_plot,
+                axes_to_slice=axes_to_slice,
+                data_dir=str(data_dir),
+                figures_dir=str(figures_dir),
+                index_width=index_width,
+                save_data=save_data,
+                save_figure=save_figure,
+                overwrite=overwrite,
+                hide_annotations=hide_annotations,
+                amr_level=amr_level,
+                apply_log10_plot=apply_log10_plot,
             )
+            grouped_args.append(worker_args)
     parallel_dispatch.run_in_parallel(
         worker_fn=_generate_snapshot_worker,
         grouped_args=grouped_args,

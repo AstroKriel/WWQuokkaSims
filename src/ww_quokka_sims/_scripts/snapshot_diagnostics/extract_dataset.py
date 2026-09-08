@@ -252,18 +252,17 @@ def extract_fields_in_parallel(
     for field_name in fields_to_extract:
         registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
         for snapshot_dir in snapshot_dirs:
-            grouped_args.append(
-                WorkerArgs(
-                    snapshot_dir=str(snapshot_dir),
-                    snapshot_tag=snapshot_tag,
-                    registered_field=registered_field,
-                    comps_to_extract=comps_to_extract,
-                    data_dir=str(data_dir),
-                    index_width=index_width,
-                    overwrite=overwrite,
-                    amr_level=amr_level,
-                ),
+            worker_args = WorkerArgs(
+                snapshot_dir=str(snapshot_dir),
+                snapshot_tag=snapshot_tag,
+                registered_field=registered_field,
+                comps_to_extract=comps_to_extract,
+                data_dir=str(data_dir),
+                index_width=index_width,
+                overwrite=overwrite,
+                amr_level=amr_level,
             )
+            grouped_args.append(worker_args)
     parallel_dispatch.run_in_parallel(
         worker_fn=_extract_snapshot_worker,
         grouped_args=grouped_args,
