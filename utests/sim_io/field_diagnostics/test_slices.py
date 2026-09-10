@@ -14,12 +14,12 @@ import numpy
 
 ## personal
 from jormi.ww_fields import cartesian_axes
-from jormi.ww_fields.fields_3d import domain_models
+from jormi.ww_fields.fields_3d import domain_models, field_models
 from jormi.ww_plots import latex_labels
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import slices
-from ww_quokka_sims.sim_io.snapshots import find_snapshots
+from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load_snapshot
 
 ##
 ## === HELPERS
@@ -35,6 +35,15 @@ _UNIFORM_DOMAIN = domain_models.UniformDomain_3D(
 ## every cell has a unique value, so a swapped axis in the slicing logic shows up as
 ## extracting the wrong 2D plane, not just a wrong-shaped one
 _SARRAY_3D = numpy.arange(3 * 3 * 3, dtype=float).reshape(3, 3, 3)
+
+
+def _unused_loader(
+    _quokka_snapshot: load_snapshot.QuokkaSnapshot,
+    *,
+    amr_level: int = 0,
+) -> field_models.AnyField_3D:
+    _ = amr_level
+    raise AssertionError("loader_fn should not be called by a pure path-existence check")
 
 ##
 ## === TEST SUITE
@@ -111,6 +120,62 @@ class TestSliceField(unittest.TestCase):
             self._slice(axis_to_slice=cartesian_axes.CartesianAxis_3D.X0),
             _SARRAY_3D[1, :, :],
         )
+
+
+class TestFindSavedCompAxes(unittest.TestCase):
+
+    @staticmethod
+    def _make_generate_field_slices(
+        *,
+        comps_to_plot: tuple[cartesian_axes.CartesianAxis_3D, ...],
+        axes_to_slice: tuple[cartesian_axes.CartesianAxis_3D, ...],
+    ) -> slices.GenerateFieldSlices:
+        registered_field = field_registry.RegisteredField(
+            name="density",
+            loader_fn=_unused_loader,
+            expected_properties=field_registry.ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
+        )
+        return slices.GenerateFieldSlices(
+            snapshot_tag="plt",
+            field_args=slices.ResolvedFieldArgs(registered_field=registered_field),
+            comps_to_plot=comps_to_plot,
+            axes_to_slice=axes_to_slice,
+            save_data=False,
+            save_figure=True,
+        )
+
+    def test_empty_comps_to_plot_is_not_treated_as_complete(
+        self,
+    ):
+        """A scalar-only request with no vector components must not vacuously report the
+        (never-checked) vector-component data as complete."""
+        generate_field_slices = self._make_generate_field_slices(
+            comps_to_plot=(),
+            axes_to_slice=(cartesian_axes.CartesianAxis_3D.X0,),
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            saved_comp_axes = generate_field_slices._find_saved_comp_axes(
+                padded_step_index_string="0000000",
+                data_dir=pathlib.Path(tmp_dir),
+            )
+        self.assertIsNone(saved_comp_axes)
+
+    def test_empty_axes_to_slice_is_not_treated_as_complete(
+        self,
+    ):
+        generate_field_slices = self._make_generate_field_slices(
+            comps_to_plot=(cartesian_axes.CartesianAxis_3D.X0,),
+            axes_to_slice=(),
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            saved_comp_axes = generate_field_slices._find_saved_comp_axes(
+                padded_step_index_string="0000000",
+                data_dir=pathlib.Path(tmp_dir),
+            )
+        self.assertIsNone(saved_comp_axes)
 
 
 class TestSlicedFieldRoundTrip(unittest.TestCase):
