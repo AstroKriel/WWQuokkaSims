@@ -308,11 +308,11 @@ class GenerateTimeSeries:
         *,
         time_series: TimeSeries,
     ) -> None:
-        figure, ax = manage_figure.create_figure()
+        figure, panel = manage_figure.create_figure()
         time_array, values_array = self._as_arrays(time_points=time_series.get_sorted_time_points())
         if time_array.size == 0:
             annotate_panel.add_text(
-                panel=ax,
+                panel=panel,
                 x_pos_fraction=0.5,
                 y_pos_fraction=0.5,
                 label="no data",
@@ -330,15 +330,15 @@ class GenerateTimeSeries:
                 ylabel_content = rf"\log_{{10}}\big({ylabel_content}\big)"
                 figure_name = f"log10_{figure_name}"
             y_latex_label = latex_labels.LatexLabel(content=ylabel_content)
-            ax.plot(
+            panel.plot(
                 time_array,
                 values_array,
                 color="black",
                 marker="o",
                 ls="-",
             )
-            ax.set_xlabel("time")
-            ax.set_ylabel(y_latex_label.label)
+            panel.set_xlabel("time")
+            panel.set_ylabel(y_latex_label.label)
             figure_path = self.figures_dir / figure_name
             manage_figure.save_figure(
                 figure=figure,

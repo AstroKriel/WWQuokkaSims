@@ -220,25 +220,25 @@ class GenerateSpectra:
         self.amr_level = amr_level
 
     @staticmethod
-    def _style_ax(
+    def _style_panel(
         *,
-        ax: manage_figure.Panel,
+        panel: manage_figure.Panel,
         field_latex_label: latex_labels.LatexLabel,
     ) -> None:
         ylabel_latex_label = latex_labels.LatexLabel(
             content=rf"\log_{{10}}\big(\mathcal{{P}}_{{{field_latex_label.content}}}(k)\big)",
         )
-        ax.set_xlabel(r"$\log_{10}(k)$")
-        ax.set_ylabel(ylabel_latex_label.label)
+        panel.set_xlabel(r"$\log_{10}(k)$")
+        panel.set_ylabel(ylabel_latex_label.label)
 
     @staticmethod
     def _plot_snapshot(
         *,
-        ax: manage_figure.Panel,
+        panel: manage_figure.Panel,
         field_spectrum: FieldSpectrum,
         color: annotate_panel.ColorType,
     ) -> None:
-        ax.plot(
+        panel.plot(
             field_spectrum.log10_k_bin_centers,
             field_spectrum.log10_power_spectrum,
             color=color,
@@ -247,7 +247,7 @@ class GenerateSpectra:
     @staticmethod
     def _plot_series(
         *,
-        ax: manage_figure.Panel,
+        panel: manage_figure.Panel,
         field_spectra: list[FieldSpectrum],
     ) -> None:
         last_series_index = max(0, len(field_spectra) - 1)
@@ -261,12 +261,12 @@ class GenerateSpectra:
         for series_index, field_spectrum in enumerate(field_spectra):
             color = palette.get_color(series_index)
             GenerateSpectra._plot_snapshot(
-                ax=ax,
+                panel=panel,
                 field_spectrum=field_spectrum,
                 color=color,
             )
         add_color.add_colorbar(
-            panels=ax,
+            panels=panel,
             palette=palette,
             label=r"snapshot index",
             colorbar_gap_pt=5.0,
@@ -279,14 +279,14 @@ class GenerateSpectra:
         field_spectrum: FieldSpectrum,
         figure_path: pathlib.Path,
     ) -> None:
-        figure, ax = manage_figure.create_figure()
+        figure, panel = manage_figure.create_figure()
         self._plot_snapshot(
-            ax=ax,
+            panel=panel,
             field_spectrum=field_spectrum,
             color="black",
         )
-        self._style_ax(
-            ax=ax,
+        self._style_panel(
+            panel=panel,
             field_latex_label=field_spectrum.latex_label,
         )
         manage_figure.save_figure(
@@ -302,20 +302,20 @@ class GenerateSpectra:
         figures_dir: pathlib.Path,
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
-        figure, ax = manage_figure.create_figure()
+        figure, panel = manage_figure.create_figure()
         if len(field_spectra) == 1:
             self._plot_snapshot(
-                ax=ax,
+                panel=panel,
                 field_spectrum=field_spectra[0],
                 color="black",
             )
         else:
             self._plot_series(
-                ax=ax,
+                panel=panel,
                 field_spectra=field_spectra,
             )
-        self._style_ax(
-            ax=ax,
+        self._style_panel(
+            panel=panel,
             field_latex_label=field_spectra[0].latex_label,
         )
         figure_path = figures_dir / f"{self.registered_field.name}-spectra-summary.png"

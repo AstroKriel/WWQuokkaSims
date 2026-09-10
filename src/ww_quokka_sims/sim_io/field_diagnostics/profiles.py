@@ -720,9 +720,9 @@ class GenerateCompProfiles:
         return figures_dir / f"{self.registered_field.name}-profile-index={padded_step_index_string}.png"
 
     @staticmethod
-    def _style_axs(
+    def _style_panel_grid(
         *,
-        axs_grid: manage_figure.PanelGrid,
+        panel_grid: manage_figure.PanelGrid,
         comp_latex_labels: list[latex_labels.LatexLabel],
         axis_labels: list[cartesian_axes.AxisLike_3D],
     ) -> None:
@@ -730,27 +730,27 @@ class GenerateCompProfiles:
         for row_index, comp_latex_label in enumerate(comp_latex_labels):
             is_bottom_row = row_index == num_rows - 1
             for col_index, axis_label in enumerate(axis_labels):
-                ax = axs_grid[row_index][col_index]
+                panel = panel_grid[row_index][col_index]
                 is_left_col = col_index == 0
                 if is_left_col:
-                    ax.set_ylabel(comp_latex_label.label)
+                    panel.set_ylabel(comp_latex_label.label)
                 if is_bottom_row:
-                    ax.set_xlabel(cartesian_axes.get_axis_latex_label(axis_label).label)
+                    panel.set_xlabel(cartesian_axes.get_axis_latex_label(axis_label).label)
                 else:
-                    ax.tick_params(labelbottom=False)
+                    panel.tick_params(labelbottom=False)
 
     @staticmethod
     def _plot_comp_profile(
         *,
-        axs_row: manage_figure.PanelGrid,
+        panel_row: manage_figure.PanelGrid,
         comp_profile: CompProfile,
         color: annotate_panel.ColorType,
     ) -> None:
         for axis_index in range(comp_profile.num_axes):
-            ax = axs_row[axis_index]
+            panel = panel_row[axis_index]
             x_values = comp_profile.get_domain(axis_index=axis_index)
             y_values = comp_profile.get_values(axis_index=axis_index)
-            ax.plot(
+            panel.plot(
                 x_values,
                 y_values,
                 color=color,
@@ -759,7 +759,7 @@ class GenerateCompProfiles:
     def _plot_series_row(
         self,
         *,
-        axs_row: manage_figure.PanelGrid,
+        panel_row: manage_figure.PanelGrid,
         comp_profiles: list[CompProfile],
     ) -> None:
         last_series_index = max(0, len(comp_profiles) - 1)
@@ -773,12 +773,12 @@ class GenerateCompProfiles:
         for time_index, comp_profile in enumerate(comp_profiles):
             color = palette.get_color(time_index)
             self._plot_comp_profile(
-                axs_row=axs_row,
+                panel_row=panel_row,
                 comp_profile=comp_profile,
                 color=color,
             )
         add_color.add_colorbar(
-            panels=axs_row[-1],
+            panels=panel_row[-1],
             palette=palette,
             label=r"snapshot index",
             colorbar_gap_pt=15.0,
@@ -793,19 +793,19 @@ class GenerateCompProfiles:
     ) -> None:
         axis_labels = comp_profiles[0].axis_labels
         comp_latex_labels = [comp_profile.comp_latex_label for comp_profile in comp_profiles]
-        figure, axs_grid = manage_figure.create_figure_grid(
+        figure, panel_grid = manage_figure.create_figure_grid(
             num_panel_rows=len(comp_profiles),
             num_panel_cols=len(axis_labels),
             panel_col_gap_pt=30.0,
         )
         for row_index, comp_profile in enumerate(comp_profiles):
             self._plot_comp_profile(
-                axs_row=axs_grid[row_index],
+                panel_row=panel_grid[row_index],
                 comp_profile=comp_profile,
                 color="black",
             )
-        self._style_axs(
-            axs_grid=axs_grid,
+        self._style_panel_grid(
+            panel_grid=panel_grid,
             comp_latex_labels=comp_latex_labels,
             axis_labels=axis_labels,
         )
@@ -825,7 +825,7 @@ class GenerateCompProfiles:
         comp_names = list(comp_profiles_lookup.keys())
         axis_labels = comp_profiles_lookup[comp_names[0]][0].axis_labels
         comp_latex_labels = [comp_profiles_lookup[comp_name][0].comp_latex_label for comp_name in comp_names]
-        figure, axs_grid = manage_figure.create_figure_grid(
+        figure, panel_grid = manage_figure.create_figure_grid(
             num_panel_rows=len(comp_names),
             num_panel_cols=len(axis_labels),
             panel_col_gap_pt=30.0,
@@ -834,17 +834,17 @@ class GenerateCompProfiles:
             comp_profiles = comp_profiles_lookup[comp_name]
             if len(comp_profiles) == 1:
                 self._plot_comp_profile(
-                    axs_row=axs_grid[row_index],
+                    panel_row=panel_grid[row_index],
                     comp_profile=comp_profiles[0],
                     color="black",
                 )
             else:
                 self._plot_series_row(
-                    axs_row=axs_grid[row_index],
+                    panel_row=panel_grid[row_index],
                     comp_profiles=comp_profiles,
                 )
-        self._style_axs(
-            axs_grid=axs_grid,
+        self._style_panel_grid(
+            panel_grid=panel_grid,
             comp_latex_labels=comp_latex_labels,
             axis_labels=axis_labels,
         )

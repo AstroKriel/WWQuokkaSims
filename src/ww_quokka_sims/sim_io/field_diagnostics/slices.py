@@ -176,7 +176,7 @@ def get_slice_bounds(
 def get_slice_labels(
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
 ) -> tuple[latex_labels.LatexLabel, latex_labels.LatexLabel]:
-    axes_plane = [ax for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER if ax != axis_to_slice]
+    axes_plane = [panel for panel in cartesian_axes.DEFAULT_3D_AXES_ORDER if panel != axis_to_slice]
     return (
         axes_plane[0].axis_latex_label,
         axes_plane[1].axis_latex_label,
@@ -188,11 +188,11 @@ def get_slice_plane_label(
 ) -> latex_labels.LatexLabel:
     """Return the "which plane was sliced" annotation text; a pure function of `axis_to_slice` alone."""
     label_parts: list[str] = []
-    for ax in cartesian_axes.DEFAULT_3D_AXES_ORDER:
-        if ax == axis_to_slice:
-            label_parts.append(rf"{ax.axis_latex_label.content}=L_{ax.axis_index}/2")
+    for panel in cartesian_axes.DEFAULT_3D_AXES_ORDER:
+        if panel == axis_to_slice:
+            label_parts.append(rf"{panel.axis_latex_label.content}=L_{panel.axis_index}/2")
         else:
-            label_parts.append(ax.axis_latex_label.content)
+            label_parts.append(panel.axis_latex_label.content)
     return latex_labels.LatexLabel(content="(" + ", ".join(label_parts) + ")")
 
 
@@ -259,7 +259,7 @@ class GenerateFieldSlices:
     @staticmethod
     def plot_slice(
         *,
-        ax: manage_figure.Panel,
+        panel: manage_figure.Panel,
         sim_time: float,
         field_slice: FieldSlice,
         plane_latex_label: latex_labels.LatexLabel,
@@ -269,7 +269,7 @@ class GenerateFieldSlices:
         hide_annotations: bool = False,
     ) -> None:
         palette = plot_data.plot_2d_array(
-            panel=ax,
+            panel=panel,
             array_2d=field_slice.sarray_2d,
             data_format="xy",
             data_aspect_ratio="equal",
@@ -285,7 +285,7 @@ class GenerateFieldSlices:
         else:
             colorbar_label = None
         add_color.add_colorbar(
-            panels=ax,
+            panels=panel,
             palette=palette,
             label=colorbar_label,
             colorbar_side="right",
@@ -294,7 +294,7 @@ class GenerateFieldSlices:
         )
         if not hide_annotations:
             annotate_panel.add_text(
-                panel=ax,
+                panel=panel,
                 x_pos_fraction=0.5,
                 y_pos_fraction=0.95,
                 x_alignment="center",
@@ -303,7 +303,7 @@ class GenerateFieldSlices:
                 box_alpha=0.5,
             )
             annotate_panel.add_text(
-                panel=ax,
+                panel=panel,
                 x_pos_fraction=0.5,
                 y_pos_fraction=0.5,
                 x_alignment="center",
@@ -312,7 +312,7 @@ class GenerateFieldSlices:
                 box_alpha=0.5,
             )
             annotate_panel.add_text(
-                panel=ax,
+                panel=panel,
                 x_pos_fraction=0.5,
                 y_pos_fraction=0.05,
                 x_alignment="center",
@@ -411,7 +411,7 @@ class GenerateFieldSlices:
     def _plot_sliced_comps(
         self,
         *,
-        axs_grid: manage_figure.PanelGrid,
+        panel_grid: manage_figure.PanelGrid,
         sliced_comps: list[SlicedComp],
         sim_time: float,
     ) -> None:
@@ -427,10 +427,10 @@ class GenerateFieldSlices:
                 pivot_value = None
         for row_index, sliced_comp in enumerate(sliced_comps):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
-                ax = axs_grid[row_index][col_index]
+                panel = panel_grid[row_index][col_index]
                 field_slice = sliced_comp.sliced_by_axis[axis_to_slice]
                 self.plot_slice(
-                    ax=ax,
+                    panel=panel,
                     sim_time=sim_time,
                     field_slice=field_slice,
                     plane_latex_label=get_slice_plane_label(axis_to_slice),
@@ -448,16 +448,16 @@ class GenerateFieldSlices:
     def _label_axes(
         self,
         *,
-        axs_grid: manage_figure.PanelGrid,
+        panel_grid: manage_figure.PanelGrid,
     ) -> None:
-        num_rows = len(axs_grid)
+        num_rows = len(panel_grid)
         for row_index in range(num_rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
-                ax = axs_grid[row_index][col_index]
+                panel = panel_grid[row_index][col_index]
                 x_axis_latex_label, y_axis_latex_label = get_slice_labels(axis_to_slice)
                 if (num_rows == 1) or (row_index == num_rows - 1):
-                    ax.set_xlabel(x_axis_latex_label.label)
-                ax.set_ylabel(y_axis_latex_label.label)
+                    panel.set_xlabel(x_axis_latex_label.label)
+                panel.set_ylabel(y_axis_latex_label.label)
 
     def _get_data_file_name(
         self,
@@ -633,7 +633,7 @@ class GenerateFieldSlices:
                 )
                 return
         num_rows = len(sliced_comps)
-        figure, axs_grid = manage_figure.create_figure_grid(
+        figure, panel_grid = manage_figure.create_figure_grid(
             num_panel_rows=num_rows,
             num_panel_cols=len(self.axes_to_slice),
             panel_width_cm=8.0,
@@ -642,11 +642,11 @@ class GenerateFieldSlices:
             panel_col_gap_pt=100.0,
         )
         self._plot_sliced_comps(
-            axs_grid=axs_grid,
+            panel_grid=panel_grid,
             sliced_comps=sliced_comps,
             sim_time=sim_time,
         )
-        self._label_axes(axs_grid=axs_grid)
+        self._label_axes(panel_grid=panel_grid)
         figure_path = figures_dir / self._get_figure_file_name(padded_step_index_string=padded_step_index_string)
         manage_figure.save_figure(
             figure=figure,

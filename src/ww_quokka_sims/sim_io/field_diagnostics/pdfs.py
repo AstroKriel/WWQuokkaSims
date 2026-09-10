@@ -403,33 +403,33 @@ class GeneratePDFs:
             return self.registered_field.name
 
     @staticmethod
-    def _style_axs(
+    def _style_panel_grid(
         *,
-        axs_grid: manage_figure.PanelGrid,
+        panel_grid: manage_figure.PanelGrid,
         comp_latex_labels: list[latex_labels.LatexLabel],
         use_log10_bins: bool,
     ) -> None:
         for comp_index, comp_latex_label in enumerate(comp_latex_labels):
-            ax = axs_grid[0][comp_index]
+            panel = panel_grid[0][comp_index]
             if use_log10_bins:
                 x_latex_label = latex_labels.LatexLabel(content=rf"x \equiv \log_{{10}}({comp_latex_label.content})")
             else:
                 x_latex_label = latex_labels.LatexLabel(content=rf"x \equiv {comp_latex_label.content}")
-            ax.set_xlabel(x_latex_label.label)
+            panel.set_xlabel(x_latex_label.label)
             if comp_index == 0:
-                ax.set_ylabel(r"$\log_{10}\big(p(x)\big)$")
+                panel.set_ylabel(r"$\log_{10}\big(p(x)\big)$")
 
     @staticmethod
     def _plot_snapshot(
         *,
-        axs_grid: manage_figure.PanelGrid,
+        panel_grid: manage_figure.PanelGrid,
         field_pdf: FieldPDF,
         color: annotate_panel.ColorType,
     ) -> None:
         for comp_index in range(field_pdf.num_comps):
-            ax = axs_grid[0][comp_index]
+            panel = panel_grid[0][comp_index]
             x_values, y_values = field_pdf.get_pdf(comp_index)
-            ax.step(
+            panel.step(
                 x_values,
                 y_values,
                 where="mid",
@@ -440,7 +440,7 @@ class GeneratePDFs:
     @staticmethod
     def _plot_series(
         *,
-        axs_grid: manage_figure.PanelGrid,
+        panel_grid: manage_figure.PanelGrid,
         field_pdfs: list[FieldPDF],
     ) -> None:
         last_series_index = max(0, len(field_pdfs) - 1)
@@ -454,12 +454,12 @@ class GeneratePDFs:
         for series_index, field_pdf in enumerate(field_pdfs):
             color = palette.get_color(series_index)
             GeneratePDFs._plot_snapshot(
-                axs_grid=axs_grid,
+                panel_grid=panel_grid,
                 field_pdf=field_pdf,
                 color=color,
             )
         add_color.add_colorbar(
-            panels=axs_grid[-1][-1],
+            panels=panel_grid[-1][-1],
             palette=palette,
             label=r"snapshot index",
             colorbar_gap_pt=15.0,
@@ -472,18 +472,18 @@ class GeneratePDFs:
         field_pdf: FieldPDF,
         figure_path: pathlib.Path,
     ) -> None:
-        figure, axs_grid = manage_figure.create_figure_grid(
+        figure, panel_grid = manage_figure.create_figure_grid(
             num_panel_rows=1,
             num_panel_cols=field_pdf.num_comps,
             panel_col_gap_pt=30.0,
         )
         self._plot_snapshot(
-            axs_grid=axs_grid,
+            panel_grid=panel_grid,
             field_pdf=field_pdf,
             color="black",
         )
-        self._style_axs(
-            axs_grid=axs_grid,
+        self._style_panel_grid(
+            panel_grid=panel_grid,
             comp_latex_labels=field_pdf.comp_latex_labels,
             use_log10_bins=self.use_log10_bins,
         )
@@ -501,24 +501,24 @@ class GeneratePDFs:
     ) -> None:
         """Combined overlay across every snapshot processed this run; always rebuilt fresh."""
         num_cols = field_pdfs[0].num_comps
-        figure, axs_grid = manage_figure.create_figure_grid(
+        figure, panel_grid = manage_figure.create_figure_grid(
             num_panel_rows=1,
             num_panel_cols=num_cols,
             panel_col_gap_pt=30.0,
         )
         if len(field_pdfs) == 1:
             self._plot_snapshot(
-                axs_grid=axs_grid,
+                panel_grid=panel_grid,
                 field_pdf=field_pdfs[0],
                 color="black",
             )
         else:
             self._plot_series(
-                axs_grid=axs_grid,
+                panel_grid=panel_grid,
                 field_pdfs=field_pdfs,
             )
-        self._style_axs(
-            axs_grid=axs_grid,
+        self._style_panel_grid(
+            panel_grid=panel_grid,
             comp_latex_labels=field_pdfs[0].comp_latex_labels,
             use_log10_bins=self.use_log10_bins,
         )
