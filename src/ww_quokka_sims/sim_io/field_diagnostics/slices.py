@@ -186,7 +186,7 @@ def get_slice_bounds(
 def get_slice_labels(
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
 ) -> tuple[latex_labels.LatexLabel, latex_labels.LatexLabel]:
-    axes_plane = [panel for panel in cartesian_axes.DEFAULT_3D_AXES_ORDER if panel != axis_to_slice]
+    axes_plane = [axis for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER if axis != axis_to_slice]
     return (
         axes_plane[0].axis_latex_label,
         axes_plane[1].axis_latex_label,
@@ -198,11 +198,11 @@ def get_slice_plane_label(
 ) -> latex_labels.LatexLabel:
     """Return the "which plane was sliced" annotation text; a pure function of `axis_to_slice` alone."""
     label_parts: list[str] = []
-    for panel in cartesian_axes.DEFAULT_3D_AXES_ORDER:
-        if panel == axis_to_slice:
-            label_parts.append(rf"{panel.axis_latex_label.content}=L_{panel.axis_index}/2")
+    for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER:
+        if axis == axis_to_slice:
+            label_parts.append(rf"{axis.axis_latex_label.content}=L_{axis.axis_index}/2")
         else:
-            label_parts.append(panel.axis_latex_label.content)
+            label_parts.append(axis.axis_latex_label.content)
     return latex_labels.LatexLabel(content="(" + ", ".join(label_parts) + ")")
 
 
