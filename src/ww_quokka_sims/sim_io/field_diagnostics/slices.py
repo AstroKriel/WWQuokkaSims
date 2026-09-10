@@ -581,7 +581,12 @@ class GenerateFieldSlices:
                 comp_latex_label = field_slice.comp_latex_label
                 sim_time = field_slice.sim_time
             assert comp_latex_label is not None
-            sliced_comps.append(SlicedComp(comp_latex_label=comp_latex_label, sliced_by_axis=sliced_by_axis))
+            sliced_comps.append(
+                SlicedComp(
+                    comp_latex_label=comp_latex_label,
+                    sliced_by_axis=sliced_by_axis,
+                ),
+            )
         assert sim_time is not None
         return sliced_comps, sim_time
 
@@ -594,7 +599,8 @@ class GenerateFieldSlices:
         is_strictly_positive = self.field_args.registered_field.expected_properties.is_strictly_positive
         log10_sliced_comps: list[SlicedComp] = []
         for sliced_comp in sliced_comps:
-            if all(numpy.all(field_slice.sarray_2d == 0) for field_slice in sliced_comp.sliced_by_axis.values()):
+            if all(numpy.all(field_slice.sarray_2d == 0)
+                   for field_slice in sliced_comp.sliced_by_axis.values()):
                 continue
             log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
             for axis_to_slice, field_slice in sliced_comp.sliced_by_axis.items():
@@ -618,7 +624,10 @@ class GenerateFieldSlices:
                 content=rf"\log_{{10}}({sliced_comp.comp_latex_label.content})",
             )
             log10_sliced_comps.append(
-                SlicedComp(comp_latex_label=log10_comp_latex_label, sliced_by_axis=log10_sliced_by_axis),
+                SlicedComp(
+                    comp_latex_label=log10_comp_latex_label,
+                    sliced_by_axis=log10_sliced_by_axis,
+                ),
             )
         return log10_sliced_comps
 
@@ -657,7 +666,9 @@ class GenerateFieldSlices:
             sim_time=sim_time,
         )
         self._label_axes(panel_grid=panel_grid)
-        figure_path = figures_dir / self._get_figure_file_name(padded_step_index_string=padded_step_index_string)
+        figure_path = figures_dir / self._get_figure_file_name(
+            padded_step_index_string=padded_step_index_string
+        )
         manage_figure.save_figure(
             figure=figure,
             figure_path=figure_path,
@@ -678,7 +689,9 @@ class GenerateFieldSlices:
             snapshot_tag=self.snapshot_tag,
         )
         padded_step_index_string = step_index.get_padded_string(index_width=index_width)
-        figure_path = figures_dir / self._get_figure_file_name(padded_step_index_string=padded_step_index_string)
+        figure_path = figures_dir / self._get_figure_file_name(
+            padded_step_index_string=padded_step_index_string
+        )
         figure_is_needed = self.save_figure and (self.overwrite or not figure_path.exists())
         comp_axes = self._find_comp_axes(
             padded_step_index_string=padded_step_index_string,

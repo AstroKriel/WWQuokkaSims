@@ -504,7 +504,9 @@ class QuokkaSnapshot(
         applied per component.
         """
         if set(vfield_key_lookup) != set(cartesian_axes.DEFAULT_3D_AXES_ORDER):
-            received_axes = [axis.value for axis in sorted(vfield_key_lookup.keys(), key=lambda _axis: _axis.value)]
+            received_axes = [
+                axis.value for axis in sorted(vfield_key_lookup.keys(), key=lambda _axis: _axis.value)
+            ]
             expected_axes = [axis.value for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER]
             msg = f"`vfield_key_lookup` must contain all 3 components {expected_axes}; got {received_axes}."
             manage_log.log_error(text=msg)
@@ -595,7 +597,8 @@ class QuokkaSnapshot(
             x_max, y_max, z_max = (float(value) for value in self._yt_dataset.domain_right_edge)
             refinement_ratio = int(self._yt_dataset.refine_by)
             num_cells_x, num_cells_y, num_cells_z = (
-                int(num_cells) * (refinement_ratio**amr_level) for num_cells in self._yt_dataset.domain_dimensions
+                int(num_cells) * (refinement_ratio**amr_level)
+                for num_cells in self._yt_dataset.domain_dimensions
             )
             is_periodic_x, is_periodic_y, is_periodic_z = (
                 (bool(is_periodic) or force_periodicity) for is_periodic in self._yt_dataset.periodicity

@@ -49,6 +49,7 @@ def _unused_loader(
     _ = amr_level
     raise AssertionError("loader_fn should not be called by a pure path-existence check")
 
+
 ##
 ## === TEST SUITE
 ##
@@ -158,7 +159,7 @@ class TestFindCompAxes(unittest.TestCase):
         (never-checked) vector-component data as complete."""
         generate_field_slices = self._make_generate_field_slices(
             comps_to_plot=(),
-            axes_to_slice=(cartesian_axes.CartesianAxis_3D.X0,),
+            axes_to_slice=(cartesian_axes.CartesianAxis_3D.X0, ),
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             comp_axes = generate_field_slices._find_comp_axes(
@@ -171,7 +172,7 @@ class TestFindCompAxes(unittest.TestCase):
         self,
     ):
         generate_field_slices = self._make_generate_field_slices(
-            comps_to_plot=(cartesian_axes.CartesianAxis_3D.X0,),
+            comps_to_plot=(cartesian_axes.CartesianAxis_3D.X0, ),
             axes_to_slice=(),
         )
         with tempfile.TemporaryDirectory() as tmp_dir:

@@ -144,10 +144,12 @@ class FieldPDF:
         else:
             bin_centers_key = "bin_centers"
         grouped_bin_centers = [
-            numpy.array(input_dict[_comp_label_string][bin_centers_key]) for _comp_label_string in comp_label_strings
+            numpy.array(input_dict[_comp_label_string][bin_centers_key])
+            for _comp_label_string in comp_label_strings
         ]
         grouped_densities = [
-            numpy.array(input_dict[_comp_label_string]["log10_density"]) for _comp_label_string in comp_label_strings
+            numpy.array(input_dict[_comp_label_string]["log10_density"])
+            for _comp_label_string in comp_label_strings
         ]
         comp_latex_labels = [
             latex_labels.LatexLabel(content=_comp_label_string) for _comp_label_string in comp_label_strings
@@ -421,7 +423,9 @@ class GeneratePDFs:
         for comp_index, comp_latex_label in enumerate(comp_latex_labels):
             panel = panel_grid[0][comp_index]
             if use_log10_bins:
-                x_latex_label = latex_labels.LatexLabel(content=rf"x \equiv \log_{{10}}({comp_latex_label.content})")
+                x_latex_label = latex_labels.LatexLabel(
+                    content=rf"x \equiv \log_{{10}}({comp_latex_label.content})"
+                )
             else:
                 x_latex_label = latex_labels.LatexLabel(content=rf"x \equiv {comp_latex_label.content}")
             panel.set_xlabel(x_latex_label.label)
@@ -559,7 +563,9 @@ class GeneratePDFs:
         if field_pdfs and self.save_figure:
             data_tag = self._get_data_tag()
             for field_pdf in field_pdfs:
-                padded_step_index_string = field_pdf.step_index.get_padded_string(index_width=self.index_width)
+                padded_step_index_string = field_pdf.step_index.get_padded_string(
+                    index_width=self.index_width
+                )
                 figure_path = self.figures_dir / f"{data_tag}-pdf-index={padded_step_index_string}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(

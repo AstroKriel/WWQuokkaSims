@@ -350,7 +350,9 @@ class GenerateSpectra:
         field_spectra = compute_spectra_pipeline.run()
         if field_spectra and self.save_figure:
             for field_spectrum in field_spectra:
-                padded_step_index_string = field_spectrum.step_index.get_padded_string(index_width=self.index_width)
+                padded_step_index_string = field_spectrum.step_index.get_padded_string(
+                    index_width=self.index_width
+                )
                 figure_path = self.figures_dir / f"{self.registered_field.name}-spectrum-index={padded_step_index_string}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(

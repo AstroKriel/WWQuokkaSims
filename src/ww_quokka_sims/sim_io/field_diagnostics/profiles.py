@@ -467,8 +467,14 @@ class ComputeCompProfiles:
         else:
             vector_profiles = [VectorFieldProfile.load_from_file(data_path) for data_path in data_paths]
             comp_keys = sorted(vector_profiles[0].components.keys())
-            per_comp_domain: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
-            per_comp_values: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {key: [] for key in comp_keys}
+            per_comp_domain: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {
+                key: []
+                for key in comp_keys
+            }
+            per_comp_values: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {
+                key: []
+                for key in comp_keys
+            }
             per_comp_latex_label: dict[cartesian_axes.CartesianAxis_3D, latex_labels.LatexLabel] = {}
             for vector_field_profile in vector_profiles:
                 sim_time = vector_field_profile.sim_time
@@ -897,7 +903,9 @@ class GenerateCompProfiles:
         all_comp_profiles = compute_comp_profiles_pipeline.run()
         if all_comp_profiles and self.save_figure:
             for comp_profiles in all_comp_profiles:
-                padded_step_index_string = comp_profiles[0].step_index.get_padded_string(index_width=self.index_width)
+                padded_step_index_string = comp_profiles[0].step_index.get_padded_string(
+                    index_width=self.index_width
+                )
                 figure_path = self._get_figure_path(
                     figures_dir=self.figures_dir,
                     padded_step_index_string=padded_step_index_string,

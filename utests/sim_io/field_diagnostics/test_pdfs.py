@@ -91,9 +91,14 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             sim_time=0.5,
             step_index=find_snapshots.StepIndex.from_value(1),
             grouped_bin_centers=[numpy.array([0.0, 1.0]), numpy.array([2.0, 3.0])],
-            grouped_densities=[numpy.array([-1.0, -2.0]),
-                               numpy.array([-3.0, -4.0])],
-            comp_latex_labels=[latex_labels.LatexLabel(content=r"v_x"), latex_labels.LatexLabel(content=r"v_y")],
+            grouped_densities=[
+                numpy.array([-1.0, -2.0]),
+                numpy.array([-3.0, -4.0]),
+            ],
+            comp_latex_labels=[
+                latex_labels.LatexLabel(content=r"v_x"),
+                latex_labels.LatexLabel(content=r"v_y")
+            ],
             use_log10_bins=False,
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
