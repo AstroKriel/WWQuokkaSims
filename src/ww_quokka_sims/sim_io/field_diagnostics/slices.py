@@ -488,7 +488,7 @@ class GenerateFieldSlices:
             plot_name = field_name
         return f"{plot_name}-slice-index={padded_step_index_string}.png"
 
-    def _find_saved_comp_axes(
+    def _find_comp_axes(
         self,
         *,
         padded_step_index_string: str,
@@ -548,7 +548,7 @@ class GenerateFieldSlices:
                 )
                 field_slice.save_to_file(data_dir / data_file_name)
 
-    def _load_saved_sliced_comps(
+    def _load_sliced_comps(
         self,
         *,
         comp_axes: list[cartesian_axes.CartesianAxis_3D | None],
@@ -670,24 +670,24 @@ class GenerateFieldSlices:
         padded_step_index_string = step_index.get_padded_string(index_width=index_width)
         figure_path = figures_dir / self._get_figure_file_name(padded_step_index_string=padded_step_index_string)
         figure_is_needed = self.save_figure and (self.overwrite or not figure_path.exists())
-        saved_comp_axes = self._find_saved_comp_axes(
+        comp_axes = self._find_comp_axes(
             padded_step_index_string=padded_step_index_string,
             data_dir=data_dir,
         )
-        data_is_complete = saved_comp_axes is not None
+        data_is_complete = comp_axes is not None
         data_is_needed = self.save_data and (self.overwrite or not data_is_complete)
         if data_is_needed or figure_is_needed:
             if figure_is_needed and not data_is_needed and data_is_complete:
                 ## cheap path: reconstruct the figure from already-saved data, skip the raw snapshot entirely
-                assert saved_comp_axes is not None
+                assert comp_axes is not None
                 manage_log.log_hint(
                     text=(
                         f"`{self.field_args.registered_field.name}` at snapshot {step_index.value}: "
                         f"building figure from saved data, skipping the raw snapshot."
                     ),
                 )
-                sliced_comps, sim_time = self._load_saved_sliced_comps(
-                    comp_axes=saved_comp_axes,
+                sliced_comps, sim_time = self._load_sliced_comps(
+                    comp_axes=comp_axes,
                     padded_step_index_string=padded_step_index_string,
                     data_dir=data_dir,
                 )

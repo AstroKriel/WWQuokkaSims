@@ -122,7 +122,7 @@ class TestSliceField(unittest.TestCase):
         )
 
 
-class TestFindSavedCompAxes(unittest.TestCase):
+class TestFindCompAxes(unittest.TestCase):
 
     @staticmethod
     def _make_generate_field_slices(
@@ -157,11 +157,11 @@ class TestFindSavedCompAxes(unittest.TestCase):
             axes_to_slice=(cartesian_axes.CartesianAxis_3D.X0,),
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
-            saved_comp_axes = generate_field_slices._find_saved_comp_axes(
+            comp_axes = generate_field_slices._find_comp_axes(
                 padded_step_index_string="0000000",
                 data_dir=pathlib.Path(tmp_dir),
             )
-        self.assertIsNone(saved_comp_axes)
+        self.assertIsNone(comp_axes)
 
     def test_empty_axes_to_slice_is_not_treated_as_complete(
         self,
@@ -171,11 +171,11 @@ class TestFindSavedCompAxes(unittest.TestCase):
             axes_to_slice=(),
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
-            saved_comp_axes = generate_field_slices._find_saved_comp_axes(
+            comp_axes = generate_field_slices._find_comp_axes(
                 padded_step_index_string="0000000",
                 data_dir=pathlib.Path(tmp_dir),
             )
-        self.assertIsNone(saved_comp_axes)
+        self.assertIsNone(comp_axes)
 
 
 class TestSlicedFieldRoundTrip(unittest.TestCase):
