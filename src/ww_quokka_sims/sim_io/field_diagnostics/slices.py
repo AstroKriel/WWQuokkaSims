@@ -500,7 +500,7 @@ class GenerateFieldSlices:
                 padded_step_index_string=padded_step_index_string,
             ) for axis_to_slice in self.axes_to_slice
         ]
-        if all(sfield_path.exists() for sfield_path in sfield_paths):
+        if sfield_paths and all(sfield_path.exists() for sfield_path in sfield_paths):
             return [None]
         else:
             vfield_paths = [
@@ -510,7 +510,7 @@ class GenerateFieldSlices:
                     padded_step_index_string=padded_step_index_string,
                 ) for comp_axis in self.comps_to_plot for axis_to_slice in self.axes_to_slice
             ]
-            if all(vfield_path.exists() for vfield_path in vfield_paths):
+            if vfield_paths and all(vfield_path.exists() for vfield_path in vfield_paths):
                 return list(self.comps_to_plot)
             else:
                 return None
