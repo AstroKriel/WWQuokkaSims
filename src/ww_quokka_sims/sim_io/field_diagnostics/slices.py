@@ -570,6 +570,39 @@ class GenerateFieldSlices:
         assert sim_time is not None
         return rows, sim_time
 
+    def _apply_log10_transform(
+        self,
+        *,
+        rows: list[Row],
+    ) -> list[Row]:
+        """Convert every row to log10-space, dropping rows that are exactly zero everywhere."""
+        is_strictly_positive = self.field_args.registered_field.expected_properties.is_strictly_positive
+        log10_rows: list[Row] = []
+        for comp_latex_label, sliced_by_axis in rows:
+            if all(numpy.all(field_slice.sarray_2d == 0) for field_slice in sliced_by_axis.values()):
+                continue
+            log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
+            for axis_to_slice, field_slice in sliced_by_axis.items():
+                if is_strictly_positive:
+                    sarray_2d = field_slice.sarray_2d
+                else:
+                    sarray_2d = numpy.abs(field_slice.sarray_2d)
+                log10_sarray_2d = compute_array_stats.compute_safe_log10(sarray_2d)
+                min_value, max_value = _compute_min_max(log10_sarray_2d)
+                log10_sliced_by_axis[axis_to_slice] = FieldSlice(
+                    sarray_2d=log10_sarray_2d,
+                    axis_bounds=field_slice.axis_bounds,
+                    min_value=min_value,
+                    max_value=max_value,
+                    comp_latex_label=field_slice.comp_latex_label,
+                    sim_time=field_slice.sim_time,
+                    step_index=field_slice.step_index,
+                    amr_level=field_slice.amr_level,
+                )
+            log10_comp_latex_label = latex_labels.LatexLabel(content=rf"\log_{{10}}({comp_latex_label.content})")
+            log10_rows.append((log10_comp_latex_label, log10_sliced_by_axis))
+        return log10_rows
+
     def _render_figure(
         self,
         *,
@@ -581,32 +614,7 @@ class GenerateFieldSlices:
         verbose: bool,
     ) -> None:
         if self.apply_log10_plot:
-            is_strictly_positive = self.field_args.registered_field.expected_properties.is_strictly_positive
-            log10_rows: list[Row] = []
-            for comp_latex_label, sliced_by_axis in rows:
-                if all(numpy.all(field_slice.sarray_2d == 0) for field_slice in sliced_by_axis.values()):
-                    continue
-                log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
-                for axis_to_slice, field_slice in sliced_by_axis.items():
-                    if is_strictly_positive:
-                        sarray_2d = field_slice.sarray_2d
-                    else:
-                        sarray_2d = numpy.abs(field_slice.sarray_2d)
-                    log10_sarray_2d = compute_array_stats.compute_safe_log10(sarray_2d)
-                    min_value, max_value = _compute_min_max(log10_sarray_2d)
-                    log10_sliced_by_axis[axis_to_slice] = FieldSlice(
-                        sarray_2d=log10_sarray_2d,
-                        axis_bounds=field_slice.axis_bounds,
-                        min_value=min_value,
-                        max_value=max_value,
-                        comp_latex_label=field_slice.comp_latex_label,
-                        sim_time=field_slice.sim_time,
-                        step_index=field_slice.step_index,
-                        amr_level=field_slice.amr_level,
-                    )
-                log10_comp_latex_label = latex_labels.LatexLabel(content=rf"\log_{{10}}({comp_latex_label.content})")
-                log10_rows.append((log10_comp_latex_label, log10_sliced_by_axis))
-            rows = log10_rows
+            rows = self._apply_log10_transform(rows=rows)
             if not rows:
                 manage_log.log_hint(
                     text=(
