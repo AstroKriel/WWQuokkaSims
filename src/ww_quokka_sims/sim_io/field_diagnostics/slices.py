@@ -719,7 +719,7 @@ class GenerateFieldSlices:
                     )
 
 
-def generate_fields_in_serial(
+def generate_field_slices_in_serial(
     *,
     snapshot_tag: str,
     fields_to_plot: tuple[str, ...],
@@ -792,7 +792,7 @@ def _generate_snapshot_slices_worker(
     )
 
 
-def generate_fields_in_parallel(
+def generate_field_slices_in_parallel(
     *,
     snapshot_tag: str,
     fields_to_plot: tuple[str, ...],

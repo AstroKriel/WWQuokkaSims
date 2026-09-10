@@ -58,7 +58,7 @@ class DiagnosticPipeline:
         assert resolved_inputs.figures_dir is not None
         assert resolved_inputs.index_width is not None
         if (self.num_workers != 1) and (len(resolved_inputs.snapshot_dirs) > 5):
-            slices.generate_fields_in_parallel(
+            slices.generate_field_slices_in_parallel(
                 snapshot_tag=self.snapshot_args.snapshot_tag,
                 fields_to_plot=self.fields_to_plot,
                 comps_to_plot=self.comps_to_plot,
@@ -76,7 +76,7 @@ class DiagnosticPipeline:
                 num_workers=self.num_workers,
             )
         else:
-            slices.generate_fields_in_serial(
+            slices.generate_field_slices_in_serial(
                 snapshot_tag=self.snapshot_args.snapshot_tag,
                 fields_to_plot=self.fields_to_plot,
                 comps_to_plot=self.comps_to_plot,
