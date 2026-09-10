@@ -408,7 +408,7 @@ class GenerateFieldSlices:
             for field_comp in field_comps
         ]
 
-    def _plot_rows(
+    def _plot_sliced_comps(
         self,
         *,
         axs_grid: manage_figure.PanelGrid,
@@ -641,7 +641,7 @@ class GenerateFieldSlices:
             panel_row_gap_pt=40.0,
             panel_col_gap_pt=100.0,
         )
-        self._plot_rows(
+        self._plot_sliced_comps(
             axs_grid=axs_grid,
             sliced_comps=sliced_comps,
             sim_time=sim_time,
