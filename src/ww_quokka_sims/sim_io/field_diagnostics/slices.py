@@ -137,7 +137,11 @@ class FieldComp:
     comp_axis: cartesian_axes.CartesianAxis_3D | None = None
 
 
-Row = tuple[latex_labels.LatexLabel, dict[cartesian_axes.CartesianAxis_3D, "FieldSlice"]]
+class SlicedComp(typing.NamedTuple):
+    """One field component, sliced along every requested axis."""
+
+    comp_latex_label: latex_labels.LatexLabel
+    sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, "FieldSlice"]
 
 ##
 ## === FIELD PROCESSING
@@ -375,18 +379,18 @@ class GenerateFieldSlices:
         else:
             raise ValueError(f"{field_name} is an unrecognised field type.")
 
-    def _rows_from_field_comps(
+    def _sliced_comps_from_field_comps(
         self,
         *,
         field_comps: list[FieldComp],
         uniform_domain: domain_models.UniformDomain_3D,
         sim_time: float,
         step_index: find_snapshots.StepIndex,
-    ) -> list[Row]:
+    ) -> list[SlicedComp]:
         return [
-            (
-                field_comp.latex_label,
-                {
+            SlicedComp(
+                comp_latex_label=field_comp.latex_label,
+                sliced_by_axis={
                     axis_to_slice:
                     slice_3d_farray(
                         farray_3d=field_comp.sarray_3d,
@@ -407,7 +411,7 @@ class GenerateFieldSlices:
         self,
         *,
         axs_grid: manage_figure.PanelGrid,
-        rows: list[Row],
+        sliced_comps: list[SlicedComp],
         sim_time: float,
     ) -> None:
         num_cols = len(self.axes_to_slice)
@@ -420,16 +424,16 @@ class GenerateFieldSlices:
                 pivot_value = 0.0
             else:
                 pivot_value = None
-        for row_index, (comp_latex_label, sliced_by_axis) in enumerate(rows):
+        for row_index, sliced_comp in enumerate(sliced_comps):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
                 ax = axs_grid[row_index][col_index]
-                field_slice = sliced_by_axis[axis_to_slice]
+                field_slice = sliced_comp.sliced_by_axis[axis_to_slice]
                 self.plot_slice(
                     ax=ax,
                     sim_time=sim_time,
                     field_slice=field_slice,
                     plane_latex_label=get_slice_plane_label(axis_to_slice),
-                    comp_latex_label=comp_latex_label,
+                    comp_latex_label=sliced_comp.comp_latex_label,
                     palette_config=add_color.resolve_continuous_palette_config(
                         pivot_value=pivot_value,
                         value_range=(field_slice.min_value, field_slice.max_value),
@@ -543,14 +547,14 @@ class GenerateFieldSlices:
                 )
                 field_slice.save_to_file(data_dir / data_file_name)
 
-    def _load_saved_rows(
+    def _load_saved_sliced_comps(
         self,
         *,
         comp_axes: list[cartesian_axes.CartesianAxis_3D | None],
         padded_step_index_string: str,
         data_dir: pathlib.Path,
-    ) -> tuple[list[Row], float]:
-        rows: list[Row] = []
+    ) -> tuple[list[SlicedComp], float]:
+        sliced_comps: list[SlicedComp] = []
         sim_time: float | None = None
         for comp_axis in comp_axes:
             sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
@@ -566,23 +570,23 @@ class GenerateFieldSlices:
                 comp_latex_label = field_slice.comp_latex_label
                 sim_time = field_slice.sim_time
             assert comp_latex_label is not None
-            rows.append((comp_latex_label, sliced_by_axis))
+            sliced_comps.append(SlicedComp(comp_latex_label=comp_latex_label, sliced_by_axis=sliced_by_axis))
         assert sim_time is not None
-        return rows, sim_time
+        return sliced_comps, sim_time
 
     def _apply_log10_transform(
         self,
         *,
-        rows: list[Row],
-    ) -> list[Row]:
-        """Convert every row to log10-space, dropping rows that are exactly zero everywhere."""
+        sliced_comps: list[SlicedComp],
+    ) -> list[SlicedComp]:
+        """Convert every component's slices to log10-space, dropping any that are exactly zero everywhere."""
         is_strictly_positive = self.field_args.registered_field.expected_properties.is_strictly_positive
-        log10_rows: list[Row] = []
-        for comp_latex_label, sliced_by_axis in rows:
-            if all(numpy.all(field_slice.sarray_2d == 0) for field_slice in sliced_by_axis.values()):
+        log10_sliced_comps: list[SlicedComp] = []
+        for sliced_comp in sliced_comps:
+            if all(numpy.all(field_slice.sarray_2d == 0) for field_slice in sliced_comp.sliced_by_axis.values()):
                 continue
             log10_sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, FieldSlice] = {}
-            for axis_to_slice, field_slice in sliced_by_axis.items():
+            for axis_to_slice, field_slice in sliced_comp.sliced_by_axis.items():
                 if is_strictly_positive:
                     sarray_2d = field_slice.sarray_2d
                 else:
@@ -599,14 +603,18 @@ class GenerateFieldSlices:
                     step_index=field_slice.step_index,
                     amr_level=field_slice.amr_level,
                 )
-            log10_comp_latex_label = latex_labels.LatexLabel(content=rf"\log_{{10}}({comp_latex_label.content})")
-            log10_rows.append((log10_comp_latex_label, log10_sliced_by_axis))
-        return log10_rows
+            log10_comp_latex_label = latex_labels.LatexLabel(
+                content=rf"\log_{{10}}({sliced_comp.comp_latex_label.content})",
+            )
+            log10_sliced_comps.append(
+                SlicedComp(comp_latex_label=log10_comp_latex_label, sliced_by_axis=log10_sliced_by_axis),
+            )
+        return log10_sliced_comps
 
     def _render_figure(
         self,
         *,
-        rows: list[Row],
+        sliced_comps: list[SlicedComp],
         sim_time: float,
         step_index: find_snapshots.StepIndex,
         padded_step_index_string: str,
@@ -614,8 +622,8 @@ class GenerateFieldSlices:
         verbose: bool,
     ) -> None:
         if self.apply_log10_plot:
-            rows = self._apply_log10_transform(rows=rows)
-            if not rows:
+            sliced_comps = self._apply_log10_transform(sliced_comps=sliced_comps)
+            if not sliced_comps:
                 manage_log.log_hint(
                     text=(
                         f"Skipping `{self.field_args.registered_field.name}` at snapshot {step_index.value}: "
@@ -623,7 +631,7 @@ class GenerateFieldSlices:
                     ),
                 )
                 return
-        num_rows = len(rows)
+        num_rows = len(sliced_comps)
         figure, axs_grid = manage_figure.create_figure_grid(
             num_panel_rows=num_rows,
             num_panel_cols=len(self.axes_to_slice),
@@ -634,7 +642,7 @@ class GenerateFieldSlices:
         )
         self._plot_rows(
             axs_grid=axs_grid,
-            rows=rows,
+            sliced_comps=sliced_comps,
             sim_time=sim_time,
         )
         self._label_axes(axs_grid=axs_grid)
@@ -677,13 +685,13 @@ class GenerateFieldSlices:
                         f"building figure from saved data, skipping the raw snapshot."
                     ),
                 )
-                rows, sim_time = self._load_saved_rows(
+                sliced_comps, sim_time = self._load_saved_sliced_comps(
                     comp_axes=saved_comp_axes,
                     padded_step_index_string=padded_step_index_string,
                     data_dir=data_dir,
                 )
                 self._render_figure(
-                    rows=rows,
+                    sliced_comps=sliced_comps,
                     sim_time=sim_time,
                     step_index=step_index,
                     padded_step_index_string=padded_step_index_string,
@@ -703,14 +711,14 @@ class GenerateFieldSlices:
                         data_dir=data_dir,
                     )
                 if figure_is_needed:
-                    rows = self._rows_from_field_comps(
+                    sliced_comps = self._sliced_comps_from_field_comps(
                         field_comps=field_comps,
                         uniform_domain=snapshot_data.uniform_domain,
                         sim_time=snapshot_data.sim_time,
                         step_index=step_index,
                     )
                     self._render_figure(
-                        rows=rows,
+                        sliced_comps=sliced_comps,
                         sim_time=snapshot_data.sim_time,
                         step_index=step_index,
                         padded_step_index_string=padded_step_index_string,
