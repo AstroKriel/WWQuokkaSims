@@ -143,6 +143,7 @@ class SlicedComp(typing.NamedTuple):
     comp_latex_label: latex_labels.LatexLabel
     sliced_by_axis: dict[cartesian_axes.CartesianAxis_3D, "FieldSlice"]
 
+
 ##
 ## === FIELD PROCESSING
 ##
@@ -379,7 +380,7 @@ class GenerateFieldSlices:
         else:
             raise ValueError(f"{field_name} is an unrecognised field type.")
 
-    def _sliced_comps_from_field_comps(
+    def _slice_field_comps(
         self,
         *,
         field_comps: list[FieldComp],
@@ -711,7 +712,7 @@ class GenerateFieldSlices:
                         data_dir=data_dir,
                     )
                 if figure_is_needed:
-                    sliced_comps = self._sliced_comps_from_field_comps(
+                    sliced_comps = self._slice_field_comps(
                         field_comps=field_comps,
                         uniform_domain=snapshot_data.uniform_domain,
                         sim_time=snapshot_data.sim_time,
