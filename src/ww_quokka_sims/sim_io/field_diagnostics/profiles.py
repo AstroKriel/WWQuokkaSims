@@ -855,6 +855,21 @@ class GenerateCompProfiles:
             verbose=True,
         )
 
+    @staticmethod
+    def _group_comp_profiles_by_name(
+        all_comp_profiles: list[list[CompProfile]],
+    ) -> dict[str, list[CompProfile]]:
+        """Regroup per-snapshot profile lists into per-component series, sorted by sim_time."""
+        comp_profiles_lookup: dict[str, list[CompProfile]] = {}
+        for comp_profiles in all_comp_profiles:
+            for comp_profile in comp_profiles:
+                if comp_profile.comp_name not in comp_profiles_lookup:
+                    comp_profiles_lookup[comp_profile.comp_name] = []
+                comp_profiles_lookup[comp_profile.comp_name].append(comp_profile)
+        for comp_profiles in comp_profiles_lookup.values():
+            comp_profiles.sort(key=lambda _comp_profile: _comp_profile.sim_time)
+        return comp_profiles_lookup
+
     def run(
         self,
     ) -> None:
@@ -872,7 +887,6 @@ class GenerateCompProfiles:
         )
         all_comp_profiles = compute_comp_profiles_pipeline.run()
         if all_comp_profiles and self.save_figure:
-            comp_profiles_lookup: dict[str, list[CompProfile]] = {}
             for comp_profiles in all_comp_profiles:
                 padded_step_index_string = comp_profiles[0].step_index.get_padded_string(index_width=self.index_width)
                 figure_path = self._get_figure_path(
@@ -884,12 +898,7 @@ class GenerateCompProfiles:
                         comp_profiles=comp_profiles,
                         figure_path=figure_path,
                     )
-                for comp_profile in comp_profiles:
-                    if comp_profile.comp_name not in comp_profiles_lookup:
-                        comp_profiles_lookup[comp_profile.comp_name] = []
-                    comp_profiles_lookup[comp_profile.comp_name].append(comp_profile)
-            for comp_profiles in comp_profiles_lookup.values():
-                comp_profiles.sort(key=lambda _comp_profile: _comp_profile.sim_time)
+            comp_profiles_lookup = self._group_comp_profiles_by_name(all_comp_profiles)
             self._save_summary_figure(
                 comp_profiles_lookup=comp_profiles_lookup,
                 figures_dir=self.figures_dir,
