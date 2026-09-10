@@ -19,7 +19,11 @@ from jormi.ww_plots import latex_labels
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import slices
-from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load_snapshot
+from ww_quokka_sims.sim_io.snapshots import (
+    field_registry,
+    find_snapshots,
+    load_snapshot,
+)
 
 ##
 ## === HELPERS

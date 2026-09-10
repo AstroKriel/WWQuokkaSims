@@ -18,11 +18,21 @@ from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import domain_models, field_models
 from jormi.ww_fns import parallel_dispatch
 from jormi.ww_io import manage_io, manage_log
-from jormi.ww_plots import add_color, annotate_panel, latex_labels, manage_figure, plot_data
+from jormi.ww_plots import (
+    add_color,
+    annotate_panel,
+    latex_labels,
+    manage_figure,
+    plot_data,
+)
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import field_palettes
-from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load_snapshot
+from ww_quokka_sims.sim_io.snapshots import (
+    field_registry,
+    find_snapshots,
+    load_snapshot,
+)
 
 ##
 ## === SLICED FIELD

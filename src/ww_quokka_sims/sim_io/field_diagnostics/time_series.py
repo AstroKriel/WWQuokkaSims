@@ -19,7 +19,11 @@ from jormi.ww_arrays import compute_array_stats
 from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_fns import parallel_dispatch
 from jormi.ww_io import json_io, manage_io
-from jormi.ww_plots import annotate_panel, latex_labels, manage_figure
+from jormi.ww_plots import (
+    annotate_panel,
+    latex_labels,
+    manage_figure,
+)
 from jormi.ww_validation import validate_arrays, validate_types
 
 ## local

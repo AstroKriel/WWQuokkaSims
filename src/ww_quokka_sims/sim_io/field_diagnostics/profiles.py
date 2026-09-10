@@ -18,12 +18,21 @@ from numpy.typing import NDArray
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import domain_models, field_models
 from jormi.ww_io import json_io, manage_io
-from jormi.ww_plots import add_color, annotate_panel, latex_labels, manage_figure
+from jormi.ww_plots import (
+    add_color,
+    annotate_panel,
+    latex_labels,
+    manage_figure,
+)
 from jormi.ww_validation import validate_types
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import field_palettes
-from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots, load_snapshot
+from ww_quokka_sims.sim_io.snapshots import (
+    field_registry,
+    find_snapshots,
+    load_snapshot,
+)
 
 ##
 ## === HELPERS

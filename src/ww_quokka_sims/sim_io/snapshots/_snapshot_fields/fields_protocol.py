@@ -24,7 +24,11 @@ from jormi.ww_fields.fields_3d import (
 ## direct-name import, not the usual module import: `_snapshot_fields/__init__.py`
 ## re-exports this file's own contents, so `from . import read_fields` would need the
 ## package fully resolved while it is still mid-import -- a real circular dependency
-from .read_fields import FieldKey, HelmholtzKineticEnergy, LRUCache
+from .read_fields import (
+    FieldKey,
+    HelmholtzKineticEnergy,
+    LRUCache,
+)
 
 ##
 ## === PROTOCOL
