@@ -763,7 +763,7 @@ def generate_fields_in_serial(
             )
 
 
-def _generate_snapshot_worker(
+def _generate_snapshot_slices_worker(
     *user_args,
 ) -> None:
     """Positional-only signature required so WorkerArgs elements survive multiprocessing pickling."""
@@ -832,7 +832,7 @@ def generate_fields_in_parallel(
             )
             grouped_args.append(worker_args)
     parallel_dispatch.run_in_parallel(
-        worker_fn=_generate_snapshot_worker,
+        worker_fn=_generate_snapshot_slices_worker,
         grouped_args=grouped_args,
         num_workers=num_workers,
         timeout_seconds=120,
