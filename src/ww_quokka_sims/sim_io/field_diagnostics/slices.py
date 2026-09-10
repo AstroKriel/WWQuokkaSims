@@ -468,11 +468,11 @@ class GenerateFieldSlices:
     ) -> str:
         field_name = self.field_args.registered_field.name
         if comp_axis is not None:
-            comp_part = f"-comp={comp_axis.axis_label}"
+            comp_tag = f"-comp={comp_axis.axis_label}"
         else:
-            comp_part = ""
+            comp_tag = ""
         return (
-            f"{field_name}{comp_part}-slice={axis_to_slice.axis_label}-index={padded_step_index_string}"
+            f"{field_name}{comp_tag}-slice={axis_to_slice.axis_label}-index={padded_step_index_string}"
             f"-amr_level={self.field_args.amr_level}.npz"
         )
 
@@ -483,10 +483,10 @@ class GenerateFieldSlices:
     ) -> str:
         field_name = self.field_args.registered_field.name
         if self.apply_log10_plot:
-            plot_name = f"log10_{field_name}"
+            field_tag = f"log10_{field_name}"
         else:
-            plot_name = field_name
-        return f"{plot_name}-slice-index={padded_step_index_string}.png"
+            field_tag = field_name
+        return f"{field_tag}-slice-index={padded_step_index_string}.png"
 
     def _find_comp_axes(
         self,
@@ -885,10 +885,10 @@ def animate_saved_figures(
 ) -> None:
     for field_name in fields_to_plot:
         if apply_log10_plot:
-            plot_name = f"log10_{field_name}"
+            field_tag = f"log10_{field_name}"
         else:
-            plot_name = field_name
-        figure_prefix = f"{plot_name}-slice-index="
+            field_tag = field_name
+        figure_prefix = f"{field_tag}-slice-index="
         figure_paths = manage_io.filter_directory(
             directory=figures_dir,
             prefix=figure_prefix,
@@ -898,12 +898,12 @@ def animate_saved_figures(
         if len(figure_paths) < 3:
             manage_log.log_hint(
                 text=(
-                    f"Skipping animation for `{plot_name}`: "
+                    f"Skipping animation for `{field_tag}`: "
                     f"found {len(figure_paths)} frame(s), but need at least 3."
                 ),
             )
             continue
-        video_path = figures_dir / f"{plot_name}-slices.mp4"
+        video_path = figures_dir / f"{field_tag}-slices.mp4"
         manage_figure.animate_frames_to_video(
             frames_dir=figures_dir,
             video_path=video_path,

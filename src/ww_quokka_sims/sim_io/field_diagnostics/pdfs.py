@@ -188,7 +188,7 @@ class ComputePDFs:
         self.use_log10_bins = use_log10_bins
         self.amr_level = amr_level
 
-    def _get_data_name(
+    def _get_data_tag(
         self,
     ) -> str:
         """Filename stem, tagged with `log10_` when bins are log10-spaced.
@@ -207,8 +207,8 @@ class ComputePDFs:
         *,
         padded_step_index_string: str,
     ) -> pathlib.Path:
-        data_name = self._get_data_name()
-        return self.data_dir / f"{data_name}-pdf-index={padded_step_index_string}.json"
+        data_tag = self._get_data_tag()
+        return self.data_dir / f"{data_tag}-pdf-index={padded_step_index_string}.json"
 
     @staticmethod
     def _estimate_pdf(
@@ -388,7 +388,7 @@ class GeneratePDFs:
         self.use_log10_bins = use_log10_bins
         self.amr_level = amr_level
 
-    def _get_data_name(
+    def _get_data_tag(
         self,
     ) -> str:
         """Filename stem, tagged with `log10_` when bins are log10-spaced.
@@ -522,8 +522,8 @@ class GeneratePDFs:
             comp_latex_labels=field_pdfs[0].comp_latex_labels,
             use_log10_bins=self.use_log10_bins,
         )
-        data_name = self._get_data_name()
-        figure_path = figures_dir / f"{data_name}-pdfs-summary.png"
+        data_tag = self._get_data_tag()
+        figure_path = figures_dir / f"{data_tag}-pdfs-summary.png"
         manage_figure.save_figure(
             figure=figure,
             figure_path=figure_path,
@@ -548,10 +548,10 @@ class GeneratePDFs:
         )
         field_pdfs = compute_pdfs_pipeline.run()
         if field_pdfs and self.save_figure:
-            data_name = self._get_data_name()
+            data_tag = self._get_data_tag()
             for field_pdf in field_pdfs:
                 padded_step_index_string = field_pdf.step_index.get_padded_string(index_width=self.index_width)
-                figure_path = self.figures_dir / f"{data_name}-pdf-index={padded_step_index_string}.png"
+                figure_path = self.figures_dir / f"{data_tag}-pdf-index={padded_step_index_string}.png"
                 if self.overwrite or not figure_path.exists():
                     self._save_snapshot_figure(
                         field_pdf=field_pdf,
