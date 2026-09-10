@@ -6,14 +6,13 @@
 
 ## stdlib
 import argparse
-import pathlib
 
 ## personal
 from jormi.ww_io import manage_log
 
 ## local
 from ww_quokka_sims._scripts.snapshot_tools import cli
-from ww_quokka_sims.sim_io.snapshots import load_snapshot
+from ww_quokka_sims.sim_io.snapshots import find_snapshots, load_snapshot
 
 ##
 ## === PROGRAM MAIN
@@ -34,7 +33,17 @@ def main():
         ],
     )
     user_args = parser.parse_args()
-    snapshot_dir = pathlib.Path(user_args.input_dir).expanduser().resolve()
+    if user_args.input_dir is None:
+        raise ValueError("`--input-dir` is required.")
+    snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
+        input_dir=user_args.input_dir,
+        snapshot_tag=user_args.tag,
+    )
+    if not snapshot_dirs:
+        raise ValueError(
+            f"no snapshot directories found under `{user_args.input_dir}` matching tag `{user_args.tag}`.",
+        )
+    snapshot_dir = snapshot_dirs[-1]
     with load_snapshot.QuokkaSnapshot(
             snapshot_dir=snapshot_dir,
             verbose=True,
