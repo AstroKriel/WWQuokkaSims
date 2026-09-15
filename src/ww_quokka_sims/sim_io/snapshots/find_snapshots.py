@@ -33,6 +33,7 @@ class StepIndex:
     @classmethod
     def from_value(
         cls,
+        *,
         step_index_value: int,
     ) -> "StepIndex":
         return cls(str(step_index_value))

@@ -34,7 +34,7 @@ class TestScalarProfileRoundTrip(unittest.TestCase):
             field_name="density",
             field_latex_label=latex_labels.LatexLabel(content=r"\rho"),
             sim_time=0.25,
-            step_index=find_snapshots.StepIndex.from_value(3),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=3),
             profile_axis="x_0",
             position=numpy.array([0.0, 1.0, 2.0]),
             field_value=numpy.array([1.0, 2.0, 3.0]),
@@ -42,8 +42,8 @@ class TestScalarProfileRoundTrip(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = pathlib.Path(tmp_dir) / "scalar_field_profile.json"
-            scalar_field_profile.save_to_file(file_path)
-            loaded = profiles.ScalarFieldProfile.load_from_file(file_path)
+            scalar_field_profile.save_to_file(file_path=file_path)
+            loaded = profiles.ScalarFieldProfile.load_from_file(file_path=file_path)
         self.assertEqual(loaded.field_name, scalar_field_profile.field_name)
         self.assertEqual(loaded.field_latex_label, scalar_field_profile.field_latex_label)
         self.assertEqual(loaded.sim_time, scalar_field_profile.sim_time)
@@ -62,7 +62,7 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
         vector_field_profile = profiles.VectorFieldProfile(
             field_name="velocity",
             sim_time=0.5,
-            step_index=find_snapshots.StepIndex.from_value(1),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=1),
             profile_axis="x_1",
             position=numpy.array([0.0, 1.0]),
             components={
@@ -81,8 +81,8 @@ class TestVectorProfileRoundTrip(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = pathlib.Path(tmp_dir) / "vector_field_profile.json"
-            vector_field_profile.save_to_file(file_path)
-            loaded = profiles.VectorFieldProfile.load_from_file(file_path)
+            vector_field_profile.save_to_file(file_path=file_path)
+            loaded = profiles.VectorFieldProfile.load_from_file(file_path=file_path)
         self.assertEqual(loaded.field_name, vector_field_profile.field_name)
         numpy.testing.assert_array_equal(loaded.position, vector_field_profile.position)
         self.assertEqual(set(loaded.components.keys()), set(vector_field_profile.components.keys()))

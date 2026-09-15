@@ -82,8 +82,8 @@ class _DeriveEnergyFields:
 
     def compute_magnetic_energy_sfield(
         self: FieldsProtocol,
-        energy_prefactor: float = 0.5,
         *,
+        energy_prefactor: float = 0.5,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute magnetic energy density: `e_mag = alpha * |b|^2` with `alpha=0.5` by default."""
@@ -102,8 +102,8 @@ class _DeriveEnergyFields:
 
     def compute_internal_energy_sfield(
         self: FieldsProtocol,
-        magnetic_energy_sfield_3d: field_models.ScalarField_3D | None = None,
         *,
+        magnetic_energy_sfield_3d: field_models.ScalarField_3D | None = None,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute internal energy: `e_int = e_tot - e_kin - e_mag`; `e_mag = 0` if the snapshot did not store `vec(b)`.
@@ -120,7 +120,7 @@ class _DeriveEnergyFields:
             param_name="<E_kin_sfield_3d>",
         )
         E_int_sarray = E_tot_sarray - E_kin_sarray_3d
-        if self._is_vfield_keys_available("magnetic"):
+        if self._is_vfield_keys_available(field_name="magnetic"):
             E_mag_sarray = field_models.extract_3d_sarray(
                 sfield_3d=magnetic_energy_sfield_3d if magnetic_energy_sfield_3d is not None else
                 self.compute_magnetic_energy_sfield(amr_level=amr_level),
@@ -148,9 +148,9 @@ class _DeriveEnergyFields:
 
     def compute_pressure_sfield(
         self: FieldsProtocol,
+        *,
         gamma: float = 5.0 / 3.0,
         magnetic_energy_sfield_3d: field_models.ScalarField_3D | None = None,
-        *,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """

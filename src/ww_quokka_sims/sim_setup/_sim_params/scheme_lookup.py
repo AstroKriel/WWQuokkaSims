@@ -26,6 +26,7 @@ class ReconstructionScheme(enum.IntEnum):
 
 
 def resolve_reconstruction_scheme(
+    *,
     key: str,
 ) -> ReconstructionScheme:
     """Resolve `key` (a name, value, or shorthand combination-name key) to a `ReconstructionScheme` member."""
@@ -52,6 +53,7 @@ class EMFComputeScheme(enum.StrEnum):
 
 
 def resolve_emf_compute_scheme(
+    *,
     key: str,
 ) -> EMFComputeScheme:
     """Resolve `key` (a name, value, or shorthand combination-name key) to an `EMFComputeScheme` member."""
@@ -77,6 +79,7 @@ class EMFAveragingScheme(enum.StrEnum):
 
 
 def resolve_emf_averaging_scheme(
+    *,
     key: str,
 ) -> EMFAveragingScheme:
     """Resolve `key` (a name, value, or shorthand combination-name key) to an `EMFAveragingScheme` member."""

@@ -55,7 +55,7 @@ def build_sim_params(
     `stop_time`/`max_time_steps` have no default: the right `stop_time` (one wave period) depends
     on `num_modes_x/y/z`/`angle_between_k_b0`, so a fixed default would silently be wrong.
     """
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(key=reconstruction_order_key)
     return save_params.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=domain_lo,
@@ -84,8 +84,8 @@ def build_sim_params(
             use_dual_energy=_USE_DUAL_ENERGY,
         ),
         mhd_params=param_groups.MHDParams(
-            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
-            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(key=compute_scheme_key),
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(key=averaging_scheme_key),
             reconstruction_order=reconstruction_order,
             resistivity=resistivity,
         ),

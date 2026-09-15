@@ -49,6 +49,7 @@ def _ensure_scalar_or_axis_triple(
 
 
 def _as_axis_triple(
+    *,
     param: int | tuple[int, int, int],
 ) -> tuple[int, int, int]:
     if isinstance(param, tuple):
@@ -58,6 +59,7 @@ def _as_axis_triple(
 
 
 def _is_power_of_two(
+    *,
     value: int,
 ) -> bool:
     while value > 0 and value % 2 == 0:
@@ -214,10 +216,10 @@ class ResolutionParams:
                 "`<num_refinement_buffer_cells>` only applies when `<max_amr_levels>` > 0 (AMR refinement enabled).",
             )
         ## AMReX's own `Amr::checkInput` enforces these at runtime
-        blocking_factor_axes = _as_axis_triple(self.blocking_factor)
-        max_grid_size_axes = _as_axis_triple(self.max_grid_size)
+        blocking_factor_axes = _as_axis_triple(param=self.blocking_factor)
+        max_grid_size_axes = _as_axis_triple(param=self.max_grid_size)
         for axis, block_size in enumerate(blocking_factor_axes):
-            if not _is_power_of_two(block_size):
+            if not _is_power_of_two(value=block_size):
                 raise ValueError(
                     f"`<blocking_factor>` must be a power of 2 per axis (AMReX requirement), "
                     f"got {block_size} on axis {axis}.",

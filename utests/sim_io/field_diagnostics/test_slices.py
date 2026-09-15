@@ -98,7 +98,7 @@ class TestSliceField(unittest.TestCase):
             uniform_domain=_UNIFORM_DOMAIN,
             comp_latex_label=latex_labels.LatexLabel(content=r"\rho"),
             sim_time=0.0,
-            step_index=find_snapshots.StepIndex.from_value(0),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=0),
             amr_level=0,
         ).sarray_2d
 
@@ -195,13 +195,13 @@ class TestSlicedFieldRoundTrip(unittest.TestCase):
             max_value=3.0,
             comp_latex_label=latex_labels.LatexLabel(content=r"\rho"),
             sim_time=0.25,
-            step_index=find_snapshots.StepIndex.from_value(3),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=3),
             amr_level=1,
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = pathlib.Path(tmp_dir) / "sliced_field.npz"
-            sliced_field.save_to_file(file_path)
-            loaded = slices.FieldSlice.load_from_file(file_path)
+            sliced_field.save_to_file(file_path=file_path)
+            loaded = slices.FieldSlice.load_from_file(file_path=file_path)
         self.assertEqual(loaded.axis_bounds, sliced_field.axis_bounds)
         self.assertEqual(loaded.min_value, sliced_field.min_value)
         self.assertEqual(loaded.max_value, sliced_field.max_value)

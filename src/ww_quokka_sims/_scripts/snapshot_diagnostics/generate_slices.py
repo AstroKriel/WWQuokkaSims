@@ -53,6 +53,7 @@ class DiagnosticPipeline:
 
     def _pipeline(
         self,
+        *,
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
         assert resolved_inputs.figures_dir is not None
@@ -102,7 +103,7 @@ class DiagnosticPipeline:
             max_elems=100,
         )
         if resolved_inputs is not None:
-            self._pipeline(resolved_inputs)
+            self._pipeline(resolved_inputs=resolved_inputs)
 
 
 ##
@@ -156,9 +157,9 @@ def main():
         if user_args.input_dir is None:
             raise ValueError("`--input-dir` is required with `--save-data`/`--save-figure`.")
         diagnostic_pipeline = DiagnosticPipeline(
-            snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
-            field_comp_axes_args=cli.FieldCompAxesArgs.from_user_args(user_args),
-            diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args),
+            snapshot_args=cli.SnapshotArgs.from_user_args(user_args=user_args),
+            field_comp_axes_args=cli.FieldCompAxesArgs.from_user_args(user_args=user_args),
+            diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args=user_args),
             num_workers=user_args.num_workers,
             hide_annotations=user_args.no_annotations,
             apply_log10_plot=user_args.apply_log10_plot,

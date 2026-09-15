@@ -9,23 +9,19 @@ import collections
 import dataclasses
 import typing
 
+## third-party
+import numpy
+
 ## personal
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_models
-from jormi.ww_validation import validate_types
+from jormi.ww_validation import validate_arrays, validate_types
 
 ##
 ## === DATA STRUCTURES
 ##
 
 FieldKey: typing.TypeAlias = tuple[str, str]
-
-## boxlib uses "x-", "y-", "z-" prefixes for vector component field names
-_BOXLIB_XYZ_LABELS: dict[cartesian_axes.CartesianAxis_3D, str] = {
-    cartesian_axes.CartesianAxis_3D.X0: "x",
-    cartesian_axes.CartesianAxis_3D.X1: "y",
-    cartesian_axes.CartesianAxis_3D.X2: "z",
-}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -53,28 +49,61 @@ class HelmholtzKineticEnergy:
         )
 
 
+@dataclasses.dataclass(frozen=True)
+class AMRLeaves:
+    """One field's values at every leaf cell in the AMR hierarchy, each paired with its own
+    native cell width and physical position; unordered and not resampled onto a common resolution."""
+
+    values: numpy.ndarray
+    cell_width: numpy.ndarray
+    positions: numpy.ndarray
+
+    def __post_init__(
+        self,
+    ) -> None:
+        validate_arrays.ensure_same_shape(
+            array_a=self.values,
+            array_b=self.cell_width,
+            param_name_a="<values>",
+            param_name_b="<cell_width>",
+        )
+        validate_arrays.ensure_shape(
+            array=self.positions,
+            expected_shape=(*self.values.shape, 3),
+            param_name="<positions>",
+        )
+
+
 ##
 ## === YT FIELD MAPPINGS
 ##
 
+## boxlib uses "x-", "y-", "z-" prefixes for vector component field names
+BOXLIB_3D_AXES_LABELS: dict[cartesian_axes.CartesianAxis_3D, str] = {
+    cartesian_axes.CartesianAxis_3D.X0: "x",
+    cartesian_axes.CartesianAxis_3D.X1: "y",
+    cartesian_axes.CartesianAxis_3D.X2: "z",
+}
+
 
 def create_boxlib_vkeys(
+    *,
     field_name: str,
 ) -> dict[cartesian_axes.CartesianAxis_3D, FieldKey]:
     """Map `CartesianAxis_3D` to yt field keys using the pattern `("boxlib", "<axis>-<field_name>")` for each axis."""
     return {
-        axis: ("boxlib", f"{_BOXLIB_XYZ_LABELS[axis]}-{field_name}")
+        axis: ("boxlib", f"{BOXLIB_3D_AXES_LABELS[axis]}-{field_name}")
         for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER
     }
 
 
 YT_VFIELD_KEYS: dict[str, dict[str, typing.Any]] = {
     "momentum": {
-        "keys": create_boxlib_vkeys("GasMomentum"),
+        "keys": create_boxlib_vkeys(field_name="GasMomentum"),
         "description": "Momentum density components: vec(m) = rho * vec(v)",
     },
     "magnetic": {
-        "keys": create_boxlib_vkeys("BField"),
+        "keys": create_boxlib_vkeys(field_name="BField"),
         "description": "Magnetic field components (code units)",
     },
 }
@@ -107,6 +136,7 @@ class LRUCache:
 
     def __init__(
         self,
+        *,
         max_size: int = 3,
     ) -> None:
         validate_types.ensure_finite_int(
@@ -121,6 +151,7 @@ class LRUCache:
 
     def get_cached_field(
         self,
+        *,
         cache_key: str,
     ):
         """Return cached value for `cache_key`, or None if not found."""
@@ -131,6 +162,7 @@ class LRUCache:
 
     def cache_field(
         self,
+        *,
         cache_key: str,
         field_data: field_models.ScalarField_3D | field_models.VectorField_3D,
     ) -> None:

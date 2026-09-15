@@ -241,6 +241,7 @@ REGISTERED_FIELD_LOOKUP = {
 
 
 def get_field_type(
+    *,
     field_name: str,
 ) -> type[field_models.AnyField_3D]:
     """Return the concrete field type `field_name` resolves to, read off its loader's return-type
@@ -253,8 +254,8 @@ def get_field_type(
 
 
 def validate_fields(
-    field_names: list[str] | tuple[str, ...] | None,
     *,
+    field_names: list[str] | tuple[str, ...] | None,
     allowed_types: tuple[type, ...] | None = None,
 ) -> None:
     """Ensure every name in `field_names` is registered, and (if `allowed_types` is given) resolves
@@ -266,7 +267,7 @@ def validate_fields(
         raise ValueError(f"`field_names` must be a non-empty subset of: {sorted(valid_field_names)}.")
     if allowed_types is not None:
         for field_name in field_names:
-            field_type = get_field_type(field_name)
+            field_type = get_field_type(field_name=field_name)
             if not issubclass(field_type, allowed_types):
                 allowed_names = sorted(allowed_type.__name__ for allowed_type in allowed_types)
                 raise ValueError(

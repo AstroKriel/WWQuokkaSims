@@ -131,8 +131,8 @@ class TestTimePointRoundTrip(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = pathlib.Path(tmp_dir) / "time_point.json"
-            time_point.save_to_file(file_path)
-            loaded = time_series.TimePoint.load_from_file(file_path)
+            time_point.save_to_file(file_path=file_path)
+            loaded = time_series.TimePoint.load_from_file(file_path=file_path)
         self.assertEqual(loaded, time_point)
 
 

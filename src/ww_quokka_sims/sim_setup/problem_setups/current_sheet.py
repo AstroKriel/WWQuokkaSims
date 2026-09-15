@@ -45,7 +45,7 @@ def build_sim_params(
     checkpoint_prefix: str | None = "chk",
 ) -> save_params.SimParams:
     """Build the full parameter set for one run."""
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(key=reconstruction_order_key)
     ## Quokka requires use_dual_energy=0 whenever resistivity is nonzero
     if resistivity is not None:
         use_dual_energy = 0
@@ -83,8 +83,8 @@ def build_sim_params(
             use_dual_energy=use_dual_energy,
         ),
         mhd_params=param_groups.MHDParams(
-            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
-            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(key=compute_scheme_key),
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(key=averaging_scheme_key),
             reconstruction_order=reconstruction_order,
             resistivity=resistivity,
         ),

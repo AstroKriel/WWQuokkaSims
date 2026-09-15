@@ -21,7 +21,7 @@ from jormi.ww_validation import validate_types
 ## re-exports this file's own contents, so `from .. import fields_protocol` would need
 ## the package fully resolved while it is still mid-import -- a real circular dependency
 from ..fields_protocol import FieldsProtocol
-from ..._snapshot_readers.read_boxes import read_expanded_box
+from ..._snapshot_readers.uniform_resolution import expanded_boxes
 
 ##
 ## === DERIVE CLASS
@@ -92,8 +92,8 @@ class _DeriveMagneticFields:
 
     def compute_div_b_sfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Approximate magnetic divergence: `div[vec(b)]` (fallback for `load_3d_magnetic_divergence_sfield`)."""
@@ -107,8 +107,8 @@ class _DeriveMagneticFields:
 
     def compute_current_density_vfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
         use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
@@ -140,7 +140,7 @@ class _DeriveMagneticFields:
                     varray_3d=expanded_b_varray,
                     cell_widths_3d=cell_widths_3d,
                 )
-                return read_expanded_box.trim_expanded_box(
+                return expanded_boxes.trim_expanded_box(
                     expanded_farray=local_curl_varray,
                     num_extra_cells=num_extra_cells,
                 )
@@ -156,8 +156,8 @@ class _DeriveMagneticFields:
 
     def compute_current_density_sfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute current magnitude: `|curl[vec(b)]|`."""
@@ -173,8 +173,8 @@ class _DeriveMagneticFields:
 
     def compute_current_helicity_sfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute current helicity density: `curl[vec(b)] cdot vec(b)`."""
@@ -192,8 +192,8 @@ class _DeriveMagneticFields:
 
     def compute_plasma_beta_sfield(
         self: FieldsProtocol,
-        gamma: float = 5.0 / 3.0,
         *,
+        gamma: float = 5.0 / 3.0,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute plasma beta: `beta = 2 p / |vec(b)|^2`."""

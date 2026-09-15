@@ -78,6 +78,7 @@ class SimParams:
 
 
 def _ensure_path_is_valid(
+    *,
     output_path: str | pathlib.Path,
 ) -> pathlib.Path:
     """Ensure `output_path` is a valid `sim_params.toml` path and return it as an absolute path."""
@@ -115,6 +116,7 @@ class _ParamGroupTitle:
 
 
 def _build_geometry_section(
+    *,
     geometry_params: param_groups.GeometryParams,
 ) -> list[str]:
     assignment_lines = [
@@ -145,6 +147,7 @@ def _build_geometry_section(
 
 
 def _build_resolution_section(
+    *,
     resolution_params: param_groups.ResolutionParams,
 ) -> list[str]:
     assignment_lines = [
@@ -176,6 +179,7 @@ def _build_resolution_section(
 
 
 def _build_verbosity_section(
+    *,
     verbosity_params: param_groups.VerbosityParams,
 ) -> list[str]:
     return [
@@ -187,6 +191,7 @@ def _build_verbosity_section(
 
 
 def _build_output_section(
+    *,
     output_file_params: param_groups.OutputFileParams,
 ) -> list[str]:
     assignment_lines: list[str] = []
@@ -243,6 +248,7 @@ def _build_output_section(
 
 
 def _build_time_integration_section(
+    *,
     time_integration_params: param_groups.TimeIntegrationParams,
 ) -> list[str]:
     assignment_lines = [
@@ -270,6 +276,7 @@ def _build_time_integration_section(
 
 
 def _build_hydro_section(
+    *,
     hydro_params: param_groups.HydroParams,
 ) -> list[str]:
     assignment_lines = [
@@ -293,6 +300,7 @@ def _build_hydro_section(
 
 
 def _build_mhd_section(
+    *,
     mhd_params: param_groups.MHDParams,
 ) -> list[str]:
     assignment_lines = [
@@ -320,6 +328,7 @@ def _build_mhd_section(
 
 
 def _build_setup_section(
+    *,
     setup_params: param_groups.SetupParams,
 ) -> list[str]:
     return [
@@ -370,27 +379,32 @@ def save_sim_params(
         param=verbose,
         param_name="verbose",
     )
-    output_path = _ensure_path_is_valid(output_path)
+    output_path = _ensure_path_is_valid(output_path=output_path)
     if output_path.is_file() and not overwrite:
         raise FileExistsError(
             f"sim_params.toml already exists (pass `overwrite=True` to replace it): {output_path}.",
         )
     param_group_entries: list[tuple[str, list[str]]] = [
-        (_ParamGroupTitle.GEOMETRY, _build_geometry_section(geometry_params)),
-        (_ParamGroupTitle.RESOLUTION, _build_resolution_section(resolution_params)),
-        (_ParamGroupTitle.VERBOSITY, _build_verbosity_section(verbosity_params)),
-        (_ParamGroupTitle.OUTPUT, _build_output_section(output_file_params)),
-        (_ParamGroupTitle.TIME_INTEGRATION, _build_time_integration_section(time_integration_params)),
-        (_ParamGroupTitle.HYDRO, _build_hydro_section(hydro_params)),
-        (_ParamGroupTitle.MHD, _build_mhd_section(mhd_params)),
+        (_ParamGroupTitle.GEOMETRY, _build_geometry_section(geometry_params=geometry_params)),
+        (_ParamGroupTitle.RESOLUTION, _build_resolution_section(resolution_params=resolution_params)),
+        (_ParamGroupTitle.VERBOSITY, _build_verbosity_section(verbosity_params=verbosity_params)),
+        (_ParamGroupTitle.OUTPUT, _build_output_section(output_file_params=output_file_params)),
+        (
+            _ParamGroupTitle.TIME_INTEGRATION,
+            _build_time_integration_section(time_integration_params=time_integration_params)
+        ),
+        (_ParamGroupTitle.HYDRO, _build_hydro_section(hydro_params=hydro_params)),
+        (_ParamGroupTitle.MHD, _build_mhd_section(mhd_params=mhd_params)),
     ]
     if setup_params is not None:
-        param_group_entries.append((setup_params.group_title, _build_setup_section(setup_params)))
+        param_group_entries.append(
+            (setup_params.group_title, _build_setup_section(setup_params=setup_params))
+        )
     manage_io.create_directory(
         directory=output_path.parent,
         verbose=verbose,
     )
-    output_path.write_text(format_params.format_param_groups(param_group_entries))
+    output_path.write_text(format_params.format_param_groups(param_groups=param_group_entries))
     if verbose:
         manage_log.log_action(
             title="Save sim_params.toml",

@@ -97,19 +97,19 @@ class FormatTests(unittest.TestCase):
     def test_format_value_list_of_floats(
         self,
     ):
-        self.assertEqual(format_params.format_value([0.0, 1.0, 1.0]), "[0.0, 1.0, 1.0]")
+        self.assertEqual(format_params.format_value(value=[0.0, 1.0, 1.0]), "[0.0, 1.0, 1.0]")
 
     def test_format_value_string(
         self,
     ):
-        self.assertEqual(format_params.format_value("Quokka2026"), '"Quokka2026"')
+        self.assertEqual(format_params.format_value(value="Quokka2026"), '"Quokka2026"')
 
     def test_format_value_int_not_python_bool(
         self,
     ):
         ## AMReX booleans are bare 0/1, never Python's True/False
-        self.assertEqual(format_params.format_value(True), "1")
-        self.assertEqual(format_params.format_value(0), "0")
+        self.assertEqual(format_params.format_value(value=True), "1")
+        self.assertEqual(format_params.format_value(value=0), "0")
 
 
 ##
@@ -122,19 +122,19 @@ class SchemeLookupTests(unittest.TestCase):
     def test_reconstruction_resolves_by_key(
         self,
     ):
-        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme("ppm_ep"), 5)
-        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme("pcm"), 1)
+        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme(key="ppm_ep"), 5)
+        self.assertEqual(scheme_lookup.resolve_reconstruction_scheme(key="pcm"), 1)
 
     def test_emf_compute_scheme_resolves_by_key(
         self,
     ):
-        self.assertEqual(scheme_lookup.resolve_emf_compute_scheme("q26"), "Quokka2026")
+        self.assertEqual(scheme_lookup.resolve_emf_compute_scheme(key="q26"), "Quokka2026")
 
     def test_invalid_key_raises_with_valid_options_listed(
         self,
     ):
         with self.assertRaises(ValueError) as ctx:
-            scheme_lookup.resolve_reconstruction_scheme("pmm")  # typo: transposed letters
+            scheme_lookup.resolve_reconstruction_scheme(key="pmm")  # typo: transposed letters
         self.assertIn("PPM", str(ctx.exception))
 
 

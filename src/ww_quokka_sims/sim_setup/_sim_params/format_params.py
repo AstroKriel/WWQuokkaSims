@@ -20,6 +20,7 @@ _FORMATTABLE_TYPES = (bool, str, int, float, list, tuple)
 
 
 def format_value(
+    *,
     value: object,
 ) -> str:
     """Format one scalar/list/tuple value the way AMReX's `sim_params.toml` files are hand-written."""
@@ -37,7 +38,7 @@ def format_value(
     elif isinstance(value, str):
         return f'"{value}"'
     elif isinstance(value, (list, tuple)):
-        return "[" + ", ".join(format_value(elem) for elem in value) + "]"
+        return "[" + ", ".join(format_value(value=elem) for elem in value) + "]"
     else:
         return str(value)
 
@@ -48,7 +49,7 @@ def format_key_value(
     value: object,
 ) -> str:
     """Format one `key = value` line."""
-    return f"{key} = {format_value(value)}"
+    return f"{key} = {format_value(value=value)}"
 
 
 ##
@@ -106,6 +107,7 @@ def format_param_group(
 
 
 def format_param_groups(
+    *,
     param_groups: list[tuple[str, list[str]]],
 ) -> str:
     """Join `(group_title, assignment_lines)` param groups in order, blank-line separated, trailing newline."""

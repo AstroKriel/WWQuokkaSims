@@ -91,8 +91,8 @@ class _DeriveVelocityFields:
 
     def compute_div_v_sfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute velocity divergence `nabla cdot vec(v)`; `grad_order` controls stencil accuracy."""
@@ -106,8 +106,8 @@ class _DeriveVelocityFields:
 
     def compute_velocity_gradient_r2tfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
     ) -> field_models.RankTwoTensorField_3D:
         """Compute velocity gradient tensor `nabla vec(v)`; `grad_order` controls stencil accuracy."""
@@ -121,8 +121,8 @@ class _DeriveVelocityFields:
 
     def compute_vorticity_vfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
     ) -> field_models.VectorField_3D:
         """Compute vorticity vector `curl(vec(v))`; `grad_order` controls stencil accuracy."""
@@ -136,8 +136,8 @@ class _DeriveVelocityFields:
 
     def compute_vorticity_sfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute vorticity magnitude: `|curl(vec(v))|`."""
@@ -153,8 +153,8 @@ class _DeriveVelocityFields:
 
     def compute_kinetic_helicity_sfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute kinetic helicity density: `curl(vec(v)) dot vec(v)`."""

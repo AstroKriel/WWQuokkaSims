@@ -50,6 +50,7 @@ class SnapshotArgs:
     @classmethod
     def from_user_args(
         cls,
+        *,
         user_args: argparse.Namespace,
     ) -> "SnapshotArgs":
         return cls(
@@ -71,6 +72,7 @@ class DataOutputArgs:
     @classmethod
     def from_user_args(
         cls,
+        *,
         user_args: argparse.Namespace,
     ) -> "DataOutputArgs":
         return cls(
@@ -101,6 +103,7 @@ class DiagnosticOutputArgs(DataOutputArgs):
     @classmethod
     def from_user_args(
         cls,
+        *,
         user_args: argparse.Namespace,
     ) -> "DiagnosticOutputArgs":
         return cls(
@@ -129,6 +132,7 @@ class FieldArgs:
     @classmethod
     def from_user_args(
         cls,
+        *,
         user_args: argparse.Namespace,
     ) -> "FieldArgs":
         return cls(
@@ -158,6 +162,7 @@ class FieldCompArgs(FieldArgs):
     @classmethod
     def from_user_args(
         cls,
+        *,
         user_args: argparse.Namespace,
     ) -> "FieldCompArgs":
         return cls(
@@ -186,6 +191,7 @@ class FieldCompAxesArgs(FieldCompArgs):
     @classmethod
     def from_user_args(
         cls,
+        *,
         user_args: argparse.Namespace,
     ) -> "FieldCompAxesArgs":
         return cls(

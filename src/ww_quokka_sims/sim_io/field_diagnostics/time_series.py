@@ -44,6 +44,7 @@ class TimePoint:
 
     def save_to_file(
         self,
+        *,
         file_path: pathlib.Path,
     ) -> None:
         json_io.save_dict_to_json_file(
@@ -62,6 +63,7 @@ class TimePoint:
     @classmethod
     def load_from_file(
         cls,
+        *,
         file_path: pathlib.Path,
     ) -> "TimePoint":
         data = json_io.read_json_file_into_dict(
@@ -134,6 +136,7 @@ class FieldStatistic:
 
     def compute_statistic(
         self,
+        *,
         field_3d: field_models.ScalarField_3D,
     ) -> float:
         return self._compute_fn(field_3d)
@@ -204,7 +207,7 @@ class GenerateTimeSeries:
                 amr_level=time_point_args.amr_level,
             )
         assert isinstance(field_3d, field_models.ScalarField_3D)
-        statistic = time_point_args.field_statistic.compute_statistic(field_3d)
+        statistic = time_point_args.field_statistic.compute_statistic(field_3d=field_3d)
         sim_time = field_3d.sim_time
         validate_types.ensure_finite_float(
             param=sim_time,

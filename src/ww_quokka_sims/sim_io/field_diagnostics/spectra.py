@@ -59,6 +59,7 @@ class FieldSpectrum:
 
     def save_to_file(
         self,
+        *,
         file_path: pathlib.Path,
     ) -> None:
         json_io.save_dict_to_json_file(
@@ -77,6 +78,7 @@ class FieldSpectrum:
     @classmethod
     def load_from_file(
         cls,
+        *,
         file_path: pathlib.Path,
     ) -> "FieldSpectrum":
         data = json_io.read_json_file_into_dict(
@@ -96,7 +98,7 @@ class FieldSpectrum:
         )
         return cls(
             sim_time=float(data["sim_time"]),
-            step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=int(data["step_index"])),
             latex_label=latex_labels.LatexLabel(content=data["latex_label"]),
             log10_k_bin_centers=numpy.asarray(data["log10_k_bin_centers"]),
             log10_power_spectrum=numpy.asarray(data["log10_power_spectrum"]),
@@ -178,7 +180,7 @@ class ComputeSpectra:
             padded_step_index_string = step_index.get_padded_string(index_width=self.index_width)
             data_path = self._get_data_path(padded_step_index_string=padded_step_index_string)
             if (not self.overwrite) and data_path.exists():
-                field_spectrum = FieldSpectrum.load_from_file(data_path)
+                field_spectrum = FieldSpectrum.load_from_file(file_path=data_path)
             else:
                 field_spectrum = self._compute_spectrum(
                     snapshot_dir=snapshot_dir,
@@ -189,7 +191,7 @@ class ComputeSpectra:
                         directory=self.data_dir,
                         verbose=False,
                     )
-                    field_spectrum.save_to_file(data_path)
+                    field_spectrum.save_to_file(file_path=data_path)
             field_spectra.append(field_spectrum)
         field_spectra.sort(key=lambda _field_spectrum: _field_spectrum.sim_time)
         return field_spectra
@@ -351,7 +353,7 @@ class GenerateSpectra:
         if field_spectra and self.save_figure:
             for field_spectrum in field_spectra:
                 padded_step_index_string = field_spectrum.step_index.get_padded_string(
-                    index_width=self.index_width
+                    index_width=self.index_width,
                 )
                 figure_path = self.figures_dir / f"{self.registered_field.name}-spectrum-index={padded_step_index_string}.png"
                 if self.overwrite or not figure_path.exists():

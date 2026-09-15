@@ -43,7 +43,7 @@ def build_sim_params(
     checkpoint_index_interval: int = -1,
 ) -> save_params.SimParams:
     """Build the full parameter set for one fixed-resolution correctness run."""
-    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(reconstruction_order_key)
+    reconstruction_order = scheme_lookup.resolve_reconstruction_scheme(key=reconstruction_order_key)
     return save_params.SimParams(
         geometry_params=param_groups.GeometryParams(
             domain_lo=domain_lo,
@@ -71,8 +71,8 @@ def build_sim_params(
             use_dual_energy=_USE_DUAL_ENERGY,
         ),
         mhd_params=param_groups.MHDParams(
-            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(compute_scheme_key),
-            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(averaging_scheme_key),
+            emf_compute_scheme=scheme_lookup.resolve_emf_compute_scheme(key=compute_scheme_key),
+            emf_averaging_scheme=scheme_lookup.resolve_emf_averaging_scheme(key=averaging_scheme_key),
             reconstruction_order=reconstruction_order,
         ),
         setup_params=param_groups.SetupParams(

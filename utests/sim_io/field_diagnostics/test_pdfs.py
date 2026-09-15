@@ -67,7 +67,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
     ):
         field_pdf = pdfs.FieldPDF(
             sim_time=0.25,
-            step_index=find_snapshots.StepIndex.from_value(3),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=3),
             grouped_bin_centers=[numpy.array([0.0, 1.0, 2.0])],
             grouped_densities=[numpy.array([-1.0, -2.0, -3.0])],
             comp_latex_labels=[latex_labels.LatexLabel(content=r"\rho")],
@@ -75,8 +75,8 @@ class TestPDFDataRoundTrip(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = pathlib.Path(tmp_dir) / "pdf.json"
-            field_pdf.save_to_file(file_path)
-            loaded = pdfs.FieldPDF.load_from_file(file_path)
+            field_pdf.save_to_file(file_path=file_path)
+            loaded = pdfs.FieldPDF.load_from_file(file_path=file_path)
         self.assertEqual(loaded.sim_time, field_pdf.sim_time)
         self.assertEqual(loaded.step_index, field_pdf.step_index)
         self.assertEqual(loaded.comp_latex_labels, field_pdf.comp_latex_labels)
@@ -89,7 +89,7 @@ class TestPDFDataRoundTrip(unittest.TestCase):
     ):
         field_pdf = pdfs.FieldPDF(
             sim_time=0.5,
-            step_index=find_snapshots.StepIndex.from_value(1),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=1),
             grouped_bin_centers=[numpy.array([0.0, 1.0]), numpy.array([2.0, 3.0])],
             grouped_densities=[
                 numpy.array([-1.0, -2.0]),
@@ -97,14 +97,14 @@ class TestPDFDataRoundTrip(unittest.TestCase):
             ],
             comp_latex_labels=[
                 latex_labels.LatexLabel(content=r"v_x"),
-                latex_labels.LatexLabel(content=r"v_y")
+                latex_labels.LatexLabel(content=r"v_y"),
             ],
             use_log10_bins=False,
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = pathlib.Path(tmp_dir) / "pdf.json"
-            field_pdf.save_to_file(file_path)
-            loaded = pdfs.FieldPDF.load_from_file(file_path)
+            field_pdf.save_to_file(file_path=file_path)
+            loaded = pdfs.FieldPDF.load_from_file(file_path=file_path)
         self.assertEqual(
             sorted(comp_latex_label.content for comp_latex_label in loaded.comp_latex_labels),
             sorted(comp_latex_label.content for comp_latex_label in field_pdf.comp_latex_labels),

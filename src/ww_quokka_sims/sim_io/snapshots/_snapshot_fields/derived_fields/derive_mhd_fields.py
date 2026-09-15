@@ -20,7 +20,7 @@ from jormi.ww_fields.fields_3d import (
 ## re-exports this file's own contents, so `from .. import fields_protocol` would need
 ## the package fully resolved while it is still mid-import -- a real circular dependency
 from ..fields_protocol import FieldsProtocol
-from ..._snapshot_readers.read_boxes import read_expanded_box
+from ..._snapshot_readers.uniform_resolution import expanded_boxes
 
 ##
 ## === DERIVE CLASS
@@ -51,8 +51,8 @@ class _DeriveMHDFields:
 
     def compute_lorentz_force_vfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
         use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
@@ -89,7 +89,7 @@ class _DeriveMHDFields:
                 expanded_b_varray: numpy.ndarray,
                 num_extra_cells: int,
             ) -> numpy.ndarray:
-                box_b_varray = read_expanded_box.trim_expanded_box(
+                box_b_varray = expanded_boxes.trim_expanded_box(
                     expanded_farray=expanded_b_varray,
                     num_extra_cells=num_extra_cells,
                 )
@@ -97,7 +97,7 @@ class _DeriveMHDFields:
                     varray_3d=expanded_b_varray,
                     cell_widths_3d=cell_widths_3d,
                 )
-                box_j_varray = read_expanded_box.trim_expanded_box(
+                box_j_varray = expanded_boxes.trim_expanded_box(
                     expanded_farray=local_curl_varray,
                     num_extra_cells=num_extra_cells,
                 )
@@ -117,8 +117,8 @@ class _DeriveMHDFields:
 
     def compute_lorentz_force_sfield(
         self: FieldsProtocol,
-        grad_order: int = 2,
         *,
+        grad_order: int = 2,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute Lorentz force magnitude: `| curl[vec(b)] x vec(b) |`."""
@@ -134,8 +134,8 @@ class _DeriveMHDFields:
 
     def compute_energy_ratio_sfield(
         self: FieldsProtocol,
-        energy_prefactor: float = 0.5,
         *,
+        energy_prefactor: float = 0.5,
         amr_level: int = 0,
     ) -> field_models.ScalarField_3D:
         """Compute magnetic-to-kinetic energy ratio: `e_mag / e_kin`."""

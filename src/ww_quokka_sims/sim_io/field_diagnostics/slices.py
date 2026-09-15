@@ -56,6 +56,7 @@ class FieldSlice:
 
     def save_to_file(
         self,
+        *,
         file_path: pathlib.Path,
     ) -> None:
         numpy.savez(
@@ -73,6 +74,7 @@ class FieldSlice:
     @classmethod
     def load_from_file(
         cls,
+        *,
         file_path: pathlib.Path,
     ) -> "FieldSlice":
         with numpy.load(file_path) as npz:
@@ -88,7 +90,7 @@ class FieldSlice:
                 max_value=float(npz["max_value"]),
                 comp_latex_label=latex_labels.LatexLabel(content=str(npz["comp_label"])),
                 sim_time=float(npz["sim_time"]),
-                step_index=find_snapshots.StepIndex.from_value(int(npz["step_index"])),
+                step_index=find_snapshots.StepIndex.from_value(step_index_value=int(npz["step_index"])),
                 amr_level=int(npz["amr_level"]),
             )
 
@@ -160,6 +162,7 @@ class SlicedComp(typing.NamedTuple):
 
 
 def _axis_to_index(
+    *,
     axis: cartesian_axes.CartesianAxis_3D,
 ) -> int:
     return cartesian_axes.get_axis_index(axis)
@@ -184,6 +187,7 @@ def get_slice_bounds(
 
 
 def get_slice_labels(
+    *,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
 ) -> tuple[latex_labels.LatexLabel, latex_labels.LatexLabel]:
     axes_plane = [axis for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER if axis != axis_to_slice]
@@ -194,6 +198,7 @@ def get_slice_labels(
 
 
 def get_slice_plane_label(
+    *,
     axis_to_slice: cartesian_axes.CartesianAxis_3D,
 ) -> latex_labels.LatexLabel:
     """Return the "which plane was sliced" annotation text; a pure function of `axis_to_slice` alone."""
@@ -207,6 +212,7 @@ def get_slice_plane_label(
 
 
 def _compute_min_max(
+    *,
     sarray_2d: numpy.ndarray,
 ) -> tuple[float, float]:
     return (
@@ -236,7 +242,7 @@ def slice_3d_farray(
         uniform_domain=uniform_domain,
         axis_to_slice=axis_to_slice,
     )
-    min_value, max_value = _compute_min_max(sarray_2d)
+    min_value, max_value = _compute_min_max(sarray_2d=sarray_2d)
     return FieldSlice(
         sarray_2d=sarray_2d,
         axis_bounds=axis_bounds,
@@ -379,7 +385,7 @@ class GenerateFieldSlices:
             )
             return [
                 FieldComp(
-                    sarray_3d=varray_3d[_axis_to_index(comp_axis)],
+                    sarray_3d=varray_3d[_axis_to_index(axis=comp_axis)],
                     latex_label=field_models.get_vcomp_label(
                         vfield_3d=field_3d,
                         comp_axis=comp_axis,
@@ -443,7 +449,7 @@ class GenerateFieldSlices:
                     panel=panel,
                     sim_time=sim_time,
                     field_slice=field_slice,
-                    plane_latex_label=get_slice_plane_label(axis_to_slice),
+                    plane_latex_label=get_slice_plane_label(axis_to_slice=axis_to_slice),
                     comp_latex_label=sliced_comp.comp_latex_label,
                     palette_config=add_color.resolve_continuous_palette_config(
                         pivot_value=pivot_value,
@@ -464,7 +470,7 @@ class GenerateFieldSlices:
         for row_index in range(num_rows):
             for col_index, axis_to_slice in enumerate(self.axes_to_slice):
                 panel = panel_grid[row_index][col_index]
-                x_axis_latex_label, y_axis_latex_label = get_slice_labels(axis_to_slice)
+                x_axis_latex_label, y_axis_latex_label = get_slice_labels(axis_to_slice=axis_to_slice)
                 if (num_rows == 1) or (row_index == num_rows - 1):
                     panel.set_xlabel(x_axis_latex_label.label)
                 panel.set_ylabel(y_axis_latex_label.label)
@@ -556,7 +562,7 @@ class GenerateFieldSlices:
                     axis_to_slice=axis_to_slice,
                     padded_step_index_string=padded_step_index_string,
                 )
-                field_slice.save_to_file(data_dir / data_file_name)
+                field_slice.save_to_file(file_path=data_dir / data_file_name)
 
     def _load_sliced_comps(
         self,
@@ -576,7 +582,7 @@ class GenerateFieldSlices:
                     axis_to_slice=axis_to_slice,
                     padded_step_index_string=padded_step_index_string,
                 )
-                field_slice = FieldSlice.load_from_file(data_dir / data_file_name)
+                field_slice = FieldSlice.load_from_file(file_path=data_dir / data_file_name)
                 sliced_by_axis[axis_to_slice] = field_slice
                 comp_latex_label = field_slice.comp_latex_label
                 sim_time = field_slice.sim_time
@@ -609,7 +615,7 @@ class GenerateFieldSlices:
                 else:
                     sarray_2d = numpy.abs(field_slice.sarray_2d)
                 log10_sarray_2d = compute_array_stats.compute_safe_log10(sarray_2d)
-                min_value, max_value = _compute_min_max(log10_sarray_2d)
+                min_value, max_value = _compute_min_max(sarray_2d=log10_sarray_2d)
                 log10_sliced_by_axis[axis_to_slice] = FieldSlice(
                     sarray_2d=log10_sarray_2d,
                     axis_bounds=field_slice.axis_bounds,
@@ -667,7 +673,7 @@ class GenerateFieldSlices:
         )
         self._label_axes(panel_grid=panel_grid)
         figure_path = figures_dir / self._get_figure_file_name(
-            padded_step_index_string=padded_step_index_string
+            padded_step_index_string=padded_step_index_string,
         )
         manage_figure.save_figure(
             figure=figure,
@@ -690,7 +696,7 @@ class GenerateFieldSlices:
         )
         padded_step_index_string = step_index.get_padded_string(index_width=index_width)
         figure_path = figures_dir / self._get_figure_file_name(
-            padded_step_index_string=padded_step_index_string
+            padded_step_index_string=padded_step_index_string,
         )
         figure_is_needed = self.save_figure and (self.overwrite or not figure_path.exists())
         comp_axes = self._find_comp_axes(

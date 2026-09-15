@@ -71,7 +71,7 @@ class TestGetFieldType(unittest.TestCase):
         self,
     ):
         self.assertEqual(
-            field_registry.get_field_type("density"),
+            field_registry.get_field_type(field_name="density"),
             field_models.ScalarField_3D,
         )
 
@@ -79,7 +79,7 @@ class TestGetFieldType(unittest.TestCase):
         self,
     ):
         self.assertEqual(
-            field_registry.get_field_type("velocity"),
+            field_registry.get_field_type(field_name="velocity"),
             field_models.VectorField_3D,
         )
 
@@ -87,7 +87,7 @@ class TestGetFieldType(unittest.TestCase):
         self,
     ):
         self.assertEqual(
-            field_registry.get_field_type("velocity_gradient"),
+            field_registry.get_field_type(field_name="velocity_gradient"),
             field_models.RankTwoTensorField_3D,
         )
 
@@ -95,7 +95,7 @@ class TestGetFieldType(unittest.TestCase):
         self,
     ):
         with self.assertRaises(KeyError):
-            field_registry.get_field_type("not_a_real_field")
+            field_registry.get_field_type(field_name="not_a_real_field")
 
     def test_every_registered_field_resolves_to_a_known_type(
         self,
@@ -107,7 +107,7 @@ class TestGetFieldType(unittest.TestCase):
         for field_name in field_registry.REGISTERED_FIELD_LOOKUP:
             with self.subTest(field_name=field_name):
                 self.assertIn(
-                    field_registry.get_field_type(field_name),
+                    field_registry.get_field_type(field_name=field_name),
                     known_types,
                 )
 

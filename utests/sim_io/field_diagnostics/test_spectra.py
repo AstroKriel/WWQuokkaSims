@@ -31,15 +31,15 @@ class TestSpectraDataRoundTrip(unittest.TestCase):
     ):
         field_spectrum = spectra.FieldSpectrum(
             sim_time=0.25,
-            step_index=find_snapshots.StepIndex.from_value(3),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=3),
             latex_label=latex_labels.LatexLabel(content=r"\rho"),
             log10_k_bin_centers=numpy.array([0.0, 1.0, 2.0]),
             log10_power_spectrum=numpy.array([-1.0, -2.0, -3.0]),
         )
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = pathlib.Path(tmp_dir) / "spectra.json"
-            field_spectrum.save_to_file(file_path)
-            loaded = spectra.FieldSpectrum.load_from_file(file_path)
+            field_spectrum.save_to_file(file_path=file_path)
+            loaded = spectra.FieldSpectrum.load_from_file(file_path=file_path)
         self.assertEqual(loaded.sim_time, field_spectrum.sim_time)
         self.assertEqual(loaded.step_index, field_spectrum.step_index)
         self.assertEqual(loaded.latex_label, field_spectrum.latex_label)

@@ -11,7 +11,7 @@ import typing
 import numpy
 
 ## local
-from . import base_reader
+from . import level0_boxes
 from ..._snapshot_fields import read_fields
 
 ##
@@ -28,7 +28,7 @@ def load_sarray(
     Read one scalar field at amr_level=0 by reading each box's own cells individually
     and placing them directly into their slice of the output array.
 
-    Unlike `read_whole_domain`, this never materializes yt's own whole-domain buffer,
+    Unlike `whole_domain`, this never materializes yt's own whole-domain buffer,
     only ever holding one box (small) plus the output array (the size of the field
     itself) in memory at once. See https://github.com/yt-project/yt/issues/3958 for the
     documented ~6x memory overhead `covering_grid` carries on top of the output array's
@@ -38,12 +38,12 @@ def load_sarray(
     ## NaN-filled rather than numpy.empty: uninitialized memory could be finite garbage,
     ## which would hide a box that never got written (e.g. from an indexing bug)
     sarray_3d = numpy.full(resolution, numpy.nan, dtype=numpy.float64)
-    for grid_box, placement_slices in base_reader.extract_amr_level_0_boxes(yt_dataset):
-        sarray_3d[placement_slices] = numpy.asarray(grid_box[field_key], dtype=numpy.float64)
+    for level0_box in level0_boxes.iterate_amr_level_0_boxes(yt_dataset=yt_dataset):
+        sarray_3d[level0_box.cell_range] = numpy.asarray(level0_box.box[field_key], dtype=numpy.float64)
     if numpy.isnan(sarray_3d).any():
         raise ValueError(
             "some cells were never written by any amr_level=0 box; the boxes do not"
-            " fully tile the domain (or the placement indices above are wrong).",
+            " fully tile the domain (or the cell-range indices above are wrong).",
         )
     return numpy.ascontiguousarray(sarray_3d)
 

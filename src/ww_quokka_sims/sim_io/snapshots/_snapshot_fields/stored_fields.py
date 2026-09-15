@@ -4,7 +4,11 @@
 ## === DEPENDENCIES
 ##
 
+## third-party
+import numpy
+
 ## personal
+from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_io import manage_log
 
@@ -14,6 +18,7 @@ from jormi.ww_io import manage_log
 ## would need the package fully resolved while it is still mid-import -- a real circular
 ## dependency
 from .fields_protocol import FieldsProtocol
+from .read_fields import AMRLeaves
 
 ##
 ## === LOAD CLASS
@@ -53,11 +58,11 @@ class _LoadStoredFields:
             amr_level=amr_level,
             use_chunked_reader=use_chunked_reader,
         )
-        cached_field = self._field_cache.get_cached_field(cache_key)
+        cached_field = self._field_cache.get_cached_field(cache_key=cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
         else:
-            rho_key = self._get_sfield_key("density")
+            rho_key = self._get_sfield_key(field_name="density")
             rho_sfield_3d = self.load_3d_sfield(
                 field_key=rho_key,
                 field_name="density",
@@ -83,11 +88,11 @@ class _LoadStoredFields:
             amr_level=amr_level,
             use_chunked_reader=use_chunked_reader,
         )
-        cached_field = self._field_cache.get_cached_field(cache_key)
+        cached_field = self._field_cache.get_cached_field(cache_key=cache_key)
         if isinstance(cached_field, field_models.VectorField_3D):
             return cached_field
         else:
-            mom_key_lookup = self._get_vfield_key_lookup("momentum")
+            mom_key_lookup = self._get_vfield_key_lookup(field_name="momentum")
             mom_vfield_3d = self.load_3d_vfield(
                 vfield_key_lookup=mom_key_lookup,
                 field_name="momentum",
@@ -113,11 +118,11 @@ class _LoadStoredFields:
             amr_level=amr_level,
             use_chunked_reader=use_chunked_reader,
         )
-        cached_field = self._field_cache.get_cached_field(cache_key)
+        cached_field = self._field_cache.get_cached_field(cache_key=cache_key)
         if isinstance(cached_field, field_models.VectorField_3D):
             return cached_field
         else:
-            b_key_lookup = self._get_vfield_key_lookup("magnetic")
+            b_key_lookup = self._get_vfield_key_lookup(field_name="magnetic")
             b_vfield_3d = self.load_3d_vfield(
                 vfield_key_lookup=b_key_lookup,
                 field_name="magnetic",
@@ -141,11 +146,11 @@ class _LoadStoredFields:
             field_name="total_energy",
             amr_level=amr_level,
         )
-        cached_field = self._field_cache.get_cached_field(cache_key)
+        cached_field = self._field_cache.get_cached_field(cache_key=cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
         else:
-            E_tot_key = self._get_sfield_key("total_energy")
+            E_tot_key = self._get_sfield_key(field_name="total_energy")
             E_tot_sfield_3d = self.load_3d_sfield(
                 field_key=E_tot_key,
                 field_name="total_energy",
@@ -174,11 +179,11 @@ class _LoadStoredFields:
             field_name="magnetic_divergence",
             amr_level=amr_level,
         )
-        cached_field = self._field_cache.get_cached_field(cache_key)
+        cached_field = self._field_cache.get_cached_field(cache_key=cache_key)
         if isinstance(cached_field, field_models.ScalarField_3D):
             return cached_field
         else:
-            div_b_key = self._resolve_sfield_key("magnetic_divergence")
+            div_b_key = self._resolve_sfield_key(field_name="magnetic_divergence")
             if self.is_field_key_available(field_key=div_b_key):
                 div_b_sfield_3d = self.load_3d_sfield(
                     field_key=div_b_key,
@@ -200,6 +205,58 @@ class _LoadStoredFields:
                 field_data=div_b_sfield_3d,
             )
             return div_b_sfield_3d
+
+    def load_3d_magnetic_divergence_amr_leaves(
+        self: FieldsProtocol,
+    ) -> AMRLeaves:
+        """
+        Load Quokka's native div(b) at every leaf cell across the full AMR hierarchy.
+
+        Unlike `load_3d_magnetic_divergence_sfield`, there is no derived-field fallback:
+        this requires `derived_vars = "magnetic_divergence"` in the param TOML file, since
+        a leaf-cell finite-difference fallback is not implemented.
+        """
+        div_b_key = self._get_sfield_key(field_name="magnetic_divergence")
+        return self.load_amr_leaves(field_key=div_b_key)
+
+    def load_3d_magnetic_amr_leaves_by_axis(
+        self: FieldsProtocol,
+    ) -> dict[cartesian_axes.CartesianAxis_3D, AMRLeaves]:
+        """Load `b_x`, `b_y`, `b_z` at every leaf cell across the full AMR hierarchy, keyed by axis."""
+        b_key_lookup = self._get_vfield_key_lookup(field_name="magnetic")
+        return {axis: self.load_amr_leaves(field_key=key) for axis, key in b_key_lookup.items()}
+
+    def load_3d_magnetic_divergence_native_slice(
+        self: FieldsProtocol,
+        *,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float = 0.0,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
+        """Load Quokka's native div(b), and its per-pixel native `dx`, on a genuine AMR-native slice."""
+        div_b_key = self._get_sfield_key(field_name="magnetic_divergence")
+        return self.load_native_slice_sarray(
+            field_key=div_b_key,
+            axis_to_slice=axis_to_slice,
+            slice_coordinate=slice_coordinate,
+        )
+
+    def load_3d_magnetic_native_slice_vsample(
+        self: FieldsProtocol,
+        *,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float = 0.0,
+    ) -> dict[cartesian_axes.CartesianAxis_3D, tuple[numpy.ndarray, numpy.ndarray]]:
+        """Load `b_x`, `b_y`, `b_z`, each with its per-pixel native `dx`, on a genuine AMR-native slice."""
+        b_key_lookup = self._get_vfield_key_lookup(field_name="magnetic")
+        return {
+            axis:
+            self.load_native_slice_sarray(
+                field_key=key,
+                axis_to_slice=axis_to_slice,
+                slice_coordinate=slice_coordinate,
+            )
+            for axis, key in b_key_lookup.items()
+        }
 
 
 ## } MODULE

@@ -89,6 +89,7 @@ class FieldPDF:
 
     def get_pdf(
         self,
+        *,
         comp_index: int = 0,
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
         if (comp_index < 0) or (comp_index >= self.num_comps):
@@ -97,6 +98,7 @@ class FieldPDF:
 
     def save_to_file(
         self,
+        *,
         file_path: pathlib.Path,
     ) -> None:
         if self.use_log10_bins:
@@ -109,10 +111,12 @@ class FieldPDF:
             "use_log10_bins": self.use_log10_bins,
         }
         for comp_index, comp_latex_label in enumerate(self.comp_latex_labels):
-            bin_centers, densities = self.get_pdf(comp_index)
+            bin_centers, densities = self.get_pdf(comp_index=comp_index)
             output_dict[comp_latex_label.content] = {
                 bin_centers_key: bin_centers,
-                "log10_density": densities,
+                ## masked entries default to `None` under plain `.tolist()`, not `nan`,
+                ## which reloads as an object-dtype array; fill explicitly instead
+                "log10_density": numpy.ma.filled(densities, numpy.nan),
             }
         json_io.save_dict_to_json_file(
             file_path=file_path,
@@ -124,6 +128,7 @@ class FieldPDF:
     @classmethod
     def load_from_file(
         cls,
+        *,
         file_path: pathlib.Path,
     ) -> "FieldPDF":
         input_dict = json_io.read_json_file_into_dict(
@@ -136,7 +141,7 @@ class FieldPDF:
             param_name="<FieldPDF JSON>",
         )
         sim_time = float(input_dict["sim_time"])
-        step_index = find_snapshots.StepIndex.from_value(int(input_dict["step_index"]))
+        step_index = find_snapshots.StepIndex.from_value(step_index_value=int(input_dict["step_index"]))
         comp_label_strings = [_key for _key in input_dict if _key not in _METADATA_KEYS]
         use_log10_bins = bool(input_dict["use_log10_bins"])
         if use_log10_bins:
@@ -245,6 +250,7 @@ class ComputePDFs:
 
     def _compute_vfield_pdf(
         self,
+        *,
         vfield_3d: field_models.VectorField_3D,
         step_index: find_snapshots.StepIndex,
     ) -> FieldPDF:
@@ -284,6 +290,7 @@ class ComputePDFs:
 
     def _compute_sfield_pdf(
         self,
+        *,
         sfield_3d: field_models.ScalarField_3D,
         step_index: find_snapshots.StepIndex,
     ) -> FieldPDF:
@@ -343,7 +350,7 @@ class ComputePDFs:
             padded_step_index_string = step_index.get_padded_string(index_width=self.index_width)
             data_path = self._get_data_path(padded_step_index_string=padded_step_index_string)
             if (not self.overwrite) and data_path.exists():
-                field_pdf = FieldPDF.load_from_file(data_path)
+                field_pdf = FieldPDF.load_from_file(file_path=data_path)
             else:
                 field_pdf = self._compute_snapshot(
                     snapshot_dir=snapshot_dir,
@@ -354,7 +361,7 @@ class ComputePDFs:
                         directory=self.data_dir,
                         verbose=False,
                     )
-                    field_pdf.save_to_file(data_path)
+                    field_pdf.save_to_file(file_path=data_path)
             field_pdfs.append(field_pdf)
         field_pdfs.sort(key=lambda _field_pdf: _field_pdf.sim_time)
         return field_pdfs
@@ -424,7 +431,7 @@ class GeneratePDFs:
             panel = panel_grid[0][comp_index]
             if use_log10_bins:
                 x_latex_label = latex_labels.LatexLabel(
-                    content=rf"x \equiv \log_{{10}}({comp_latex_label.content})"
+                    content=rf"x \equiv \log_{{10}}({comp_latex_label.content})",
                 )
             else:
                 x_latex_label = latex_labels.LatexLabel(content=rf"x \equiv {comp_latex_label.content}")
@@ -441,7 +448,7 @@ class GeneratePDFs:
     ) -> None:
         for comp_index in range(field_pdf.num_comps):
             panel = panel_grid[0][comp_index]
-            x_values, y_values = field_pdf.get_pdf(comp_index)
+            x_values, y_values = field_pdf.get_pdf(comp_index=comp_index)
             panel.step(
                 x_values,
                 y_values,
@@ -564,7 +571,7 @@ class GeneratePDFs:
             data_tag = self._get_data_tag()
             for field_pdf in field_pdfs:
                 padded_step_index_string = field_pdf.step_index.get_padded_string(
-                    index_width=self.index_width
+                    index_width=self.index_width,
                 )
                 figure_path = self.figures_dir / f"{data_tag}-pdf-index={padded_step_index_string}.png"
                 if self.overwrite or not figure_path.exists():

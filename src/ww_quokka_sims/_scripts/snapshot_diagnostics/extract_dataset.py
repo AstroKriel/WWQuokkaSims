@@ -58,12 +58,14 @@ class WorkerArgs(typing.NamedTuple):
 
 
 def _axis_to_index(
+    *,
     axis: cartesian_axes.CartesianAxis_3D,
 ) -> int:
     return cartesian_axes.get_axis_index(axis)
 
 
 def _get_sim_time(
+    *,
     field: field_models.AnyField_3D,
 ) -> float:
     sim_time = field.sim_time
@@ -146,7 +148,7 @@ class FieldExtractor:
                 vfield_3d=field,
                 param_name=f"<{field_name}_vfield_3d>",
             )
-            comp_indices = [_axis_to_index(comp_axis) for comp_axis in self.comps_to_extract]
+            comp_indices = [_axis_to_index(axis=comp_axis) for comp_axis in self.comps_to_extract]
             comp_labels = [comp_axis.axis_label for comp_axis in self.comps_to_extract]
             numpy.savez(
                 data_dir / file_name,
@@ -178,7 +180,7 @@ class FieldExtractor:
             field = self._load_field(snapshot_dir=snapshot_dir)
             self._save_field(
                 field=field,
-                sim_time=_get_sim_time(field),
+                sim_time=_get_sim_time(field=field),
                 step_index=step_index,
                 index_width=index_width,
                 data_dir=data_dir,
@@ -302,6 +304,7 @@ class DatasetPipeline:
 
     def _pipeline(
         self,
+        *,
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
         assert resolved_inputs.index_width is not None
@@ -337,7 +340,7 @@ class DatasetPipeline:
             output_args=self.data_output_args,
         )
         if resolved_inputs is not None:
-            self._pipeline(resolved_inputs)
+            self._pipeline(resolved_inputs=resolved_inputs)
 
 
 ##
@@ -360,9 +363,9 @@ def main():
     )
     user_args = parser.parse_args()
     dataset_pipeline = DatasetPipeline(
-        snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
-        field_comp_args=cli.FieldCompArgs.from_user_args(user_args),
-        data_output_args=cli.DataOutputArgs.from_user_args(user_args),
+        snapshot_args=cli.SnapshotArgs.from_user_args(user_args=user_args),
+        field_comp_args=cli.FieldCompArgs.from_user_args(user_args=user_args),
+        data_output_args=cli.DataOutputArgs.from_user_args(user_args=user_args),
         num_workers=user_args.num_workers,
     )
     dataset_pipeline.run()

@@ -40,6 +40,7 @@ from ww_quokka_sims.sim_io.snapshots import (
 
 
 def _ensure_field_name(
+    *,
     field_name: object,
 ) -> None:
     validate_types.ensure_nonempty_string(
@@ -53,6 +54,7 @@ def _ensure_field_name(
 
 
 def _ensure_profile_axis(
+    *,
     profile_axis: object,
 ) -> None:
     valid = cartesian_axes.VALID_3D_AXIS_LABELS
@@ -63,6 +65,7 @@ def _ensure_profile_axis(
 
 
 def _ensure_profile_arrays(
+    *,
     position: object,
     field_value: object,
 ) -> None:
@@ -104,13 +107,13 @@ class ScalarFieldProfile:
     def __post_init__(
         self,
     ) -> None:
-        _ensure_field_name(self.field_name)
+        _ensure_field_name(field_name=self.field_name)
         validate_types.ensure_finite_float(
             param=self.sim_time,
             param_name="<sim_time>",
             allow_none=False,
         )
-        _ensure_profile_axis(self.profile_axis)
+        _ensure_profile_axis(profile_axis=self.profile_axis)
         _ensure_profile_arrays(
             position=self.position,
             field_value=self.field_value,
@@ -125,6 +128,7 @@ class ScalarFieldProfile:
 
     def save_to_file(
         self,
+        *,
         file_path: pathlib.Path,
     ) -> None:
         json_io.save_dict_to_json_file(
@@ -146,6 +150,7 @@ class ScalarFieldProfile:
     @classmethod
     def load_from_file(
         cls,
+        *,
         file_path: pathlib.Path,
     ) -> "ScalarFieldProfile":
         data = json_io.read_json_file_into_dict(
@@ -170,7 +175,7 @@ class ScalarFieldProfile:
             field_name=data["field_name"],
             field_latex_label=latex_labels.LatexLabel(content=data["field_label"]),
             sim_time=float(data["sim_time"]),
-            step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=int(data["step_index"])),
             profile_axis=data["profile_axis"],
             position=numpy.asarray(data["position"]),
             field_value=numpy.asarray(data["field_value"]),
@@ -216,13 +221,13 @@ class VectorFieldProfile:
     def __post_init__(
         self,
     ) -> None:
-        _ensure_field_name(self.field_name)
+        _ensure_field_name(field_name=self.field_name)
         validate_types.ensure_finite_float(
             param=self.sim_time,
             param_name="<sim_time>",
             allow_none=False,
         )
-        _ensure_profile_axis(self.profile_axis)
+        _ensure_profile_axis(profile_axis=self.profile_axis)
         if not self.components:
             raise ValueError("`<components>` must be non-empty.")
         for component in self.components.values():
@@ -240,6 +245,7 @@ class VectorFieldProfile:
 
     def save_to_file(
         self,
+        *,
         file_path: pathlib.Path,
     ) -> None:
         json_io.save_dict_to_json_file(
@@ -266,6 +272,7 @@ class VectorFieldProfile:
     @classmethod
     def load_from_file(
         cls,
+        *,
         file_path: pathlib.Path,
     ) -> "VectorFieldProfile":
         data = json_io.read_json_file_into_dict(
@@ -296,7 +303,7 @@ class VectorFieldProfile:
         return cls(
             field_name=data["field_name"],
             sim_time=float(data["sim_time"]),
-            step_index=find_snapshots.StepIndex.from_value(int(data["step_index"])),
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=int(data["step_index"])),
             profile_axis=data["profile_axis"],
             position=numpy.asarray(data["position"]),
             components=components,
@@ -407,7 +414,7 @@ class ComputeCompProfiles:
                     position=comp_profile.get_domain(axis_index=axis_index),
                     field_value=comp_profile.get_values(axis_index=axis_index),
                     amr_level=self.amr_level,
-                ).save_to_file(file_path)
+                ).save_to_file(file_path=file_path)
             else:
                 position = comp_profiles[0].get_domain(axis_index=axis_index)
                 components = {
@@ -426,7 +433,7 @@ class ComputeCompProfiles:
                     position=position,
                     components=components,
                     amr_level=self.amr_level,
-                ).save_to_file(file_path)
+                ).save_to_file(file_path=file_path)
 
     def _load_snapshot_data(
         self,
@@ -439,13 +446,13 @@ class ComputeCompProfiles:
             verbose=False,
         )
         sim_time = 0.0
-        step_index = find_snapshots.StepIndex.from_value(0)
+        step_index = find_snapshots.StepIndex.from_value(step_index_value=0)
         if "field_comps" not in first_raw:
             domain_array_by_axis: list[numpy.ndarray] = []
             values_array_by_axis: list[numpy.ndarray] = []
             comp_latex_label: latex_labels.LatexLabel | None = None
             for data_path in data_paths:
-                scalar_field_profile = ScalarFieldProfile.load_from_file(data_path)
+                scalar_field_profile = ScalarFieldProfile.load_from_file(file_path=data_path)
                 domain_array_by_axis.append(scalar_field_profile.position)
                 values_array_by_axis.append(scalar_field_profile.field_value)
                 comp_latex_label = scalar_field_profile.field_latex_label
@@ -465,7 +472,9 @@ class ComputeCompProfiles:
             ]
             return comp_profiles, sim_time
         else:
-            vector_profiles = [VectorFieldProfile.load_from_file(data_path) for data_path in data_paths]
+            vector_profiles = [
+                VectorFieldProfile.load_from_file(file_path=data_path) for data_path in data_paths
+            ]
             comp_keys = sorted(vector_profiles[0].components.keys())
             per_comp_domain: dict[cartesian_axes.CartesianAxis_3D, list[numpy.ndarray]] = {
                 key: []
@@ -872,6 +881,7 @@ class GenerateCompProfiles:
 
     @staticmethod
     def _group_comp_profiles_by_name(
+        *,
         all_comp_profiles: list[list[CompProfile]],
     ) -> dict[str, list[CompProfile]]:
         """Regroup per-snapshot profile lists into per-component series, sorted by sim_time."""
@@ -904,7 +914,7 @@ class GenerateCompProfiles:
         if all_comp_profiles and self.save_figure:
             for comp_profiles in all_comp_profiles:
                 padded_step_index_string = comp_profiles[0].step_index.get_padded_string(
-                    index_width=self.index_width
+                    index_width=self.index_width,
                 )
                 figure_path = self._get_figure_path(
                     figures_dir=self.figures_dir,
@@ -915,7 +925,7 @@ class GenerateCompProfiles:
                         comp_profiles=comp_profiles,
                         figure_path=figure_path,
                     )
-            comp_profiles_lookup = self._group_comp_profiles_by_name(all_comp_profiles)
+            comp_profiles_lookup = self._group_comp_profiles_by_name(all_comp_profiles=all_comp_profiles)
             self._save_summary_figure(
                 comp_profiles_lookup=comp_profiles_lookup,
                 figures_dir=self.figures_dir,

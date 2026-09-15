@@ -50,6 +50,7 @@ class DiagnosticPipeline:
 
     def _pipeline(
         self,
+        *,
         resolved_inputs: cli.ResolvedInputs,
     ) -> None:
         assert resolved_inputs.figures_dir is not None
@@ -81,7 +82,7 @@ class DiagnosticPipeline:
             output_args=self.diagnostic_output_args,
         )
         if resolved_inputs is not None:
-            self._pipeline(resolved_inputs)
+            self._pipeline(resolved_inputs=resolved_inputs)
 
 
 ##
@@ -118,9 +119,9 @@ def main():
     )
     user_args = parser.parse_args()
     diagnostic_pipeline = DiagnosticPipeline(
-        snapshot_args=cli.SnapshotArgs.from_user_args(user_args),
-        field_comp_args=cli.FieldCompArgs.from_user_args(user_args),
-        diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args),
+        snapshot_args=cli.SnapshotArgs.from_user_args(user_args=user_args),
+        field_comp_args=cli.FieldCompArgs.from_user_args(user_args=user_args),
+        diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args=user_args),
         num_bins=user_args.num_bins,
         use_log10_bins=user_args.use_log10_bins,
     )
