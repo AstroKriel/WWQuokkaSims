@@ -17,7 +17,7 @@ import numpy
 from jormi.ww_fields import cartesian_axes
 
 ## local
-from ..._snapshot_fields import read_fields
+from .. import read_fields
 
 ##
 ## === DATA STRUCTURES
@@ -61,6 +61,27 @@ def _ensure_isotropic_cell(
         raise ValueError(
             f"box has anisotropic cell widths ({cell_widths}); a single native dx is only"
             " well-defined for isotropic cells.",
+        )
+
+
+def ensure_consistent_leaf_ordering(
+    *,
+    reference_leaves: read_fields.AMRLeaves,
+    other_leaves: read_fields.AMRLeaves,
+) -> None:
+    """
+    Raise if two independently-loaded `AMRLeaves` do not share the same per-cell ordering.
+
+    Composing multiple `AMRLeaves` elementwise (eg. `internal_energy = total_energy -
+    kinetic_energy - magnetic_energy`) is only valid if `values[i]` refers to the same
+    physical cell in each: `_iterate_amr_leaf_boxes` walks `yt_dataset.index.grids` in a
+    fixed order for a given open dataset, so independent reads agree, but that is an
+    assumption about yt's behaviour, not something the type system enforces.
+    """
+    if not numpy.array_equal(reference_leaves.positions, other_leaves.positions):
+        raise ValueError(
+            "leaf cells from independent AMRLeaves reads are not consistently ordered;"
+            " cannot combine their `values` elementwise.",
         )
 
 
@@ -132,6 +153,57 @@ def load_amr_leaves(
         grouped_box_positions.append(box_positions)
     if len(grouped_box_values) == 0:
         raise ValueError(f"no leaf cells were found for {field_key} in this snapshot.")
+    return read_fields.AMRLeaves(
+        values=numpy.concatenate(grouped_box_values),
+        cell_width=numpy.concatenate(grouped_box_cell_width),
+        positions=numpy.concatenate(grouped_box_positions),
+    )
+
+
+def load_amr_leaves_of_derived_field(
+    *,
+    yt_dataset: typing.Any,
+    field_keys: tuple[read_fields.FieldKey, ...],
+    derive_fn: collections_abc.Callable[[numpy.ndarray], numpy.ndarray],
+) -> read_fields.AMRLeaves:
+    """
+    Read a derived scalar field at every leaf cell, combining `field_keys` pointwise via
+    `derive_fn` before masking to each box's own leaf cells. See `load_amr_leaves` for the
+    single, already-stored-field case this generalises.
+
+    `derive_fn(raw_box_farray) -> derived_box_farray` receives `field_keys` stacked along
+    axis 0 for one box's own (unmasked) cells, and must return a same-shaped scalar array.
+    `derive_fn` must be pointwise (no spatial derivative): neighbouring leaf cells can sit
+    at different native resolutions, so there is no well-defined stencil between them.
+    """
+    axis_names = [read_fields.BOXLIB_3D_AXES_LABELS[axis] for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER]
+    grouped_box_values: list[numpy.ndarray] = []
+    grouped_box_cell_width: list[numpy.ndarray] = []
+    grouped_box_positions: list[numpy.ndarray] = []
+    for leaf_box in _iterate_amr_leaf_boxes(yt_dataset=yt_dataset):
+        if not leaf_box.child_mask.any():
+            continue
+        box_cell_widths = numpy.asarray(leaf_box.box.dds, dtype=numpy.float64)
+        _ensure_isotropic_cell(cell_widths=box_cell_widths)
+        raw_box_farray = numpy.stack(
+            [numpy.asarray(leaf_box.box[field_key], dtype=numpy.float64) for field_key in field_keys],
+            axis=0,
+        )
+        derived_box_farray = derive_fn(raw_box_farray)
+        box_values = derived_box_farray[leaf_box.child_mask]
+        box_positions = numpy.stack(
+            [
+                numpy.asarray(leaf_box.box[("index", axis_name)], dtype=numpy.float64)[leaf_box.child_mask]
+                for axis_name in axis_names
+            ],
+            axis=-1,
+        )
+        box_cell_width = numpy.full(box_values.shape, box_cell_widths[0], dtype=numpy.float64)
+        grouped_box_values.append(box_values)
+        grouped_box_cell_width.append(box_cell_width)
+        grouped_box_positions.append(box_positions)
+    if len(grouped_box_values) == 0:
+        raise ValueError(f"no leaf cells were found for {field_keys} in this snapshot.")
     return read_fields.AMRLeaves(
         values=numpy.concatenate(grouped_box_values),
         cell_width=numpy.concatenate(grouped_box_cell_width),

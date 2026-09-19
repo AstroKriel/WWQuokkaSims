@@ -67,7 +67,7 @@ class TestComputeTimePointLabel(unittest.TestCase):
     ):
         registered_field = field_registry.RegisteredField(
             name="density",
-            loader_fn=_stub_loader,
+            field_loader_fn=_stub_loader,
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=None,
                 is_strictly_positive=True,
@@ -94,7 +94,7 @@ class TestComputeTimePointLabel(unittest.TestCase):
     ):
         registered_field = field_registry.RegisteredField(
             name="density",
-            loader_fn=_stub_loader,
+            field_loader_fn=_stub_loader,
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=None,
                 is_strictly_positive=True,

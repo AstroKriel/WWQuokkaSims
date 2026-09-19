@@ -47,7 +47,7 @@ def _unused_loader(
     amr_level: int = 0,
 ) -> field_models.AnyField_3D:
     _ = amr_level
-    raise AssertionError("loader_fn should not be called by a pure path-existence check")
+    raise AssertionError("field_loader_fn should not be called by a pure path-existence check")
 
 
 ##
@@ -137,7 +137,7 @@ class TestFindCompAxes(unittest.TestCase):
     ) -> slices.GenerateFieldSlices:
         registered_field = field_registry.RegisteredField(
             name="density",
-            loader_fn=_unused_loader,
+            field_loader_fn=_unused_loader,
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=None,
                 is_strictly_positive=True,

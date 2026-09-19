@@ -14,7 +14,7 @@ import numpy
 from jormi.ww_fields import cartesian_axes
 
 ## local
-from ww_quokka_sims.sim_io.snapshots._snapshot_fields import read_fields
+from ww_quokka_sims.sim_io.snapshots._snapshot_readers import read_fields
 
 ##
 ## === TEST SUITE

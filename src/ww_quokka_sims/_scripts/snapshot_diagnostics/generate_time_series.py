@@ -70,6 +70,13 @@ class DiagnosticPipeline:
         self.snapshot_args = snapshot_args
         self.fields_to_plot = validate_types.as_tuple(param=field_args.fields)
         self.amr_level = field_args.amr_level
+        self.use_chunked_reader = field_args.use_chunked_reader
+        if self.use_chunked_reader:
+            field_registry.validate_fields_support_chunked_reader(field_names=self.fields_to_plot)
+            if self.amr_level != 0:
+                raise ValueError(
+                    f"`--use-chunked-reader` only supports `--amr-level 0`; got amr_level={self.amr_level}.",
+                )
         self.diagnostic_output_args = diagnostic_output_args
         self.num_workers = num_workers
         self.apply_log10_plot = apply_log10_plot
@@ -93,6 +100,7 @@ class DiagnosticPipeline:
                 num_workers=self.num_workers,
                 overwrite=self.diagnostic_output_args.overwrite,
                 amr_level=self.amr_level,
+                use_chunked_reader=self.use_chunked_reader,
                 apply_log10_plot=self.apply_log10_plot,
             )
             generate_time_series.run()
@@ -126,6 +134,7 @@ def main():
                 allow_write=True,
                 allow_figures=True,
                 allow_parallel=True,
+                allow_chunked_reader=True,
             ),
         ],
     )

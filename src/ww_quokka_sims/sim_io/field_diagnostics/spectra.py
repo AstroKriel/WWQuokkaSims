@@ -124,6 +124,7 @@ class ComputeSpectra:
         data_dir: pathlib.Path,
         overwrite: bool = False,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -133,6 +134,7 @@ class ComputeSpectra:
         self.data_dir = data_dir
         self.overwrite = overwrite
         self.amr_level = amr_level
+        self.use_chunked_reader = use_chunked_reader
 
     def _get_data_path(
         self,
@@ -154,6 +156,7 @@ class ComputeSpectra:
             field_3d = self.registered_field.load(
                 quokka_snapshot=quokka_snapshot,
                 amr_level=self.amr_level,
+                use_chunked_reader=self.use_chunked_reader,
             )
         spectrum = compute_spectra.compute_isotropic_power_spectrum_field(field_3d)
         sim_time = field_3d.sim_time
@@ -218,6 +221,7 @@ class GenerateSpectra:
         save_figure: bool,
         overwrite: bool = False,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -229,6 +233,7 @@ class GenerateSpectra:
         self.save_figure = save_figure
         self.overwrite = overwrite
         self.amr_level = amr_level
+        self.use_chunked_reader = use_chunked_reader
 
     @staticmethod
     def _style_panel(
@@ -348,6 +353,7 @@ class GenerateSpectra:
             data_dir=self.data_dir,
             overwrite=self.overwrite,
             amr_level=self.amr_level,
+            use_chunked_reader=self.use_chunked_reader,
         )
         field_spectra = compute_spectra_pipeline.run()
         if field_spectra and self.save_figure:

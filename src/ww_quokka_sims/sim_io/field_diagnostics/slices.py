@@ -104,6 +104,7 @@ class FieldSlice:
 class ResolvedFieldArgs:
     registered_field: field_registry.RegisteredField
     amr_level: int = 0
+    use_native_slice: bool = False
 
 
 class WorkerArgs(typing.NamedTuple):
@@ -123,6 +124,7 @@ class WorkerArgs(typing.NamedTuple):
     hide_annotations: bool
     amr_level: int = 0
     apply_log10_plot: bool = False
+    use_native_slice: bool = False
 
 
 @dataclasses.dataclass(frozen=True)
@@ -424,6 +426,131 @@ class GenerateFieldSlices:
             for field_comp in field_comps
         ]
 
+    @staticmethod
+    def _build_native_field_slice(
+        *,
+        sarray_2d: numpy.ndarray,
+        axis_bounds: AxisBounds,
+        comp_latex_label: latex_labels.LatexLabel,
+        sim_time: float,
+        step_index: find_snapshots.StepIndex,
+    ) -> FieldSlice:
+        ## `load_native_slice`-family readers return [row=height_axis, col=width_axis] ("ij");
+        ## the `FieldSlice`/`plot_2d_array` convention this feeds into is [x, y] ("xy")
+        sarray_2d = sarray_2d.T
+        min_value, max_value = _compute_min_max(sarray_2d=sarray_2d)
+        return FieldSlice(
+            sarray_2d=sarray_2d,
+            axis_bounds=axis_bounds,
+            min_value=min_value,
+            max_value=max_value,
+            comp_latex_label=comp_latex_label,
+            sim_time=sim_time,
+            step_index=step_index,
+            amr_level=0,
+        )
+
+    def _load_native_sliced_comps(
+        self,
+        *,
+        snapshot_dir: pathlib.Path,
+        step_index: find_snapshots.StepIndex,
+    ) -> tuple[list[tuple[cartesian_axes.CartesianAxis_3D | None, SlicedComp]], float]:
+        """
+        Native-resolution equivalent of `_load_snapshot`+`_get_field_comps`+`_slice_field_comps`
+        combined: never materializes a dense whole-domain array, since a native-slice loader
+        already returns one already-sliced 2D array per (axis, component) pair. Always reads
+        the domain's own midpoint coordinate along each sliced axis, matching `slice_3d_farray`'s
+        whole-domain mid-index convention; ignores `amr_level` (every level is read natively).
+        """
+        registered_field = self.field_args.registered_field
+        field_name = registered_field.name
+        grouped_field_slices: dict[
+            cartesian_axes.CartesianAxis_3D | None,
+            dict[cartesian_axes.CartesianAxis_3D, FieldSlice],
+        ] = {}
+        grouped_comp_labels: dict[cartesian_axes.CartesianAxis_3D | None, latex_labels.LatexLabel] = {}
+        with load_snapshot.QuokkaSnapshot(
+                snapshot_dir=snapshot_dir,
+                verbose=False,
+        ) as quokka_snapshot:
+            sim_time = quokka_snapshot.sim_time
+            uniform_domain = quokka_snapshot.load_3d_uniform_domain(amr_level=0)
+            for axis_to_slice in self.axes_to_slice:
+                axis_min, axis_max = uniform_domain.domain_bounds[
+                    cartesian_axes.get_axis_index(axis_to_slice)]
+                slice_coordinate = (axis_min + axis_max) / 2.0
+                axis_bounds = get_slice_bounds(
+                    uniform_domain=uniform_domain,
+                    axis_to_slice=axis_to_slice,
+                )
+                native_result = registered_field.load_native_slice(
+                    quokka_snapshot=quokka_snapshot,
+                    axis_to_slice=axis_to_slice,
+                    slice_coordinate=slice_coordinate,
+                )
+                if isinstance(native_result, dict):
+                    if not self.comps_to_plot:
+                        raise ValueError(
+                            f"Vector field `{field_name}` requires at least one component to plot; none provided.",
+                        )
+                    for comp_axis in self.comps_to_plot:
+                        sarray_2d, _ = native_result[comp_axis]
+                        comp_latex_label = latex_labels.LatexLabel(
+                            content=rf"\left[{field_name}\right]_{comp_axis.axis_index}",
+                        )
+                        field_slice = self._build_native_field_slice(
+                            sarray_2d=sarray_2d,
+                            axis_bounds=axis_bounds,
+                            comp_latex_label=comp_latex_label,
+                            sim_time=sim_time,
+                            step_index=step_index,
+                        )
+                        if comp_axis not in grouped_field_slices:
+                            grouped_field_slices[comp_axis] = {}
+                        grouped_field_slices[comp_axis][axis_to_slice] = field_slice
+                        grouped_comp_labels[comp_axis] = comp_latex_label
+                else:
+                    sarray_2d, _ = native_result
+                    comp_latex_label = latex_labels.LatexLabel(content=field_name)
+                    field_slice = self._build_native_field_slice(
+                        sarray_2d=sarray_2d,
+                        axis_bounds=axis_bounds,
+                        comp_latex_label=comp_latex_label,
+                        sim_time=sim_time,
+                        step_index=step_index,
+                    )
+                    if None not in grouped_field_slices:
+                        grouped_field_slices[None] = {}
+                    grouped_field_slices[None][axis_to_slice] = field_slice
+                    grouped_comp_labels[None] = comp_latex_label
+        comp_sliced_pairs = [
+            (
+                comp_axis,
+                SlicedComp(
+                    comp_latex_label=grouped_comp_labels[comp_axis],
+                    sliced_by_axis=sliced_by_axis,
+                ),
+            ) for comp_axis, sliced_by_axis in grouped_field_slices.items()
+        ]
+        return comp_sliced_pairs, sim_time
+
+    def _save_native_sliced_comps(
+        self,
+        *,
+        comp_sliced_pairs: list[tuple[cartesian_axes.CartesianAxis_3D | None, SlicedComp]],
+        padded_step_index_string: str,
+        data_dir: pathlib.Path,
+    ) -> None:
+        for comp_axis, sliced_comp in comp_sliced_pairs:
+            for axis_to_slice, field_slice in sliced_comp.sliced_by_axis.items():
+                data_file_name = self._get_data_file_name(
+                    comp_axis=comp_axis,
+                    axis_to_slice=axis_to_slice,
+                    padded_step_index_string=padded_step_index_string,
+                )
+                field_slice.save_to_file(file_path=data_dir / data_file_name)
+
     def _plot_sliced_comps(
         self,
         *,
@@ -487,9 +614,15 @@ class GenerateFieldSlices:
             comp_tag = f"-comp={comp_axis.axis_label}"
         else:
             comp_tag = ""
+        ## tagged by read mode so a native-slice run's cache is never silently reused as (or
+        ## silently overwrites) a whole-domain run's, and vice versa
+        if self.field_args.use_native_slice:
+            mode_tag = "-native_slice"
+        else:
+            mode_tag = f"-amr_level={self.field_args.amr_level}"
         return (
             f"{field_name}{comp_tag}-slice={axis_to_slice.axis_label}-index={padded_step_index_string}"
-            f"-amr_level={self.field_args.amr_level}.npz"
+            f"{mode_tag}.npz"
         )
 
     def _get_figure_file_name(
@@ -498,10 +631,12 @@ class GenerateFieldSlices:
         padded_step_index_string: str,
     ) -> str:
         field_name = self.field_args.registered_field.name
-        if self.apply_log10_plot:
-            field_tag = f"log10_{field_name}"
+        if self.field_args.use_native_slice:
+            field_tag = f"native_slice_{field_name}"
         else:
             field_tag = field_name
+        if self.apply_log10_plot:
+            field_tag = f"log10_{field_tag}"
         return f"{field_tag}-slice-index={padded_step_index_string}.png"
 
     def _find_comp_axes(
@@ -728,6 +863,27 @@ class GenerateFieldSlices:
                     figures_dir=figures_dir,
                     verbose=verbose,
                 )
+            elif self.field_args.use_native_slice:
+                comp_sliced_pairs, sim_time = self._load_native_sliced_comps(
+                    snapshot_dir=snapshot_dir,
+                    step_index=step_index,
+                )
+                if data_is_needed:
+                    self._save_native_sliced_comps(
+                        comp_sliced_pairs=comp_sliced_pairs,
+                        padded_step_index_string=padded_step_index_string,
+                        data_dir=data_dir,
+                    )
+                if figure_is_needed:
+                    sliced_comps = [sliced_comp for _, sliced_comp in comp_sliced_pairs]
+                    self._render_figure(
+                        sliced_comps=sliced_comps,
+                        sim_time=sim_time,
+                        step_index=step_index,
+                        padded_step_index_string=padded_step_index_string,
+                        figures_dir=figures_dir,
+                        verbose=verbose,
+                    )
             else:
                 snapshot_data = self._load_snapshot(snapshot_dir=snapshot_dir)
                 field_comps = self._get_field_comps(field_3d=snapshot_data.field_3d)
@@ -773,12 +929,14 @@ def generate_field_slices_in_serial(
     hide_annotations: bool = False,
     apply_log10_plot: bool = False,
     amr_level: int = 0,
+    use_native_slice: bool = False,
 ) -> None:
     for field_name in fields_to_plot:
         registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
         field_args = ResolvedFieldArgs(
             registered_field=registered_field,
             amr_level=amr_level,
+            use_native_slice=use_native_slice,
         )
         generate_field_slices = GenerateFieldSlices(
             snapshot_tag=snapshot_tag,
@@ -809,6 +967,7 @@ def _generate_snapshot_slices_worker(
     field_args = ResolvedFieldArgs(
         registered_field=worker_args.registered_field,
         amr_level=worker_args.amr_level,
+        use_native_slice=worker_args.use_native_slice,
     )
     generate_field_slices = GenerateFieldSlices(
         snapshot_tag=worker_args.snapshot_tag,
@@ -846,6 +1005,7 @@ def generate_field_slices_in_parallel(
     hide_annotations: bool = False,
     apply_log10_plot: bool = False,
     amr_level: int = 0,
+    use_native_slice: bool = False,
     num_workers: int | None = None,
 ) -> None:
     grouped_args: list[WorkerArgs] = []
@@ -867,6 +1027,7 @@ def generate_field_slices_in_parallel(
                 hide_annotations=hide_annotations,
                 amr_level=amr_level,
                 apply_log10_plot=apply_log10_plot,
+                use_native_slice=use_native_slice,
             )
             grouped_args.append(worker_args)
     parallel_dispatch.run_in_parallel(

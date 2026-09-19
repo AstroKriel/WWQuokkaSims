@@ -37,6 +37,7 @@ from ww_quokka_sims.sim_io.snapshots import (
 class ResolvedFieldArgs:
     registered_field: field_registry.RegisteredField
     amr_level: int = 0
+    use_chunked_reader: bool = False
 
 
 class WorkerArgs(typing.NamedTuple):
@@ -50,6 +51,7 @@ class WorkerArgs(typing.NamedTuple):
     index_width: int
     overwrite: bool
     amr_level: int = 0
+    use_chunked_reader: bool = False
 
 
 ##
@@ -110,6 +112,7 @@ class FieldExtractor:
             field = self.field_args.registered_field.load(
                 quokka_snapshot=quokka_snapshot,
                 amr_level=self.field_args.amr_level,
+                use_chunked_reader=self.field_args.use_chunked_reader,
             )
         return field
 
@@ -197,6 +200,7 @@ def extract_fields_in_serial(
     index_width: int,
     overwrite: bool = False,
     amr_level: int = 0,
+    use_chunked_reader: bool = False,
 ) -> None:
     for field_name in fields_to_extract:
         registered_field = field_registry.REGISTERED_FIELD_LOOKUP[field_name]
@@ -205,6 +209,7 @@ def extract_fields_in_serial(
             field_args=ResolvedFieldArgs(
                 registered_field=registered_field,
                 amr_level=amr_level,
+                use_chunked_reader=use_chunked_reader,
             ),
             comps_to_extract=comps_to_extract,
             overwrite=overwrite,
@@ -227,6 +232,7 @@ def _extract_snapshot_worker(
         field_args=ResolvedFieldArgs(
             registered_field=worker_args.registered_field,
             amr_level=worker_args.amr_level,
+            use_chunked_reader=worker_args.use_chunked_reader,
         ),
         comps_to_extract=worker_args.comps_to_extract,
         overwrite=worker_args.overwrite,
@@ -248,6 +254,7 @@ def extract_fields_in_parallel(
     index_width: int,
     overwrite: bool = False,
     amr_level: int = 0,
+    use_chunked_reader: bool = False,
     num_workers: int | None = None,
 ) -> None:
     grouped_args: list[WorkerArgs] = []
@@ -263,6 +270,7 @@ def extract_fields_in_parallel(
                 index_width=index_width,
                 overwrite=overwrite,
                 amr_level=amr_level,
+                use_chunked_reader=use_chunked_reader,
             )
             grouped_args.append(worker_args)
     parallel_dispatch.run_in_parallel(
@@ -299,6 +307,13 @@ class DatasetPipeline:
         self.fields_to_extract = validate_types.as_tuple(param=field_comp_args.fields)
         self.comps_to_extract = cli.parse_axes(axes=field_comp_args.comps)
         self.amr_level = field_comp_args.amr_level
+        self.use_chunked_reader = field_comp_args.use_chunked_reader
+        if self.use_chunked_reader:
+            field_registry.validate_fields_support_chunked_reader(field_names=self.fields_to_extract)
+            if self.amr_level != 0:
+                raise ValueError(
+                    f"`--use-chunked-reader` only supports `--amr-level 0`; got amr_level={self.amr_level}.",
+                )
         self.data_output_args = data_output_args
         self.num_workers = num_workers
 
@@ -318,6 +333,7 @@ class DatasetPipeline:
                 index_width=resolved_inputs.index_width,
                 overwrite=self.data_output_args.overwrite,
                 amr_level=self.amr_level,
+                use_chunked_reader=self.use_chunked_reader,
                 num_workers=self.num_workers,
             )
         else:
@@ -330,6 +346,7 @@ class DatasetPipeline:
                 index_width=resolved_inputs.index_width,
                 overwrite=self.data_output_args.overwrite,
                 amr_level=self.amr_level,
+                use_chunked_reader=self.use_chunked_reader,
             )
 
     def run(
@@ -358,6 +375,7 @@ def main():
                 allow_vfields=True,
                 allow_write=True,
                 allow_parallel=True,
+                allow_chunked_reader=True,
             ),
         ],
     )
