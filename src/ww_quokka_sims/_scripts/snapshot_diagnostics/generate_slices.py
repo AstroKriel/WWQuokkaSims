@@ -46,6 +46,14 @@ class DiagnosticPipeline:
         self.comps_to_plot = cli.parse_axes(axes=field_comp_axes_args.comps)
         self.axes_to_slice = cli.parse_axes(axes=field_comp_axes_args.axes)
         self.amr_level = field_comp_axes_args.amr_level
+        self.use_native_slice = field_comp_axes_args.use_native_slice
+        if self.use_native_slice:
+            field_registry.validate_fields_support_native_slice(field_names=self.fields_to_plot)
+            if self.amr_level != 0:
+                raise ValueError(
+                    "`--use-native-slice` reads every AMR level natively; `--amr-level` has no"
+                    " effect and must be left at 0.",
+                )
         self.diagnostic_output_args = diagnostic_output_args
         self.num_workers = num_workers
         self.hide_annotations = hide_annotations
@@ -74,6 +82,7 @@ class DiagnosticPipeline:
                 hide_annotations=self.hide_annotations,
                 apply_log10_plot=self.apply_log10_plot,
                 amr_level=self.amr_level,
+                use_native_slice=self.use_native_slice,
                 num_workers=self.num_workers,
             )
         else:
@@ -92,6 +101,7 @@ class DiagnosticPipeline:
                 hide_annotations=self.hide_annotations,
                 apply_log10_plot=self.apply_log10_plot,
                 amr_level=self.amr_level,
+                use_native_slice=self.use_native_slice,
             )
 
     def run(
@@ -124,6 +134,7 @@ def main():
                 allow_write=True,
                 allow_figures=True,
                 allow_parallel=True,
+                allow_native_slice=True,
             ),
         ],
     )

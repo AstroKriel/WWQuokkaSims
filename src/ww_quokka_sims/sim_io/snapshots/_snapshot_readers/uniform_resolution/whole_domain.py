@@ -11,7 +11,7 @@ import typing
 import numpy
 
 ## local
-from ..._snapshot_fields import read_fields
+from .. import read_fields
 
 ##
 ## === PUBLIC FUNCTIONS

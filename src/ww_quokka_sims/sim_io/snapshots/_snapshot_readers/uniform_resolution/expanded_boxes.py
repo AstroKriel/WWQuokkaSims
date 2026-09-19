@@ -18,12 +18,8 @@ from jormi.ww_arrays.farrays_3d import difference_sarrays
 from jormi.ww_fields import cartesian_axes
 
 ## local
-## direct-name import, not the usual module import: this file is reachable from
-## `_snapshot_fields/__init__.py` (via `derive_magnetic_fields.py`/`derive_mhd_fields.py`),
-## so `from ..._snapshot_fields import read_fields` would need that package fully resolved
-## while it is still mid-import -- a real circular dependency
 from . import level0_boxes
-from ..._snapshot_fields.read_fields import FieldKey
+from .. import read_fields
 
 ##
 ## === DATA STRUCTURES
@@ -94,16 +90,17 @@ def trim_expanded_box(
     ]
 
 
-def iterate_expanded_vfield_boxes(
+def iterate_expanded_boxes(
     *,
     yt_dataset: typing.Any,
-    vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, FieldKey],
+    field_keys: tuple[read_fields.FieldKey, ...],
     num_extra_cells: int,
 ) -> collections_abc.Iterator[ExpandedFArray]:
     """
-    For each amr_level=0 box, yield an expanded raw vector-field block (its own cells
-    plus `num_extra_cells` of correctly-stitched, periodic-boundary-aware neighbor data)
-    and the domain-index slices its own (non-expanded) cells belong to.
+    For each amr_level=0 box, yield an expanded raw block stacking `field_keys` (in the
+    given order, along axis 0) plus `num_extra_cells` of correctly-stitched,
+    periodic-boundary-aware neighbor data, and the domain-index slices its own
+    (non-expanded) cells belong to.
 
     Only reads raw field values via yt's `retrieve_ghost_zones`; no derivative or other
     computation happens here. The caller is responsible for applying whatever
@@ -114,17 +111,31 @@ def iterate_expanded_vfield_boxes(
     Callers must have already called `yt_dataset.force_periodicity()` if the domain is
     periodic; `retrieve_ghost_zones` otherwise refuses to read past a domain edge.
     """
-    field_keys = tuple(vfield_key_lookup[comp_axis] for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER)
     for level0_box in level0_boxes.iterate_amr_level_0_boxes(yt_dataset=yt_dataset):
         expanded_view = level0_box.box.retrieve_ghost_zones(num_extra_cells, list(field_keys))
-        expanded_varray = numpy.stack(
+        expanded_farray = numpy.stack(
             [numpy.asarray(expanded_view[field_key], dtype=numpy.float64) for field_key in field_keys],
             axis=0,
         )
         yield ExpandedFArray(
-            farray=expanded_varray,
+            farray=expanded_farray,
             cell_range=level0_box.cell_range,
         )
+
+
+def iterate_expanded_boxes_of_vfield(
+    *,
+    yt_dataset: typing.Any,
+    vfield_key_lookup: dict[cartesian_axes.CartesianAxis_3D, read_fields.FieldKey],
+    num_extra_cells: int,
+) -> collections_abc.Iterator[ExpandedFArray]:
+    """Same as `iterate_expanded_boxes`, with `vfield_key_lookup` resolved to x/y/z order."""
+    field_keys = tuple(vfield_key_lookup[comp_axis] for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER)
+    yield from iterate_expanded_boxes(
+        yt_dataset=yt_dataset,
+        field_keys=field_keys,
+        num_extra_cells=num_extra_cells,
+    )
 
 
 ## } MODULE

@@ -21,21 +21,9 @@ from jormi.ww_fields.fields_3d import (
 )
 
 ## local
-## TYPE_CHECKING-only: `expanded_boxes` itself needs `_snapshot_fields.read_fields`, which
-## means importing it here for real would re-enter `_snapshot_fields/__init__.py` while it
-## is still mid-import -- a real circular dependency. Only used below as a quoted (string)
-## annotation, which Python never evaluates at runtime, so the module need not exist there.
-if typing.TYPE_CHECKING:
-    from .._snapshot_readers.uniform_resolution import expanded_boxes
-## direct-name import, not the usual module import: `_snapshot_fields/__init__.py`
-## re-exports this file's own contents, so `from . import read_fields` would need the
-## package fully resolved while it is still mid-import -- a real circular dependency
-from .read_fields import (
-    AMRLeaves,
-    FieldKey,
-    HelmholtzKineticEnergy,
-    LRUCache,
-)
+from .._snapshot_readers.read_fields import AMRLeaves, FieldKey
+from .._snapshot_readers.uniform_resolution import expanded_boxes
+from .read_fields import HelmholtzKineticEnergy, LRUCache
 
 ##
 ## === PROTOCOL
@@ -130,12 +118,30 @@ class FieldsProtocol(typing.Protocol):
     ) -> AMRLeaves:
         ...
 
+    def _load_amr_leaves_of_derived_field(
+        self,
+        *,
+        field_keys: tuple[FieldKey, ...],
+        derive_fn: collections_abc.Callable[[numpy.ndarray], numpy.ndarray],
+    ) -> AMRLeaves:
+        ...
+
     def load_native_slice_sarray(
         self,
         *,
         field_key: FieldKey,
         axis_to_slice: cartesian_axes.CartesianAxis_3D,
-        slice_coordinate: float = 0.0,
+        slice_coordinate: float,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
+        ...
+
+    def _load_native_slice_of_derived_field(
+        self,
+        *,
+        field_keys: tuple[FieldKey, ...],
+        derive_fn: collections_abc.Callable[[numpy.ndarray], numpy.ndarray],
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
         ...
 
@@ -152,6 +158,7 @@ class FieldsProtocol(typing.Protocol):
         self,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.ScalarField_3D:
         ...
 
@@ -159,6 +166,7 @@ class FieldsProtocol(typing.Protocol):
         self,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
         ...
 
@@ -174,7 +182,21 @@ class FieldsProtocol(typing.Protocol):
         self,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.ScalarField_3D:
+        ...
+
+    def load_3d_total_energy_amr_leaves(
+        self,
+    ) -> AMRLeaves:
+        ...
+
+    def load_3d_total_energy_native_slice(
+        self,
+        *,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
         ...
 
     def _is_vfield_keys_available(
@@ -184,25 +206,69 @@ class FieldsProtocol(typing.Protocol):
     ) -> bool:
         ...
 
-    def _iterate_expanded_vfield_boxes(
+    def _iterate_expanded_boxes_of_vfield(
         self,
         *,
         field_name: str,
         num_extra_cells: int,
         amr_level: int = 0,
-    ) -> collections_abc.Iterator["expanded_boxes.ExpandedFArray"]:
+    ) -> collections_abc.Iterator[expanded_boxes.ExpandedFArray]:
         ...
 
-    def _compute_chunked_derived_vfield(
+    def _derive_chunked_vfield_from_field_name(
         self,
         *,
         field_name: str,
         grad_order: int,
         amr_level: int,
-        local_compute_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
+        derive_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
         output_field_name: str,
         output_latex_label: str,
     ) -> field_models.VectorField_3D:
+        ...
+
+    def _iterate_expanded_boxes_of_velocity_vfield(
+        self,
+        *,
+        num_extra_cells: int,
+        amr_level: int = 0,
+    ) -> collections_abc.Iterator[expanded_boxes.ExpandedFArray]:
+        ...
+
+    def _derive_chunked_vfield_from_source(
+        self,
+        *,
+        expanded_box_source: collections_abc.Iterator[expanded_boxes.ExpandedFArray],
+        num_extra_cells: int,
+        amr_level: int,
+        derive_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
+        output_field_name: str,
+        output_latex_label: str,
+    ) -> field_models.VectorField_3D:
+        ...
+
+    def _derive_chunked_sfield_from_source(
+        self,
+        *,
+        expanded_box_source: collections_abc.Iterator[expanded_boxes.ExpandedFArray],
+        num_extra_cells: int,
+        amr_level: int,
+        derive_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
+        output_field_name: str,
+        output_latex_label: str,
+    ) -> field_models.ScalarField_3D:
+        ...
+
+    def _derive_chunked_r2tfield_from_source(
+        self,
+        *,
+        expanded_box_source: collections_abc.Iterator[expanded_boxes.ExpandedFArray],
+        num_extra_cells: int,
+        amr_level: int,
+        derive_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
+        output_field_name: str,
+        output_latex_label: str,
+    ) -> field_models.RankTwoTensorField_3D:
         ...
 
     ##
@@ -213,15 +279,8 @@ class FieldsProtocol(typing.Protocol):
         self,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
-        ...
-
-    def compute_velocity_gradient_r2tfield(
-        self,
-        *,
-        grad_order: int,
-        amr_level: int = 0,
-    ) -> field_models.RankTwoTensorField_3D:
         ...
 
     def compute_vorticity_vfield(
@@ -229,6 +288,7 @@ class FieldsProtocol(typing.Protocol):
         *,
         grad_order: int,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.VectorField_3D:
         ...
 
@@ -240,7 +300,21 @@ class FieldsProtocol(typing.Protocol):
         self,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.ScalarField_3D:
+        ...
+
+    def load_3d_kinetic_energy_amr_leaves(
+        self,
+    ) -> AMRLeaves:
+        ...
+
+    def load_3d_kinetic_energy_native_slice(
+        self,
+        *,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
         ...
 
     def compute_magnetic_energy_sfield(
@@ -248,7 +322,24 @@ class FieldsProtocol(typing.Protocol):
         *,
         energy_prefactor: float = 0.5,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.ScalarField_3D:
+        ...
+
+    def load_3d_magnetic_energy_amr_leaves(
+        self,
+        *,
+        energy_prefactor: float = 0.5,
+    ) -> AMRLeaves:
+        ...
+
+    def load_3d_magnetic_energy_native_slice(
+        self,
+        *,
+        energy_prefactor: float = 0.5,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
         ...
 
     def compute_internal_energy_sfield(
@@ -256,7 +347,24 @@ class FieldsProtocol(typing.Protocol):
         *,
         magnetic_energy_sfield_3d: field_models.ScalarField_3D | None = None,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.ScalarField_3D:
+        ...
+
+    def load_3d_internal_energy_amr_leaves(
+        self,
+        *,
+        magnetic_energy_leaves: AMRLeaves | None = None,
+    ) -> AMRLeaves:
+        ...
+
+    def load_3d_internal_energy_native_slice(
+        self,
+        *,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
+        magnetic_energy_native_slice: tuple[numpy.ndarray, numpy.ndarray] | None = None,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
         ...
 
     def compute_pressure_sfield(
@@ -265,13 +373,33 @@ class FieldsProtocol(typing.Protocol):
         gamma: float = 5.0 / 3.0,
         magnetic_energy_sfield_3d: field_models.ScalarField_3D | None = None,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.ScalarField_3D:
+        ...
+
+    def load_3d_pressure_amr_leaves(
+        self,
+        *,
+        gamma: float = 5.0 / 3.0,
+        magnetic_energy_leaves: AMRLeaves | None = None,
+    ) -> AMRLeaves:
+        ...
+
+    def load_3d_pressure_native_slice(
+        self,
+        *,
+        gamma: float = 5.0 / 3.0,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
+        magnetic_energy_native_slice: tuple[numpy.ndarray, numpy.ndarray] | None = None,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
         ...
 
     def compute_helmholtz_kinetic_energy(
         self,
         *,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> HelmholtzKineticEnergy:
         ...
 
@@ -291,6 +419,7 @@ class FieldsProtocol(typing.Protocol):
         *,
         grad_order: int = 2,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
     ) -> field_models.ScalarField_3D:
         ...
 

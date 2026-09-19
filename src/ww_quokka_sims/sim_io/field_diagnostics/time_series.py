@@ -153,6 +153,7 @@ class TimePointArgs:
     registered_field: field_registry.RegisteredField
     field_statistic: FieldStatistic
     amr_level: int = 0
+    use_chunked_reader: bool = False
     cache_path: pathlib.Path | None = None
 
 
@@ -172,6 +173,7 @@ class GenerateTimeSeries:
         num_workers: int | None = None,
         overwrite: bool = False,
         amr_level: int = 0,
+        use_chunked_reader: bool = False,
         apply_log10_plot: bool = False,
     ):
         self.snapshot_dirs = sorted(snapshot_dirs)
@@ -184,6 +186,7 @@ class GenerateTimeSeries:
         self.num_workers = num_workers
         self.overwrite = overwrite
         self.amr_level = amr_level
+        self.use_chunked_reader = use_chunked_reader
         self.apply_log10_plot = apply_log10_plot
 
     def _get_cache_path(
@@ -205,6 +208,7 @@ class GenerateTimeSeries:
             field_3d = time_point_args.registered_field.load(
                 quokka_snapshot=quokka_snapshot,
                 amr_level=time_point_args.amr_level,
+                use_chunked_reader=time_point_args.use_chunked_reader,
             )
         assert isinstance(field_3d, field_models.ScalarField_3D)
         statistic = time_point_args.field_statistic.compute_statistic(field_3d=field_3d)
@@ -249,6 +253,7 @@ class GenerateTimeSeries:
                     registered_field=self.registered_field,
                     field_statistic=self.field_statistic,
                     amr_level=self.amr_level,
+                    use_chunked_reader=self.use_chunked_reader,
                     cache_path=cache_path,
                 )
                 time_series_args.append(time_point_args)

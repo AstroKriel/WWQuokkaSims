@@ -29,8 +29,8 @@ from jormi.ww_validation import validate_types
 
 ## local
 from . import _snapshot_fields
-from ._snapshot_fields import AMRLeaves as AMRLeaves  # explicit re-export so pyright treats it as public API
-from ._snapshot_fields import FieldKey as FieldKey  # explicit re-export so pyright treats it as public API
+from ._snapshot_readers.read_fields import AMRLeaves as AMRLeaves  # explicit re-export so pyright treats it as public API
+from ._snapshot_readers.read_fields import FieldKey as FieldKey  # explicit re-export so pyright treats it as public API
 from ._snapshot_readers.native_resolution import native_slice, native_values
 from ._snapshot_readers.uniform_resolution import chunked_domain, expanded_boxes, whole_domain
 
@@ -381,12 +381,33 @@ class QuokkaSnapshot(
         self._close_if_needed()
         return amr_leaves
 
+    def _load_amr_leaves_of_derived_field(
+        self,
+        *,
+        field_keys: tuple[FieldKey, ...],
+        derive_fn: collections_abc.Callable[[numpy.ndarray], numpy.ndarray],
+    ) -> AMRLeaves:
+        """
+        Derive a scalar field at every leaf cell, box-by-box, without ever holding a
+        full-domain array: only the returned `AMRLeaves` is ever a full-hierarchy result.
+        See `native_values.load_amr_leaves_of_derived_field` for `derive_fn`.
+        """
+        self._open_if_needed()
+        assert self._yt_dataset is not None
+        amr_leaves = native_values.load_amr_leaves_of_derived_field(
+            yt_dataset=self._yt_dataset,
+            field_keys=field_keys,
+            derive_fn=derive_fn,
+        )
+        self._close_if_needed()
+        return amr_leaves
+
     def load_native_slice_sarray(
         self,
         *,
         field_key: FieldKey,
         axis_to_slice: cartesian_axes.CartesianAxis_3D,
-        slice_coordinate: float = 0.0,
+        slice_coordinate: float,
     ) -> tuple[numpy.ndarray, numpy.ndarray]:
         """
         Read one scalar field, and its per-pixel native cell width, on a genuine AMR-native slice.
@@ -418,7 +439,32 @@ class QuokkaSnapshot(
         self._close_if_needed()
         return sarray_2d, cell_width_2d
 
-    def _iterate_expanded_vfield_boxes(
+    def _load_native_slice_of_derived_field(
+        self,
+        *,
+        field_keys: tuple[FieldKey, ...],
+        derive_fn: collections_abc.Callable[[numpy.ndarray], numpy.ndarray],
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
+        """
+        Derive a scalar field on a genuine AMR-native slice. See
+        `native_slice.load_native_slice_of_derived_field` for `derive_fn`.
+        """
+        self._open_if_needed()
+        assert self._yt_dataset is not None
+        slice_axis_index = cartesian_axes.get_axis_index(axis_to_slice)
+        sarray_2d, cell_width_2d = native_slice.load_native_slice_of_derived_field(
+            yt_dataset=self._yt_dataset,
+            field_keys=field_keys,
+            derive_fn=derive_fn,
+            slice_axis_index=slice_axis_index,
+            slice_coordinate=slice_coordinate,
+        )
+        self._close_if_needed()
+        return sarray_2d, cell_width_2d
+
+    def _iterate_expanded_boxes_of_vfield(
         self,
         *,
         field_name: str,
@@ -447,7 +493,7 @@ class QuokkaSnapshot(
         vfield_key_lookup = self._get_vfield_key_lookup(field_name=field_name)
         self._yt_dataset.force_periodicity()
         try:
-            yield from expanded_boxes.iterate_expanded_vfield_boxes(
+            yield from expanded_boxes.iterate_expanded_boxes_of_vfield(
                 yt_dataset=self._yt_dataset,
                 vfield_key_lookup=vfield_key_lookup,
                 num_extra_cells=num_extra_cells,
@@ -455,39 +501,96 @@ class QuokkaSnapshot(
         finally:
             self._close_if_needed()
 
-    def _compute_chunked_derived_vfield(
+    def _iterate_expanded_boxes_of_derived_vfield(
         self,
         *,
-        field_name: str,
-        grad_order: int,
+        field_keys: tuple[FieldKey, ...],
+        derive_fn: collections_abc.Callable[[numpy.ndarray], numpy.ndarray],
+        num_extra_cells: int,
+        amr_level: int = 0,
+    ) -> collections_abc.Iterator[expanded_boxes.ExpandedFArray]:
+        """
+        Yield, for each amr_level=0 box, a derived vector field's own expanded block
+        (`field_keys` read raw and in lockstep for the same box, then combined via
+        `derive_fn(raw_expanded_farray) -> derived_expanded_varray`) and the domain-index
+        slices its own cells belong to.
+
+        For a derived field (not itself stored) that needs differentiating box-by-box:
+        reading its raw ingredients via independent `_iterate_expanded_boxes_of_vfield`-style
+        calls would not guarantee the same box in the same order from each, so they must
+        be read in lockstep here instead.
+        """
+        if amr_level != 0:
+            raise ValueError(
+                "expanded-box chunked reading only supports amr_level=0 (no cross-level"
+                f" compositing implemented); got amr_level={amr_level}.",
+            )
+        self._open_if_needed()
+        assert self._yt_dataset is not None
+        self._yt_dataset.force_periodicity()
+        try:
+            for expanded_farray in expanded_boxes.iterate_expanded_boxes(
+                    yt_dataset=self._yt_dataset,
+                    field_keys=field_keys,
+                    num_extra_cells=num_extra_cells,
+            ):
+                derived_expanded_varray = derive_fn(expanded_farray.farray)
+                yield expanded_boxes.ExpandedFArray(
+                    farray=derived_expanded_varray,
+                    cell_range=expanded_farray.cell_range,
+                )
+        finally:
+            self._close_if_needed()
+
+    def _iterate_expanded_boxes_of_velocity_vfield(
+        self,
+        *,
+        num_extra_cells: int,
+        amr_level: int = 0,
+    ) -> collections_abc.Iterator[expanded_boxes.ExpandedFArray]:
+        """Velocity's own expanded block: momentum's raw expanded box divided elementwise by
+        density's raw expanded box. See `_iterate_expanded_boxes_of_derived_vfield`."""
+        momentum_key_lookup = self._get_vfield_key_lookup(field_name="momentum")
+        density_key = self._get_sfield_key(field_name="density")
+        field_keys = tuple(
+            momentum_key_lookup[comp_axis] for comp_axis in cartesian_axes.DEFAULT_3D_AXES_ORDER
+        ) + (density_key, )
+
+        def derive_velocity_fn(
+            raw_expanded_farray: numpy.ndarray,
+        ) -> numpy.ndarray:
+            expanded_mom_varray = raw_expanded_farray[:3]
+            expanded_rho_sarray = raw_expanded_farray[3]
+            return expanded_mom_varray / expanded_rho_sarray[numpy.newaxis, ...]
+
+        yield from self._iterate_expanded_boxes_of_derived_vfield(
+            field_keys=field_keys,
+            derive_fn=derive_velocity_fn,
+            num_extra_cells=num_extra_cells,
+            amr_level=amr_level,
+        )
+
+    def _derive_chunked_vfield_from_source(
+        self,
+        *,
+        expanded_box_source: collections_abc.Iterator[expanded_boxes.ExpandedFArray],
+        num_extra_cells: int,
         amr_level: int,
-        local_compute_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
+        derive_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
         output_field_name: str,
         output_latex_label: str,
     ) -> field_models.VectorField_3D:
         """
-        Compute a derived 3-component field from `field_name`, box-by-box, without ever
-        holding a full-domain array of `field_name` or of any intermediate: only the
-        returned field is ever a full-domain array.
-
-        `local_compute_fn(expanded_varray, num_extra_cells)` receives one amr_level=0
-        box's raw `field_name` data, expanded by `num_extra_cells` cells, and must
-        return the already-trimmed local result for that box's own cells (see
-        `expanded_boxes.trim_expanded_box`): whatever `local_compute_fn` does
-        internally (differentiate, combine with other locally-derived quantities, ...),
-        memory-boundedness only holds if it never retains more than one box's worth of
-        data itself.
+        Derive a 3-component field box-by-box from `expanded_box_source`, without ever
+        holding a full-domain array of the source data or of any intermediate: only the
+        returned field is ever a full-domain array. See `_derive_chunked_vfield_from_field_name` for the
+        `field_name`-based convenience wrapper around this.
         """
-        num_extra_cells = expanded_boxes.compute_num_extra_cells(grad_order=grad_order)
         uniform_domain_3d = self.load_3d_uniform_domain(amr_level=amr_level)
         out_varray_3d = numpy.full((3, *uniform_domain_3d.resolution), numpy.nan, dtype=numpy.float64)
-        for expanded_farray in self._iterate_expanded_vfield_boxes(
-                field_name=field_name,
-                num_extra_cells=num_extra_cells,
-                amr_level=amr_level,
-        ):
+        for expanded_farray in expanded_box_source:
             out_varray_3d[(slice(None), *expanded_farray.cell_range)
-                          ] = local_compute_fn(expanded_farray.farray, num_extra_cells)
+                          ] = derive_fn(expanded_farray.farray, num_extra_cells)
         if numpy.isnan(out_varray_3d).any():
             raise ValueError(
                 f"some cells were never written by any amr_level=0 box while computing"
@@ -495,6 +598,101 @@ class QuokkaSnapshot(
             )
         return field_models.VectorField_3D.from_3d_varray(
             varray_3d=out_varray_3d,
+            uniform_domain_3d=uniform_domain_3d,
+            sim_time=self.sim_time,
+            field_name=output_field_name,
+            latex_label=output_latex_label,
+        )
+
+    def _derive_chunked_vfield_from_field_name(
+        self,
+        *,
+        field_name: str,
+        grad_order: int,
+        amr_level: int,
+        derive_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
+        output_field_name: str,
+        output_latex_label: str,
+    ) -> field_models.VectorField_3D:
+        """
+        Derive a 3-component field from `field_name`, box-by-box, without ever holding a
+        full-domain array of `field_name` or of any intermediate: only the returned field
+        is ever a full-domain array.
+
+        `derive_fn(expanded_varray, num_extra_cells)` receives one amr_level=0 box's raw
+        `field_name` data, expanded by `num_extra_cells` cells, and must return the
+        already-trimmed local result for that box's own cells (see
+        `expanded_boxes.trim_expanded_box`): whatever `derive_fn` does internally
+        (differentiate, combine with other locally-derived quantities, ...),
+        memory-boundedness only holds if it never retains more than one box's worth of
+        data itself.
+        """
+        num_extra_cells = expanded_boxes.compute_num_extra_cells(grad_order=grad_order)
+        expanded_box_source = self._iterate_expanded_boxes_of_vfield(
+            field_name=field_name,
+            num_extra_cells=num_extra_cells,
+            amr_level=amr_level,
+        )
+        return self._derive_chunked_vfield_from_source(
+            expanded_box_source=expanded_box_source,
+            num_extra_cells=num_extra_cells,
+            amr_level=amr_level,
+            derive_fn=derive_fn,
+            output_field_name=output_field_name,
+            output_latex_label=output_latex_label,
+        )
+
+    def _derive_chunked_sfield_from_source(
+        self,
+        *,
+        expanded_box_source: collections_abc.Iterator[expanded_boxes.ExpandedFArray],
+        num_extra_cells: int,
+        amr_level: int,
+        derive_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
+        output_field_name: str,
+        output_latex_label: str,
+    ) -> field_models.ScalarField_3D:
+        """Scalar-output counterpart of `_derive_chunked_vfield_from_source`."""
+        uniform_domain_3d = self.load_3d_uniform_domain(amr_level=amr_level)
+        out_sarray_3d = numpy.full(uniform_domain_3d.resolution, numpy.nan, dtype=numpy.float64)
+        for expanded_farray in expanded_box_source:
+            out_sarray_3d[expanded_farray.cell_range] = derive_fn(expanded_farray.farray, num_extra_cells)
+        if numpy.isnan(out_sarray_3d).any():
+            raise ValueError(
+                f"some cells were never written by any amr_level=0 box while computing"
+                f" {output_field_name}; the boxes do not fully tile the domain.",
+            )
+        return field_models.ScalarField_3D.from_3d_sarray(
+            sarray_3d=out_sarray_3d,
+            uniform_domain_3d=uniform_domain_3d,
+            sim_time=self.sim_time,
+            field_name=output_field_name,
+            latex_label=output_latex_label,
+        )
+
+    def _derive_chunked_r2tfield_from_source(
+        self,
+        *,
+        expanded_box_source: collections_abc.Iterator[expanded_boxes.ExpandedFArray],
+        num_extra_cells: int,
+        amr_level: int,
+        derive_fn: collections_abc.Callable[[numpy.ndarray, int], numpy.ndarray],
+        output_field_name: str,
+        output_latex_label: str,
+    ) -> field_models.RankTwoTensorField_3D:
+        """Rank-2-tensor-output counterpart of `_derive_chunked_vfield_from_source`."""
+        uniform_domain_3d = self.load_3d_uniform_domain(amr_level=amr_level)
+        out_r2tarray_3d = numpy.full((3, 3, *uniform_domain_3d.resolution), numpy.nan, dtype=numpy.float64)
+        for expanded_farray in expanded_box_source:
+            out_r2tarray_3d[(slice(None), slice(None), *expanded_farray.cell_range)
+                            ] = derive_fn(expanded_farray.farray, num_extra_cells)
+        if numpy.isnan(out_r2tarray_3d).any():
+            raise ValueError(
+                f"some cells were never written by any amr_level=0 box while computing"
+                f" {output_field_name}; the boxes do not fully tile the domain.",
+            )
+        return field_models.RankTwoTensorField_3D.from_3d_r2tarray(
+            r2tarray_3d=out_r2tarray_3d,
             uniform_domain_3d=uniform_domain_3d,
             sim_time=self.sim_time,
             field_name=output_field_name,

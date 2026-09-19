@@ -42,8 +42,16 @@ class DiagnosticPipeline:
         )
         self.snapshot_args = snapshot_args
         self.fields_to_plot = validate_types.as_tuple(param=field_comp_args.fields)
+        if field_comp_args.use_amr_leaves:
+            field_registry.validate_fields_support_amr_leaves(field_names=self.fields_to_plot)
+            if field_comp_args.amr_level != 0:
+                raise ValueError(
+                    "`--use-amr-leaves` reads every AMR level natively; `--amr-level` has no"
+                    " effect and must be left at 0.",
+                )
         self.comps_to_plot = cli.parse_axes(axes=field_comp_args.comps)
         self.amr_level = field_comp_args.amr_level
+        self.use_amr_leaves = field_comp_args.use_amr_leaves
         self.diagnostic_output_args = diagnostic_output_args
         self.num_bins = int(num_bins)
         self.use_log10_bins = use_log10_bins
@@ -71,6 +79,7 @@ class DiagnosticPipeline:
                 overwrite=self.diagnostic_output_args.overwrite,
                 use_log10_bins=self.use_log10_bins,
                 amr_level=self.amr_level,
+                use_amr_leaves=self.use_amr_leaves,
             )
             generate_pdfs.run()
 
@@ -102,6 +111,7 @@ def main():
                 allow_slicing=False,
                 allow_write=True,
                 allow_figures=True,
+                allow_amr_leaves=True,
             ),
         ],
     )

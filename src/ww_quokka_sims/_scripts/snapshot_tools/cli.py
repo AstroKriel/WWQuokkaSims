@@ -128,6 +128,9 @@ class FieldArgs:
 
     fields: tuple[str, ...] | list[str] | None
     amr_level: int = 0
+    use_chunked_reader: bool = False
+    use_amr_leaves: bool = False
+    use_native_slice: bool = False
 
     @classmethod
     def from_user_args(
@@ -138,6 +141,9 @@ class FieldArgs:
         return cls(
             fields=user_args.fields,
             amr_level=user_args.amr_level,
+            use_chunked_reader=getattr(user_args, "use_chunked_reader", False),
+            use_amr_leaves=getattr(user_args, "use_amr_leaves", False),
+            use_native_slice=getattr(user_args, "use_native_slice", False),
         )
 
 
@@ -168,6 +174,9 @@ class FieldCompArgs(FieldArgs):
         return cls(
             fields=user_args.fields,
             amr_level=user_args.amr_level,
+            use_chunked_reader=getattr(user_args, "use_chunked_reader", False),
+            use_amr_leaves=getattr(user_args, "use_amr_leaves", False),
+            use_native_slice=getattr(user_args, "use_native_slice", False),
             comps=user_args.comps,
         )
 
@@ -197,6 +206,7 @@ class FieldCompAxesArgs(FieldCompArgs):
         return cls(
             fields=user_args.fields,
             amr_level=user_args.amr_level,
+            use_native_slice=getattr(user_args, "use_native_slice", False),
             comps=user_args.comps,
             axes=user_args.axes,
         )
@@ -216,6 +226,9 @@ def base_parser(
     allow_write: bool = False,
     allow_figures: bool = False,
     allow_parallel: bool = False,
+    allow_chunked_reader: bool = False,
+    allow_amr_leaves: bool = False,
+    allow_native_slice: bool = False,
 ) -> argparse.ArgumentParser:
     """
     Shared argument parser for diagnostic scripts.
@@ -255,6 +268,20 @@ def base_parser(
         `True` adds `--num-workers` for scripts that dispatch work across snapshots via
         `jormi.ww_fns.parallel_dispatch`; default: `False`. `None` (the flag's default) means all
         available cores; `1` runs serially.
+
+    - `allow_chunked_reader`:
+        `True` adds `--use-chunked-reader`; default: `False`. Only meaningful for scripts whose
+        fields read a whole-domain array; only supports `--amr-level 0`.
+
+    - `allow_amr_leaves`:
+        `True` adds `--use-amr-leaves`; default: `False`. Only meaningful for scripts that pool
+        per-cell statistics (e.g. a PDF) rather than needing a spatial map; only supported for
+        fields registered with a leaf loader (see `field_registry.validate_fields_support_amr_leaves`).
+
+    - `allow_native_slice`:
+        `True` adds `--use-native-slice`; default: `False`. Only meaningful for scripts that slice
+        a spatial map; only supported for fields registered with a native-slice loader (see
+        `field_registry.validate_fields_support_native_slice`).
 
     Example
     ---
@@ -332,6 +359,59 @@ def base_parser(
             "default: 0 (base level). Errors if the snapshot does not have this many levels."
         ),
     )
+    if allow_chunked_reader:
+        chunked_reader_field_list = ww_lists.as_string(
+            elems=sorted(
+                field_name for field_name in field_registry.REGISTERED_FIELD_LOOKUP
+                if field_registry.field_supports_chunked_reader(field_name=field_name)
+            ),
+        )
+        parser.add_argument(
+            "--use-chunked-reader",
+            action="store_true",
+            default=False,
+            help=(
+                "Read box-by-box instead of via yt's whole-domain covering grid, to avoid yt's "
+                "~6x memory overhead during the read; only supports --amr-level 0. Produces the "
+                f"same array either way. Supported fields: {chunked_reader_field_list}. Default: False."
+            ),
+        )
+    if allow_amr_leaves:
+        amr_leaves_field_list = ww_lists.as_string(
+            elems=sorted(
+                field_name for field_name, registered_field in field_registry.REGISTERED_FIELD_LOOKUP.items()
+                if registered_field.amr_leaves_loader_fn is not None
+            ),
+        )
+        parser.add_argument(
+            "--use-amr-leaves",
+            action="store_true",
+            default=False,
+            help=(
+                "Pool every leaf cell's value across the full AMR hierarchy at its own native "
+                "resolution, instead of reading a single-resolution whole-domain array; ignores "
+                f"--amr-level (every level is read natively). Supported fields: {amr_leaves_field_list}. "
+                "Default: False."
+            ),
+        )
+    if allow_native_slice:
+        native_slice_field_list = ww_lists.as_string(
+            elems=sorted(
+                field_name for field_name, registered_field in field_registry.REGISTERED_FIELD_LOOKUP.items()
+                if registered_field.native_slice_loader_fn is not None
+            ),
+        )
+        parser.add_argument(
+            "--use-native-slice",
+            action="store_true",
+            default=False,
+            help=(
+                "Read each pixel from whichever box actually covers it, at the finest level "
+                "present, instead of reading a single-resolution whole-domain array; always "
+                "slices at the domain's own midpoint and ignores --amr-level (every level is "
+                f"read natively). Supported fields: {native_slice_field_list}. Default: False."
+            ),
+        )
     if allow_fields:
         parser.add_argument(
             "--fields",

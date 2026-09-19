@@ -191,6 +191,7 @@ class ComputePDFs:
         overwrite: bool = False,
         use_log10_bins: bool = False,
         amr_level: int = 0,
+        use_amr_leaves: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -203,20 +204,24 @@ class ComputePDFs:
         self.overwrite = overwrite
         self.use_log10_bins = use_log10_bins
         self.amr_level = amr_level
+        self.use_amr_leaves = use_amr_leaves
 
     def _get_data_tag(
         self,
     ) -> str:
-        """Filename stem, tagged with `log10_` when bins are log10-spaced.
+        """Filename stem, tagged with `amr_leaves_` and/or `log10_` to keep each mode's cached
+        output from colliding with (and being silently reused as) another mode's.
 
         The filename is a hint for humans browsing the directory, not the source of truth (it can
         be renamed); the saved `use_log10_bins` flag and `log10_bin_centers` key inside the file
         itself are what downstream code should actually check.
         """
+        data_tag = self.registered_field.name
+        if self.use_amr_leaves:
+            data_tag = f"amr_leaves_{data_tag}"
         if self.use_log10_bins:
-            return f"log10_{self.registered_field.name}"
-        else:
-            return self.registered_field.name
+            data_tag = f"log10_{data_tag}"
+        return data_tag
 
     def _get_data_path(
         self,
@@ -311,6 +316,65 @@ class ComputePDFs:
             use_log10_bins=self.use_log10_bins,
         )
 
+    def _compute_sfield_pdf_from_amr_leaves(
+        self,
+        *,
+        amr_leaves: load_snapshot.AMRLeaves,
+        sim_time: float,
+        step_index: find_snapshots.StepIndex,
+    ) -> FieldPDF:
+        pdf = self._estimate_pdf(
+            sarray_3d=amr_leaves.values,
+            num_bins=self.num_bins,
+            use_log10_bins=self.use_log10_bins,
+        )
+        return FieldPDF(
+            sim_time=sim_time,
+            step_index=step_index,
+            grouped_bin_centers=[pdf.bin_centers],
+            grouped_densities=[pdf.log10_densities],
+            comp_latex_labels=[latex_labels.LatexLabel(content=self.registered_field.name)],
+            use_log10_bins=self.use_log10_bins,
+        )
+
+    def _compute_vfield_pdf_from_amr_leaves(
+        self,
+        *,
+        amr_leaves_by_axis: dict[cartesian_axes.CartesianAxis_3D, load_snapshot.AMRLeaves],
+        sim_time: float,
+        step_index: find_snapshots.StepIndex,
+    ) -> FieldPDF:
+        if len(self.comps_to_plot) == 0:
+            raise ValueError(
+                f"Vector field `{self.registered_field.name}` requires at least one component to plot; none provided.",
+            )
+        comp_names = sorted(self.comps_to_plot)
+        grouped_bin_centers: list[numpy.ndarray] = []
+        grouped_densities: list[numpy.ndarray] = []
+        comp_latex_labels: list[latex_labels.LatexLabel] = []
+        for comp_name in comp_names:
+            comp_axis = cartesian_axes.as_axis(comp_name)
+            pdf = self._estimate_pdf(
+                sarray_3d=amr_leaves_by_axis[comp_axis].values,
+                num_bins=self.num_bins,
+                use_log10_bins=self.use_log10_bins,
+            )
+            grouped_bin_centers.append(pdf.bin_centers)
+            grouped_densities.append(pdf.log10_densities)
+            comp_latex_labels.append(
+                latex_labels.LatexLabel(
+                    content=rf"\left[{self.registered_field.name}\right]_{comp_axis.axis_index}",
+                ),
+            )
+        return FieldPDF(
+            sim_time=sim_time,
+            step_index=step_index,
+            grouped_bin_centers=grouped_bin_centers,
+            grouped_densities=grouped_densities,
+            comp_latex_labels=comp_latex_labels,
+            use_log10_bins=self.use_log10_bins,
+        )
+
     def _compute_snapshot(
         self,
         *,
@@ -321,22 +385,38 @@ class ComputePDFs:
                 snapshot_dir=snapshot_dir,
                 verbose=False,
         ) as quokka_snapshot:
-            field_3d = self.registered_field.load(
-                quokka_snapshot=quokka_snapshot,
-                amr_level=self.amr_level,
-            )
-        if isinstance(field_3d, field_models.ScalarField_3D):
-            return self._compute_sfield_pdf(
-                sfield_3d=field_3d,
-                step_index=step_index,
-            )
-        elif isinstance(field_3d, field_models.VectorField_3D):
-            return self._compute_vfield_pdf(
-                vfield_3d=field_3d,
-                step_index=step_index,
-            )
-        else:
-            raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")
+            if self.use_amr_leaves:
+                amr_leaves_result = self.registered_field.load_amr_leaves(quokka_snapshot=quokka_snapshot)
+                sim_time = quokka_snapshot.sim_time
+                if isinstance(amr_leaves_result, dict):
+                    return self._compute_vfield_pdf_from_amr_leaves(
+                        amr_leaves_by_axis=amr_leaves_result,
+                        sim_time=sim_time,
+                        step_index=step_index,
+                    )
+                else:
+                    return self._compute_sfield_pdf_from_amr_leaves(
+                        amr_leaves=amr_leaves_result,
+                        sim_time=sim_time,
+                        step_index=step_index,
+                    )
+            else:
+                field_3d = self.registered_field.load(
+                    quokka_snapshot=quokka_snapshot,
+                    amr_level=self.amr_level,
+                )
+                if isinstance(field_3d, field_models.ScalarField_3D):
+                    return self._compute_sfield_pdf(
+                        sfield_3d=field_3d,
+                        step_index=step_index,
+                    )
+                elif isinstance(field_3d, field_models.VectorField_3D):
+                    return self._compute_vfield_pdf(
+                        vfield_3d=field_3d,
+                        step_index=step_index,
+                    )
+                else:
+                    raise ValueError(f"{self.registered_field.name} is an unrecognised field type.")
 
     def run(
         self,
@@ -391,6 +471,7 @@ class GeneratePDFs:
         overwrite: bool = False,
         use_log10_bins: bool = False,
         amr_level: int = 0,
+        use_amr_leaves: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -405,20 +486,24 @@ class GeneratePDFs:
         self.overwrite = overwrite
         self.use_log10_bins = use_log10_bins
         self.amr_level = amr_level
+        self.use_amr_leaves = use_amr_leaves
 
     def _get_data_tag(
         self,
     ) -> str:
-        """Filename stem, tagged with `log10_` when bins are log10-spaced.
+        """Filename stem, tagged with `amr_leaves_` and/or `log10_` to keep each mode's cached
+        output from colliding with (and being silently reused as) another mode's.
 
         The filename is a hint for humans browsing the directory, not the source of truth (it can
         be renamed); the saved `use_log10_bins` flag and `log10_bin_centers` key inside the file
         itself are what downstream code should actually check.
         """
+        data_tag = self.registered_field.name
+        if self.use_amr_leaves:
+            data_tag = f"amr_leaves_{data_tag}"
         if self.use_log10_bins:
-            return f"log10_{self.registered_field.name}"
-        else:
-            return self.registered_field.name
+            data_tag = f"log10_{data_tag}"
+        return data_tag
 
     @staticmethod
     def _style_panel_grid(
@@ -565,6 +650,7 @@ class GeneratePDFs:
             overwrite=self.overwrite,
             use_log10_bins=self.use_log10_bins,
             amr_level=self.amr_level,
+            use_amr_leaves=self.use_amr_leaves,
         )
         field_pdfs = compute_pdfs_pipeline.run()
         if field_pdfs and self.save_figure:

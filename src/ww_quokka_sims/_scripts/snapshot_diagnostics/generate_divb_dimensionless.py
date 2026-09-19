@@ -14,12 +14,11 @@ import numpy
 
 ## personal
 from jormi.ww_arrays import compute_array_stats
-from jormi.ww_fields import cartesian_axes
 from jormi.ww_io import manage_log
 from jormi.ww_plots import latex_labels
 
 ## local
-from ww_quokka_sims.sim_io.field_diagnostics import pdfs, slices
+from ww_quokka_sims.sim_io.field_diagnostics import pdfs
 from ww_quokka_sims.sim_io.snapshots import find_snapshots, load_snapshot
 
 ##
@@ -97,52 +96,6 @@ def bin_dimensionless_divb_pdf(
     )
 
 
-def compute_dimensionless_divb_native_slice(
-    *,
-    snapshot_dir: pathlib.Path,
-    snapshot_tag: str,
-    axis_to_slice: cartesian_axes.CartesianAxis_3D,
-) -> slices.FieldSlice:
-    """
-    Compute a genuine AMR-native 2D slice of the raw, signed `div(b)`.
-
-    Unlike a covering-grid-based slice, each pixel is read from whichever box actually
-    covers it (see `load_native_slice_sarray`), so the refined region is shown at its own
-    true resolution rather than resampled to match the rest of the plane. Deliberately not
-    scaled by `dx` or `|b|` (unlike `compute_dimensionless_divb_pdf`): keeping the raw,
-    signed value lets a reader see both its absolute scale directly off the colorbar and
-    its sign noise (evidence it is roundoff, not a systematic drift) at a glance.
-    """
-    step_index = find_snapshots.get_step_index(
-        snapshot_dir=snapshot_dir,
-        snapshot_tag=snapshot_tag,
-    )
-    with load_snapshot.QuokkaSnapshot(
-            snapshot_dir=snapshot_dir,
-            verbose=False,
-    ) as snapshot:
-        sim_time = snapshot.sim_time
-        div_b_2d, _ = snapshot.load_3d_magnetic_divergence_native_slice(axis_to_slice=axis_to_slice)
-        domain_bounds = snapshot.load_3d_uniform_domain(amr_level=0).domain_bounds
-        plane_axes = [axis for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER if axis != axis_to_slice]
-        axis_bounds: slices.AxisBounds = (
-            domain_bounds[cartesian_axes.get_axis_index(plane_axes[0])],
-            domain_bounds[cartesian_axes.get_axis_index(plane_axes[1])],
-        )
-    ## `load_native_slice_sarray` returns [row=height_axis, col=width_axis] ("ij"); the
-    ## `FieldSlice`/`plot_2d_array` convention this feeds into is [x, y] ("xy")
-    div_b_2d = div_b_2d.T
-    return slices.FieldSlice(
-        sarray_2d=div_b_2d,
-        axis_bounds=axis_bounds,
-        min_value=float(div_b_2d.min()),
-        max_value=float(div_b_2d.max()),
-        comp_latex_label=latex_labels.LatexLabel(content=r"\nabla\cdot\vec{b}"),
-        sim_time=sim_time,
-        step_index=step_index,
-    )
-
-
 ##
 ## === GENERATE
 ##
@@ -177,7 +130,7 @@ def generate_divb_pdfs(
     finite_extrema = [
         (
             float(numpy.nanmin(labelled_values.log10_scaled_div_b)),
-            float(numpy.nanmax(labelled_values.log10_scaled_div_b))
+            float(numpy.nanmax(labelled_values.log10_scaled_div_b)),
         )
         for labelled_values in labelled_values_by_snapshot
         if numpy.any(numpy.isfinite(labelled_values.log10_scaled_div_b))
@@ -200,66 +153,6 @@ def generate_divb_pdfs(
         )
         pdf_data.save_to_file(file_path=pdf_file_path)
         manage_log.log_note(text=f"saved: {pdf_file_path}")
-
-
-def generate_divb_native_slices(
-    *,
-    snapshot_dirs: list[pathlib.Path],
-    snapshot_tag: str,
-    index_width: int,
-    data_dir: pathlib.Path,
-    axis_to_slice: cartesian_axes.CartesianAxis_3D,
-    overwrite: bool,
-) -> None:
-    for snapshot_dir in snapshot_dirs:
-        step_index = find_snapshots.get_step_index(
-            snapshot_dir=snapshot_dir,
-            snapshot_tag=snapshot_tag,
-        )
-        padded_index = step_index.get_padded_string(index_width=index_width)
-        slice_file_path = (data_dir / f"divb-slice={axis_to_slice.value}-index={padded_index}.npz")
-        if slice_file_path.exists() and not overwrite:
-            manage_log.log_note(text=f"skipping (already exists): {slice_file_path}")
-            continue
-        sliced_field = compute_dimensionless_divb_native_slice(
-            snapshot_dir=snapshot_dir,
-            snapshot_tag=snapshot_tag,
-            axis_to_slice=axis_to_slice,
-        )
-        sliced_field.save_to_file(file_path=slice_file_path)
-        manage_log.log_note(text=f"saved: {slice_file_path}")
-
-
-def generate_divb_dimensionless(
-    *,
-    snapshot_dirs: list[pathlib.Path],
-    snapshot_tag: str,
-    index_width: int,
-    data_dir: pathlib.Path,
-    num_bins: int,
-    axis_to_slice: cartesian_axes.CartesianAxis_3D,
-    overwrite: bool,
-) -> None:
-    data_dir.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-    generate_divb_pdfs(
-        snapshot_dirs=snapshot_dirs,
-        snapshot_tag=snapshot_tag,
-        index_width=index_width,
-        data_dir=data_dir,
-        num_bins=num_bins,
-        overwrite=overwrite,
-    )
-    generate_divb_native_slices(
-        snapshot_dirs=snapshot_dirs,
-        snapshot_tag=snapshot_tag,
-        index_width=index_width,
-        data_dir=data_dir,
-        axis_to_slice=axis_to_slice,
-        overwrite=overwrite,
-    )
 
 
 ##
@@ -289,12 +182,6 @@ def main() -> None:
         type=int,
         default=50,
     )
-    parser.add_argument(
-        "--axis-to-slice",
-        type=str,
-        default="x_2",
-        choices=["x_0", "x_1", "x_2"],
-    )
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
     snapshot_dirs = find_snapshots.resolve_snapshot_dirs(
@@ -307,10 +194,13 @@ def main() -> None:
         snapshot_dirs=snapshot_dirs,
         snapshot_tag=args.snapshot_tag,
     )
-    generate_divb_dimensionless(
+    args.data_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+    generate_divb_pdfs(
         snapshot_dirs=snapshot_dirs,
         snapshot_tag=args.snapshot_tag,
-        axis_to_slice=cartesian_axes.CartesianAxis_3D(args.axis_to_slice),
         index_width=index_width,
         data_dir=args.data_dir,
         num_bins=args.num_bins,
