@@ -409,7 +409,7 @@ class _DeriveMagneticFields:
         )
         return read_fields.AMRLeaves(
             values=beta_values,
-            cell_width=pressure_leaves.cell_width,
+            cell_widths=pressure_leaves.cell_widths,
             positions=pressure_leaves.positions,
         )
 

@@ -25,26 +25,45 @@ FieldKey: typing.TypeAlias = tuple[str, str]
 @dataclasses.dataclass(frozen=True)
 class AMRLeaves:
     """One field's values at every leaf cell in the AMR hierarchy, each paired with its own
-    native cell width and physical position; unordered and not resampled onto a common resolution."""
+    native per-axis cell widths and physical position; unordered and not resampled onto a common resolution."""
 
     values: numpy.ndarray
-    cell_width: numpy.ndarray
+    cell_widths: numpy.ndarray
     positions: numpy.ndarray
 
     def __post_init__(
         self,
     ) -> None:
-        validate_arrays.ensure_same_shape(
-            array_a=self.values,
-            array_b=self.cell_width,
-            param_name_a="<values>",
-            param_name_b="<cell_width>",
+        validate_arrays.ensure_shape(
+            array=self.cell_widths,
+            expected_shape=(*self.values.shape, 3),
+            param_name="<cell_widths>",
         )
         validate_arrays.ensure_shape(
             array=self.positions,
             expected_shape=(*self.values.shape, 3),
             param_name="<positions>",
         )
+
+    def get_cell_volumes(
+        self,
+    ) -> numpy.ndarray:
+        """Return each leaf cell's volume."""
+        return numpy.prod(self.cell_widths, axis=-1)
+
+    def get_isotropic_cell_width(
+        self,
+    ) -> numpy.ndarray:
+        """Return each leaf cell's single native `dx`; raise if any leaf cell is anisotropic."""
+        cell_widths_are_isotropic = numpy.allclose(
+            self.cell_widths,
+            self.cell_widths[..., :1],
+            rtol=1e-6,
+            atol=0.0,
+        )
+        if not cell_widths_are_isotropic:
+            raise ValueError("leaf cells have anisotropic cell widths; a single native dx is only well-defined for isotropic cells.")
+        return self.cell_widths[..., 0]
 
 
 ##

@@ -37,8 +37,10 @@ from ww_quokka_sims.sim_io.snapshots import (
 ## === PDF DATA
 ##
 
-## every other key in the saved JSON is a per-component latex-label string
-_METADATA_KEYS: set[str] = {"sim_time", "step_index", "use_log10_bins"}
+## every other key in the saved JSON is a per-component latex-label string; optional keys may be
+## missing from files written before they existed
+_REQUIRED_METADATA_KEYS: set[str] = {"sim_time", "step_index", "use_log10_bins"}
+_METADATA_KEYS: set[str] = _REQUIRED_METADATA_KEYS | {"is_volume_weighted"}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -49,6 +51,7 @@ class FieldPDF:
     grouped_densities: list[numpy.ndarray]
     comp_latex_labels: list[latex_labels.LatexLabel]
     use_log10_bins: bool = False
+    is_volume_weighted: bool = False
 
     def __post_init__(
         self,
@@ -109,6 +112,7 @@ class FieldPDF:
             "sim_time": self.sim_time,
             "step_index": self.step_index.value,
             "use_log10_bins": self.use_log10_bins,
+            "is_volume_weighted": self.is_volume_weighted,
         }
         for comp_index, comp_latex_label in enumerate(self.comp_latex_labels):
             bin_centers, densities = self.get_pdf(comp_index=comp_index)
@@ -137,13 +141,14 @@ class FieldPDF:
         )
         validate_types.ensure_dict_has_keys(
             param=input_dict,
-            required_keys=_METADATA_KEYS,
+            required_keys=_REQUIRED_METADATA_KEYS,
             param_name="<FieldPDF JSON>",
         )
         sim_time = float(input_dict["sim_time"])
         step_index = find_snapshots.StepIndex.from_value(step_index_value=int(input_dict["step_index"]))
         comp_label_strings = [_key for _key in input_dict if _key not in _METADATA_KEYS]
         use_log10_bins = bool(input_dict["use_log10_bins"])
+        is_volume_weighted = bool(input_dict.get("is_volume_weighted", False))
         if use_log10_bins:
             bin_centers_key = "log10_bin_centers"
         else:
@@ -166,6 +171,7 @@ class FieldPDF:
             grouped_densities=grouped_densities,
             comp_latex_labels=comp_latex_labels,
             use_log10_bins=use_log10_bins,
+            is_volume_weighted=is_volume_weighted,
         )
 
 
@@ -192,7 +198,10 @@ class ComputePDFs:
         use_log10_bins: bool = False,
         amr_level: int = 0,
         use_amr_leaves: bool = False,
+        weight_by_cell_volume: bool = False,
     ):
+        if weight_by_cell_volume and not use_amr_leaves:
+            raise ValueError("`weight_by_cell_volume` only applies to pooled AMR-leaf PDFs; set `use_amr_leaves` too.")
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
         self.registered_field = registered_field
@@ -205,20 +214,23 @@ class ComputePDFs:
         self.use_log10_bins = use_log10_bins
         self.amr_level = amr_level
         self.use_amr_leaves = use_amr_leaves
+        self.weight_by_cell_volume = weight_by_cell_volume
 
     def _get_data_tag(
         self,
     ) -> str:
-        """Filename stem, tagged with `amr_leaves_` and/or `log10_` to keep each mode's cached
-        output from colliding with (and being silently reused as) another mode's.
+        """Filename stem, tagged with `amr_leaves_`, `volume_weighted_` and/or `log10_` to keep each
+        mode's cached output from colliding with (and being silently reused as) another mode's.
 
         The filename is a hint for humans browsing the directory, not the source of truth (it can
-        be renamed); the saved `use_log10_bins` flag and `log10_bin_centers` key inside the file
-        itself are what downstream code should actually check.
+        be renamed); the saved `use_log10_bins`/`is_volume_weighted` flags and `log10_bin_centers`
+        key inside the file itself are what downstream code should actually check.
         """
         data_tag = self.registered_field.name
         if self.use_amr_leaves:
             data_tag = f"amr_leaves_{data_tag}"
+        if self.weight_by_cell_volume:
+            data_tag = f"volume_weighted_{data_tag}"
         if self.use_log10_bins:
             data_tag = f"log10_{data_tag}"
         return data_tag
@@ -237,8 +249,9 @@ class ComputePDFs:
         sarray_3d: numpy.ndarray,
         num_bins: int,
         use_log10_bins: bool,
+        weights: numpy.ndarray | None = None,
     ) -> compute_array_stats.EstimatedPDF:
-        """Estimate a 1D PDF of `sarray_3d`, optionally binned in log10-space.
+        """Estimate a 1D PDF of `sarray_3d`, optionally binned in log10-space and weighted per value.
 
         When `use_log10_bins` is set, bins are placed in log10-space of the field itself (not
         just the density axis), since fields spanning orders of magnitude (eg. current density)
@@ -248,10 +261,23 @@ class ComputePDFs:
         values = sarray_3d.ravel()
         if use_log10_bins:
             values = compute_array_stats.compute_safe_log10(values)
+        flat_weights = None
+        if weights is not None:
+            flat_weights = weights.ravel()
         return compute_array_stats.estimate_pdf(
             values=values,
+            weights=flat_weights,
             num_bins=num_bins,
         )
+
+    def _get_leaf_weights(
+        self,
+        *,
+        amr_leaves: load_snapshot.AMRLeaves,
+    ) -> numpy.ndarray | None:
+        if self.weight_by_cell_volume:
+            return amr_leaves.get_cell_volumes()
+        return None
 
     def _compute_vfield_pdf(
         self,
@@ -323,10 +349,12 @@ class ComputePDFs:
         sim_time: float,
         step_index: find_snapshots.StepIndex,
     ) -> FieldPDF:
+        leaf_weights = self._get_leaf_weights(amr_leaves=amr_leaves)
         pdf = self._estimate_pdf(
             sarray_3d=amr_leaves.values,
             num_bins=self.num_bins,
             use_log10_bins=self.use_log10_bins,
+            weights=leaf_weights,
         )
         return FieldPDF(
             sim_time=sim_time,
@@ -335,6 +363,7 @@ class ComputePDFs:
             grouped_densities=[pdf.log10_densities],
             comp_latex_labels=[self.registered_field.latex_label],
             use_log10_bins=self.use_log10_bins,
+            is_volume_weighted=self.weight_by_cell_volume,
         )
 
     def _compute_vfield_pdf_from_amr_leaves(
@@ -354,10 +383,12 @@ class ComputePDFs:
         comp_latex_labels: list[latex_labels.LatexLabel] = []
         for comp_name in comp_names:
             comp_axis = cartesian_axes.as_axis(comp_name)
+            leaf_weights = self._get_leaf_weights(amr_leaves=amr_leaves_by_axis[comp_axis])
             pdf = self._estimate_pdf(
                 sarray_3d=amr_leaves_by_axis[comp_axis].values,
                 num_bins=self.num_bins,
                 use_log10_bins=self.use_log10_bins,
+                weights=leaf_weights,
             )
             grouped_bin_centers.append(pdf.bin_centers)
             grouped_densities.append(pdf.log10_densities)
@@ -373,6 +404,7 @@ class ComputePDFs:
             grouped_densities=grouped_densities,
             comp_latex_labels=comp_latex_labels,
             use_log10_bins=self.use_log10_bins,
+            is_volume_weighted=self.weight_by_cell_volume,
         )
 
     def _compute_snapshot(
@@ -472,6 +504,7 @@ class GeneratePDFs:
         use_log10_bins: bool = False,
         amr_level: int = 0,
         use_amr_leaves: bool = False,
+        weight_by_cell_volume: bool = False,
     ):
         self.snapshot_dirs = snapshot_dirs
         self.snapshot_tag = snapshot_tag
@@ -487,20 +520,23 @@ class GeneratePDFs:
         self.use_log10_bins = use_log10_bins
         self.amr_level = amr_level
         self.use_amr_leaves = use_amr_leaves
+        self.weight_by_cell_volume = weight_by_cell_volume
 
     def _get_data_tag(
         self,
     ) -> str:
-        """Filename stem, tagged with `amr_leaves_` and/or `log10_` to keep each mode's cached
-        output from colliding with (and being silently reused as) another mode's.
+        """Filename stem, tagged with `amr_leaves_`, `volume_weighted_` and/or `log10_` to keep each
+        mode's cached output from colliding with (and being silently reused as) another mode's.
 
         The filename is a hint for humans browsing the directory, not the source of truth (it can
-        be renamed); the saved `use_log10_bins` flag and `log10_bin_centers` key inside the file
-        itself are what downstream code should actually check.
+        be renamed); the saved `use_log10_bins`/`is_volume_weighted` flags and `log10_bin_centers`
+        key inside the file itself are what downstream code should actually check.
         """
         data_tag = self.registered_field.name
         if self.use_amr_leaves:
             data_tag = f"amr_leaves_{data_tag}"
+        if self.weight_by_cell_volume:
+            data_tag = f"volume_weighted_{data_tag}"
         if self.use_log10_bins:
             data_tag = f"log10_{data_tag}"
         return data_tag
@@ -651,6 +687,7 @@ class GeneratePDFs:
             use_log10_bins=self.use_log10_bins,
             amr_level=self.amr_level,
             use_amr_leaves=self.use_amr_leaves,
+            weight_by_cell_volume=self.weight_by_cell_volume,
         )
         field_pdfs = compute_pdfs_pipeline.run()
         if field_pdfs and self.save_figure:

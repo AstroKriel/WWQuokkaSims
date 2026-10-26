@@ -225,7 +225,7 @@ class _DeriveMHDFields:
         )
         return read_fields.AMRLeaves(
             values=energy_ratio_values,
-            cell_width=magnetic_energy_leaves.cell_width,
+            cell_widths=magnetic_energy_leaves.cell_widths,
             positions=magnetic_energy_leaves.positions,
         )
 

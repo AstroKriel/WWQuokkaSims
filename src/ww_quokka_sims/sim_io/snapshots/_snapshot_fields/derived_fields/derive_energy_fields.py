@@ -334,7 +334,7 @@ class _DeriveEnergyFields:
         )
         return read_fields.AMRLeaves(
             values=internal_energy_values,
-            cell_width=total_energy_leaves.cell_width,
+            cell_widths=total_energy_leaves.cell_widths,
             positions=total_energy_leaves.positions,
         )
 
@@ -457,7 +457,7 @@ class _DeriveEnergyFields:
         pressure_values = (gamma - 1.0) * internal_energy_leaves.values
         return read_fields.AMRLeaves(
             values=pressure_values,
-            cell_width=internal_energy_leaves.cell_width,
+            cell_widths=internal_energy_leaves.cell_widths,
             positions=internal_energy_leaves.positions,
         )
 
