@@ -59,6 +59,10 @@ YT_VFIELD_KEYS: dict[str, dict[str, typing.Any]] = {
         "keys": read_fields.create_boxlib_vkeys(field_name="BField"),
         "description": "Magnetic field components (code units)",
     },
+    "current_density": {
+        "keys": read_fields.create_boxlib_vkeys(field_name="CurrentDensity"),
+        "description": "Current density components: curl(b) computed on the code's native staggered mesh",
+    },
 }
 
 YT_SFIELD_KEYS: dict[str, dict[str, typing.Any]] = {

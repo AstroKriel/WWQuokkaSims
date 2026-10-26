@@ -197,6 +197,11 @@ class TestValidateFieldsSupportAmrLeaves(unittest.TestCase):
     ):
         field_registry.validate_fields_support_amr_leaves(field_names=["density"])
 
+    def test_accepts_current_density_fields(
+        self,
+    ):
+        field_registry.validate_fields_support_amr_leaves(field_names=["current_density", "current_density_magnitude"])
+
     def test_rejects_field_without_amr_leaves_loader(
         self,
     ):
@@ -290,6 +295,11 @@ class TestValidateFieldsSupportNativeSlice(unittest.TestCase):
         self,
     ):
         field_registry.validate_fields_support_native_slice(field_names=["density"])
+
+    def test_accepts_current_density_fields(
+        self,
+    ):
+        field_registry.validate_fields_support_native_slice(field_names=["current_density", "current_density_magnitude"])
 
     def test_rejects_field_without_native_slice_loader(
         self,
