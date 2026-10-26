@@ -178,6 +178,14 @@ class FieldsProtocol(typing.Protocol):
     ) -> field_models.VectorField_3D:
         ...
 
+    def load_3d_current_density_vfield(
+        self,
+        *,
+        amr_level: int = 0,
+        use_chunked_reader: bool = False,
+    ) -> field_models.VectorField_3D:
+        ...
+
     def load_3d_total_energy_sfield(
         self,
         *,

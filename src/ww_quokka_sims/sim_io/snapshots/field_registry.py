@@ -294,19 +294,23 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="current_density_magnitude",
-            field_loader_fn=load_snapshot.QuokkaSnapshot.compute_current_density_sfield,
+            field_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_current_density_magnitude_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
                 is_strictly_positive=True,
             ),
+            amr_leaves_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_current_density_magnitude_amr_leaves,
+            native_slice_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_current_density_magnitude_native_slice,
         ),
         RegisteredField(
             name="current_density",
-            field_loader_fn=load_snapshot.QuokkaSnapshot.compute_current_density_vfield,
+            field_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_current_density_vfield,
             expected_properties=ExpectedProperties(
                 pivot_value=0.0,
                 is_strictly_positive=False,
             ),
+            amr_leaves_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_current_density_amr_leaves_by_axis,
+            native_slice_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_current_density_native_slice_by_axis,
         ),
     )
 }

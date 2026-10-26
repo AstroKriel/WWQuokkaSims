@@ -219,6 +219,65 @@ class _DeriveMagneticFields:
             latex_label=r"|\nabla\times\vec{b}|",
         )
 
+    def load_3d_current_density_magnitude_sfield(
+        self: FieldsProtocol,
+        *,
+        amr_level: int = 0,
+        use_chunked_reader: bool = False,
+    ) -> field_models.ScalarField_3D:
+        """Load current magnitude: `|curl[vec(b)]|`, from Quokka's native value when available. See
+        `load_3d_current_density_vfield`."""
+        j_vfield_3d = self.load_3d_current_density_vfield(
+            amr_level=amr_level,
+            use_chunked_reader=use_chunked_reader,
+        )
+        return field_operators.compute_vfield_magnitude(
+            vfield_3d=j_vfield_3d,
+            field_name="current_density_magnitude",
+            latex_label=r"|\nabla\times\vec{b}|",
+        )
+
+    def load_3d_current_density_magnitude_amr_leaves(
+        self: FieldsProtocol,
+    ) -> read_fields.AMRLeaves:
+        """Load Quokka's native current magnitude `|curl[vec(b)]|` at every leaf cell across the full AMR hierarchy."""
+        j_key_lookup = self._get_vfield_key_lookup(field_name="current_density")
+        field_keys = tuple(j_key_lookup[_axis] for _axis in cartesian_axes.DEFAULT_3D_AXES_ORDER)
+        def derive_current_density_magnitude_fn(
+            raw_box_farray: numpy.ndarray,
+        ) -> numpy.ndarray:
+            return farray_operators.compute_varray_magnitude(raw_box_farray)
+        return self._load_amr_leaves_of_derived_field(
+            field_keys=field_keys,
+            derive_fn=derive_current_density_magnitude_fn,
+        )
+
+    def load_3d_current_density_magnitude_native_slice(
+        self: FieldsProtocol,
+        *,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
+        """Load Quokka's native current magnitude `|curl[vec(b)]|`, and its per-pixel native `dx`, on a
+        genuine AMR-native slice."""
+        j_key_lookup = self._get_vfield_key_lookup(field_name="current_density")
+        field_keys = tuple(j_key_lookup[_axis] for _axis in cartesian_axes.DEFAULT_3D_AXES_ORDER)
+        def derive_current_density_magnitude_fn(
+            raw_sarray_stack: numpy.ndarray,
+        ) -> numpy.ndarray:
+            return numpy.sqrt(
+                numpy.sum(
+                    raw_sarray_stack**2,
+                    axis=0,
+                ),
+            )
+        return self._load_native_slice_of_derived_field(
+            field_keys=field_keys,
+            derive_fn=derive_current_density_magnitude_fn,
+            axis_to_slice=axis_to_slice,
+            slice_coordinate=slice_coordinate,
+        )
+
     def compute_current_helicity_sfield(
         self: FieldsProtocol,
         *,
