@@ -333,7 +333,7 @@ class ComputePDFs:
             step_index=step_index,
             grouped_bin_centers=[pdf.bin_centers],
             grouped_densities=[pdf.log10_densities],
-            comp_latex_labels=[latex_labels.LatexLabel(content=self.registered_field.name)],
+            comp_latex_labels=[self.registered_field.latex_label],
             use_log10_bins=self.use_log10_bins,
         )
 
@@ -363,7 +363,7 @@ class ComputePDFs:
             grouped_densities.append(pdf.log10_densities)
             comp_latex_labels.append(
                 latex_labels.LatexLabel(
-                    content=rf"\left[{self.registered_field.name}\right]_{comp_axis.axis_index}",
+                    content=rf"\left[{self.registered_field.latex_label.content}\right]_{comp_axis.axis_index}",
                 ),
             )
         return FieldPDF(

@@ -21,6 +21,7 @@ from jormi.ww_fields.fields_3d import (
 ## re-exports this file's own contents, so `from .. import fields_protocol` would need
 ## the package fully resolved while it is still mid-import -- a real circular dependency
 from ..fields_protocol import FieldsProtocol
+from ... import field_labels
 from ..._snapshot_readers import read_fields
 from ..._snapshot_readers.native_resolution import native_slice, native_values
 from ..._snapshot_readers.uniform_resolution import expanded_boxes
@@ -186,7 +187,7 @@ class _DeriveMHDFields:
             sarray_3d=energy_ratio_sarray_3d,
             uniform_domain_3d=uniform_domain_3d,
             field_name="energy_ratio",
-            latex_label=r"E_\mathrm{mag} / E_\mathrm{kin}",
+            latex_label=field_labels.ENERGY_RATIO.content,
             sim_time=self.sim_time,
         )
 

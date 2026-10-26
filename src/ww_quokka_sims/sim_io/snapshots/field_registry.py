@@ -17,9 +17,10 @@ import numpy
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import field_models
 from jormi.ww_io import manage_log
+from jormi.ww_plots import latex_labels
 
 ## local
-from ww_quokka_sims.sim_io.snapshots import load_snapshot
+from ww_quokka_sims.sim_io.snapshots import field_labels, load_snapshot
 
 ##
 ## === FIELD REGISTRY
@@ -41,6 +42,7 @@ class RegisteredField:
     name: str
     field_loader_fn: collections_abc.Callable
     expected_properties: ExpectedProperties
+    latex_label: latex_labels.LatexLabel
     amr_leaves_loader_fn: collections_abc.Callable | None = None
     native_slice_loader_fn: collections_abc.Callable | None = None
 
@@ -118,6 +120,7 @@ REGISTERED_FIELD_LOOKUP = {
     for registered_field in (
         RegisteredField(
             name="density",
+            latex_label=field_labels.DENSITY,
             field_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_density_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -128,6 +131,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="velocity",
+            latex_label=field_labels.VELOCITY,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_vfield,
             expected_properties=ExpectedProperties(
                 pivot_value=0.0,
@@ -138,6 +142,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="velocity_magnitude",
+            latex_label=field_labels.VELOCITY_MAGNITUDE,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_magnitude_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -148,6 +153,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="magnetic",
+            latex_label=field_labels.MAGNETIC,
             field_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_magnetic_vfield,
             expected_properties=ExpectedProperties(
                 pivot_value=0.0,
@@ -158,6 +164,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="total_energy",
+            latex_label=field_labels.TOTAL_ENERGY,
             field_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_total_energy_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -168,6 +175,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="internal_energy",
+            latex_label=field_labels.INTERNAL_ENERGY,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_internal_energy_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -178,6 +186,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="kinetic_energy",
+            latex_label=field_labels.KINETIC_ENERGY,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_kinetic_energy_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -188,6 +197,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="kinetic_energy_compressive",
+            latex_label=field_labels.KINETIC_ENERGY_COMPRESSIVE,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_div_kinetic_energy_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -196,6 +206,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="kinetic_energy_solenoidal",
+            latex_label=field_labels.KINETIC_ENERGY_SOLENOIDAL,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_sol_kinetic_energy_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -204,6 +215,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="kinetic_energy_bulk",
+            latex_label=field_labels.KINETIC_ENERGY_BULK,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_bulk_kinetic_energy_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -212,6 +224,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="magnetic_energy",
+            latex_label=field_labels.MAGNETIC_ENERGY,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_magnetic_energy_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -222,6 +235,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="energy_ratio",
+            latex_label=field_labels.ENERGY_RATIO,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_energy_ratio_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=1.0,
@@ -232,6 +246,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="plasma_beta",
+            latex_label=field_labels.PLASMA_BETA,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_plasma_beta_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=1.0,
@@ -242,6 +257,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="pressure",
+            latex_label=field_labels.PRESSURE,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_pressure_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -252,6 +268,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="velocity_divergence",
+            latex_label=field_labels.VELOCITY_DIVERGENCE,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_div_v_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=0.0,
@@ -260,6 +277,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="velocity_gradient",
+            latex_label=field_labels.VELOCITY_GRADIENT,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_velocity_gradient_r2tfield,
             expected_properties=ExpectedProperties(
                 pivot_value=0.0,
@@ -268,6 +286,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="vorticity",
+            latex_label=field_labels.VORTICITY,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_vorticity_vfield,
             expected_properties=ExpectedProperties(
                 pivot_value=0.0,
@@ -276,6 +295,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="vorticity_magnitude",
+            latex_label=field_labels.VORTICITY_MAGNITUDE,
             field_loader_fn=load_snapshot.QuokkaSnapshot.compute_vorticity_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -284,6 +304,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="magnetic_divergence",
+            latex_label=field_labels.MAGNETIC_DIVERGENCE,
             field_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=0.0,
@@ -294,6 +315,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="current_density_magnitude",
+            latex_label=field_labels.CURRENT_DENSITY_MAGNITUDE,
             field_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_current_density_magnitude_sfield,
             expected_properties=ExpectedProperties(
                 pivot_value=None,
@@ -304,6 +326,7 @@ REGISTERED_FIELD_LOOKUP = {
         ),
         RegisteredField(
             name="current_density",
+            latex_label=field_labels.CURRENT_DENSITY,
             field_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_current_density_vfield,
             expected_properties=ExpectedProperties(
                 pivot_value=0.0,

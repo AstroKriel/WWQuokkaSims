@@ -20,6 +20,7 @@ from jormi.ww_plots import latex_labels
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import slices
 from ww_quokka_sims.sim_io.snapshots import (
+    field_labels,
     field_registry,
     find_snapshots,
     load_snapshot,
@@ -137,6 +138,7 @@ class TestFindCompAxes(unittest.TestCase):
     ) -> slices.GenerateFieldSlices:
         registered_field = field_registry.RegisteredField(
             name="density",
+            latex_label=field_labels.DENSITY,
             field_loader_fn=_unused_loader,
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=None,

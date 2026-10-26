@@ -19,7 +19,7 @@ from jormi.ww_plots import latex_labels
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import time_series
-from ww_quokka_sims.sim_io.snapshots import field_registry, load_snapshot
+from ww_quokka_sims.sim_io.snapshots import field_labels, field_registry, load_snapshot
 
 ##
 ## === HELPERS
@@ -67,6 +67,7 @@ class TestComputeTimePointLabel(unittest.TestCase):
     ):
         registered_field = field_registry.RegisteredField(
             name="density",
+            latex_label=field_labels.DENSITY,
             field_loader_fn=_stub_loader,
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=None,
@@ -94,6 +95,7 @@ class TestComputeTimePointLabel(unittest.TestCase):
     ):
         registered_field = field_registry.RegisteredField(
             name="density",
+            latex_label=field_labels.DENSITY,
             field_loader_fn=_stub_loader,
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=None,

@@ -24,6 +24,7 @@ from jormi.ww_validation import validate_types
 ## the package fully resolved while it is still mid-import -- a real circular dependency
 from ..fields_protocol import FieldsProtocol
 from ..read_fields import HelmholtzKineticEnergy
+from ... import field_labels
 from ..._snapshot_readers import read_fields
 from ..._snapshot_readers.native_resolution import native_slice, native_values
 
@@ -89,7 +90,7 @@ class _DeriveEnergyFields:
             sarray_3d=E_kin_sarray_3d,
             uniform_domain_3d=uniform_domain_3d,
             field_name="kinetic_energy",
-            latex_label=r"E_\mathrm{kin}",
+            latex_label=field_labels.KINETIC_ENERGY.content,
             sim_time=self.sim_time,
         )
 
@@ -168,7 +169,7 @@ class _DeriveEnergyFields:
             magnetic_vfield_3d=magnetic_vfield_3d,
             energy_prefactor=energy_prefactor,
             field_name="magnetic_energy",
-            latex_label=r"E_\mathrm{mag}",
+            latex_label=field_labels.MAGNETIC_ENERGY.content,
         )
 
     def load_3d_magnetic_energy_amr_leaves(
@@ -287,7 +288,7 @@ class _DeriveEnergyFields:
             sarray_3d=E_int_sarray,
             uniform_domain_3d=uniform_domain_3d,
             field_name="internal_energy",
-            latex_label=r"E_\mathrm{int}",
+            latex_label=field_labels.INTERNAL_ENERGY.content,
             sim_time=self.sim_time,
         )
 
@@ -426,7 +427,7 @@ class _DeriveEnergyFields:
             sarray_3d=p_sarray,
             uniform_domain_3d=uniform_domain_3d,
             field_name="pressure",
-            latex_label=r"p",
+            latex_label=field_labels.PRESSURE.content,
             sim_time=self.sim_time,
         )
 
@@ -574,21 +575,21 @@ class _DeriveEnergyFields:
             sarray_3d=E_kin_div_sarray,
             uniform_domain_3d=uniform_domain_3d,
             field_name="kinetic_energy_div",
-            latex_label=r"E_{\mathrm{kin}, \parallel}",
+            latex_label=field_labels.KINETIC_ENERGY_COMPRESSIVE.content,
             sim_time=self.sim_time,
         )
         E_kin_sol_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_sol_sarray,
             uniform_domain_3d=uniform_domain_3d,
             field_name="kinetic_energy_sol",
-            latex_label=r"E_{\mathrm{kin}, \perp}",
+            latex_label=field_labels.KINETIC_ENERGY_SOLENOIDAL.content,
             sim_time=self.sim_time,
         )
         E_kin_bulk_sfield_3d = field_models.ScalarField_3D.from_3d_sarray(
             sarray_3d=E_kin_bulk_sarray,
             uniform_domain_3d=uniform_domain_3d,
             field_name="kinetic_energy_bulk",
-            latex_label=r"E_{\mathrm{kin}, \mathrm{bulk}}",
+            latex_label=field_labels.KINETIC_ENERGY_BULK.content,
             sim_time=self.sim_time,
         )
         return HelmholtzKineticEnergy(
