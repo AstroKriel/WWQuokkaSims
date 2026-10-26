@@ -22,6 +22,7 @@ from jormi.ww_validation import validate_types
 ## re-exports this file's own contents, so `from .. import fields_protocol` would need
 ## the package fully resolved while it is still mid-import -- a real circular dependency
 from ..fields_protocol import FieldsProtocol
+from ... import field_labels
 from ..._snapshot_readers import read_fields
 from ..._snapshot_readers.native_resolution import native_slice, native_values
 from ..._snapshot_readers.uniform_resolution import expanded_boxes
@@ -114,7 +115,7 @@ class _DeriveMagneticFields:
             return field_operators.compute_vfield_divergence(
                 vfield_3d=b_vfield_3d,
                 field_name="magnetic_divergence",
-                latex_label=r"\nabla\cdot\vec{b}",
+                latex_label=field_labels.MAGNETIC_DIVERGENCE.content,
                 grad_order=grad_order,
             )
         else:
@@ -146,7 +147,7 @@ class _DeriveMagneticFields:
                 amr_level=amr_level,
                 derive_fn=derive_fn,
                 output_field_name="magnetic_divergence",
-                output_latex_label=r"\nabla\cdot\vec{b}",
+                output_latex_label=field_labels.MAGNETIC_DIVERGENCE.content,
             )
 
     def compute_current_density_vfield(
@@ -170,7 +171,7 @@ class _DeriveMagneticFields:
             return field_operators.compute_vfield_curl(
                 vfield_3d=b_vfield_3d,
                 field_name="current_density",
-                latex_label=r"\nabla\times\vec{b}",
+                latex_label=field_labels.CURRENT_DENSITY.content,
                 grad_order=grad_order,
             )
         else:
@@ -196,7 +197,7 @@ class _DeriveMagneticFields:
                 amr_level=amr_level,
                 derive_fn=derive_fn,
                 output_field_name="current_density",
-                output_latex_label=r"\nabla\times\vec{b}",
+                output_latex_label=field_labels.CURRENT_DENSITY.content,
             )
 
     def compute_current_density_sfield(
@@ -216,7 +217,7 @@ class _DeriveMagneticFields:
         return field_operators.compute_vfield_magnitude(
             vfield_3d=j_vfield_3d,
             field_name="current_density_magnitude",
-            latex_label=r"|\nabla\times\vec{b}|",
+            latex_label=field_labels.CURRENT_DENSITY_MAGNITUDE.content,
         )
 
     def load_3d_current_density_magnitude_sfield(
@@ -234,7 +235,7 @@ class _DeriveMagneticFields:
         return field_operators.compute_vfield_magnitude(
             vfield_3d=j_vfield_3d,
             field_name="current_density_magnitude",
-            latex_label=r"|\nabla\times\vec{b}|",
+            latex_label=field_labels.CURRENT_DENSITY_MAGNITUDE.content,
         )
 
     def load_3d_current_density_magnitude_amr_leaves(
@@ -358,7 +359,7 @@ class _DeriveMagneticFields:
             sarray_3d=beta_sarray_3d,
             uniform_domain_3d=uniform_domain_3d,
             field_name="plasma_beta",
-            latex_label=r"\beta",
+            latex_label=field_labels.PLASMA_BETA.content,
             sim_time=self.sim_time,
         )
 

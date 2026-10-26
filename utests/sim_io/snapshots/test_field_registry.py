@@ -18,9 +18,10 @@ import numpy
 from jormi.ww_fields import cartesian_axes
 from jormi.ww_fields.fields_3d import domain_models, field_models
 from jormi.ww_io import manage_log
+from jormi.ww_plots import latex_labels
 
 ## local
-from ww_quokka_sims.sim_io.snapshots import field_registry, load_snapshot
+from ww_quokka_sims.sim_io.snapshots import field_labels, field_registry, load_snapshot
 
 ##
 ## === HELPERS
@@ -83,6 +84,7 @@ def _make_stub_registered_field(
 ) -> field_registry.RegisteredField:
     return field_registry.RegisteredField(
         name=name,
+        latex_label=latex_labels.LatexLabel(content=r"\mathrm{stub}"),
         field_loader_fn=field_loader_fn,
         expected_properties=field_registry.ExpectedProperties(
             pivot_value=None,
@@ -141,6 +143,14 @@ class TestGetFieldType(unittest.TestCase):
                     field_registry.get_field_type(field_name=field_name),
                     known_types,
                 )
+
+    def test_no_registered_label_has_an_unbraced_multi_letter_subscript(
+        self,
+    ):
+        ## a field name used as a label (e.g. `current_density`) renders as broken subscripts
+        for field_name, registered_field in field_registry.REGISTERED_FIELD_LOOKUP.items():
+            with self.subTest(field_name=field_name):
+                self.assertNotRegex(registered_field.latex_label.content, r"_[A-Za-z]{2}")
 
 
 class TestValidateFieldsAllowedTypes(unittest.TestCase):
@@ -325,6 +335,7 @@ class TestRegisteredFieldLoadNativeSlice(unittest.TestCase):
     ):
         registered_field = field_registry.RegisteredField(
             name="velocity_divergence",
+            latex_label=field_labels.VELOCITY_DIVERGENCE,
             field_loader_fn=_make_stub_loader(value=1.0),
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=0.0,
@@ -357,6 +368,7 @@ class TestRegisteredFieldLoadNativeSlice(unittest.TestCase):
 
         registered_field = field_registry.RegisteredField(
             name="density",
+            latex_label=field_labels.DENSITY,
             field_loader_fn=_make_stub_loader(value=1.0),
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=None,
@@ -381,6 +393,7 @@ class TestRegisteredFieldLoad(unittest.TestCase):
     ):
         registered_field = field_registry.RegisteredField(
             name="density",
+            latex_label=field_labels.DENSITY,
             field_loader_fn=_make_stub_loader(value=-1.0),
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=None,
@@ -396,6 +409,7 @@ class TestRegisteredFieldLoad(unittest.TestCase):
     ):
         registered_field = field_registry.RegisteredField(
             name="density",
+            latex_label=field_labels.DENSITY,
             field_loader_fn=_make_stub_loader(value=1.0),
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=None,
@@ -411,6 +425,7 @@ class TestRegisteredFieldLoad(unittest.TestCase):
     ):
         registered_field = field_registry.RegisteredField(
             name="velocity_divergence",
+            latex_label=field_labels.VELOCITY_DIVERGENCE,
             field_loader_fn=_make_stub_loader(value=-1.0),
             expected_properties=field_registry.ExpectedProperties(
                 pivot_value=0.0,

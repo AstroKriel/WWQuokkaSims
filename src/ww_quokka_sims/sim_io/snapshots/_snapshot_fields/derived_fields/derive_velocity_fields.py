@@ -21,6 +21,7 @@ from jormi.ww_fields.fields_3d import (
 ## re-exports this file's own contents, so `from .. import fields_protocol` would need
 ## the package fully resolved while it is still mid-import -- a real circular dependency
 from ..fields_protocol import FieldsProtocol
+from ... import field_labels
 from ..._snapshot_readers import read_fields
 from ..._snapshot_readers.uniform_resolution import expanded_boxes
 
@@ -83,7 +84,7 @@ class _DeriveVelocityFields:
             varray_3d=v_varray,
             uniform_domain_3d=uniform_domain_3d,
             field_name="velocity",
-            latex_label=r"\vec{v}",
+            latex_label=field_labels.VELOCITY.content,
             sim_time=self.sim_time,
         )
 
@@ -101,7 +102,7 @@ class _DeriveVelocityFields:
         return field_operators.compute_vfield_magnitude(
             vfield_3d=v_vfield_3d,
             field_name="velocity_magnitude",
-            latex_label=r"|\vec{v}|",
+            latex_label=field_labels.VELOCITY_MAGNITUDE.content,
         )
 
     def load_3d_velocity_amr_leaves_by_axis(
@@ -233,7 +234,7 @@ class _DeriveVelocityFields:
             return field_operators.compute_vfield_divergence(
                 vfield_3d=v_vfield_3d,
                 field_name="div_velocity",
-                latex_label=r"\nabla\cdot\vec{v}",
+                latex_label=field_labels.VELOCITY_DIVERGENCE.content,
                 grad_order=grad_order,
             )
         else:
@@ -264,7 +265,7 @@ class _DeriveVelocityFields:
                 amr_level=amr_level,
                 derive_fn=derive_fn,
                 output_field_name="div_velocity",
-                output_latex_label=r"\nabla\cdot\vec{v}",
+                output_latex_label=field_labels.VELOCITY_DIVERGENCE.content,
             )
 
     def compute_velocity_gradient_r2tfield(
@@ -288,7 +289,7 @@ class _DeriveVelocityFields:
                 vfield_3d=v_vfield_3d,
                 grad_order=grad_order,
                 field_name="velocity_gradient",
-                latex_label=r"\nabla\vec{v}",
+                latex_label=field_labels.VELOCITY_GRADIENT.content,
             )
         else:
             cell_widths_3d = self.load_3d_uniform_domain(amr_level=amr_level).cell_widths
@@ -318,7 +319,7 @@ class _DeriveVelocityFields:
                 amr_level=amr_level,
                 derive_fn=derive_fn,
                 output_field_name="velocity_gradient",
-                output_latex_label=r"\nabla\vec{v}",
+                output_latex_label=field_labels.VELOCITY_GRADIENT.content,
             )
 
     def compute_vorticity_vfield(
@@ -342,7 +343,7 @@ class _DeriveVelocityFields:
                 vfield_3d=v_vfield_3d,
                 grad_order=grad_order,
                 field_name="vorticity",
-                latex_label=r"\nabla\times\vec{v}",
+                latex_label=field_labels.VORTICITY.content,
             )
         else:
             cell_widths_3d = self.load_3d_uniform_domain(amr_level=amr_level).cell_widths
@@ -372,7 +373,7 @@ class _DeriveVelocityFields:
                 amr_level=amr_level,
                 derive_fn=derive_fn,
                 output_field_name="vorticity",
-                output_latex_label=r"\nabla\times\vec{v}",
+                output_latex_label=field_labels.VORTICITY.content,
             )
 
     def compute_vorticity_sfield(
@@ -392,7 +393,7 @@ class _DeriveVelocityFields:
         return field_operators.compute_vfield_magnitude(
             vfield_3d=omega_vfield_3d,
             field_name="vorticity_magnitude",
-            latex_label=r"|\nabla\times\vec{v}|",
+            latex_label=field_labels.VORTICITY_MAGNITUDE.content,
         )
 
     def compute_kinetic_helicity_sfield(

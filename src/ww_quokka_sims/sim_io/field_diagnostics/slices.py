@@ -497,7 +497,7 @@ class GenerateFieldSlices:
                     for comp_axis in self.comps_to_plot:
                         sarray_2d, _ = native_result[comp_axis]
                         comp_latex_label = latex_labels.LatexLabel(
-                            content=rf"\left[{field_name}\right]_{comp_axis.axis_index}",
+                            content=rf"\left[{registered_field.latex_label.content}\right]_{comp_axis.axis_index}",
                         )
                         field_slice = self._build_native_field_slice(
                             sarray_2d=sarray_2d,
@@ -512,7 +512,7 @@ class GenerateFieldSlices:
                         grouped_comp_labels[comp_axis] = comp_latex_label
                 else:
                     sarray_2d, _ = native_result
-                    comp_latex_label = latex_labels.LatexLabel(content=field_name)
+                    comp_latex_label = registered_field.latex_label
                     field_slice = self._build_native_field_slice(
                         sarray_2d=sarray_2d,
                         axis_bounds=axis_bounds,

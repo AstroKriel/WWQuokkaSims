@@ -17,6 +17,7 @@ from jormi.ww_io import manage_log
 ## re-exports this file's own contents, so `from . import fields_protocol` would need
 ## the package fully resolved while it is still mid-import -- a real circular dependency
 from .fields_protocol import FieldsProtocol
+from .. import field_labels
 from .._snapshot_readers import read_fields
 
 ##
@@ -65,7 +66,7 @@ class _LoadStoredFields:
             rho_sfield_3d = self.load_3d_sfield(
                 field_key=density_key,
                 field_name="density",
-                latex_label=r"\rho",
+                latex_label=field_labels.DENSITY.content,
                 amr_level=amr_level,
                 use_chunked_reader=use_chunked_reader,
             )
@@ -146,7 +147,7 @@ class _LoadStoredFields:
             b_vfield_3d = self.load_3d_vfield(
                 vfield_key_lookup=b_key_lookup,
                 field_name="magnetic",
-                latex_label=r"\vec{b}",
+                latex_label=field_labels.MAGNETIC.content,
                 amr_level=amr_level,
                 use_chunked_reader=use_chunked_reader,
             )
@@ -177,7 +178,7 @@ class _LoadStoredFields:
             E_tot_sfield_3d = self.load_3d_sfield(
                 field_key=E_tot_key,
                 field_name="total_energy",
-                latex_label=r"E_\mathrm{tot}",
+                latex_label=field_labels.TOTAL_ENERGY.content,
                 amr_level=amr_level,
                 use_chunked_reader=use_chunked_reader,
             )
@@ -236,7 +237,7 @@ class _LoadStoredFields:
                 div_b_sfield_3d = self.load_3d_sfield(
                     field_key=div_b_key,
                     field_name="magnetic_divergence",
-                    latex_label=r"\nabla\cdot\vec{b}",
+                    latex_label=field_labels.MAGNETIC_DIVERGENCE.content,
                     amr_level=amr_level,
                     use_chunked_reader=use_chunked_reader,
                 )
@@ -339,7 +340,7 @@ class _LoadStoredFields:
                 j_vfield_3d = self.load_3d_vfield(
                     vfield_key_lookup=j_key_lookup,
                     field_name="current_density",
-                    latex_label=r"\nabla\times\vec{b}",
+                    latex_label=field_labels.CURRENT_DENSITY.content,
                     amr_level=amr_level,
                     use_chunked_reader=use_chunked_reader,
                 )
