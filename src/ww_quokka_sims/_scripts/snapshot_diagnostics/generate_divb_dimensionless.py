@@ -62,7 +62,7 @@ def load_log10_scaled_div_b(
     ) as snapshot:
         sim_time = snapshot.sim_time
         div_b_leaves = snapshot.load_3d_magnetic_divergence_amr_leaves()
-    scaled_div_b = div_b_leaves.cell_width * numpy.abs(div_b_leaves.values)
+    scaled_div_b = div_b_leaves.get_isotropic_cell_width() * numpy.abs(div_b_leaves.values)
     return LabelledLog10ScaledDivB(
         sim_time=sim_time,
         step_index=step_index,

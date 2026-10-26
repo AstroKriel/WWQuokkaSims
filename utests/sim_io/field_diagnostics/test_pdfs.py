@@ -17,7 +17,7 @@ from jormi.ww_plots import latex_labels
 
 ## local
 from ww_quokka_sims.sim_io.field_diagnostics import pdfs
-from ww_quokka_sims.sim_io.snapshots import find_snapshots
+from ww_quokka_sims.sim_io.snapshots import field_registry, find_snapshots
 
 ##
 ## === TEST SUITE
@@ -59,8 +59,70 @@ class TestEstimatePDF(unittest.TestCase):
         self.assertAlmostEqual(float(pdf.bin_centers.min()), numpy.log10(1.0), places=6)
         self.assertAlmostEqual(float(pdf.bin_centers.max()), numpy.log10(8.0), places=6)
 
+    def test_weights_scale_each_bin_by_its_total_weight(
+        self,
+    ):
+        pdf = pdfs.ComputePDFs._estimate_pdf(
+            sarray_3d=numpy.array([0.0, 1.0]),
+            num_bins=2,
+            use_log10_bins=False,
+            weights=numpy.array([1.0, 3.0]),
+        )
+        self.assertAlmostEqual(float(pdf.densities[1] / pdf.densities[0]), 3.0, places=6)
+
+
+class TestComputePDFsOptions(unittest.TestCase):
+
+    def test_rejects_volume_weighting_without_amr_leaves(
+        self,
+    ):
+        with self.assertRaises(ValueError):
+            pdfs.ComputePDFs(
+                snapshot_dirs=[],
+                snapshot_tag="plt",
+                registered_field=field_registry.REGISTERED_FIELD_LOOKUP["density"],
+                index_width=7,
+                comps_to_plot=(),
+                num_bins=10,
+                save_data=False,
+                data_dir=pathlib.Path("."),
+                use_amr_leaves=False,
+                weight_by_cell_volume=True,
+            )
+
 
 class TestPDFDataRoundTrip(unittest.TestCase):
+
+    def test_save_and_load_preserves_volume_weighting_flag(
+        self,
+    ):
+        field_pdf = pdfs.FieldPDF(
+            sim_time=0.25,
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=3),
+            grouped_bin_centers=[numpy.array([0.0, 1.0])],
+            grouped_densities=[numpy.array([-1.0, -2.0])],
+            comp_latex_labels=[latex_labels.LatexLabel(content=r"\rho")],
+            is_volume_weighted=True,
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = pathlib.Path(tmp_dir) / "pdf.json"
+            field_pdf.save_to_file(file_path=file_path)
+            loaded = pdfs.FieldPDF.load_from_file(file_path=file_path)
+        self.assertTrue(loaded.is_volume_weighted)
+        self.assertEqual(loaded.comp_latex_labels, field_pdf.comp_latex_labels)
+
+    def test_loads_files_written_before_the_volume_weighting_flag_existed(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = pathlib.Path(tmp_dir) / "pdf.json"
+            file_path.write_text(
+                '{"sim_time": 0.25, "step_index": 3, "use_log10_bins": false,'
+                ' "\\\\rho": {"bin_centers": [0.0, 1.0], "log10_density": [-1.0, -2.0]}}',
+            )
+            loaded = pdfs.FieldPDF.load_from_file(file_path=file_path)
+        self.assertFalse(loaded.is_volume_weighted)
+        self.assertEqual([_label.content for _label in loaded.comp_latex_labels], [r"\rho"])
 
     def test_save_and_load_preserves_scalar_field_data(
         self,

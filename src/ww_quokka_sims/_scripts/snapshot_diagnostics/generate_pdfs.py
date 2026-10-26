@@ -35,6 +35,7 @@ class DiagnosticPipeline:
         diagnostic_output_args: cli.DiagnosticOutputArgs,
         num_bins: int = 20,
         use_log10_bins: bool = False,
+        weight_by_cell_volume: bool = False,
     ):
         field_registry.validate_fields(
             field_names=field_comp_args.fields,
@@ -55,6 +56,7 @@ class DiagnosticPipeline:
         self.diagnostic_output_args = diagnostic_output_args
         self.num_bins = int(num_bins)
         self.use_log10_bins = use_log10_bins
+        self.weight_by_cell_volume = weight_by_cell_volume
 
     def _pipeline(
         self,
@@ -80,6 +82,7 @@ class DiagnosticPipeline:
                 use_log10_bins=self.use_log10_bins,
                 amr_level=self.amr_level,
                 use_amr_leaves=self.use_amr_leaves,
+                weight_by_cell_volume=self.weight_by_cell_volume,
             )
             generate_pdfs.run()
 
@@ -127,6 +130,15 @@ def main():
         default=False,
         help="Bin the log10(|field|) values rather than the raw-field values (default: False).",
     )
+    parser.add_argument(
+        "--weight-by-cell-volume",
+        action="store_true",
+        default=False,
+        help=(
+            "Weight each pooled leaf cell by its volume, so the PDF reflects the fraction of the domain"
+            " rather than the fraction of cells; requires --use-amr-leaves (default: False)."
+        ),
+    )
     user_args = parser.parse_args()
     diagnostic_pipeline = DiagnosticPipeline(
         snapshot_args=cli.SnapshotArgs.from_user_args(user_args=user_args),
@@ -134,6 +146,7 @@ def main():
         diagnostic_output_args=cli.DiagnosticOutputArgs.from_user_args(user_args=user_args),
         num_bins=user_args.num_bins,
         use_log10_bins=user_args.use_log10_bins,
+        weight_by_cell_volume=user_args.weight_by_cell_volume,
     )
     diagnostic_pipeline.run()
 

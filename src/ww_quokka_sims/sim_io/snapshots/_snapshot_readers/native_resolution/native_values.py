@@ -47,23 +47,6 @@ class _LeafBox:
 ##
 
 
-def _ensure_isotropic_cell(
-    *,
-    cell_widths: numpy.ndarray,
-) -> None:
-    """Raise if a box's cells are not isotropic; a single native `dx` is only well-defined then."""
-    if not numpy.allclose(
-            cell_widths,
-            cell_widths[0],
-            rtol=1e-6,
-            atol=0.0,
-    ):
-        raise ValueError(
-            f"box has anisotropic cell widths ({cell_widths}); a single native dx is only"
-            " well-defined for isotropic cells.",
-        )
-
-
 def ensure_consistent_leaf_ordering(
     *,
     reference_leaves: read_fields.AMRLeaves,
@@ -124,7 +107,7 @@ def load_amr_leaves(
     Read one scalar field at every leaf cell across the full AMR hierarchy.
 
     Unlike `whole_domain`/`uniform_resolution.chunked_domain`, this never resamples onto one
-    uniform resolution: each returned value keeps the native cell width and physical position
+    uniform resolution: each returned value keeps the native per-axis cell widths and physical position
     of the box (any AMR level) it was read from, and cells covered by a finer box are
     excluded via that box's own `child_mask`. The result is flat and unordered, not
     indexed by domain position -- callers that need per-cell statistics pool it directly
@@ -132,13 +115,12 @@ def load_amr_leaves(
     """
     axis_names = [read_fields.BOXLIB_3D_AXES_LABELS[axis] for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER]
     grouped_box_values: list[numpy.ndarray] = []
-    grouped_box_cell_width: list[numpy.ndarray] = []
+    grouped_box_cell_widths: list[numpy.ndarray] = []
     grouped_box_positions: list[numpy.ndarray] = []
     for leaf_box in _iterate_amr_leaf_boxes(yt_dataset=yt_dataset):
         if not leaf_box.child_mask.any():
             continue
-        box_cell_widths = numpy.asarray(leaf_box.box.dds, dtype=numpy.float64)
-        _ensure_isotropic_cell(cell_widths=box_cell_widths)
+        box_axis_cell_widths = numpy.asarray(leaf_box.box.dds, dtype=numpy.float64)
         box_values = numpy.asarray(leaf_box.box[field_key], dtype=numpy.float64)[leaf_box.child_mask]
         box_positions = numpy.stack(
             [
@@ -147,15 +129,15 @@ def load_amr_leaves(
             ],
             axis=-1,
         )
-        box_cell_width = numpy.full(box_values.shape, box_cell_widths[0], dtype=numpy.float64)
+        box_cell_widths = numpy.broadcast_to(box_axis_cell_widths, (*box_values.shape, 3)).copy()
         grouped_box_values.append(box_values)
-        grouped_box_cell_width.append(box_cell_width)
+        grouped_box_cell_widths.append(box_cell_widths)
         grouped_box_positions.append(box_positions)
     if len(grouped_box_values) == 0:
         raise ValueError(f"no leaf cells were found for {field_key} in this snapshot.")
     return read_fields.AMRLeaves(
         values=numpy.concatenate(grouped_box_values),
-        cell_width=numpy.concatenate(grouped_box_cell_width),
+        cell_widths=numpy.concatenate(grouped_box_cell_widths),
         positions=numpy.concatenate(grouped_box_positions),
     )
 
@@ -178,13 +160,12 @@ def load_amr_leaves_of_derived_field(
     """
     axis_names = [read_fields.BOXLIB_3D_AXES_LABELS[axis] for axis in cartesian_axes.DEFAULT_3D_AXES_ORDER]
     grouped_box_values: list[numpy.ndarray] = []
-    grouped_box_cell_width: list[numpy.ndarray] = []
+    grouped_box_cell_widths: list[numpy.ndarray] = []
     grouped_box_positions: list[numpy.ndarray] = []
     for leaf_box in _iterate_amr_leaf_boxes(yt_dataset=yt_dataset):
         if not leaf_box.child_mask.any():
             continue
-        box_cell_widths = numpy.asarray(leaf_box.box.dds, dtype=numpy.float64)
-        _ensure_isotropic_cell(cell_widths=box_cell_widths)
+        box_axis_cell_widths = numpy.asarray(leaf_box.box.dds, dtype=numpy.float64)
         raw_box_farray = numpy.stack(
             [numpy.asarray(leaf_box.box[field_key], dtype=numpy.float64) for field_key in field_keys],
             axis=0,
@@ -198,15 +179,15 @@ def load_amr_leaves_of_derived_field(
             ],
             axis=-1,
         )
-        box_cell_width = numpy.full(box_values.shape, box_cell_widths[0], dtype=numpy.float64)
+        box_cell_widths = numpy.broadcast_to(box_axis_cell_widths, (*box_values.shape, 3)).copy()
         grouped_box_values.append(box_values)
-        grouped_box_cell_width.append(box_cell_width)
+        grouped_box_cell_widths.append(box_cell_widths)
         grouped_box_positions.append(box_positions)
     if len(grouped_box_values) == 0:
         raise ValueError(f"no leaf cells were found for {field_keys} in this snapshot.")
     return read_fields.AMRLeaves(
         values=numpy.concatenate(grouped_box_values),
-        cell_width=numpy.concatenate(grouped_box_cell_width),
+        cell_widths=numpy.concatenate(grouped_box_cell_widths),
         positions=numpy.concatenate(grouped_box_positions),
     )
 
