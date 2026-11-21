@@ -29,6 +29,8 @@ from jormi.ww_validation import validate_types
 
 ## local
 from . import _snapshot_fields
+from . import amr_box_layout, find_snapshots
+from ._snapshot_readers import amr_boxes
 from ._snapshot_readers.read_fields import AMRLeaves as AMRLeaves  # explicit re-export so pyright treats it as public API
 from ._snapshot_readers.read_fields import FieldKey as FieldKey  # explicit re-export so pyright treats it as public API
 from ._snapshot_readers.native_resolution import native_slice, native_values
@@ -894,6 +896,40 @@ class QuokkaSnapshot(
             )
             self._uniform_domain_3d_cache[amr_level] = uniform_domain_3d
             return uniform_domain_3d
+
+    def load_amr_box_layout(
+        self,
+        *,
+        step_index: find_snapshots.StepIndex,
+    ) -> amr_box_layout.AMRBoxLayout:
+        """Return where every box on every AMR level sits in this snapshot; reads index metadata only, no field data."""
+        self._open_if_needed()
+        assert self._yt_dataset is not None
+        boxes = amr_boxes.read_amr_boxes(yt_dataset=self._yt_dataset)
+        refinement_ratio = int(self._yt_dataset.refine_by)
+        base_num_cells_x, base_num_cells_y, base_num_cells_z = (
+            int(_num_cells) for _num_cells in self._yt_dataset.domain_dimensions
+        )
+        x_min, y_min, z_min = (float(_value) for _value in self._yt_dataset.domain_left_edge)
+        x_max, y_max, z_max = (float(_value) for _value in self._yt_dataset.domain_right_edge)
+        sim_time = self.sim_time
+        self._close_if_needed()
+        return amr_box_layout.AMRBoxLayout(
+            sim_time=sim_time,
+            step_index=step_index,
+            refinement_ratio=refinement_ratio,
+            base_resolution=(
+                base_num_cells_x,
+                base_num_cells_y,
+                base_num_cells_z,
+            ),
+            domain_bounds=(
+                (x_min, x_max),
+                (y_min, y_max),
+                (z_min, z_max),
+            ),
+            boxes=boxes,
+        )
 
 
 ## } MODULE

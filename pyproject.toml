@@ -22,6 +22,7 @@ dependencies = [
 
 [project.scripts]
 quokka-extract-dataset = "ww_quokka_sims._scripts.snapshot_diagnostics.extract_dataset:main"
+quokka-generate-amr-boxes = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_amr_boxes:main"
 quokka-generate-pdfs = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_pdfs:main"
 quokka-generate-profiles = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_profiles:main"
 quokka-generate-slices = "ww_quokka_sims._scripts.snapshot_diagnostics.generate_slices:main"
