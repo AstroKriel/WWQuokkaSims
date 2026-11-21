@@ -130,14 +130,23 @@ class TestGetFieldType(unittest.TestCase):
         with self.assertRaises(KeyError):
             field_registry.get_field_type(field_name="not_a_real_field")
 
+    def test_raises_for_field_with_no_whole_domain_loader(
+        self,
+    ):
+        with self.assertRaises(TypeError):
+            field_registry.get_field_type(field_name="magnetic_divergence_dimensionless")
+
     def test_every_registered_field_resolves_to_a_known_type(
         self,
     ):
         ## if a new rank is ever added to a loader without adding the matching
         ## Field type to field_models.AnyField_3D, this catches it here rather
-        ## than at some downstream script's runtime dispatch
+        ## than at some downstream script's runtime dispatch; skips fields with no
+        ## whole-domain loader at all, which have no whole-domain type by design
         known_types = typing.get_args(field_models.AnyField_3D)
-        for field_name in field_registry.REGISTERED_FIELD_LOOKUP:
+        for field_name, registered_field in field_registry.REGISTERED_FIELD_LOOKUP.items():
+            if registered_field.field_loader_fn is None:
+                continue
             with self.subTest(field_name=field_name):
                 self.assertIn(
                     field_registry.get_field_type(field_name=field_name),
@@ -263,12 +272,23 @@ class TestFieldSupportsChunkedReader(unittest.TestCase):
                 field_registry.field_supports_chunked_reader(field_name="_test_stub_without_chunking"),
             )
 
+    def test_false_for_field_with_no_whole_domain_loader(
+        self,
+    ):
+        self.assertFalse(
+            field_registry.field_supports_chunked_reader(field_name="magnetic_divergence_dimensionless"),
+        )
+
     def test_every_registered_field_currently_supports_it(
         self,
     ):
-        ## documents present-day state (every loader was threaded with use_chunked_reader); not a
-        ## structural guarantee -- a future field's loader may legitimately not support it
-        for field_name in field_registry.REGISTERED_FIELD_LOOKUP:
+        ## documents present-day state (every whole-domain loader was threaded with
+        ## use_chunked_reader); not a structural guarantee -- a future field's loader may
+        ## legitimately not support it. Skips fields with no whole-domain loader at all,
+        ## which correctly report False (use_chunked_reader is a whole-domain concern).
+        for field_name, registered_field in field_registry.REGISTERED_FIELD_LOOKUP.items():
+            if registered_field.field_loader_fn is None:
+                continue
             with self.subTest(field_name=field_name):
                 self.assertTrue(field_registry.field_supports_chunked_reader(field_name=field_name))
 
@@ -363,7 +383,7 @@ class TestRegisteredFieldLoadNativeSlice(unittest.TestCase):
             recorded_calls.append({
                 "axis_to_slice": axis_to_slice,
                 "slice_coordinate": slice_coordinate,
-            }, )
+            })
             return numpy.zeros((2, 2)), numpy.zeros((2, 2))
 
         registered_field = field_registry.RegisteredField(
@@ -435,6 +455,20 @@ class TestRegisteredFieldLoad(unittest.TestCase):
         with unittest.mock.patch.object(manage_log, "log_warning") as mock_log_warning:
             registered_field.load(quokka_snapshot=unittest.mock.Mock(spec=load_snapshot.QuokkaSnapshot))
         mock_log_warning.assert_not_called()
+
+    def test_raises_when_whole_domain_loading_unsupported(
+        self,
+    ):
+        registered_field = field_registry.RegisteredField(
+            name="magnetic_divergence_dimensionless",
+            latex_label=field_labels.MAGNETIC_DIVERGENCE_DIMENSIONLESS,
+            expected_properties=field_registry.ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
+        )
+        with self.assertRaises(ValueError):
+            registered_field.load(quokka_snapshot=unittest.mock.Mock(spec=load_snapshot.QuokkaSnapshot))
 
 
 ## } U-TEST

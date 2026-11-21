@@ -30,6 +30,7 @@ VELOCITY_GRADIENT = latex_labels.LatexLabel(content=r"\nabla\vec{v}")
 VORTICITY = latex_labels.LatexLabel(content=r"\nabla\times\vec{v}")
 VORTICITY_MAGNITUDE = latex_labels.LatexLabel(content=r"|\nabla\times\vec{v}|")
 MAGNETIC_DIVERGENCE = latex_labels.LatexLabel(content=r"\nabla\cdot\vec{b}")
+MAGNETIC_DIVERGENCE_DIMENSIONLESS = latex_labels.LatexLabel(content=r"\Delta x\,|\nabla\cdot\vec{b}|")
 CURRENT_DENSITY = latex_labels.LatexLabel(content=r"\nabla\times\vec{b}")
 CURRENT_DENSITY_MAGNITUDE = latex_labels.LatexLabel(content=r"|\nabla\times\vec{b}|")
 

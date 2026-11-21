@@ -37,10 +37,13 @@ class DiagnosticPipeline:
         hide_annotations: bool = False,
         apply_log10_plot: bool = False,
     ):
-        field_registry.validate_fields(
-            field_names=field_comp_axes_args.fields,
-            allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
-        )
+        if field_comp_axes_args.use_native_slice:
+            field_registry.validate_fields(field_names=field_comp_axes_args.fields)
+        else:
+            field_registry.validate_fields(
+                field_names=field_comp_axes_args.fields,
+                allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
+            )
         self.snapshot_args = snapshot_args
         self.fields_to_plot = validate_types.as_tuple(param=field_comp_axes_args.fields)
         self.comps_to_plot = cli.parse_axes(axes=field_comp_axes_args.comps)
@@ -160,10 +163,13 @@ def main():
     user_args = parser.parse_args()
     if not (user_args.save_data or user_args.save_figure or user_args.animate):
         raise ValueError("must pass `--save-figure`, `--save-data`, and/or `--animate`; none was given.")
-    field_registry.validate_fields(
-        field_names=user_args.fields,
-        allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
-    )
+    if user_args.use_native_slice:
+        field_registry.validate_fields(field_names=user_args.fields)
+    else:
+        field_registry.validate_fields(
+            field_names=user_args.fields,
+            allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
+        )
     if user_args.save_data or user_args.save_figure:
         if user_args.input_dir is None:
             raise ValueError("`--input-dir` is required with `--save-data`/`--save-figure`.")

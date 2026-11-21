@@ -154,6 +154,19 @@ class FieldsProtocol(typing.Protocol):
     ) -> str:
         ...
 
+    def load_3d_magnetic_divergence_amr_leaves(
+        self,
+    ) -> AMRLeaves:
+        ...
+
+    def load_3d_magnetic_divergence_native_slice(
+        self,
+        *,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
+        ...
+
     def load_3d_density_sfield(
         self,
         *,

@@ -40,9 +40,9 @@ class ExpectedProperties:
 @dataclasses.dataclass(frozen=True)
 class RegisteredField:
     name: str
-    field_loader_fn: collections_abc.Callable
     expected_properties: ExpectedProperties
     latex_label: latex_labels.LatexLabel
+    field_loader_fn: collections_abc.Callable | None = None
     amr_leaves_loader_fn: collections_abc.Callable | None = None
     native_slice_loader_fn: collections_abc.Callable | None = None
 
@@ -59,7 +59,13 @@ class RegisteredField:
         `use_chunked_reader` is only forwarded when `True`: not every registered field's loader
         accepts it yet, and most callers never request it, so leaving it off by default keeps
         every currently-working field loading exactly as it did before this parameter existed.
+
+        Only supported for fields registered with a `field_loader_fn`; some fields have no
+        meaningful whole-domain representation (e.g. a value whose correct scaling depends on
+        each cell's own native resolution, discarded once resampled onto one shared grid).
         """
+        if self.field_loader_fn is None:
+            raise ValueError(f"`{self.name}` does not support whole-domain loading.")
         loader_kwargs: dict[str, int | bool] = {"amr_level": amr_level}
         if use_chunked_reader:
             loader_kwargs["use_chunked_reader"] = use_chunked_reader
@@ -97,8 +103,13 @@ class RegisteredField:
         quokka_snapshot: load_snapshot.QuokkaSnapshot,
         axis_to_slice: cartesian_axes.CartesianAxis_3D,
         slice_coordinate: float,
-    ) -> tuple[numpy.ndarray, numpy.ndarray] | dict[cartesian_axes.CartesianAxis_3D, tuple[numpy.ndarray,
-                                                                                           numpy.ndarray]]:
+    ) -> tuple[numpy.ndarray, numpy.ndarray] | dict[
+            cartesian_axes.CartesianAxis_3D,
+            tuple[
+                numpy.ndarray,
+                numpy.ndarray,
+            ],
+    ]:
         """
         Load this field, and its per-pixel native `dx`, on a genuine AMR-native slice (each
         pixel read from whichever box actually covers it, at the finest level present).
@@ -314,6 +325,20 @@ REGISTERED_FIELD_LOOKUP = {
             native_slice_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_native_slice,
         ),
         RegisteredField(
+            name="magnetic_divergence_dimensionless",
+            latex_label=field_labels.MAGNETIC_DIVERGENCE_DIMENSIONLESS,
+            expected_properties=ExpectedProperties(
+                pivot_value=None,
+                is_strictly_positive=True,
+            ),
+            amr_leaves_loader_fn=(
+                load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_dimensionless_amr_leaves
+            ),
+            native_slice_loader_fn=(
+                load_snapshot.QuokkaSnapshot.load_3d_magnetic_divergence_dimensionless_native_slice
+            ),
+        ),
+        RegisteredField(
             name="current_density_magnitude",
             latex_label=field_labels.CURRENT_DENSITY_MAGNITUDE,
             field_loader_fn=load_snapshot.QuokkaSnapshot.load_3d_current_density_magnitude_sfield,
@@ -350,6 +375,8 @@ def get_field_type(
     """Return the concrete field type `field_name` resolves to, read off its loader's return-type
     annotation. Doesn't load any data or call the loader."""
     field_loader_fn = REGISTERED_FIELD_LOOKUP[field_name].field_loader_fn
+    if field_loader_fn is None:
+        raise TypeError(f"`{field_name}` has no whole-domain loader; it has no whole-domain type.")
     return_type = inspect.signature(field_loader_fn).return_annotation
     if not isinstance(return_type, type):
         raise TypeError(f"loader for `{field_name}` has no return-type annotation.")
@@ -409,7 +436,7 @@ def validate_fields_support_native_slice(
     )
     if unsupported_field_names:
         raise ValueError(
-            f"the following fields do not support native-slice loading: {unsupported_field_names}."
+            f"the following fields do not support native-slice loading: {unsupported_field_names}.",
         )
 
 
@@ -418,8 +445,15 @@ def field_supports_chunked_reader(
     field_name: str,
 ) -> bool:
     """Return `True` iff `field_name`'s loader accepts `use_chunked_reader`. Doesn't load any
-    data or call the loader."""
+    data or call the loader.
+
+    `False` for a field with no whole-domain loader at all: `use_chunked_reader` is a
+    whole-domain-reading concern, so it cannot be supported by a field that has no
+    whole-domain representation in the first place.
+    """
     field_loader_fn = REGISTERED_FIELD_LOOKUP[field_name].field_loader_fn
+    if field_loader_fn is None:
+        return False
     return "use_chunked_reader" in inspect.signature(field_loader_fn).parameters
 
 

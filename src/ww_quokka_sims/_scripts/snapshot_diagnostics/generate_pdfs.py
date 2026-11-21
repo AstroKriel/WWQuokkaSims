@@ -37,10 +37,13 @@ class DiagnosticPipeline:
         use_log10_bins: bool = False,
         weight_by_cell_volume: bool = False,
     ):
-        field_registry.validate_fields(
-            field_names=field_comp_args.fields,
-            allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
-        )
+        if field_comp_args.use_amr_leaves:
+            field_registry.validate_fields(field_names=field_comp_args.fields)
+        else:
+            field_registry.validate_fields(
+                field_names=field_comp_args.fields,
+                allowed_types=(field_models.ScalarField_3D, field_models.VectorField_3D),
+            )
         self.snapshot_args = snapshot_args
         self.fields_to_plot = validate_types.as_tuple(param=field_comp_args.fields)
         if field_comp_args.use_amr_leaves:

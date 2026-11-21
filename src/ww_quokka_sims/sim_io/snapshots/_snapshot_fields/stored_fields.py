@@ -272,6 +272,25 @@ class _LoadStoredFields:
         div_b_key = self._get_sfield_key(field_name="magnetic_divergence")
         return self.load_amr_leaves(field_key=div_b_key)
 
+    def load_3d_magnetic_divergence_dimensionless_amr_leaves(
+        self: FieldsProtocol,
+    ) -> read_fields.AMRLeaves:
+        """
+        Load `dx * |div(b)|` at every leaf cell across the full AMR hierarchy.
+
+        Removes the resolution-dependence a bare `|div(b)|` would have: since div(b) is only
+        preserved to roundoff (not a fixed truncation order), its roundoff scales as
+        `~epsilon * |b| / dx`, so multiplying by each leaf cell's own native `dx` cancels
+        that level dependence, making the result comparable across native resolutions.
+        """
+        div_b_leaves = self.load_3d_magnetic_divergence_amr_leaves()
+        cell_width = div_b_leaves.get_isotropic_cell_width()
+        return read_fields.AMRLeaves(
+            values=cell_width * numpy.abs(div_b_leaves.values),
+            cell_widths=div_b_leaves.cell_widths,
+            positions=div_b_leaves.positions,
+        )
+
     def load_3d_magnetic_amr_leaves_by_axis(
         self: FieldsProtocol,
     ) -> dict[cartesian_axes.CartesianAxis_3D, read_fields.AMRLeaves]:
@@ -292,6 +311,20 @@ class _LoadStoredFields:
             axis_to_slice=axis_to_slice,
             slice_coordinate=slice_coordinate,
         )
+
+    def load_3d_magnetic_divergence_dimensionless_native_slice(
+        self: FieldsProtocol,
+        *,
+        axis_to_slice: cartesian_axes.CartesianAxis_3D,
+        slice_coordinate: float,
+    ) -> tuple[numpy.ndarray, numpy.ndarray]:
+        """Load `dx * |div(b)|`, and its per-pixel native `dx`, on a genuine AMR-native slice.
+        See `load_3d_magnetic_divergence_dimensionless_amr_leaves` for the normalisation."""
+        div_b_sarray_2d, cell_width_2d = self.load_3d_magnetic_divergence_native_slice(
+            axis_to_slice=axis_to_slice,
+            slice_coordinate=slice_coordinate,
+        )
+        return cell_width_2d * numpy.abs(div_b_sarray_2d), cell_width_2d
 
     def load_3d_magnetic_native_slice_by_axis(
         self: FieldsProtocol,
