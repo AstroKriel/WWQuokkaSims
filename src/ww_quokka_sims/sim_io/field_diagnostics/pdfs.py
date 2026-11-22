@@ -258,15 +258,18 @@ class ComputePDFs:
         get almost all of their linearly-spaced bins wasted on the rare, large-valued tail,
         leaving the bulk of the distribution unresolved in a single bin.
         """
-        values = sarray_3d.ravel()
+        flattened_values = sarray_3d.ravel()
         if use_log10_bins:
-            values = compute_array_stats.compute_safe_log10(values)
-        flat_weights = None
-        if weights is not None:
-            flat_weights = weights.ravel()
+            binned_values = compute_array_stats.compute_safe_log10(flattened_values)
+        else:
+            binned_values = flattened_values
+        if weights is None:
+            flattened_weights = None
+        else:
+            flattened_weights = weights.ravel()
         return compute_array_stats.estimate_pdf(
-            values=values,
-            weights=flat_weights,
+            values=binned_values,
+            weights=flattened_weights,
             num_bins=num_bins,
         )
 
