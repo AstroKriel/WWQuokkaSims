@@ -14,7 +14,7 @@ import numpy
 
 ## personal
 from jormi.ww_arrays import compute_array_stats
-from jormi.ww_fields.fields_3d import compute_spectra
+from jormi.ww_fields.fields_3d import compute_spectra, field_models
 from jormi.ww_io import json_io, manage_io
 from jormi.ww_plots import (
     add_color,
@@ -44,6 +44,8 @@ class FieldSpectrum:
     latex_label: latex_labels.LatexLabel
     log10_k_bin_centers: numpy.ndarray
     log10_power_spectrum: numpy.ndarray
+    ## signed shell sums of Re[conj(v(k)) . (i k_hat x v(k))]; vector fields only
+    helical_power_spectrum: numpy.ndarray | None = None
 
     def __post_init__(
         self,
@@ -56,21 +58,30 @@ class FieldSpectrum:
             array_a=self.log10_k_bin_centers,
             array_b=self.log10_power_spectrum,
         )
+        if self.helical_power_spectrum is not None:
+            validate_arrays.ensure_array(array=self.helical_power_spectrum)
+            validate_arrays.ensure_same_shape(
+                array_a=self.log10_k_bin_centers,
+                array_b=self.helical_power_spectrum,
+            )
 
     def save_to_file(
         self,
         *,
         file_path: pathlib.Path,
     ) -> None:
+        spectrum_dict = {
+            "sim_time": self.sim_time,
+            "step_index": self.step_index.value,
+            "latex_label": self.latex_label.content,
+            "log10_k_bin_centers": self.log10_k_bin_centers,
+            "log10_power_spectrum": self.log10_power_spectrum,
+        }
+        if self.helical_power_spectrum is not None:
+            spectrum_dict["helical_power_spectrum"] = self.helical_power_spectrum
         json_io.save_dict_to_json_file(
             file_path=file_path,
-            input_dict={
-                "sim_time": self.sim_time,
-                "step_index": self.step_index.value,
-                "latex_label": self.latex_label.content,
-                "log10_k_bin_centers": self.log10_k_bin_centers,
-                "log10_power_spectrum": self.log10_power_spectrum,
-            },
+            input_dict=spectrum_dict,
             overwrite=True,
             verbose=False,
         )
@@ -96,12 +107,16 @@ class FieldSpectrum:
             },
             param_name="<FieldSpectrum JSON>",
         )
+        helical_power_spectrum = None
+        if "helical_power_spectrum" in data:
+            helical_power_spectrum = numpy.asarray(data["helical_power_spectrum"])
         return cls(
             sim_time=float(data["sim_time"]),
             step_index=find_snapshots.StepIndex.from_value(step_index_value=int(data["step_index"])),
             latex_label=latex_labels.LatexLabel(content=data["latex_label"]),
             log10_k_bin_centers=numpy.asarray(data["log10_k_bin_centers"]),
             log10_power_spectrum=numpy.asarray(data["log10_power_spectrum"]),
+            helical_power_spectrum=helical_power_spectrum,
         )
 
 
@@ -163,12 +178,17 @@ class ComputeSpectra:
         assert sim_time is not None
         log10_k_bin_centers = compute_array_stats.compute_safe_log10(spectrum.k_bin_centers_1d)
         log10_power_spectrum = compute_array_stats.compute_safe_log10(spectrum.power_spectrum_1d)
+        helical_power_spectrum = None
+        if isinstance(field_3d, field_models.VectorField_3D):
+            helical_spectrum = compute_spectra.compute_isotropic_helical_power_spectrum_vfield(field_3d)
+            helical_power_spectrum = helical_spectrum.power_spectrum_1d
         return FieldSpectrum(
             sim_time=sim_time,
             step_index=step_index,
             latex_label=latex_labels.LatexLabel(content=field_3d.latex_label),
             log10_k_bin_centers=log10_k_bin_centers,
             log10_power_spectrum=log10_power_spectrum,
+            helical_power_spectrum=helical_power_spectrum,
         )
 
     def run(

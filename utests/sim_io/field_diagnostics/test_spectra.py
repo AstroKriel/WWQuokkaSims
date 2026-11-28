@@ -45,6 +45,25 @@ class TestSpectraDataRoundTrip(unittest.TestCase):
         self.assertEqual(loaded.latex_label, field_spectrum.latex_label)
         numpy.testing.assert_array_equal(loaded.log10_k_bin_centers, field_spectrum.log10_k_bin_centers)
         numpy.testing.assert_array_equal(loaded.log10_power_spectrum, field_spectrum.log10_power_spectrum)
+        self.assertIsNone(loaded.helical_power_spectrum)
+
+    def test_save_and_load_preserves_helical_power_spectrum(
+        self,
+    ):
+        field_spectrum = spectra.FieldSpectrum(
+            sim_time=0.5,
+            step_index=find_snapshots.StepIndex.from_value(step_index_value=4),
+            latex_label=latex_labels.LatexLabel(content=r"\vec{b}"),
+            log10_k_bin_centers=numpy.array([0.0, 1.0, 2.0]),
+            log10_power_spectrum=numpy.array([-1.0, -2.0, -3.0]),
+            helical_power_spectrum=numpy.array([0.1, -0.01, 0.001]),
+        )
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            file_path = pathlib.Path(tmp_dir) / "spectra.json"
+            field_spectrum.save_to_file(file_path=file_path)
+            loaded = spectra.FieldSpectrum.load_from_file(file_path=file_path)
+        assert loaded.helical_power_spectrum is not None
+        numpy.testing.assert_array_equal(loaded.helical_power_spectrum, field_spectrum.helical_power_spectrum)
 
 
 ## } U-TEST
